@@ -400,8 +400,10 @@ after_initialize do
     next 0 unless object.staff?
 
     seen_at =
-      Array(object.custom_fields[DiscourseModCategories::USER_NOTES_SEEN_FIELD]).compact.max.presence ||
-        "1970-01-01T00:00:00Z"
+      Array(object.custom_fields[DiscourseModCategories::USER_NOTES_SEEN_FIELD])
+        .compact
+        .max
+        .presence || "1970-01-01T00:00:00Z"
 
     TopicCustomField
       .where(name: DiscourseModCategories::TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD)
