@@ -13,7 +13,7 @@ require "rails_helper"
 # Both reset to "nothing" once the staff member opens the shield tab —
 # `POST /notes-feed/seen` clears `mod_notes_seen_at`, and the panel
 # component zeroes `currentUser.mod_note_unread_count` locally.
-RSpec.describe "Moderator-note header indicators", type: :system do
+RSpec.describe "Moderator-note header indicators" do
   fab!(:admin)
   fab!(:moderator)
   fab!(:user)

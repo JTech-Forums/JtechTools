@@ -10,7 +10,7 @@ require "rails_helper"
 # This file deliberately only screenshots — the behavioural coverage lives
 # in `spec/system/mod_note_header_indicators_spec.rb`. We just need PNGs
 # the reviewer can eyeball before merging.
-RSpec.describe "Moderator-note avatar badge visuals", type: :system do
+RSpec.describe "Moderator-note avatar badge visuals" do
   fab!(:moderator)
   fab!(:category)
 

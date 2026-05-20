@@ -29,7 +29,9 @@ Lint/Debugger:
     - "spec/system/**/*.rb"
 
 # Existing pattern in moderator_messages_spec.rb (inherited).
-Capybara/CurrentPathExpectation:
+# (Renamed in rubocop-capybara >= 2.23: Capybara/CurrentPathExpectation moved
+# under Capybara/RSpec.)
+Capybara/RSpec/CurrentPathExpectation:
   Exclude:
     - "spec/system/**/*.rb"
 

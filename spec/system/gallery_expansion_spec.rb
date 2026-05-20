@@ -8,7 +8,7 @@ require "rails_helper"
 # Screenshot numbers start at 104 to avoid collisions with the existing
 # gallery (which runs through ~103). All screenshots are written to
 # tmp/capybara/ and uploaded by CI as the `ui-screenshots` artifact.
-RSpec.describe "Gallery expansion", type: :system do
+RSpec.describe "Gallery expansion" do
   fab!(:admin)
   fab!(:moderator) { Fabricate(:moderator, username: "mod_morgan") }
   fab!(:other_moderator) { Fabricate(:moderator, username: "mod_misha") }

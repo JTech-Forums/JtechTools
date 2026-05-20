@@ -5,7 +5,7 @@ require "rails_helper"
 # End-to-end coverage for the moderator-set messages, capturing a
 # screenshot at every meaningful UI step. Screenshots are written to
 # tmp/capybara/ and published as the CI artifact.
-RSpec.describe "Moderator messages", type: :system do
+RSpec.describe "Moderator messages" do
   fab!(:admin)
   fab!(:moderator)
   fab!(:user)

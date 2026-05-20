@@ -7,7 +7,7 @@ require "rails_helper"
 # another user replies and is prompted, accepts, posts, and is not
 # prompted again until staff bump the version. Screenshots are written
 # to tmp/capybara/ and published as the CI artifact.
-RSpec.describe "Per-topic prompt checklist", type: :system do
+RSpec.describe "Per-topic prompt checklist" do
   fab!(:moderator)
   fab!(:user) { Fabricate(:user, trust_level: TrustLevel[2], refresh_auto_groups: true) }
   fab!(:tl0_user) { Fabricate(:user, trust_level: TrustLevel[0], refresh_auto_groups: true) }

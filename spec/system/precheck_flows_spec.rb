@@ -5,7 +5,7 @@ require "rails_helper"
 # End-to-end coverage for the composer precheck prompts: the per-category
 # "before a new topic" prompt and the per-topic "before a reply" prompt.
 # Screenshots are written to tmp/capybara/ for the CI artifact.
-RSpec.describe "Precheck prompt flows", type: :system do
+RSpec.describe "Precheck prompt flows" do
   fab!(:admin)
   fab!(:moderator)
   fab!(:user)

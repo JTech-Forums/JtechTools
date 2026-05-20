@@ -6,7 +6,7 @@ require "rails_helper"
 # modal (opened from the sidebar), and the modal a new user must complete
 # before their first post. Screenshots are written to tmp/capybara/ for
 # the CI artifact.
-RSpec.describe "First-post checklist", type: :system do
+RSpec.describe "First-post checklist" do
   fab!(:moderator)
   fab!(:user) { Fabricate(:user, trust_level: TrustLevel[1], refresh_auto_groups: true) }
   fab!(:tl0_user) { Fabricate(:user, trust_level: TrustLevel[0], refresh_auto_groups: true) }

@@ -6,7 +6,7 @@ require "rails_helper"
 # from the composer, the target modal, posting, audience visibility, and the
 # non-participant gate. A screenshot is captured at each meaningful step;
 # screenshots land in tmp/capybara/ and are published as the CI artifact.
-RSpec.describe "Moderator whisper", type: :system do
+RSpec.describe "Moderator whisper" do
   fab!(:moderator) { Fabricate(:moderator, username: "mod_morgan") }
   fab!(:admin) { Fabricate(:admin, username: "admin_ada") }
   fab!(:recipient) { Fabricate(:user, username: "target_tom") }
