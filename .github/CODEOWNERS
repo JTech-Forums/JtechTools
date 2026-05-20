@@ -1,0 +1,22 @@
+# Default owner for everything in this repository.
+*                            @TripleU613
+
+# Plugin entry / wiring — review carefully, this glues all five sub-plugins together.
+/plugin.rb                   @TripleU613
+/sub_plugins/                @TripleU613
+
+# Settings / locales — wording shown to admins.
+/config/                     @TripleU613
+
+# CI and lint configuration — affects every PR.
+/.github/                    @TripleU613
+/.rubocop.yml                @TripleU613
+/.streerc                    @TripleU613
+/.prettierrc.cjs             @TripleU613
+/.template-lintrc.cjs        @TripleU613
+/eslint.config.mjs           @TripleU613
+/stylelint.config.mjs        @TripleU613
+/Gemfile                     @TripleU613
+/Gemfile.lock                @TripleU613
+/package.json                @TripleU613
+/pnpm-lock.yaml              @TripleU613
