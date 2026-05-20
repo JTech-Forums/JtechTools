@@ -7,8 +7,14 @@
 # Sub-plugins that don't register routes — Dislike, Another SMTP, Mini-mod —
 # rely on Discourse's existing routes via Guardian overrides and event hooks,
 # so they have no entries here.
+#
+# We use `routes.append` rather than `routes.draw` and split the two engine
+# mounts into separate blocks. With both mounts in a single `routes.draw`
+# block, Rails 8 raises `Invalid route name, already in use` for whichever
+# engine is mounted first — the second engine's mount appears to trigger a
+# re-evaluation of the parent block. `append` avoids that.
 
-# ── Mod-categories (lifted from discourse-mod/config/routes.rb) ─────────────
+# ── Mod-categories ─────────────────────────────────────────────────────────
 DiscourseModCategories::Engine.routes.draw do
   put "/topic/:topic_id" => "messages#update_topic"
   put "/category/:category_id" => "messages#update_category"
@@ -32,7 +38,11 @@ DiscourseModCategories::Engine.routes.draw do
   delete "/topic/:topic_id/prompt-checklist" => "checklist#delete_topic"
 end
 
-# ── Dumbcourse (lifted from dumbcourse/config/routes.rb) ────────────────────
+Discourse::Application.routes.append do
+  mount ::DiscourseModCategories::Engine, at: "discourse-mod-categories"
+end
+
+# ── Dumbcourse ─────────────────────────────────────────────────────────────
 DiscourseDumbcourse::Engine.routes.draw do
   post "/hcaptcha" => "app#hcaptcha"
 
@@ -71,15 +81,7 @@ class DiscourseDumbcourseBasePathConstraint
   end
 end
 
-# ── Mount points ────────────────────────────────────────────────────────────
-Discourse::Application.routes.draw do
-  # Keep the original mount paths so existing URLs and specs continue to work.
-  # `as:` forces a unique route-helper name to avoid the
-  # "Invalid route name, already in use: 'discourse_mod_categories'" collision
-  # that triggers when something else (probably Discourse's plugin loader)
-  # registers the engine_name's helper before this file is evaluated.
-  mount ::DiscourseModCategories::Engine, at: "discourse-mod-categories", as: "jtech_mod_categories"
-
+Discourse::Application.routes.append do
   constraints DiscourseDumbcourseBasePathConstraint.new do
     scope "/:dumbcourse_base_path",
           defaults: {
