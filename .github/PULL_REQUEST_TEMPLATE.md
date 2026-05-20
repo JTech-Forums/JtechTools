@@ -13,6 +13,7 @@
 - [ ] Mini-mod
 - [ ] Mod-categories
 - [ ] Dumbcourse
+- [ ] Translator-tweaks (patches on upstream discourse/discourse-translator)
 - [ ] Shared infrastructure (plugin.rb, settings.yml, locales, lint/CI)
 
 ## Test plan

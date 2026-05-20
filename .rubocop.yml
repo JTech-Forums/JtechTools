@@ -12,6 +12,10 @@ Discourse/Plugins/UsePluginInstanceOn:
 Discourse/Plugins/NamespaceMethods:
   Exclude:
     - "sub_plugins/**/*.rb"
+Discourse/Plugins/NamespaceConstants:
+  Exclude:
+    - "sub_plugins/**/*.rb"
+    - "scripts/**/*.rb"
 Discourse/Plugins/NoMonkeyPatching:
   Exclude:
     - "sub_plugins/**/*.rb"
