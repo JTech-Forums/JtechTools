@@ -74,7 +74,11 @@ end
 # ── Mount points ────────────────────────────────────────────────────────────
 Discourse::Application.routes.draw do
   # Keep the original mount paths so existing URLs and specs continue to work.
-  mount ::DiscourseModCategories::Engine, at: "discourse-mod-categories"
+  # `as:` forces a unique route-helper name to avoid the
+  # "Invalid route name, already in use: 'discourse_mod_categories'" collision
+  # that triggers when something else (probably Discourse's plugin loader)
+  # registers the engine_name's helper before this file is evaluated.
+  mount ::DiscourseModCategories::Engine, at: "discourse-mod-categories", as: "jtech_mod_categories"
 
   constraints DiscourseDumbcourseBasePathConstraint.new do
     scope "/:dumbcourse_base_path",
