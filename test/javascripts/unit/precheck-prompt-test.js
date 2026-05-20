@@ -77,10 +77,7 @@ module("Unit | discourse-mod | precheck-prompt | new topic", function () {
   });
 
   test("null siteSettings resolves to null", function (assert) {
-    assert.strictEqual(
-      precheckPromptFor({ action: CREATE_TOPIC }, null),
-      null
-    );
+    assert.strictEqual(precheckPromptFor({ action: CREATE_TOPIC }, null), null);
   });
 });
 
@@ -123,29 +120,26 @@ module("Unit | discourse-mod | precheck-prompt | reply", function () {
   });
 });
 
-module(
-  "Unit | discourse-mod | precheck-prompt | other actions",
-  function () {
-    ["edit", "privateMessage", "editSharedDraft", "", null, undefined].forEach(
-      (action) => {
-        test(`action=${JSON.stringify(action)} is never gated`, function (assert) {
-          const composer = {
-            action,
-            category: { mod_category_new_topic_prompt: "x" },
-            topic: { mod_topic_reply_prompt: "y" },
-          };
-          assert.strictEqual(
-            precheckPromptFor(composer, {
-              precheck_new_topic_enabled: true,
-              topic_reply_prompt_enabled: true,
-            }),
-            null
-          );
-        });
-      }
-    );
-  }
-);
+module("Unit | discourse-mod | precheck-prompt | other actions", function () {
+  ["edit", "privateMessage", "editSharedDraft", "", null, undefined].forEach(
+    (action) => {
+      test(`action=${JSON.stringify(action)} is never gated`, function (assert) {
+        const composer = {
+          action,
+          category: { mod_category_new_topic_prompt: "x" },
+          topic: { mod_topic_reply_prompt: "y" },
+        };
+        assert.strictEqual(
+          precheckPromptFor(composer, {
+            precheck_new_topic_enabled: true,
+            topic_reply_prompt_enabled: true,
+          }),
+          null
+        );
+      });
+    }
+  );
+});
 
 module(
   "Unit | discourse-mod | precheck-prompt | advanced scenarios",
@@ -272,79 +266,76 @@ module(
   }
 );
 
-module(
-  "Unit | discourse-mod | precheck-prompt | trust-level cap",
-  function () {
-    // maxTl is the highest trust level still prompted. A user is exempt
-    // only when their trust level is strictly above the cap.
-    const CASES = [
-      // [maxTl, userTl, prompted?]
-      [undefined, 0, true],
-      [undefined, 4, true],
-      [4, 0, true],
-      [4, 4, true],
-      ["", 0, true],
-      [0, 0, true],
-      [0, 1, false],
-      [0, 4, false],
-      [1, 0, true],
-      [1, 1, true],
-      [1, 2, false],
-      [1, 3, false],
-      [2, 2, true],
-      [2, 3, false],
-      [3, 3, true],
-      [3, 4, false],
-      ["1", 2, false],
-      ["1", 1, true],
-    ];
+module("Unit | discourse-mod | precheck-prompt | trust-level cap", function () {
+  // maxTl is the highest trust level still prompted. A user is exempt
+  // only when their trust level is strictly above the cap.
+  const CASES = [
+    // [maxTl, userTl, prompted?]
+    [undefined, 0, true],
+    [undefined, 4, true],
+    [4, 0, true],
+    [4, 4, true],
+    ["", 0, true],
+    [0, 0, true],
+    [0, 1, false],
+    [0, 4, false],
+    [1, 0, true],
+    [1, 1, true],
+    [1, 2, false],
+    [1, 3, false],
+    [2, 2, true],
+    [2, 3, false],
+    [3, 3, true],
+    [3, 4, false],
+    ["1", 2, false],
+    ["1", 1, true],
+  ];
 
-    CASES.forEach(([maxTl, userTl, prompted]) => {
-      test(`reply maxTl=${maxTl} userTl=${userTl} prompted=${prompted}`, function (assert) {
-        const result = precheckPromptFor(
-          {
-            action: REPLY_ACTION,
-            topic: {
-              mod_topic_reply_prompt: "Read the rules",
-              mod_topic_reply_prompt_max_tl: maxTl,
-            },
+  CASES.forEach(([maxTl, userTl, prompted]) => {
+    test(`reply maxTl=${maxTl} userTl=${userTl} prompted=${prompted}`, function (assert) {
+      const result = precheckPromptFor(
+        {
+          action: REPLY_ACTION,
+          topic: {
+            mod_topic_reply_prompt: "Read the rules",
+            mod_topic_reply_prompt_max_tl: maxTl,
           },
-          { topic_reply_prompt_enabled: true },
-          { trust_level: userTl }
-        );
-        assert.strictEqual(result, prompted ? "Read the rules" : null);
-      });
-
-      test(`new topic maxTl=${maxTl} userTl=${userTl} prompted=${prompted}`, function (assert) {
-        const result = precheckPromptFor(
-          {
-            action: CREATE_TOPIC,
-            category: {
-              mod_category_new_topic_prompt: "Read the rules",
-              mod_category_new_topic_prompt_max_tl: maxTl,
-            },
-          },
-          { precheck_new_topic_enabled: true },
-          { trust_level: userTl }
-        );
-        assert.strictEqual(result, prompted ? "Read the rules" : null);
-      });
-    });
-
-    test("a cap with no current user still prompts", function (assert) {
-      assert.strictEqual(
-        precheckPromptFor(
-          {
-            action: REPLY_ACTION,
-            topic: {
-              mod_topic_reply_prompt: "Read the rules",
-              mod_topic_reply_prompt_max_tl: 1,
-            },
-          },
-          { topic_reply_prompt_enabled: true }
-        ),
-        "Read the rules"
+        },
+        { topic_reply_prompt_enabled: true },
+        { trust_level: userTl }
       );
+      assert.strictEqual(result, prompted ? "Read the rules" : null);
     });
-  }
-);
+
+    test(`new topic maxTl=${maxTl} userTl=${userTl} prompted=${prompted}`, function (assert) {
+      const result = precheckPromptFor(
+        {
+          action: CREATE_TOPIC,
+          category: {
+            mod_category_new_topic_prompt: "Read the rules",
+            mod_category_new_topic_prompt_max_tl: maxTl,
+          },
+        },
+        { precheck_new_topic_enabled: true },
+        { trust_level: userTl }
+      );
+      assert.strictEqual(result, prompted ? "Read the rules" : null);
+    });
+  });
+
+  test("a cap with no current user still prompts", function (assert) {
+    assert.strictEqual(
+      precheckPromptFor(
+        {
+          action: REPLY_ACTION,
+          topic: {
+            mod_topic_reply_prompt: "Read the rules",
+            mod_topic_reply_prompt_max_tl: 1,
+          },
+        },
+        { topic_reply_prompt_enabled: true }
+      ),
+      "Read the rules"
+    );
+  });
+});

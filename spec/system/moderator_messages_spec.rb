@@ -17,9 +17,7 @@ RSpec.describe "Moderator messages", type: :system do
     "Is this an app upload or link to an app? If it's just a comment or " \
       "question, please post somewhere else."
   end
-  let(:footer_text) do
-    "This thread is for app uploads only — keep replies on-topic."
-  end
+  let(:footer_text) { "This thread is for app uploads only — keep replies on-topic." }
 
   before do
     SiteSetting.mod_categories_enabled = true
@@ -35,11 +33,7 @@ RSpec.describe "Moderator messages", type: :system do
     # captured mid-load.
     begin
       Timeout.timeout(8) do
-        until page.evaluate_script(
-                "Array.from(document.images).every((i) => i.complete)",
-              )
-          sleep 0.1
-        end
+        sleep 0.1 until page.evaluate_script("Array.from(document.images).every((i) => i.complete)")
       end
     rescue Timeout::Error
       # Capture anyway rather than failing the spec over a slow image.
@@ -72,17 +66,13 @@ RSpec.describe "Moderator messages", type: :system do
       expect(page).to have_css(".mod-topic-messages-modal", wait: 10)
       shot("03_mod_messages_modal_empty")
 
-      find(".mod-topic-messages-modal .mod-footer-input").fill_in(
-        with: footer_text,
-      )
+      find(".mod-topic-messages-modal .mod-footer-input").fill_in(with: footer_text)
       shot("04_mod_messages_footer_filled")
 
       # The before-reply prompt has moved to the Prompt Checklist modal;
       # this modal no longer carries it.
       expect(page).to have_no_css(".mod-topic-messages-modal .mod-reply-input")
-      expect(page).to have_no_css(
-        ".mod-topic-messages-modal .mod-reply-audience-input",
-      )
+      expect(page).to have_no_css(".mod-topic-messages-modal .mod-reply-audience-input")
       shot("05_mod_messages_both_filled")
 
       find(".mod-topic-messages-modal .mod-messages-save").click
@@ -138,11 +128,7 @@ RSpec.describe "Moderator messages", type: :system do
       shot("09_mod_messages_modal_edited")
 
       find(".mod-messages-save").click
-      expect(page).to have_css(
-        ".topic-footer-message",
-        text: "Updated footer notice",
-        wait: 10,
-      )
+      expect(page).to have_css(".topic-footer-message", text: "Updated footer notice", wait: 10)
       shot("10_footer_updated_after_edit")
     end
 
@@ -175,9 +161,7 @@ RSpec.describe "Moderator messages", type: :system do
 
       find(".mod-messages-save").click
       expect(page).to have_no_css(".mod-topic-messages-modal", wait: 10)
-      expect(
-        topic.reload.custom_fields["mod_topic_require_reply_approval"],
-      ).to eq(true)
+      expect(topic.reload.custom_fields["mod_topic_require_reply_approval"]).to eq(true)
     end
 
     it "sets a staff-only private note from the modal and shows it" do
@@ -187,17 +171,11 @@ RSpec.describe "Moderator messages", type: :system do
       open_mod_messages_modal
       expect(page).to have_css(".mod-topic-messages-modal", wait: 10)
 
-      find(".mod-private-note-input").fill_in(
-        with: "Keep an eye on this thread — staff only.",
-      )
+      find(".mod-private-note-input").fill_in(with: "Keep an eye on this thread — staff only.")
       find(".mod-messages-save").click
       expect(page).to have_no_css(".mod-topic-messages-modal", wait: 10)
 
-      expect(page).to have_css(
-        ".mod-private-note",
-        text: "Keep an eye on this thread",
-        wait: 10,
-      )
+      expect(page).to have_css(".mod-private-note", text: "Keep an eye on this thread", wait: 10)
       # Shown like a post — the moderator who set it, with avatar + name.
       expect(page).to have_css(
         ".mod-private-note .mod-private-note-username",
@@ -210,8 +188,7 @@ RSpec.describe "Moderator messages", type: :system do
     it "lets a moderator reply to the note thread" do
       topic.custom_fields["mod_topic_private_note"] = "Initial moderator note."
       topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-      topic.custom_fields["mod_topic_private_note_created_at"] =
-        2.hours.ago.iso8601
+      topic.custom_fields["mod_topic_private_note_created_at"] = 2.hours.ago.iso8601
       topic.save_custom_fields(true)
 
       visit("/t/#{topic.slug}/#{topic.id}")
@@ -222,30 +199,21 @@ RSpec.describe "Moderator messages", type: :system do
       shot("46_private_note_with_timestamp_and_reply_button")
 
       find(".mod-private-note-reply-button").click
-      find(".mod-private-note-reply-input").fill_in(
-        with: "Thanks — I'll keep an eye on this.",
-      )
+      find(".mod-private-note-reply-input").fill_in(with: "Thanks — I'll keep an eye on this.")
       shot("47_private_note_reply_box")
 
       find(".mod-private-note-reply-box .btn-primary").click
       # The reply body is cooked as markdown, so straight quotes become
       # typographic — match a fragment without an apostrophe.
-      expect(page).to have_css(
-        ".mod-private-note-reply",
-        text: "keep an eye on this",
-        wait: 10,
-      )
+      expect(page).to have_css(".mod-private-note-reply", text: "keep an eye on this", wait: 10)
       shot("48_private_note_reply_added")
-      expect(
-        topic.reload.custom_fields["mod_topic_private_note_replies"],
-      ).to be_present
+      expect(topic.reload.custom_fields["mod_topic_private_note_replies"]).to be_present
     end
 
     it "lets a moderator edit and delete a reply in the note thread" do
       topic.custom_fields["mod_topic_private_note"] = "Initial moderator note."
       topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-      topic.custom_fields["mod_topic_private_note_created_at"] =
-        2.hours.ago.iso8601
+      topic.custom_fields["mod_topic_private_note_created_at"] = 2.hours.ago.iso8601
       topic.custom_fields["mod_topic_private_note_replies"] = [
         {
           "id" => "aaaaaaaaaaaaaaaa",
@@ -261,31 +229,21 @@ RSpec.describe "Moderator messages", type: :system do
 
       # Edit the reply inline.
       find(".mod-private-note-reply .mod-private-note-edit-reply").click
-      find(".mod-private-note-edit-input").fill_in(
-        with: "Updated reply text.",
-      )
+      find(".mod-private-note-edit-input").fill_in(with: "Updated reply text.")
       shot("92_private_note_reply_editing")
       find(".mod-private-note-reply-box .btn-primary").click
-      expect(page).to have_css(
-        ".mod-private-note-reply",
-        text: "Updated reply text",
-        wait: 10,
-      )
+      expect(page).to have_css(".mod-private-note-reply", text: "Updated reply text", wait: 10)
       shot("93_private_note_reply_edited")
-      expect(
-        topic.reload.custom_fields["mod_topic_private_note_replies"].first[
-          "raw"
-        ],
-      ).to eq("Updated reply text.")
+      expect(topic.reload.custom_fields["mod_topic_private_note_replies"].first["raw"]).to eq(
+        "Updated reply text.",
+      )
 
       # Delete the reply (confirm via the dialog).
       find(".mod-private-note-reply .mod-private-note-delete-reply").click
       find(".dialog-footer .btn-primary").click
       expect(page).to have_no_css(".mod-private-note-reply", wait: 10)
       shot("94_private_note_reply_deleted")
-      expect(
-        topic.reload.custom_fields["mod_topic_private_note_replies"],
-      ).to eq([])
+      expect(topic.reload.custom_fields["mod_topic_private_note_replies"]).to eq([])
     end
   end
 
@@ -351,16 +309,13 @@ RSpec.describe "Moderator messages", type: :system do
     end
 
     it "renders the footer message as HTML" do
-      topic.custom_fields["mod_topic_footer_message"] =
-        "<strong>Important:</strong> read the rules."
+      topic.custom_fields[
+        "mod_topic_footer_message"
+      ] = "<strong>Important:</strong> read the rules."
       topic.save_custom_fields(true)
 
       visit("/t/#{topic.slug}/#{topic.id}")
-      expect(page).to have_css(
-        ".topic-footer-message strong",
-        text: "Important:",
-        wait: 10,
-      )
+      expect(page).to have_css(".topic-footer-message strong", text: "Important:", wait: 10)
       shot("36_footer_html_rendered")
     end
 
@@ -400,9 +355,7 @@ RSpec.describe "Moderator messages", type: :system do
       expect(page).to have_css(".mod-saved-indicator", wait: 10)
       shot("23_category_prompt_saved")
 
-      expect(
-        category.reload.custom_fields["mod_category_new_topic_prompt"],
-      ).to eq(
+      expect(category.reload.custom_fields["mod_category_new_topic_prompt"]).to eq(
         "Please search for an existing topic before starting a new one.",
       )
     end
@@ -412,31 +365,24 @@ RSpec.describe "Moderator messages", type: :system do
       expect(page).to have_css(".mod-new-topic-prompt", wait: 10)
 
       find(".mod-new-topic-prompt-input").fill_in(
-        with:
-          "Read the guidelines at https://example.com/guidelines before posting.",
+        with: "Read the guidelines at https://example.com/guidelines before posting.",
       )
       # The preview renders the typed text the same way the dialog will,
       # turning the URL into a real link.
       expect(page).to have_css(".mod-prompt-preview", wait: 10)
-      link =
-        find(
-          ".mod-prompt-preview-body a[href='https://example.com/guidelines']",
-        )
+      link = find(".mod-prompt-preview-body a[href='https://example.com/guidelines']")
       expect(link[:target]).to eq("_blank")
       shot("83_category_prompt_live_preview")
 
       # The audience combo-box caps which trust levels see the prompt.
-      audience =
-        PageObjects::Components::SelectKit.new(".mod-new-topic-audience-input")
+      audience = PageObjects::Components::SelectKit.new(".mod-new-topic-audience-input")
       audience.expand
       shot("84_category_prompt_audience_dropdown")
       audience.select_row_by_value("2")
 
       find(".mod-save-new-topic-prompt").click
       expect(page).to have_css(".mod-saved-indicator", wait: 10)
-      expect(
-        category.reload.custom_fields["mod_category_new_topic_prompt_max_tl"],
-      ).to eq(2)
+      expect(category.reload.custom_fields["mod_category_new_topic_prompt_max_tl"]).to eq(2)
     end
   end
 
@@ -453,10 +399,10 @@ RSpec.describe "Moderator messages", type: :system do
       end
     end
 
-    let(:last_post) { thread_posts[10] }      # post 12
-    let(:second_to_last) { thread_posts[9] }  # post 11
-    let(:third_to_last) { thread_posts[8] }   # post 10
-    let(:tenth_to_last) { thread_posts[1] }   # post 3
+    let(:last_post) { thread_posts[10] } # post 12
+    let(:second_to_last) { thread_posts[9] } # post 11
+    let(:third_to_last) { thread_posts[8] } # post 10
+    let(:tenth_to_last) { thread_posts[1] } # post 3
 
     def pin!(target)
       topic.custom_fields["mod_topic_pinned_post_id"] = target.id
@@ -474,10 +420,7 @@ RSpec.describe "Moderator messages", type: :system do
       expect(page).to have_css("#topic-title", wait: 10)
 
       within(first(".topic-post")) do
-        find(".show-more-actions").click if has_css?(
-          ".show-more-actions",
-          wait: 2,
-        )
+        find(".show-more-actions").click if has_css?(".show-more-actions", wait: 2)
         find(".show-post-admin-menu", match: :first).click
       end
       expect(page).to have_css(".mod-pin-post-to-bottom", wait: 10)
@@ -487,9 +430,7 @@ RSpec.describe "Moderator messages", type: :system do
       expect(page).to have_css(".topic-footer-pinned-post", wait: 10)
       shot("26_post_pinned_to_bottom")
 
-      expect(
-        topic.reload.custom_fields["mod_topic_pinned_post_id"],
-      ).to be_present
+      expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to be_present
     end
 
     it "renders a copy at the bottom and a pin badge on the original" do
@@ -503,9 +444,7 @@ RSpec.describe "Moderator messages", type: :system do
       expect(page).to have_css(".topic-footer-pinned-post a.pinned-post-jump")
       # The original post in the stream is badged too.
       expect(page).to have_css(".mod-pinned-in-stream-badge")
-      expect(page).to have_no_css(
-        ".topic-footer-pinned-post.topic-footer-message",
-      )
+      expect(page).to have_no_css(".topic-footer-pinned-post.topic-footer-message")
       shot("39_pinned_post_as_bottom_post")
     end
 
@@ -532,19 +471,14 @@ RSpec.describe "Moderator messages", type: :system do
       shot("28_pinned_post_before_unpin")
 
       within(find("#post_#{tenth_to_last.post_number}")) do
-        find(".show-more-actions").click if has_css?(
-          ".show-more-actions",
-          wait: 2,
-        )
+        find(".show-more-actions").click if has_css?(".show-more-actions", wait: 2)
         find(".show-post-admin-menu", match: :first).click
       end
       find(".mod-pin-post-to-bottom").click
 
       expect(page).to have_no_css(".topic-footer-pinned-post", wait: 10)
       shot("29_pinned_post_after_unpin")
-      expect(
-        topic.reload.custom_fields["mod_topic_pinned_post_id"],
-      ).to be_blank
+      expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to be_blank
     end
 
     context "depending on how far the pinned post is from the end" do
@@ -638,13 +572,9 @@ RSpec.describe "Moderator messages", type: :system do
 
   context "the moderator-notes user-menu tab" do
     before do
-      topic.custom_fields["mod_topic_private_note"] =
-        "Please review this thread."
+      topic.custom_fields["mod_topic_private_note"] = "Please review this thread."
       topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-      topic.custom_fields["mod_topic_private_note_activity_at"] = Time
-        .zone
-        .now
-        .iso8601
+      topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
       topic.save_custom_fields(true)
       sign_in(moderator)
     end
@@ -652,10 +582,7 @@ RSpec.describe "Moderator messages", type: :system do
     it "shows a shield tab in the user menu listing moderator notes" do
       visit("/")
       find(".header-dropdown-toggle.current-user").click
-      expect(page).to have_css(
-        "#user-menu-button-discourse-mod-notes",
-        wait: 10,
-      )
+      expect(page).to have_css("#user-menu-button-discourse-mod-notes", wait: 10)
       shot("49_user_menu_shield_tab")
 
       find("#user-menu-button-discourse-mod-notes").click
@@ -669,17 +596,15 @@ RSpec.describe "Moderator messages", type: :system do
   end
 
   context "a moderator note notifies another staff member" do
-    fab!(:other_moderator) { Fabricate(:moderator) }
+    fab!(:other_moderator, :moderator)
 
     before do
       # The note (and its fan-out notification) is created directly so the
       # spec focuses on how the OTHER staff member sees and follows it.
       topic.custom_fields["mod_topic_private_note"] = "Please review this thread."
       topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-      topic.custom_fields["mod_topic_private_note_created_at"] =
-        Time.zone.now.iso8601
-      topic.custom_fields["mod_topic_private_note_activity_at"] =
-        Time.zone.now.iso8601
+      topic.custom_fields["mod_topic_private_note_created_at"] = Time.zone.now.iso8601
+      topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
       topic.save_custom_fields(true)
 
       note_url = "#{topic.relative_url}/#{topic.reload.highest_post_number}"
@@ -708,8 +633,7 @@ RSpec.describe "Moderator messages", type: :system do
       # The moderator-note notification renders with accurate,
       # self-describing text in the bell list.
       expect(page).to have_css(".notification.custom", wait: 10)
-      notification =
-        find(".notification.custom", text: moderator.username, match: :first)
+      notification = find(".notification.custom", text: moderator.username, match: :first)
       expect(notification.text).to include("moderator note")
       # The link carries the note href and the "Moderator note" hover title.
       link = notification.find("a")

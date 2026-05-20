@@ -14,16 +14,12 @@ RSpec.describe "Category create — variants", type: :request do
 
   def expect_not_500
     expect(response.status).not_to eq(500),
-                                  "create crashed (500). body starts: #{response.body[0, 200]}"
+    "create crashed (500). body starts: #{response.body[0, 200]}"
   end
 
   describe "minimal top-level category" do
     let(:payload) do
-      {
-        name: "mod-created-#{SecureRandom.hex(4)}",
-        color: "ff0000",
-        text_color: "ffffff",
-      }
+      { name: "mod-created-#{SecureRandom.hex(4)}", color: "ff0000", text_color: "ffffff" }
     end
 
     it "does not 500 for a moderator" do

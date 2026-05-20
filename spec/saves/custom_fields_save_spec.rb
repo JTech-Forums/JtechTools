@@ -14,7 +14,7 @@ RSpec.describe "Category save — custom_fields", type: :request do
 
   def expect_not_500
     expect(response.status).not_to eq(500),
-                                  "custom_fields save crashed (500). body starts: #{response.body[0, 200]}"
+    "custom_fields save crashed (500). body starts: #{response.body[0, 200]}"
   end
 
   describe "adding a new custom field" do

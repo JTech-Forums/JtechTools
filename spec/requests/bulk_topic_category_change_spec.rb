@@ -3,9 +3,11 @@
 RSpec.describe "Bulk topic category change for mini-mods" do
   fab!(:user)
   fab!(:group)
-  fab!(:source_category) { Fabricate(:category) }
-  fab!(:target_category) { Fabricate(:category) }
-  fab!(:topic) { Fabricate(:topic, category: source_category).tap { |t| Fabricate(:post, topic: t) } }
+  fab!(:source_category, :category)
+  fab!(:target_category, :category)
+  fab!(:topic) do
+    Fabricate(:topic, category: source_category).tap { |t| Fabricate(:post, topic: t) }
+  end
 
   before do
     SiteSetting.mini_mod_enabled = true

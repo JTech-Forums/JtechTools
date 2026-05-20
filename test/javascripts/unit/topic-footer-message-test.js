@@ -148,9 +148,7 @@ module(
     });
 
     test("null siteSettings returns false", function (assert) {
-      assert.false(
-        topicFooterFeatureActive(null, { archetype: "regular" })
-      );
+      assert.false(topicFooterFeatureActive(null, { archetype: "regular" }));
     });
   }
 );

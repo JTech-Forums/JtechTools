@@ -28,11 +28,7 @@ RSpec.describe "Precheck prompt flows", type: :system do
   def shot(name)
     begin
       Timeout.timeout(8) do
-        until page.evaluate_script(
-                "Array.from(document.images).every((i) => i.complete)",
-              )
-          sleep 0.1
-        end
+        sleep 0.1 until page.evaluate_script("Array.from(document.images).every((i) => i.complete)")
       end
     rescue Timeout::Error
       # Capture anyway rather than failing the spec over a slow image.
@@ -42,9 +38,10 @@ RSpec.describe "Precheck prompt flows", type: :system do
 
   context "the per-category new-topic prompt" do
     before do
-      category.custom_fields["mod_category_new_topic_prompt"] =
-        "Before posting: is this a brand-new app, or a duplicate of an " \
-          "existing thread?"
+      category.custom_fields[
+        "mod_category_new_topic_prompt"
+      ] = "Before posting: is this a brand-new app, or a duplicate of an " \
+        "existing thread?"
       category.save_custom_fields(true)
     end
 
@@ -52,8 +49,7 @@ RSpec.describe "Precheck prompt flows", type: :system do
       visit("/")
       find("#create-topic").click
       expect(page).to have_css(".d-editor-input", wait: 10)
-      category_chooser =
-        PageObjects::Components::SelectKit.new(".category-chooser")
+      category_chooser = PageObjects::Components::SelectKit.new(".category-chooser")
       category_chooser.expand
       category_chooser.select_row_by_value(target_category.id)
     end
@@ -67,11 +63,7 @@ RSpec.describe "Precheck prompt flows", type: :system do
       shot("27_new_topic_composer_in_category")
 
       find(".save-or-cancel .create").click
-      expect(page).to have_css(
-        ".dialog-body",
-        text: "is this a brand-new app",
-        wait: 10,
-      )
+      expect(page).to have_css(".dialog-body", text: "is this a brand-new app", wait: 10)
       shot("28_new_topic_prompt_dialog")
 
       find(".dialog-footer button", text: "Go back").click
@@ -81,11 +73,7 @@ RSpec.describe "Precheck prompt flows", type: :system do
       find(".save-or-cancel .create").click
       expect(page).to have_css(".dialog-body", wait: 10)
       find(".dialog-footer button", text: "Post anyway").click
-      expect(page).to have_css(
-        ".fancy-title",
-        text: "My brand new app release",
-        wait: 10,
-      )
+      expect(page).to have_css(".fancy-title", text: "My brand new app release", wait: 10)
       shot("30_new_topic_posted_after_confirm")
     end
 
@@ -98,11 +86,7 @@ RSpec.describe "Precheck prompt flows", type: :system do
       find(".d-editor-input").fill_in(with: "No prompt should appear here.")
       find(".save-or-cancel .create").click
 
-      expect(page).to have_css(
-        ".fancy-title",
-        text: "A topic in a plain category",
-        wait: 10,
-      )
+      expect(page).to have_css(".fancy-title", text: "A topic in a plain category", wait: 10)
       expect(page).to have_no_css(".dialog-body")
       shot("31_no_prompt_plain_category")
     end
@@ -123,9 +107,10 @@ RSpec.describe "Precheck prompt flows", type: :system do
     end
 
     it "prompts with the moderator's message and posts after Post anyway" do
-      topic.custom_fields["mod_topic_reply_prompt"] =
-        "Is this an app upload or link to an app? If it's just a comment " \
-          "or question, please post somewhere else."
+      topic.custom_fields[
+        "mod_topic_reply_prompt"
+      ] = "Is this an app upload or link to an app? If it's just a comment " \
+        "or question, please post somewhere else."
       topic.save_custom_fields(true)
 
       sign_in(user)
@@ -136,11 +121,7 @@ RSpec.describe "Precheck prompt flows", type: :system do
       find(".d-editor-input").fill_in(with: "Here is my app upload reply.")
       find(".save-or-cancel .create").click
 
-      expect(page).to have_css(
-        ".dialog-body",
-        text: "Is this an app upload",
-        wait: 10,
-      )
+      expect(page).to have_css(".dialog-body", text: "Is this an app upload", wait: 10)
       shot("34_reply_prompt_dialog")
 
       find(".dialog-footer button", text: "Post anyway").click
@@ -149,9 +130,10 @@ RSpec.describe "Precheck prompt flows", type: :system do
     end
 
     it "renders a clickable link inside the reply precheck dialog" do
-      topic.custom_fields["mod_topic_reply_prompt"] =
-        "Please review the guidelines at https://example.com/guidelines " \
-          "before replying."
+      topic.custom_fields[
+        "mod_topic_reply_prompt"
+      ] = "Please review the guidelines at https://example.com/guidelines " \
+        "before replying."
       topic.save_custom_fields(true)
 
       sign_in(user)
@@ -164,11 +146,7 @@ RSpec.describe "Precheck prompt flows", type: :system do
 
       expect(page).to have_css(".dialog-body", wait: 10)
       # The shared linkify helper turns the http(s) URL into a real anchor.
-      link =
-        find(
-          ".dialog-body a[href='https://example.com/guidelines']",
-          wait: 10,
-        )
+      link = find(".dialog-body a[href='https://example.com/guidelines']", wait: 10)
       expect(link[:target]).to eq("_blank")
       expect(link[:rel]).to include("noopener")
       shot("88_precheck_dialog_clickable_link")

@@ -24,7 +24,10 @@ module("Unit | discourse-mod | trust-level-options", function () {
   test("every option has a string id and a name", function (assert) {
     trustLevelOptions().forEach((o) => {
       assert.strictEqual(typeof o.id, "string", `id ${o.id} is a string`);
-      assert.ok(o.name !== undefined && o.name !== null, `option ${o.id} has a name`);
+      assert.ok(
+        o.name !== undefined && o.name !== null,
+        `option ${o.id} has a name`
+      );
     });
   });
 

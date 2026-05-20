@@ -111,9 +111,8 @@ export default class TopicFooterMessage extends Component {
       return null;
     }
     return (
-      this.topic?.postStream?.posts?.find(
-        (p) => p.id === this.pinnedPostId
-      ) || null
+      this.topic?.postStream?.posts?.find((p) => p.id === this.pinnedPostId) ||
+      null
     );
   }
 

@@ -14,16 +14,12 @@ RSpec.describe "Category save — settings", type: :request do
   before { SiteSetting.mod_categories_enabled = true }
 
   def base_payload
-    {
-      name: category.name,
-      color: category.color,
-      text_color: category.text_color,
-    }
+    { name: category.name, color: category.color, text_color: category.text_color }
   end
 
   def expect_not_500
     expect(response.status).not_to eq(500),
-                                  "settings save crashed (500). body starts: #{response.body[0, 200]}"
+    "settings save crashed (500). body starts: #{response.body[0, 200]}"
   end
 
   describe "position change" do
@@ -71,7 +67,8 @@ RSpec.describe "Category save — settings", type: :request do
   describe "default_top_period" do
     it "does not 500 for a moderator" do
       sign_in(moderator)
-      put "/categories/#{category.id}.json", params: base_payload.merge(default_top_period: "weekly")
+      put "/categories/#{category.id}.json",
+          params: base_payload.merge(default_top_period: "weekly")
       expect_not_500
     end
   end

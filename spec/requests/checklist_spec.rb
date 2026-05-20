@@ -16,11 +16,7 @@ RSpec.describe "First-post checklist" do
   before { SiteSetting.mod_categories_enabled = true }
 
   def serialized(target)
-    CurrentUserSerializer.new(
-      target,
-      scope: Guardian.new(target),
-      root: false,
-    ).as_json
+    CurrentUserSerializer.new(target, scope: Guardian.new(target), root: false).as_json
   end
 
   describe "GET /discourse-mod-categories/checklist" do
@@ -89,17 +85,12 @@ RSpec.describe "First-post checklist" do
             ],
           }
 
-      expect(response.parsed_body["items"].map { |i| i["label"] }).to eq(
-        ["Keep me"],
-      )
+      expect(response.parsed_body["items"].map { |i| i["label"] }).to eq(["Keep me"])
     end
 
     it "forbids a regular user" do
       sign_in(user)
-      put "/discourse-mod-categories/checklist.json",
-          params: {
-            items: [{ label: "x", url: "" }],
-          }
+      put "/discourse-mod-categories/checklist.json", params: { items: [{ label: "x", url: "" }] }
       expect(response.status).to eq(403)
       expect(DiscourseModCategories.checklist_config).to be_nil
     end
@@ -125,10 +116,7 @@ RSpec.describe "First-post checklist" do
     it "defaults the trust-level cap to 2 and clamps out-of-range values" do
       sign_in(moderator)
 
-      put "/discourse-mod-categories/checklist.json",
-          params: {
-            items: [{ label: "x", url: "" }],
-          }
+      put "/discourse-mod-categories/checklist.json", params: { items: [{ label: "x", url: "" }] }
       expect(response.parsed_body["max_tl"]).to eq(2)
 
       put "/discourse-mod-categories/checklist.json",
@@ -168,9 +156,7 @@ RSpec.describe "First-post checklist" do
 
     it "returns null when the user owes nothing" do
       PluginStore.set(ns, key, { "version" => 1, "items" => [{ "label" => "x" }] })
-      user.upsert_custom_fields(
-        DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD => 1,
-      )
+      user.upsert_custom_fields(DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD => 1)
       sign_in(user)
 
       get "/discourse-mod-categories/checklist/owed.json"
@@ -190,9 +176,7 @@ RSpec.describe "First-post checklist" do
 
     it "returns the new version after a mid-session version bump" do
       PluginStore.set(ns, key, { "version" => 1, "items" => [{ "label" => "x" }] })
-      user.upsert_custom_fields(
-        DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD => 1,
-      )
+      user.upsert_custom_fields(DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD => 1)
       sign_in(user)
 
       get "/discourse-mod-categories/checklist/owed.json"
@@ -269,9 +253,7 @@ RSpec.describe "First-post checklist" do
       sign_in(user)
 
       get "/discourse-mod-categories/checklist/owed.json"
-      expect(response.parsed_body["checklist"]["updated_at"]).to eq(
-        "2026-01-02T03:04:05Z",
-      )
+      expect(response.parsed_body["checklist"]["updated_at"]).to eq("2026-01-02T03:04:05Z")
     end
 
     it "is stored when staff create and update a targeted checklist" do
@@ -304,33 +286,23 @@ RSpec.describe "First-post checklist" do
       PluginStore.set(ns, key, { "version" => 2, "items" => [{ "label" => "x" }] })
       sign_in(user)
 
-      post "/discourse-mod-categories/checklist/accept.json",
-           params: {
-             version: 2,
-           }
+      post "/discourse-mod-categories/checklist/accept.json", params: { version: 2 }
 
       expect(response.status).to eq(200)
-      expect(
-        user.reload.custom_fields[
-          DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD
-        ],
-      ).to eq(2)
+      expect(user.reload.custom_fields[DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD]).to eq(
+        2,
+      )
     end
 
     it "clamps the accepted version to the published version" do
       PluginStore.set(ns, key, { "version" => 2, "items" => [{ "label" => "x" }] })
       sign_in(user)
 
-      post "/discourse-mod-categories/checklist/accept.json",
-           params: {
-             version: 99,
-           }
+      post "/discourse-mod-categories/checklist/accept.json", params: { version: 99 }
 
-      expect(
-        user.reload.custom_fields[
-          DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD
-        ],
-      ).to eq(2)
+      expect(user.reload.custom_fields[DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD]).to eq(
+        2,
+      )
     end
   end
 
@@ -341,10 +313,7 @@ RSpec.describe "First-post checklist" do
       PluginStore.set(ns, key, { "version" => 1, "items" => [{ "label" => "x" }] })
       sign_in(user)
 
-      post "/discourse-mod-categories/checklist/accept.json",
-           params: {
-             version: 1,
-           }
+      post "/discourse-mod-categories/checklist/accept.json", params: { version: 1 }
 
       entries = PluginStore.get(ns, log_key)
       expect(entries.size).to eq(1)
@@ -402,17 +371,13 @@ RSpec.describe "First-post checklist" do
     end
 
     it "stops exposing the checklist once the user has accepted it" do
-      user.custom_fields[
-        DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD
-      ] = 1
+      user.custom_fields[DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD] = 1
       user.save_custom_fields(true)
       expect(serialized(user)[:mod_first_post_checklist]).to be_nil
     end
 
     it "exposes the checklist again after a new version is published" do
-      user.custom_fields[
-        DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD
-      ] = 1
+      user.custom_fields[DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD] = 1
       user.save_custom_fields(true)
       PluginStore.set(
         ns,
@@ -431,11 +396,7 @@ RSpec.describe "First-post checklist" do
       PluginStore.set(
         ns,
         key,
-        {
-          "version" => 1,
-          "max_tl" => 1,
-          "items" => [{ "label" => "Agree", "url" => "" }],
-        },
+        { "version" => 1, "max_tl" => 1, "items" => [{ "label" => "Agree", "url" => "" }] },
       )
       tl1 = Fabricate(:user, trust_level: TrustLevel[1])
       tl2 = Fabricate(:user, trust_level: TrustLevel[2])
@@ -479,9 +440,7 @@ RSpec.describe "First-post checklist" do
 
   describe "POST /discourse-mod-categories/checklist/require-reaccept" do
     it "lets a moderator reset a user's accepted version to 0" do
-      user.upsert_custom_fields(
-        DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD => 5,
-      )
+      user.upsert_custom_fields(DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD => 5)
       sign_in(moderator)
 
       post "/discourse-mod-categories/checklist/require-reaccept.json",
@@ -490,30 +449,21 @@ RSpec.describe "First-post checklist" do
            }
 
       expect(response.status).to eq(200)
-      expect(
-        user.reload.custom_fields[
-          DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD
-        ],
-      ).to eq(0)
+      expect(user.reload.custom_fields[DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD]).to eq(
+        0,
+      )
     end
 
     it "accepts a user_id as well" do
-      user.upsert_custom_fields(
-        DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD => 3,
-      )
+      user.upsert_custom_fields(DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD => 3)
       sign_in(admin)
 
-      post "/discourse-mod-categories/checklist/require-reaccept.json",
-           params: {
-             user_id: user.id,
-           }
+      post "/discourse-mod-categories/checklist/require-reaccept.json", params: { user_id: user.id }
 
       expect(response.status).to eq(200)
-      expect(
-        user.reload.custom_fields[
-          DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD
-        ],
-      ).to eq(0)
+      expect(user.reload.custom_fields[DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD]).to eq(
+        0,
+      )
     end
 
     it "forbids a regular user" do
@@ -537,9 +487,7 @@ RSpec.describe "First-post checklist" do
 
   describe "targeted checklists" do
     let(:targeted_key) { DiscourseModCategories::TARGETED_CHECKLISTS_KEY }
-    let(:targeted_field) do
-      DiscourseModCategories::USER_TARGETED_CHECKLIST_FIELD
-    end
+    let(:targeted_field) { DiscourseModCategories::USER_TARGETED_CHECKLIST_FIELD }
 
     it "lets a moderator create a targeted checklist starting at version 1" do
       sign_in(moderator)
@@ -608,9 +556,7 @@ RSpec.describe "First-post checklist" do
              user_ids: [user.id, 999_999],
              items: [{ label: "x", url: "" }],
            }
-      expect(response.parsed_body["targeted"].first["user_ids"]).to eq(
-        [user.id],
-      )
+      expect(response.parsed_body["targeted"].first["user_ids"]).to eq([user.id])
     end
 
     it "forbids a regular user from the management endpoints" do
@@ -624,10 +570,7 @@ RSpec.describe "First-post checklist" do
            }
       expect(response.status).to eq(403)
 
-      put "/discourse-mod-categories/checklist/targeted/abc.json",
-          params: {
-            name: "Nope",
-          }
+      put "/discourse-mod-categories/checklist/targeted/abc.json", params: { name: "Nope" }
       expect(response.status).to eq(403)
 
       delete "/discourse-mod-categories/checklist/targeted/abc.json"
@@ -724,11 +667,7 @@ RSpec.describe "First-post checklist" do
       map = user.reload.custom_fields[targeted_field]
       expect(map["abc123"]).to eq(2)
       # The global field is untouched.
-      expect(
-        user.custom_fields[
-          DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD
-        ],
-      ).to be_nil
+      expect(user.custom_fields[DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD]).to be_nil
     end
 
     it "stops showing a targeted checklist once accepted, until bumped" do
@@ -763,9 +702,7 @@ RSpec.describe "First-post checklist" do
           },
         ],
       )
-      expect(serialized(user.reload)[:mod_first_post_checklist][:kind]).to eq(
-        "targeted",
-      )
+      expect(serialized(user.reload)[:mod_first_post_checklist][:kind]).to eq("targeted")
     end
 
     it "shows the targeted list in the staff show endpoint" do

@@ -1,2 +1,42 @@
 inherit_gem:
   rubocop-discourse: stree-compat.yml
+
+# Files under sub_plugins/ are plugin.rb bodies instance_eval'd by the master
+# plugin.rb (see plugin.rb's load loop). They use the same Discourse plugin DSL
+# as plugin.rb, so the rubocop-discourse cops that require code to live inside
+# plugin.rb misfire here. Suppress only those cops on this path; everything
+# else still applies.
+Discourse/Plugins/UsePluginInstanceOn:
+  Exclude:
+    - "sub_plugins/**/*.rb"
+Discourse/Plugins/NamespaceMethods:
+  Exclude:
+    - "sub_plugins/**/*.rb"
+Discourse/Plugins/NoMonkeyPatching:
+  Exclude:
+    - "sub_plugins/**/*.rb"
+
+# Specs were merged from five upstream repos that didn't enforce these cops.
+# Rewording every `context` block is out of scope for the merge and risks
+# changing test names that fixtures or CI logs reference.
+RSpec/ContextWording:
+  Enabled: false
+
+# System specs intentionally call `page.save_screenshot` to capture debugging
+# artifacts on flaky CI runs — RuboCop flags it as a debugger entry point.
+Lint/Debugger:
+  Exclude:
+    - "spec/system/**/*.rb"
+
+# Existing pattern in moderator_messages_spec.rb (inherited).
+Capybara/CurrentPathExpectation:
+  Exclude:
+    - "spec/system/**/*.rb"
+
+# Inherited specs describe behaviors (strings) rather than classes — valid
+# RSpec style, just not what this cop wants.
+RSpec/DescribeClass:
+  Exclude:
+    - "spec/plugin_spec.rb"
+    - "spec/lib/whisper_guardian_spec.rb"
+    - "spec/lib/reply_approval_spec.rb"

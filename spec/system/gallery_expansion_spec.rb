@@ -13,29 +13,19 @@ RSpec.describe "Gallery expansion", type: :system do
   fab!(:moderator) { Fabricate(:moderator, username: "mod_morgan") }
   fab!(:other_moderator) { Fabricate(:moderator, username: "mod_misha") }
   fab!(:user)
-  fab!(:tl0_user) do
-    Fabricate(:user, trust_level: TrustLevel[0], refresh_auto_groups: true)
-  end
-  fab!(:tl1_user) do
-    Fabricate(:user, trust_level: TrustLevel[1], refresh_auto_groups: true)
-  end
+  fab!(:tl0_user) { Fabricate(:user, trust_level: TrustLevel[0], refresh_auto_groups: true) }
+  fab!(:tl1_user) { Fabricate(:user, trust_level: TrustLevel[1], refresh_auto_groups: true) }
   fab!(:category)
-  fab!(:topic) do
-    Fabricate(:topic, category: category, title: "Share your app build here")
-  end
-  fab!(:first_post) do
-    Fabricate(:post, topic: topic, raw: "Drop your app uploads in this thread.")
-  end
+  fab!(:topic) { Fabricate(:topic, category: category, title: "Share your app build here") }
+  fab!(:first_post) { Fabricate(:post, topic: topic, raw: "Drop your app uploads in this thread.") }
 
   NS = DiscourseModCategories::CHECKLIST_STORE_NAMESPACE
   KEY = DiscourseModCategories::CHECKLIST_STORE_KEY
   LOG_KEY = DiscourseModCategories::CHECKLIST_LOG_KEY
   TARGETED_KEY = DiscourseModCategories::TARGETED_CHECKLISTS_KEY
   TARGETS_FIELD = DiscourseModCategories::POST_WHISPER_TARGETS_FIELD
-  TARGET_GROUPS_FIELD =
-    DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
-  PARTICIPANTS_FIELD =
-    DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
+  TARGET_GROUPS_FIELD = DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
+  PARTICIPANTS_FIELD = DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
 
   before do
     SiteSetting.mod_categories_enabled = true
@@ -51,18 +41,13 @@ RSpec.describe "Gallery expansion", type: :system do
     SiteSetting.auto_silence_fast_typers_on_first_post = false
     SiteSetting.approve_post_count = 0
     Group.refresh_automatic_groups!
-    SiteSetting.approve_unless_allowed_groups =
-      Group::AUTO_GROUPS[:trust_level_0].to_s
+    SiteSetting.approve_unless_allowed_groups = Group::AUTO_GROUPS[:trust_level_0].to_s
   end
 
   def shot(name)
     begin
       Timeout.timeout(8) do
-        until page.evaluate_script(
-                "Array.from(document.images).every((i) => i.complete)",
-              )
-          sleep 0.1
-        end
+        sleep 0.1 until page.evaluate_script("Array.from(document.images).every((i) => i.complete)")
       end
     rescue Timeout::Error
       # Capture anyway rather than failing the spec over a slow image.
@@ -108,13 +93,19 @@ RSpec.describe "Gallery expansion", type: :system do
 
     it "opens the category general tab as a moderator" do
       visit("/c/#{category.slug}/edit/general")
-      expect(page).to have_css(".edit-category-tab, .category-color-editor, #edit-category-tabs", wait: 10)
+      expect(page).to have_css(
+        ".edit-category-tab, .category-color-editor, #edit-category-tabs",
+        wait: 10,
+      )
       shot("107_category_edit_general_tab")
     end
 
     it "opens the category security tab as a moderator" do
       visit("/c/#{category.slug}/edit/security")
-      expect(page).to have_css(".edit-category-tab, .edit-category-tab-security, #edit-category-tabs", wait: 10)
+      expect(page).to have_css(
+        ".edit-category-tab, .edit-category-tab-security, #edit-category-tabs",
+        wait: 10,
+      )
       shot("108_category_edit_security_tab")
     end
 
@@ -140,9 +131,10 @@ RSpec.describe "Gallery expansion", type: :system do
     before { sign_in(moderator) }
 
     it "renders a multi-paragraph markdown footer message" do
-      topic.custom_fields["mod_topic_footer_message"] =
-        "**Heads up:** post one upload per topic.\n\n" \
-          "Use [this guide](https://example.com/guide) before posting."
+      topic.custom_fields[
+        "mod_topic_footer_message"
+      ] = "**Heads up:** post one upload per topic.\n\n" \
+        "Use [this guide](https://example.com/guide) before posting."
       topic.save_custom_fields(true)
 
       visit("/t/#{topic.slug}/#{topic.id}")
@@ -151,8 +143,9 @@ RSpec.describe "Gallery expansion", type: :system do
     end
 
     it "renders a footer with a markdown link to external guidelines" do
-      topic.custom_fields["mod_topic_footer_message"] =
-        "Please review the [community guidelines](https://example.com/g) before posting."
+      topic.custom_fields[
+        "mod_topic_footer_message"
+      ] = "Please review the [community guidelines](https://example.com/g) before posting."
       topic.save_custom_fields(true)
 
       visit("/t/#{topic.slug}/#{topic.id}")
@@ -161,8 +154,9 @@ RSpec.describe "Gallery expansion", type: :system do
     end
 
     it "shows the official-notice box with the shield icon" do
-      topic.custom_fields["mod_topic_footer_message"] =
-        "Moderation notice: only post finished app uploads here."
+      topic.custom_fields[
+        "mod_topic_footer_message"
+      ] = "Moderation notice: only post finished app uploads here."
       topic.save_custom_fields(true)
 
       visit("/t/#{topic.slug}/#{topic.id}")
@@ -171,11 +165,8 @@ RSpec.describe "Gallery expansion", type: :system do
     end
 
     it "shows the footer on a topic with multiple posts" do
-      5.times do |i|
-        Fabricate(:post, topic: topic, raw: "Reply number #{i} in this thread.")
-      end
-      topic.custom_fields["mod_topic_footer_message"] =
-        "Keep replies on-topic — uploads only."
+      5.times { |i| Fabricate(:post, topic: topic, raw: "Reply number #{i} in this thread.") }
+      topic.custom_fields["mod_topic_footer_message"] = "Keep replies on-topic — uploads only."
       topic.save_custom_fields(true)
 
       visit("/t/#{topic.slug}/#{topic.id}")
@@ -188,9 +179,7 @@ RSpec.describe "Gallery expansion", type: :system do
       expect(page).to have_css("#topic-title", wait: 10)
 
       open_mod_messages_modal
-      find(".mod-footer-input").fill_in(
-        with: "Only the footer — no reply prompt.",
-      )
+      find(".mod-footer-input").fill_in(with: "Only the footer — no reply prompt.")
       shot("115_modal_only_footer_field_set")
     end
 
@@ -207,8 +196,9 @@ RSpec.describe "Gallery expansion", type: :system do
 
     it "shows a topic with a footer message and a closed banner together" do
       topic.update!(closed: true)
-      topic.custom_fields["mod_topic_footer_message"] =
-        "This thread is closed — see the announcement."
+      topic.custom_fields[
+        "mod_topic_footer_message"
+      ] = "This thread is closed — see the announcement."
       topic.save_custom_fields(true)
 
       visit("/t/#{topic.slug}/#{topic.id}")
@@ -236,10 +226,7 @@ RSpec.describe "Gallery expansion", type: :system do
       # The editor defaults to checklist mode for a topic with no
       # existing config; switching to statement mode reveals the
       # statement textarea.
-      mode =
-        PageObjects::Components::SelectKit.new(
-          ".mod-topic-prompt-checklist-mode",
-        )
+      mode = PageObjects::Components::SelectKit.new(".mod-topic-prompt-checklist-mode")
       mode.expand
       mode.select_row_by_value("statement")
       expect(page).to have_css(".mod-topic-prompt-checklist-statement", wait: 10)
@@ -251,13 +238,8 @@ RSpec.describe "Gallery expansion", type: :system do
 
       open_prompt_checklist_modal
       switch_to_statement_mode
-      find(".mod-topic-prompt-checklist-statement").fill_in(
-        with: "Read the rules first.",
-      )
-      audience =
-        PageObjects::Components::SelectKit.new(
-          ".mod-topic-prompt-checklist-max-tl",
-        )
+      find(".mod-topic-prompt-checklist-statement").fill_in(with: "Read the rules first.")
+      audience = PageObjects::Components::SelectKit.new(".mod-topic-prompt-checklist-max-tl")
       audience.expand
       audience.select_row_by_value("0")
       shot("118_reply_prompt_audience_capped_tl0")
@@ -269,13 +251,8 @@ RSpec.describe "Gallery expansion", type: :system do
 
       open_prompt_checklist_modal
       switch_to_statement_mode
-      find(".mod-topic-prompt-checklist-statement").fill_in(
-        with: "Be sure your reply is on-topic.",
-      )
-      audience =
-        PageObjects::Components::SelectKit.new(
-          ".mod-topic-prompt-checklist-max-tl",
-        )
+      find(".mod-topic-prompt-checklist-statement").fill_in(with: "Be sure your reply is on-topic.")
+      audience = PageObjects::Components::SelectKit.new(".mod-topic-prompt-checklist-max-tl")
       audience.expand
       audience.select_row_by_value("2")
       shot("119_reply_prompt_audience_capped_tl2")
@@ -298,8 +275,7 @@ RSpec.describe "Gallery expansion", type: :system do
     end
 
     it "pre-fills the editor in statement mode from a legacy reply prompt" do
-      topic.custom_fields["mod_topic_reply_prompt"] =
-        "Please link to your upload before replying."
+      topic.custom_fields["mod_topic_reply_prompt"] = "Please link to your upload before replying."
       topic.custom_fields["mod_topic_reply_prompt_max_tl"] = 1
       topic.save_custom_fields(true)
 
@@ -315,8 +291,9 @@ RSpec.describe "Gallery expansion", type: :system do
 
   context "per-topic reply prompt — user-facing" do
     it "shows a clickable URL inside the reply confirmation dialog" do
-      topic.custom_fields["mod_topic_reply_prompt"] =
-        "Read https://example.com/policy and then post."
+      topic.custom_fields[
+        "mod_topic_reply_prompt"
+      ] = "Read https://example.com/policy and then post."
       topic.save_custom_fields(true)
       sign_in(user)
       visit("/t/#{topic.slug}/#{topic.id}")
@@ -330,12 +307,10 @@ RSpec.describe "Gallery expansion", type: :system do
     end
 
     it "does not prompt a TL4 user when the cap is TL1" do
-      topic.custom_fields["mod_topic_reply_prompt"] =
-        "Only new members get prompted."
+      topic.custom_fields["mod_topic_reply_prompt"] = "Only new members get prompted."
       topic.custom_fields["mod_topic_reply_prompt_max_tl"] = 1
       topic.save_custom_fields(true)
-      leader =
-        Fabricate(:user, trust_level: TrustLevel[4], refresh_auto_groups: true)
+      leader = Fabricate(:user, trust_level: TrustLevel[4], refresh_auto_groups: true)
       sign_in(leader)
       visit("/t/#{topic.slug}/#{topic.id}")
       expect(page).to have_css("#topic-title", wait: 10)
@@ -359,8 +334,7 @@ RSpec.describe "Gallery expansion", type: :system do
       visit("/c/#{category.slug}/edit/settings")
       expect(page).to have_css(".mod-new-topic-prompt", wait: 10)
       find(".mod-new-topic-prompt-input").fill_in(
-        with:
-          "**Important:** check https://example.com/rules before starting a thread.",
+        with: "**Important:** check https://example.com/rules before starting a thread.",
       )
       expect(page).to have_css(".mod-prompt-preview", wait: 10)
       shot("124_category_prompt_preview_bold_link")
@@ -380,8 +354,7 @@ RSpec.describe "Gallery expansion", type: :system do
       visit("/c/#{category.slug}/edit/settings")
       expect(page).to have_css(".mod-new-topic-prompt", wait: 10)
       find(".mod-new-topic-prompt-input").fill_in(with: "A prompt.")
-      audience =
-        PageObjects::Components::SelectKit.new(".mod-new-topic-audience-input")
+      audience = PageObjects::Components::SelectKit.new(".mod-new-topic-audience-input")
       audience.expand
       audience.select_row_by_value("1")
       shot("126_category_prompt_audience_tl1")
@@ -391,16 +364,16 @@ RSpec.describe "Gallery expansion", type: :system do
       visit("/c/#{category.slug}/edit/settings")
       expect(page).to have_css(".mod-new-topic-prompt", wait: 10)
       find(".mod-new-topic-prompt-input").fill_in(with: "A prompt.")
-      audience =
-        PageObjects::Components::SelectKit.new(".mod-new-topic-audience-input")
+      audience = PageObjects::Components::SelectKit.new(".mod-new-topic-audience-input")
       audience.expand
       audience.select_row_by_value("0")
       shot("127_category_prompt_audience_tl0")
     end
 
     it "shows a previously-saved prompt on revisit" do
-      category.custom_fields["mod_category_new_topic_prompt"] =
-        "Persisted prompt from a previous save."
+      category.custom_fields[
+        "mod_category_new_topic_prompt"
+      ] = "Persisted prompt from a previous save."
       category.custom_fields["mod_category_new_topic_prompt_max_tl"] = 2
       category.save_custom_fields(true)
 
@@ -441,8 +414,7 @@ RSpec.describe "Gallery expansion", type: :system do
 
     it "shows the bottom-pinned post viewed by a regular user" do
       pin!(thread_posts[2])
-      topic.custom_fields["mod_topic_footer_message"] =
-        "Keep replies on-topic only."
+      topic.custom_fields["mod_topic_footer_message"] = "Keep replies on-topic only."
       topic.save_custom_fields(true)
       sign_in(user)
       visit("/t/#{topic.slug}/#{topic.id}")
@@ -462,20 +434,15 @@ RSpec.describe "Gallery expansion", type: :system do
       pin!(thread_posts[0])
       sign_in(user)
       visit("/t/#{topic.slug}/#{topic.id}")
-      expect(page).to have_css(
-        ".topic-footer-pinned-post a.pinned-post-jump",
-        wait: 10,
-      )
+      expect(page).to have_css(".topic-footer-pinned-post a.pinned-post-jump", wait: 10)
       shot("132_pinned_post_jump_to_original")
     end
 
     it "shows a topic with a pinned post AND a private note (staff)" do
       pin!(thread_posts[3])
-      topic.custom_fields["mod_topic_private_note"] =
-        "Watch this thread — staff only."
+      topic.custom_fields["mod_topic_private_note"] = "Watch this thread — staff only."
       topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-      topic.custom_fields["mod_topic_private_note_created_at"] =
-        1.hour.ago.iso8601
+      topic.custom_fields["mod_topic_private_note_created_at"] = 1.hour.ago.iso8601
       topic.save_custom_fields(true)
       sign_in(moderator)
       visit("/t/#{topic.slug}/#{topic.id}")
@@ -489,10 +456,7 @@ RSpec.describe "Gallery expansion", type: :system do
       sign_in(moderator)
       visit("/t/#{topic.slug}/#{topic.id}/#{thread_posts[2].post_number}")
       within(find("#post_#{thread_posts[2].post_number}")) do
-        find(".show-more-actions").click if has_css?(
-          ".show-more-actions",
-          wait: 2,
-        )
+        find(".show-more-actions").click if has_css?(".show-more-actions", wait: 2)
         find(".show-post-admin-menu", match: :first).click
       end
       expect(page).to have_css(".mod-pin-post-to-bottom", wait: 10)
@@ -501,8 +465,9 @@ RSpec.describe "Gallery expansion", type: :system do
 
     it "shows a topic with both a pinned post and a footer message together" do
       pin!(thread_posts[4])
-      topic.custom_fields["mod_topic_footer_message"] =
-        "Please link uploads — replies must be on-topic."
+      topic.custom_fields[
+        "mod_topic_footer_message"
+      ] = "Please link uploads — replies must be on-topic."
       topic.save_custom_fields(true)
       sign_in(user)
       visit("/t/#{topic.slug}/#{topic.id}")
@@ -576,12 +541,10 @@ RSpec.describe "Gallery expansion", type: :system do
     before { sign_in(moderator) }
 
     it "shows the note positioned at the top of the topic" do
-      topic.custom_fields["mod_topic_private_note"] =
-        "Note above the original post."
+      topic.custom_fields["mod_topic_private_note"] = "Note above the original post."
       topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
       topic.custom_fields["mod_topic_private_note_position"] = "top"
-      topic.custom_fields["mod_topic_private_note_created_at"] =
-        1.hour.ago.iso8601
+      topic.custom_fields["mod_topic_private_note_created_at"] = 1.hour.ago.iso8601
       topic.save_custom_fields(true)
       visit("/t/#{topic.slug}/#{topic.id}")
       expect(page).to have_css(".mod-private-note", wait: 10)
@@ -589,12 +552,10 @@ RSpec.describe "Gallery expansion", type: :system do
     end
 
     it "shows the note positioned at the bottom of the topic" do
-      topic.custom_fields["mod_topic_private_note"] =
-        "Note below the original post."
+      topic.custom_fields["mod_topic_private_note"] = "Note below the original post."
       topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
       topic.custom_fields["mod_topic_private_note_position"] = "bottom"
-      topic.custom_fields["mod_topic_private_note_created_at"] =
-        1.hour.ago.iso8601
+      topic.custom_fields["mod_topic_private_note_created_at"] = 1.hour.ago.iso8601
       topic.save_custom_fields(true)
       visit("/t/#{topic.slug}/#{topic.id}")
       expect(page).to have_css(".mod-private-note", wait: 10)
@@ -602,11 +563,9 @@ RSpec.describe "Gallery expansion", type: :system do
     end
 
     it "shows a long note thread with multiple staff replies" do
-      topic.custom_fields["mod_topic_private_note"] =
-        "Initial moderator note for triage."
+      topic.custom_fields["mod_topic_private_note"] = "Initial moderator note for triage."
       topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-      topic.custom_fields["mod_topic_private_note_created_at"] =
-        4.hours.ago.iso8601
+      topic.custom_fields["mod_topic_private_note_created_at"] = 4.hours.ago.iso8601
       topic.custom_fields["mod_topic_private_note_replies"] = [
         {
           "id" => "aaaaaaaaaaaa0001",
@@ -637,8 +596,7 @@ RSpec.describe "Gallery expansion", type: :system do
     it "shows the edit and delete affordances on a note reply" do
       topic.custom_fields["mod_topic_private_note"] = "Initial note."
       topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-      topic.custom_fields["mod_topic_private_note_created_at"] =
-        2.hours.ago.iso8601
+      topic.custom_fields["mod_topic_private_note_created_at"] = 2.hours.ago.iso8601
       topic.custom_fields["mod_topic_private_note_replies"] = [
         {
           "id" => "bbbbbbbbbbbb0001",
@@ -656,15 +614,12 @@ RSpec.describe "Gallery expansion", type: :system do
     it "shows the reply composer open with text being entered" do
       topic.custom_fields["mod_topic_private_note"] = "A note to follow up on."
       topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-      topic.custom_fields["mod_topic_private_note_created_at"] =
-        2.hours.ago.iso8601
+      topic.custom_fields["mod_topic_private_note_created_at"] = 2.hours.ago.iso8601
       topic.save_custom_fields(true)
       visit("/t/#{topic.slug}/#{topic.id}")
       expect(page).to have_css(".mod-private-note", wait: 10)
       find(".mod-private-note-reply-button").click
-      find(".mod-private-note-reply-input").fill_in(
-        with: "Drafting a follow-up reply right now.",
-      )
+      find(".mod-private-note-reply-input").fill_in(with: "Drafting a follow-up reply right now.")
       shot("146_private_note_reply_composer_drafting")
     end
 
@@ -710,13 +665,10 @@ RSpec.describe "Gallery expansion", type: :system do
 
     before do
       [topic, second_topic, third_topic].each_with_index do |t, i|
-        t.custom_fields["mod_topic_private_note"] =
-          "Note number #{i + 1} — needs eyes."
+        t.custom_fields["mod_topic_private_note"] = "Note number #{i + 1} — needs eyes."
         t.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-        t.custom_fields["mod_topic_private_note_activity_at"] =
-          (i + 1).hours.ago.iso8601
-        t.custom_fields["mod_topic_private_note_created_at"] =
-          (i + 1).hours.ago.iso8601
+        t.custom_fields["mod_topic_private_note_activity_at"] = (i + 1).hours.ago.iso8601
+        t.custom_fields["mod_topic_private_note_created_at"] = (i + 1).hours.ago.iso8601
         t.save_custom_fields(true)
       end
       sign_in(other_moderator)
@@ -725,10 +677,7 @@ RSpec.describe "Gallery expansion", type: :system do
     it "shows the user menu with the shield tab and an unread badge" do
       visit("/")
       find(".header-dropdown-toggle.current-user").click
-      expect(page).to have_css(
-        "#user-menu-button-discourse-mod-notes",
-        wait: 10,
-      )
+      expect(page).to have_css("#user-menu-button-discourse-mod-notes", wait: 10)
       shot("149_user_menu_shield_tab_with_unread")
     end
 
@@ -755,9 +704,7 @@ RSpec.describe "Gallery expansion", type: :system do
     end
 
     it "shows the moderator-notes panel after the seen marker is recorded" do
-      other_moderator.upsert_custom_fields(
-        "mod_notes_seen_at" => Time.zone.now.iso8601,
-      )
+      other_moderator.upsert_custom_fields("mod_notes_seen_at" => Time.zone.now.iso8601)
       visit("/")
       find(".header-dropdown-toggle.current-user").click
       find("#user-menu-button-discourse-mod-notes").click
@@ -793,10 +740,8 @@ RSpec.describe "Gallery expansion", type: :system do
   context "first-post checklist — extra states" do
     def set_checklist(version:, max_tl: 2, button_label: "I agree, post", items: nil)
       items ||= [
-        { "label" => "I read the community guidelines",
-          "url" => "https://example.com/guidelines" },
-        { "label" => "This is an app upload",
-          "url" => "" },
+        { "label" => "I read the community guidelines", "url" => "https://example.com/guidelines" },
+        { "label" => "This is an app upload", "url" => "" },
       ]
       PluginStore.set(
         NS,
@@ -829,9 +774,7 @@ RSpec.describe "Gallery expansion", type: :system do
       sign_in(moderator)
       open_checklist_modal
       expect(page).to have_css(".mod-checklist-row", wait: 10)
-      expect(find(".mod-checklist-button-label").value).to eq(
-        "Yes — post my reply",
-      )
+      expect(find(".mod-checklist-button-label").value).to eq("Yes — post my reply")
       shot("156_checklist_editor_custom_button_label")
     end
 
@@ -856,22 +799,14 @@ RSpec.describe "Gallery expansion", type: :system do
     end
 
     it "shows the checklist's custom button label on the user-facing modal" do
-      set_checklist(
-        version: 1,
-        max_tl: 2,
-        button_label: "I agree — post my reply",
-      )
+      set_checklist(version: 1, max_tl: 2, button_label: "I agree — post my reply")
       sign_in(tl1_user)
       visit(topic.url)
       find("#topic-footer-buttons .create", match: :first).click
       find(".d-editor-input").fill_in(with: "Here is my first reply.")
       find(".save-or-cancel .create").click
       expect(page).to have_css(".mod-first-post-checklist-modal", wait: 10)
-      expect(page).to have_css(
-        ".mod-checklist-confirm",
-        text: "I agree — post my reply",
-        wait: 10,
-      )
+      expect(page).to have_css(".mod-checklist-confirm", text: "I agree — post my reply", wait: 10)
       shot("159_checklist_user_modal_custom_button")
     end
 
@@ -907,9 +842,7 @@ RSpec.describe "Gallery expansion", type: :system do
             "version" => 1,
             "updated_at" => Time.zone.now.iso8601,
             "button_label" => "I agree, post",
-            "items" => [
-              { "label" => "I read the upload rules", "url" => "" },
-            ],
+            "items" => [{ "label" => "I read the upload rules", "url" => "" }],
           },
         ],
       )
@@ -920,8 +853,7 @@ RSpec.describe "Gallery expansion", type: :system do
     end
 
     it "shows a TL2 user prompted under a TL0-TL2 cap" do
-      tl2 =
-        Fabricate(:user, trust_level: TrustLevel[2], refresh_auto_groups: true)
+      tl2 = Fabricate(:user, trust_level: TrustLevel[2], refresh_auto_groups: true)
       set_checklist(version: 1, max_tl: 2)
       sign_in(tl2)
       visit(topic.url)
@@ -999,9 +931,9 @@ RSpec.describe "Gallery expansion", type: :system do
       expect(page).to have_css(".d-editor-input", wait: 10)
       button_selector =
         ".d-editor-button-bar button.mod-whisper-target, " \
-          ".d-editor-button-bar button[title='#{I18n.t(
-            "js.discourse_mod_categories.whisper.toolbar_title",
-          )}']"
+          ".d-editor-button-bar button[title='#{
+            I18n.t("js.discourse_mod_categories.whisper.toolbar_title")
+          }']"
       find(button_selector, match: :first).click
       expect(page).to have_css(".mod-whisper-target-modal", wait: 10)
       chooser =
@@ -1024,18 +956,14 @@ RSpec.describe "Gallery expansion", type: :system do
       expect(page).to have_css(".mod-whisper-banner", wait: 15)
 
       within("#post_#{topic.reload.posts.last.post_number}") do
-        find(".post-controls .show-more-actions").click if has_css?(
-          ".post-controls .show-more-actions",
-          wait: 2,
-        )
+        if has_css?(".post-controls .show-more-actions", wait: 2)
+          find(".post-controls .show-more-actions").click
+        end
         find(".post-controls .show-post-admin-menu").click
       end
       expect(page).to have_css(".mod-whisper-add-participant", wait: 10)
       find(".mod-whisper-add-participant").click
-      expect(page).to have_css(
-        ".mod-whisper-add-participant-modal",
-        wait: 10,
-      )
+      expect(page).to have_css(".mod-whisper-add-participant-modal", wait: 10)
       chooser =
         PageObjects::Components::SelectKit.new(
           ".mod-whisper-add-participant-modal .email-group-user-chooser",

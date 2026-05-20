@@ -39,9 +39,9 @@ module DiscourseModCategories
     def can_see_post?(post)
       return super unless SiteSetting.mod_whisper_enabled
       return super unless post.is_a?(::Post)
-      return super unless post.custom_fields.key?(
-        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-      )
+      unless post.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+        return super
+      end
 
       # Anonymous viewers never see whispers. Check BEFORE touching @user.id.
       return false unless authenticated?
@@ -54,17 +54,11 @@ module DiscourseModCategories
       return super if mod_whisper_target_ids(post).include?(@user.id)
       # Members of any explicit target group see it.
       target_group_ids = mod_whisper_target_group_ids(post)
-      if target_group_ids.any? &&
-           ::GroupUser.exists?(
-             group_id: target_group_ids,
-             user_id: @user.id,
-           )
+      if target_group_ids.any? && ::GroupUser.exists?(group_id: target_group_ids, user_id: @user.id)
         return super
       end
       # Cumulative topic whisper participants see it.
-      return super if mod_whisper_participant_ids(post.topic).include?(
-        @user.id,
-      )
+      return super if mod_whisper_participant_ids(post.topic).include?(@user.id)
 
       false
     end
@@ -90,10 +84,7 @@ module DiscourseModCategories
     end
 
     def mod_whisper_target_group_ids(post)
-      raw =
-        post.custom_fields[
-          DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
-        ]
+      raw = post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]
       Array(raw)
         .map { |id| id.is_a?(Numeric) || id.is_a?(String) ? id.to_i : 0 }
         .reject { |id| id <= 0 }
@@ -102,10 +93,7 @@ module DiscourseModCategories
     def mod_whisper_participant_ids(topic)
       return [] unless topic
 
-      raw =
-        topic.custom_fields[
-          DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
-        ]
+      raw = topic.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]
       Array(raw)
         .map { |id| id.is_a?(Numeric) || id.is_a?(String) ? id.to_i : 0 }
         .reject { |id| id <= 0 }

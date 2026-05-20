@@ -28,8 +28,7 @@ module DiscourseModCategories
       SQL
 
       if user
-        participant_field =
-          DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
+        participant_field = DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
         groups_field = DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
         where_sql = <<~SQL
           mw_pcf.id IS NULL
@@ -58,11 +57,7 @@ module DiscourseModCategories
           )
         SQL
 
-        scope.joins(join_sql).where(
-          where_sql,
-          uid: user.id,
-          uid_json: user.id.to_json,
-        )
+        scope.joins(join_sql).where(where_sql, uid: user.id, uid_json: user.id.to_json)
       else
         scope.joins(join_sql).where("mw_pcf.id IS NULL")
       end

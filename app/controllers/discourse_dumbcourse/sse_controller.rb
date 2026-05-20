@@ -2,7 +2,7 @@
 
 module DiscourseDumbcourse
   class SseController < ::ActionController::Base
-    requires_plugin DiscourseDumbcourse::PLUGIN_NAME
+    requires_plugin "jtech"
 
     skip_before_action :verify_authenticity_token
 

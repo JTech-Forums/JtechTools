@@ -16,19 +16,17 @@ export default {
     }
 
     withPluginApi("1.0", (api) => {
-      api.addCommunitySectionLink(
-        {
-          name: "mod-checklist",
-          href: "#",
-          title: i18n(
-            "discourse_mod_categories.first_post_checklist.sidebar_title"
-          ),
-          text: i18n(
-            "discourse_mod_categories.first_post_checklist.sidebar_text"
-          ),
-          icon: "list-check",
-        }
-      );
+      api.addCommunitySectionLink({
+        name: "mod-checklist",
+        href: "#",
+        title: i18n(
+          "discourse_mod_categories.first_post_checklist.sidebar_title"
+        ),
+        text: i18n(
+          "discourse_mod_categories.first_post_checklist.sidebar_text"
+        ),
+        icon: "list-check",
+      });
     });
 
     const modal = container.lookup("service:modal");

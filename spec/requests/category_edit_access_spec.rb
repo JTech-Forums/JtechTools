@@ -2,8 +2,8 @@
 
 RSpec.describe "Category edit access for mini-mods" do
   fab!(:user)
-  fab!(:admin) { Fabricate(:admin) }
-  fab!(:moderator) { Fabricate(:moderator) }
+  fab!(:admin)
+  fab!(:moderator)
   fab!(:group)
   fab!(:category)
 
@@ -20,8 +20,7 @@ RSpec.describe "Category edit access for mini-mods" do
       sign_in(user)
       get "/categories.json"
 
-      html =
-        DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
+      html = DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
       expect(html).to include('data-discourse-entrypoint="admin"')
     end
 
@@ -29,16 +28,14 @@ RSpec.describe "Category edit access for mini-mods" do
       sign_in(Fabricate(:user))
       get "/categories.json"
 
-      html =
-        DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
+      html = DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
       expect(html).not_to include('data-discourse-entrypoint="admin"')
     end
 
     it "does not inject for anonymous users" do
       get "/categories.json"
 
-      html =
-        DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
+      html = DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
       expect(html).not_to include('data-discourse-entrypoint="admin"')
     end
 
@@ -46,8 +43,7 @@ RSpec.describe "Category edit access for mini-mods" do
       sign_in(moderator)
       get "/categories.json"
 
-      html =
-        DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
+      html = DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
       expect(html).not_to include('data-discourse-entrypoint="admin"')
     end
 
@@ -56,8 +52,7 @@ RSpec.describe "Category edit access for mini-mods" do
       sign_in(user)
       get "/categories.json"
 
-      html =
-        DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
+      html = DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
       expect(html).not_to include('data-discourse-entrypoint="admin"')
     end
 
@@ -66,8 +61,7 @@ RSpec.describe "Category edit access for mini-mods" do
       sign_in(user)
       get "/categories.json"
 
-      html =
-        DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
+      html = DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
       expect(html).not_to include('data-discourse-entrypoint="admin"')
     end
 
@@ -78,8 +72,7 @@ RSpec.describe "Category edit access for mini-mods" do
       sign_in(non_mod_user)
       get "/categories.json"
 
-      html =
-        DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
+      html = DiscoursePluginRegistry.build_html("server:before-head-close", @controller)
       expect(html).not_to include('data-discourse-entrypoint="admin"')
     end
   end

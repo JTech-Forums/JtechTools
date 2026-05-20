@@ -20,8 +20,7 @@ export default {
         return {
           icon: "list-check",
           className: "mod-topic-prompt-checklist-button",
-          label:
-            "discourse_mod_categories.topic_prompt_checklist.menu_label",
+          label: "discourse_mod_categories.topic_prompt_checklist.menu_label",
           action: () =>
             modal.show(ModTopicPromptChecklistModal, { model: { topic } }),
         };

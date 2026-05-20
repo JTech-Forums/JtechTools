@@ -87,7 +87,9 @@ RSpec.describe "Per-topic prompt checklist" do
       first_at = response.parsed_body["updated_at"]
 
       put "/discourse-mod-categories/topic/#{topic.id}/prompt-checklist.json",
-          params: { items: [{ label: "One", url: "" }] }
+          params: {
+            items: [{ label: "One", url: "" }],
+          }
       expect(response.parsed_body["version"]).to eq(2)
       expect(response.parsed_body["updated_at"]).to be_present
       expect(response.parsed_body["updated_at"] >= first_at).to eq(true)
@@ -103,9 +105,7 @@ RSpec.describe "Per-topic prompt checklist" do
               { label: "", url: "" },
             ],
           }
-      expect(response.parsed_body["items"].map { |i| i["label"] }).to eq(
-        ["Keep me"],
-      )
+      expect(response.parsed_body["items"].map { |i| i["label"] }).to eq(["Keep me"])
     end
 
     it "accepts the index-keyed-hash shape a browser form-encodes" do
@@ -113,19 +113,25 @@ RSpec.describe "Per-topic prompt checklist" do
       put "/discourse-mod-categories/topic/#{topic.id}/prompt-checklist.json",
           params: {
             items: {
-              "0" => { label: "First", url: "" },
-              "1" => { label: "Second", url: "" },
+              "0" => {
+                label: "First",
+                url: "",
+              },
+              "1" => {
+                label: "Second",
+                url: "",
+              },
             },
           }
-      expect(response.parsed_body["items"].map { |i| i["label"] }).to eq(
-        %w[First Second],
-      )
+      expect(response.parsed_body["items"].map { |i| i["label"] }).to eq(%w[First Second])
     end
 
     it "forbids a regular user" do
       sign_in(user)
       put "/discourse-mod-categories/topic/#{topic.id}/prompt-checklist.json",
-          params: { items: [{ label: "x", url: "" }] }
+          params: {
+            items: [{ label: "x", url: "" }],
+          }
       expect(response.status).to eq(403)
       expect(get_checklist(topic)).to be_nil
     end
@@ -176,9 +182,7 @@ RSpec.describe "Per-topic prompt checklist" do
       expect(checklist["kind"]).to eq("topic")
       expect(checklist["id"]).to eq(topic.id)
       expect(checklist["version"]).to eq(1)
-      expect(checklist["items"].first["label"]).to eq(
-        "Confirm this topic's rule",
-      )
+      expect(checklist["items"].first["label"]).to eq("Confirm this topic's rule")
     end
 
     it "returns null after the user accepts the current version" do
@@ -254,10 +258,7 @@ RSpec.describe "Per-topic prompt checklist" do
       PluginStore.set(
         DiscourseModCategories::CHECKLIST_STORE_NAMESPACE,
         DiscourseModCategories::CHECKLIST_STORE_KEY,
-        {
-          "version" => 1,
-          "items" => [{ "label" => "Global", "url" => "" }],
-        },
+        { "version" => 1, "items" => [{ "label" => "Global", "url" => "" }] },
       )
 
       sign_in(user)
@@ -279,30 +280,38 @@ RSpec.describe "Per-topic prompt checklist" do
     it "records the accepted version per-topic-per-user" do
       sign_in(user)
       post "/discourse-mod-categories/checklist/accept.json",
-           params: { kind: "topic", id: topic.id, version: 2 }
+           params: {
+             kind: "topic",
+             id: topic.id,
+             version: 2,
+           }
 
       expect(response.status).to eq(200)
       map = user.reload.custom_fields[user_field]
       expect(map[topic.id.to_s]).to eq(2)
       # Other stores untouched.
-      expect(
-        user.custom_fields[
-          DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD
-        ],
-      ).to be_nil
+      expect(user.custom_fields[DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD]).to be_nil
     end
 
     it "clamps the accepted version to the published version" do
       sign_in(user)
       post "/discourse-mod-categories/checklist/accept.json",
-           params: { kind: "topic", id: topic.id, version: 99 }
+           params: {
+             kind: "topic",
+             id: topic.id,
+             version: 99,
+           }
       expect(user.reload.custom_fields[user_field][topic.id.to_s]).to eq(2)
     end
 
     it "404s when the topic has no checklist" do
       sign_in(user)
       post "/discourse-mod-categories/checklist/accept.json",
-           params: { kind: "topic", id: other_topic.id, version: 1 }
+           params: {
+             kind: "topic",
+             id: other_topic.id,
+             version: 1,
+           }
       expect(response.status).to eq(404)
     end
   end
@@ -349,9 +358,7 @@ RSpec.describe "Per-topic prompt checklist" do
       checklist = response.parsed_body["mod_topic_prompt_checklist"]
       expect(checklist).to be_present
       expect(checklist["mode"]).to eq("statement")
-      expect(checklist["statement"]).to eq(
-        "Please confirm you have read the rules.",
-      )
+      expect(checklist["statement"]).to eq("Please confirm you have read the rules.")
       expect(checklist["frequency"]).to eq("every_reply")
       expect(checklist["max_tl"]).to eq(2)
     end
@@ -439,8 +446,7 @@ RSpec.describe "Per-topic prompt checklist" do
       }
       topic.save_custom_fields(true)
 
-      payload =
-        DiscourseModCategories.owed_checklist_for(user, topic_id: topic.id)
+      payload = DiscourseModCategories.owed_checklist_for(user, topic_id: topic.id)
       expect(payload).to be_present
       expect(payload[:kind]).to eq("topic")
       expect(payload[:id]).to eq(topic.id)
@@ -512,9 +518,7 @@ RSpec.describe "Per-topic prompt checklist" do
       topic.custom_fields[
         DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD
       ] = "Legacy reply prompt text."
-      topic.custom_fields[
-        DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD
-      ] = 1
+      topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD] = 1
       topic.save_custom_fields(true)
       sign_in(moderator)
 
@@ -530,9 +534,7 @@ RSpec.describe "Per-topic prompt checklist" do
       topic.custom_fields[
         DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD
       ] = "Legacy reply prompt text."
-      topic.custom_fields[
-        DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD
-      ] = 1
+      topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD] = 1
       topic.save_custom_fields(true)
       sign_in(moderator)
 
@@ -548,16 +550,8 @@ RSpec.describe "Per-topic prompt checklist" do
       stored = topic.custom_fields[topic_field]
       expect(stored["mode"]).to eq("statement")
       expect(stored["statement"]).to eq("Legacy reply prompt text.")
-      expect(
-        topic.custom_fields[
-          DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD
-        ],
-      ).to be_blank
-      expect(
-        topic.custom_fields[
-          DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD
-        ],
-      ).to be_blank
+      expect(topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD]).to be_blank
+      expect(topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD]).to be_blank
     end
 
     it "does not flag from_legacy when the new config already exists" do
@@ -568,9 +562,7 @@ RSpec.describe "Per-topic prompt checklist" do
         "frequency" => "once",
         "max_tl" => 4,
       }
-      topic.custom_fields[
-        DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD
-      ] = "Legacy still around."
+      topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD] = "Legacy still around."
       topic.save_custom_fields(true)
       sign_in(moderator)
 

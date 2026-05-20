@@ -8,19 +8,11 @@ require "rails_helper"
 # the CI artifact.
 RSpec.describe "First-post checklist", type: :system do
   fab!(:moderator)
-  fab!(:user) do
-    Fabricate(:user, trust_level: TrustLevel[1], refresh_auto_groups: true)
-  end
-  fab!(:tl0_user) do
-    Fabricate(:user, trust_level: TrustLevel[0], refresh_auto_groups: true)
-  end
+  fab!(:user) { Fabricate(:user, trust_level: TrustLevel[1], refresh_auto_groups: true) }
+  fab!(:tl0_user) { Fabricate(:user, trust_level: TrustLevel[0], refresh_auto_groups: true) }
   fab!(:category)
-  fab!(:topic) do
-    Fabricate(:topic, category: category, title: "An existing app thread")
-  end
-  fab!(:first_post) do
-    Fabricate(:post, topic: topic, raw: "The original post in this thread.")
-  end
+  fab!(:topic) { Fabricate(:topic, category: category, title: "An existing app thread") }
+  fab!(:first_post) { Fabricate(:post, topic: topic, raw: "The original post in this thread.") }
 
   NS = DiscourseModCategories::CHECKLIST_STORE_NAMESPACE
   KEY = DiscourseModCategories::CHECKLIST_STORE_KEY
@@ -40,11 +32,7 @@ RSpec.describe "First-post checklist", type: :system do
   def shot(name)
     begin
       Timeout.timeout(8) do
-        until page.evaluate_script(
-                "Array.from(document.images).every((i) => i.complete)",
-              )
-          sleep 0.1
-        end
+        sleep 0.1 until page.evaluate_script("Array.from(document.images).every((i) => i.complete)")
       end
     rescue Timeout::Error
       # Capture anyway rather than failing the spec over a slow image.
@@ -66,10 +54,7 @@ RSpec.describe "First-post checklist", type: :system do
             "label" => "I read the community guidelines",
             "url" => "https://example.com/guidelines",
           },
-          {
-            "label" => "This is an app upload, not an off-topic question",
-            "url" => "",
-          },
+          { "label" => "This is an app upload, not an off-topic question", "url" => "" },
         ],
       },
     )
@@ -95,12 +80,8 @@ RSpec.describe "First-post checklist", type: :system do
     shot("51_checklist_editor_empty")
 
     find(".mod-checklist-add").click
-    all(".mod-checklist-row-label").last.fill_in(
-      with: "I read the community guidelines",
-    )
-    all(".mod-checklist-row-url").last.fill_in(
-      with: "https://example.com/guidelines",
-    )
+    all(".mod-checklist-row-label").last.fill_in(with: "I read the community guidelines")
+    all(".mod-checklist-row-url").last.fill_in(with: "https://example.com/guidelines")
     find(".mod-checklist-add").click
     all(".mod-checklist-row-label").last.fill_in(
       with: "This is an app upload, not an off-topic question",
@@ -142,10 +123,7 @@ RSpec.describe "First-post checklist", type: :system do
     # The new order round-trips back from the server.
     stored = PluginStore.get(NS, KEY)
     expect(stored["items"].map { |i| i["label"] }).to eq(
-      [
-        "This is an app upload, not an off-topic question",
-        "I read the community guidelines",
-      ],
+      ["This is an app upload, not an off-topic question", "I read the community guidelines"],
     )
   end
 
@@ -226,8 +204,7 @@ RSpec.describe "First-post checklist", type: :system do
     # transition, not a document load) and back to the topic via its list
     # link. Capybara `visit` is deliberately NOT used here — a full reload
     # would re-bootstrap the current-user payload and mask the bug.
-    find(".d-header .home-logo a, .d-header #site-logo, .d-header .title a",
-         match: :first).click
+    find(".d-header .home-logo a, .d-header #site-logo, .d-header .title a", match: :first).click
     expect(page).to have_css(".topic-list-item", wait: 10)
     find(".topic-list-item a.title", match: :first).click
     expect(page).to have_css("#topic-footer-buttons", wait: 10)
@@ -314,10 +291,7 @@ RSpec.describe "First-post checklist", type: :system do
     visit(topic.url)
     open_reply
     expect(page).to have_css(".mod-first-post-checklist-modal", wait: 10)
-    expect(page).to have_css(
-      ".mod-checklist-text",
-      text: "I read the app upload rules",
-    )
+    expect(page).to have_css(".mod-checklist-text", text: "I read the app upload rules")
     shot("101_targeted_checklist_prompt")
   end
 end

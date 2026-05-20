@@ -22,22 +22,16 @@ RSpec.describe "Category save — moderator approval on new topics", type: :requ
   before { SiteSetting.mod_categories_enabled = true }
 
   def base_payload
-    {
-      name: category.name,
-      color: category.color,
-      text_color: category.text_color,
-    }
+    { name: category.name, color: category.color, text_color: category.text_color }
   end
 
   def expect_not_500
     expect(response.status).not_to eq(500),
-                                  "approval save crashed (500). body starts: #{response.body[0, 200]}"
+    "approval save crashed (500). body starts: #{response.body[0, 200]}"
   end
 
   describe "require_topic_approval via custom_fields (legacy shape)" do
-    let(:payload) do
-      base_payload.merge(custom_fields: { "require_topic_approval" => true })
-    end
+    let(:payload) { base_payload.merge(custom_fields: { "require_topic_approval" => true }) }
 
     it "does not 500 for a moderator" do
       sign_in(moderator)
@@ -63,9 +57,7 @@ RSpec.describe "Category save — moderator approval on new topics", type: :requ
   end
 
   describe "require_topic_approval via category_setting nested attrs" do
-    let(:payload) do
-      base_payload.merge(category_setting: { require_topic_approval: true })
-    end
+    let(:payload) { base_payload.merge(category_setting: { require_topic_approval: true }) }
 
     it "does not 500 for a moderator" do
       sign_in(moderator)
@@ -81,9 +73,7 @@ RSpec.describe "Category save — moderator approval on new topics", type: :requ
   end
 
   describe "require_reply_approval (sibling toggle on the same model)" do
-    let(:payload) do
-      base_payload.merge(category_setting: { require_reply_approval: true })
-    end
+    let(:payload) { base_payload.merge(category_setting: { require_reply_approval: true }) }
 
     it "does not 500 for a moderator" do
       sign_in(moderator)
@@ -110,7 +100,9 @@ RSpec.describe "Category save — moderator approval on new topics", type: :requ
 
   describe "clearing the reviewable group" do
     before do
-      category.update!(reviewable_by_group_id: reviewer_group.id) if category.respond_to?(:reviewable_by_group_id=)
+      if category.respond_to?(:reviewable_by_group_id=)
+        category.update!(reviewable_by_group_id: reviewer_group.id)
+      end
     end
 
     let(:payload) { base_payload.merge(reviewable_by_group_id: nil) }
@@ -124,10 +116,7 @@ RSpec.describe "Category save — moderator approval on new topics", type: :requ
 
   describe "full approval setup in one save (toggle + reviewer group)" do
     let(:payload) do
-      base_payload.merge(
-        require_topic_approval: true,
-        reviewable_by_group_id: reviewer_group.id,
-      )
+      base_payload.merge(require_topic_approval: true, reviewable_by_group_id: reviewer_group.id)
     end
 
     it "does not 500 for a moderator" do
@@ -152,7 +141,9 @@ RSpec.describe "Category save — moderator approval on new topics", type: :requ
     let(:payload) do
       base_payload.merge(
         require_topic_approval: false,
-        custom_fields: { "require_topic_approval" => false },
+        custom_fields: {
+          "require_topic_approval" => false,
+        },
       )
     end
 

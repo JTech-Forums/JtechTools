@@ -16,7 +16,7 @@ RSpec.describe "Category save — parent change", type: :request do
 
   def expect_not_500
     expect(response.status).not_to eq(500),
-                                  "parent-change save crashed (500). body starts: #{response.body[0, 200]}"
+    "parent-change save crashed (500). body starts: #{response.body[0, 200]}"
   end
 
   describe "reparenting a subcategory under a different top-level" do

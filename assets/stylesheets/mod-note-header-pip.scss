@@ -2,7 +2,6 @@
 // header. Mirrors Discourse's native unread-reviewables / notifications
 // badge: a coloured circle in the corner of the avatar with a count
 // inside. Hidden unless `.visible` is present (count > 0).
-
 .mod-note-avatar-pip {
   position: absolute;
   top: -4px;

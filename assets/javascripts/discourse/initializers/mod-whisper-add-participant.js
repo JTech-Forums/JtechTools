@@ -12,7 +12,11 @@ export default {
     const currentUser = container.lookup("service:current-user");
     const siteSettings = container.lookup("service:site-settings");
 
-    if (!currentUser || !currentUser.staff || !siteSettings.mod_whisper_enabled) {
+    if (
+      !currentUser ||
+      !currentUser.staff ||
+      !siteSettings.mod_whisper_enabled
+    ) {
       return;
     }
 

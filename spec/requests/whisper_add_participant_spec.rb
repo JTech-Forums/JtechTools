@@ -17,12 +17,8 @@ RSpec.describe "Whisper add participant" do
   fab!(:whisper_post) { Fabricate(:post, topic: topic, user: moderator) }
 
   let(:targets_field) { DiscourseModCategories::POST_WHISPER_TARGETS_FIELD }
-  let(:participants_field) do
-    DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
-  end
-  let(:url) do
-    "/discourse-mod-categories/topic/#{topic.id}/whisper-participant.json"
-  end
+  let(:participants_field) { DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD }
+  let(:url) { "/discourse-mod-categories/topic/#{topic.id}/whisper-participant.json" }
 
   before do
     SiteSetting.mod_categories_enabled = true
@@ -105,9 +101,7 @@ RSpec.describe "Whisper add participant" do
     post url, params: { username: newcomer.username }
     expect(response.status).to eq(200)
 
-    expect(
-      Guardian.new(newcomer).can_see_post?(whisper_post.reload),
-    ).to eq(true)
+    expect(Guardian.new(newcomer).can_see_post?(whisper_post.reload)).to eq(true)
 
     sign_in(newcomer)
     get "/t/#{topic.id}.json"
@@ -119,9 +113,7 @@ RSpec.describe "Whisper add participant" do
   it "notifies the added user" do
     sign_in(moderator)
 
-    expect {
-      post url, params: { username: newcomer.username }
-    }.to change {
+    expect { post url, params: { username: newcomer.username } }.to change {
       Notification.where(user_id: newcomer.id).count
     }.by(1)
   end

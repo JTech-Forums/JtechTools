@@ -234,10 +234,7 @@ export default class ModPrivateNote extends Component {
       this.cookContent();
       this.replyText = "";
       this.replying = false;
-      this.appEvents.trigger(
-        "discourse-mod:messages-updated",
-        this.args.topic
-      );
+      this.appEvents.trigger("discourse-mod:messages-updated", this.args.topic);
     } catch (error) {
       popupAjaxError(error);
     } finally {
@@ -353,7 +350,9 @@ export default class ModPrivateNote extends Component {
         <div class="mod-private-note">
           <div class="mod-private-note-marker">
             {{icon "lock"}}
-            <span>{{i18n "discourse_mod_categories.private_note.heading"}}</span>
+            <span>{{i18n
+                "discourse_mod_categories.private_note.heading"
+              }}</span>
           </div>
 
           <article class="mod-private-note-post">
@@ -414,18 +413,20 @@ export default class ModPrivateNote extends Component {
                     </span>
                   {{/if}}
                   {{#if reply.agoLabel}}
-                    <span class="mod-private-note-time">{{reply.agoLabel}}</span>
+                    <span
+                      class="mod-private-note-time"
+                    >{{reply.agoLabel}}</span>
                   {{/if}}
                   {{#unless reply.editing}}
                     <span class="mod-private-note-controls">
                       <DButton
-                        @action={{(fn this.startEditReply reply)}}
+                        @action={{fn this.startEditReply reply}}
                         @icon="pencil"
                         @title="discourse_mod_categories.private_note.edit_reply"
                         class="btn-flat btn-small mod-private-note-edit-reply"
                       />
                       <DButton
-                        @action={{(fn this.deleteReply reply)}}
+                        @action={{fn this.deleteReply reply}}
                         @icon="trash-can"
                         @title="discourse_mod_categories.private_note.delete_reply"
                         class="btn-flat btn-small mod-private-note-delete-reply"

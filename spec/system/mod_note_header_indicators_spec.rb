@@ -18,30 +18,21 @@ RSpec.describe "Moderator-note header indicators", type: :system do
   fab!(:moderator)
   fab!(:user)
   fab!(:category)
-  fab!(:topic) do
-    Fabricate(:topic, category: category, title: "Share your app build here")
-  end
-  fab!(:first_post) do
-    Fabricate(:post, topic: topic, raw: "Drop your app uploads in this thread.")
-  end
+  fab!(:topic) { Fabricate(:topic, category: category, title: "Share your app build here") }
+  fab!(:first_post) { Fabricate(:post, topic: topic, raw: "Drop your app uploads in this thread.") }
 
   before do
     SiteSetting.mod_categories_enabled = true
     topic.custom_fields["mod_topic_private_note"] = "Please review this thread."
     topic.custom_fields["mod_topic_private_note_user_id"] = admin.id
-    topic.custom_fields["mod_topic_private_note_activity_at"] =
-      Time.zone.now.iso8601
+    topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
     topic.save_custom_fields(true)
   end
 
   def shot(name)
     begin
       Timeout.timeout(8) do
-        until page.evaluate_script(
-                "Array.from(document.images).every((i) => i.complete)",
-              )
-          sleep 0.1
-        end
+        sleep 0.1 until page.evaluate_script("Array.from(document.images).every((i) => i.complete)")
       end
     rescue Timeout::Error
       # Capture anyway rather than failing the spec over a slow image.
@@ -55,9 +46,7 @@ RSpec.describe "Moderator-note header indicators", type: :system do
     visit("/")
     expect(page).to have_css(".mod-note-avatar-pip.visible", wait: 10)
     count =
-      page.evaluate_script(
-        "document.querySelector('.mod-note-avatar-pip')?.dataset.count || ''",
-      )
+      page.evaluate_script("document.querySelector('.mod-note-avatar-pip')?.dataset.count || ''")
     expect(count).to match(/\d/)
     shot("190_mod_note_header_pip_visible")
   end
@@ -107,9 +96,10 @@ RSpec.describe "Moderator-note header indicators", type: :system do
     Timeout.timeout(10) do
       loop do
         count =
-          page.evaluate_script(
-            "document.querySelector('.mod-note-avatar-pip')?.dataset.count || ''",
-          ).to_s.strip
+          page
+            .evaluate_script("document.querySelector('.mod-note-avatar-pip')?.dataset.count || ''")
+            .to_s
+            .strip
         break if count.empty? || count == "0"
         sleep 0.2
       end

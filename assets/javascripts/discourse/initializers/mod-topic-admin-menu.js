@@ -21,8 +21,7 @@ export default {
           icon: "shield-halved",
           className: "mod-topic-messages-button",
           label: "discourse_mod_categories.topic_messages.menu_label",
-          action: () =>
-            modal.show(ModTopicMessagesModal, { model: { topic } }),
+          action: () => modal.show(ModTopicMessagesModal, { model: { topic } }),
         };
       });
     });

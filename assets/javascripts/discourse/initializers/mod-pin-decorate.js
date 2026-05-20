@@ -19,9 +19,7 @@ export default {
           }
 
           const isPinned = post.topic.mod_topic_pinned_post_id === post.id;
-          const existing = element.querySelector(
-            ".mod-pinned-in-stream-badge"
-          );
+          const existing = element.querySelector(".mod-pinned-in-stream-badge");
 
           if (!isPinned) {
             existing?.remove();

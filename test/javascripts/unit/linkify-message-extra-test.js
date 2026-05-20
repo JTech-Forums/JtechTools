@@ -54,9 +54,7 @@ module("Unit | discourse-mod | linkify-message | extra", function () {
   });
 
   test("linkifies HTTPS URLs in the middle of a sentence", function (assert) {
-    const result = html(
-      "The doc at https://example.com/docs talks about it."
-    );
+    const result = html("The doc at https://example.com/docs talks about it.");
     assert.true(result.includes('href="https://example.com/docs"'));
     assert.true(result.includes("talks about it."));
   });

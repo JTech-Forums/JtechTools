@@ -19,12 +19,8 @@ RSpec.describe "Whisper serialization" do
   fab!(:whisper_group) { Fabricate(:group, name: "whisper_squad") }
 
   let(:targets_field) { DiscourseModCategories::POST_WHISPER_TARGETS_FIELD }
-  let(:groups_field) do
-    DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
-  end
-  let(:participants_field) do
-    DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
-  end
+  let(:groups_field) { DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD }
+  let(:participants_field) { DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD }
 
   before do
     SiteSetting.mod_categories_enabled = true
@@ -81,15 +77,10 @@ RSpec.describe "Whisper serialization" do
   it "serializes whisper attributes for a viewer who can see it" do
     sign_in(target)
     get "/t/#{topic.id}.json"
-    post_json =
-      response.parsed_body["post_stream"]["posts"].find do |p|
-        p["id"] == whisper_post.id
-      end
+    post_json = response.parsed_body["post_stream"]["posts"].find { |p| p["id"] == whisper_post.id }
     expect(post_json["mod_is_whisper"]).to eq(true)
     expect(post_json["mod_whisper_target_user_ids"]).to eq([target.id])
-    expect(post_json["mod_whisper_targets"].map { |t| t["id"] }).to eq(
-      [target.id],
-    )
+    expect(post_json["mod_whisper_targets"].map { |t| t["id"] }).to eq([target.id])
     expect(post_json["mod_whisper_is_staff_only"]).to eq(false)
     expect(post_json["mod_whisper_author_is_staff"]).to eq(false)
   end
@@ -100,10 +91,7 @@ RSpec.describe "Whisper serialization" do
 
     sign_in(admin)
     get "/t/#{topic.id}.json"
-    post_json =
-      response.parsed_body["post_stream"]["posts"].find do |p|
-        p["id"] == whisper_post.id
-      end
+    post_json = response.parsed_body["post_stream"]["posts"].find { |p| p["id"] == whisper_post.id }
     expect(post_json["mod_is_whisper"]).to eq(true)
     expect(post_json["mod_whisper_is_staff_only"]).to eq(true)
   end
@@ -120,12 +108,10 @@ RSpec.describe "Whisper serialization" do
     # A whisper IS visible to every member of its audience: an explicit
     # target, a cumulative topic participant, and any staff member. Asserted
     # both via Guardian#can_see_post? and the topic-view JSON.
-    [:target, :participant, :admin, :moderator, :author].each do |persona|
+    %i[target participant admin moderator author].each do |persona|
       it "is visible to #{persona} via Guardian and topic-view JSON" do
         user = send(persona)
-        expect(
-          Guardian.new(user).can_see_post?(whisper_post.reload),
-        ).to eq(true)
+        expect(Guardian.new(user).can_see_post?(whisper_post.reload)).to eq(true)
 
         sign_in(user)
         expect(stream_post_ids).to include(whisper_post.id)
@@ -134,9 +120,7 @@ RSpec.describe "Whisper serialization" do
 
     # A whisper is NOT visible to a non-audience user.
     it "is not visible to a stranger via Guardian or topic-view JSON" do
-      expect(
-        Guardian.new(stranger).can_see_post?(whisper_post.reload),
-      ).to eq(false)
+      expect(Guardian.new(stranger).can_see_post?(whisper_post.reload)).to eq(false)
 
       sign_in(stranger)
       expect(stream_post_ids).not_to include(whisper_post.id)
@@ -152,18 +136,14 @@ RSpec.describe "Whisper serialization" do
     end
 
     it "shows the whisper to a member of the target group" do
-      expect(
-        Guardian.new(group_member).can_see_post?(whisper_post.reload),
-      ).to eq(true)
+      expect(Guardian.new(group_member).can_see_post?(whisper_post.reload)).to eq(true)
 
       sign_in(group_member)
       expect(stream_post_ids).to include(whisper_post.id)
     end
 
     it "hides the whisper from a non-member non-staff user" do
-      expect(
-        Guardian.new(stranger).can_see_post?(whisper_post.reload),
-      ).to eq(false)
+      expect(Guardian.new(stranger).can_see_post?(whisper_post.reload)).to eq(false)
 
       sign_in(stranger)
       expect(stream_post_ids).not_to include(whisper_post.id)
@@ -178,12 +158,8 @@ RSpec.describe "Whisper serialization" do
       sign_in(group_member)
       get "/t/#{topic.id}.json"
       post_json =
-        response.parsed_body["post_stream"]["posts"].find do |p|
-          p["id"] == whisper_post.id
-        end
-      expect(post_json["mod_whisper_target_group_ids"]).to eq(
-        [whisper_group.id],
-      )
+        response.parsed_body["post_stream"]["posts"].find { |p| p["id"] == whisper_post.id }
+      expect(post_json["mod_whisper_target_group_ids"]).to eq([whisper_group.id])
       expect(post_json["mod_whisper_target_groups"]).to eq(
         [{ "id" => whisper_group.id, "name" => whisper_group.name }],
       )
@@ -193,12 +169,12 @@ RSpec.describe "Whisper serialization" do
 
     it "keeps Guardian and QueryFilter in parity across personas" do
       [nil, author, target, participant, stranger, group_member, admin].each do |user|
-        guardian_visible =
-          Guardian.new(user).can_see_post?(whisper_post.reload)
+        guardian_visible = Guardian.new(user).can_see_post?(whisper_post.reload)
         sql_visible =
-          DiscourseModCategories::WhisperQueryFilter
-            .apply(Post.where(id: whisper_post.id), user)
-            .exists?
+          DiscourseModCategories::WhisperQueryFilter.apply(
+            Post.where(id: whisper_post.id),
+            user,
+          ).exists?
         expect(sql_visible).to eq(guardian_visible),
         "QueryFilter (#{sql_visible}) disagrees with Guardian " \
           "(#{guardian_visible}) for user #{user&.username || "anonymous"}"
@@ -220,10 +196,7 @@ RSpec.describe "Whisper serialization" do
         guardian_visible = Guardian.new(user).can_see_post?(whisper_post.reload)
 
         filtered =
-          DiscourseModCategories::WhisperQueryFilter.apply(
-            Post.where(id: whisper_post.id),
-            user,
-          )
+          DiscourseModCategories::WhisperQueryFilter.apply(Post.where(id: whisper_post.id), user)
         sql_visible = filtered.exists?
 
         expect(sql_visible).to eq(guardian_visible),
@@ -237,12 +210,12 @@ RSpec.describe "Whisper serialization" do
       whisper_post.save_custom_fields(true)
 
       [nil, author, target, participant, stranger, admin].each do |user|
-        guardian_visible =
-          Guardian.new(user).can_see_post?(whisper_post.reload)
+        guardian_visible = Guardian.new(user).can_see_post?(whisper_post.reload)
         sql_visible =
-          DiscourseModCategories::WhisperQueryFilter
-            .apply(Post.where(id: whisper_post.id), user)
-            .exists?
+          DiscourseModCategories::WhisperQueryFilter.apply(
+            Post.where(id: whisper_post.id),
+            user,
+          ).exists?
         expect(sql_visible).to eq(guardian_visible)
       end
     end

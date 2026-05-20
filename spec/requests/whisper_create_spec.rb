@@ -18,13 +18,9 @@ RSpec.describe "Whisper creation" do
   fab!(:whisper_group) { Fabricate(:group, name: "whisper_squad") }
 
   let(:targets_field) { DiscourseModCategories::POST_WHISPER_TARGETS_FIELD }
-  let(:groups_field) do
-    DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
-  end
+  let(:groups_field) { DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD }
   let(:armed_param) { DiscourseModCategories::POST_WHISPER_ARMED_PARAM }
-  let(:participants_field) do
-    DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
-  end
+  let(:participants_field) { DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD }
 
   before do
     SiteSetting.mod_categories_enabled = true
@@ -35,8 +31,7 @@ RSpec.describe "Whisper creation" do
     # Keep low-trust-level users out of the review queue so their posts are
     # created directly.
     Group.refresh_automatic_groups!
-    SiteSetting.approve_unless_allowed_groups =
-      Group::AUTO_GROUPS[:trust_level_0].to_s
+    SiteSetting.approve_unless_allowed_groups = Group::AUTO_GROUPS[:trust_level_0].to_s
   end
 
   def create_post_for(user, params)
@@ -63,24 +58,19 @@ RSpec.describe "Whisper creation" do
       )
 
       topic.reload
-      expect(
-        Array(topic.custom_fields[participants_field]).map(&:to_i),
-      ).to match_array([target.id, participant.id])
+      expect(Array(topic.custom_fields[participants_field]).map(&:to_i)).to match_array(
+        [target.id, participant.id],
+      )
     end
 
     it "notifies the chosen targets" do
       Jobs.run_immediately!
       target_baseline = Notification.where(user_id: target.id).count
 
-      create_post_for(
-        moderator,
-        { armed_param => true, targets_field => [target.id] },
-      )
+      create_post_for(moderator, { armed_param => true, targets_field => [target.id] })
       expect(response.status).to eq(200)
 
-      expect(Notification.where(user_id: target.id).count).to(
-        be > target_baseline,
-      )
+      expect(Notification.where(user_id: target.id).count).to(be > target_baseline)
     end
 
     it "creates a normal post when the whisper flag is not armed" do
@@ -102,10 +92,7 @@ RSpec.describe "Whisper creation" do
     end
 
     it "creates a staff-only whisper when armed with an empty targets array" do
-      create_post_for(
-        moderator,
-        { armed_param => true, targets_field => [] },
-      )
+      create_post_for(moderator, { armed_param => true, targets_field => [] })
       expect(response.status).to eq(200)
 
       created = Post.find(response.parsed_body["id"])
@@ -116,17 +103,12 @@ RSpec.describe "Whisper creation" do
 
   describe "staff-authored group whisper" do
     it "validates and stores the submitted group ids" do
-      create_post_for(
-        moderator,
-        { armed_param => true, groups_field => [whisper_group.id] },
-      )
+      create_post_for(moderator, { armed_param => true, groups_field => [whisper_group.id] })
       expect(response.status).to eq(200)
 
       created = Post.find(response.parsed_body["id"])
       expect(created.custom_fields.key?(targets_field)).to eq(true)
-      expect(created.custom_fields[groups_field].map(&:to_i)).to eq(
-        [whisper_group.id],
-      )
+      expect(created.custom_fields[groups_field].map(&:to_i)).to eq([whisper_group.id])
     end
 
     it "drops group ids that do not map to a real group" do
@@ -137,29 +119,19 @@ RSpec.describe "Whisper creation" do
       expect(response.status).to eq(200)
 
       created = Post.find(response.parsed_body["id"])
-      expect(created.custom_fields[groups_field].map(&:to_i)).to eq(
-        [whisper_group.id],
-      )
+      expect(created.custom_fields[groups_field].map(&:to_i)).to eq([whisper_group.id])
     end
 
     it "supports a whisper carrying both user and group targets" do
       create_post_for(
         moderator,
-        {
-          armed_param => true,
-          targets_field => [target.id],
-          groups_field => [whisper_group.id],
-        },
+        { armed_param => true, targets_field => [target.id], groups_field => [whisper_group.id] },
       )
       expect(response.status).to eq(200)
 
       created = Post.find(response.parsed_body["id"])
-      expect(created.custom_fields[targets_field].map(&:to_i)).to eq(
-        [target.id],
-      )
-      expect(created.custom_fields[groups_field].map(&:to_i)).to eq(
-        [whisper_group.id],
-      )
+      expect(created.custom_fields[targets_field].map(&:to_i)).to eq([target.id])
+      expect(created.custom_fields[groups_field].map(&:to_i)).to eq([whisper_group.id])
     end
   end
 
@@ -172,11 +144,7 @@ RSpec.describe "Whisper creation" do
     it "forces empty (staff-only) user and group lists for a participant" do
       create_post_for(
         participant,
-        {
-          armed_param => true,
-          targets_field => [stranger.id],
-          groups_field => [whisper_group.id],
-        },
+        { armed_param => true, targets_field => [stranger.id], groups_field => [whisper_group.id] },
       )
       expect(response.status).to eq(200)
 
@@ -190,15 +158,10 @@ RSpec.describe "Whisper creation" do
       Jobs.run_immediately!
       admin_baseline = Notification.where(user_id: admin.id).count
 
-      create_post_for(
-        participant,
-        { armed_param => true, targets_field => [] },
-      )
+      create_post_for(participant, { armed_param => true, targets_field => [] })
       expect(response.status).to eq(200)
 
-      expect(Notification.where(user_id: admin.id).count).to(
-        be > admin_baseline,
-      )
+      expect(Notification.where(user_id: admin.id).count).to(be > admin_baseline)
     end
 
     # Regression: a non-staff topic whisper participant posting a NORMAL
@@ -215,10 +178,7 @@ RSpec.describe "Whisper creation" do
 
   describe "non-participant non-staff user" do
     it "creates a plain post even when the whisper flag is armed" do
-      create_post_for(
-        stranger,
-        { armed_param => true, targets_field => [target.id] },
-      )
+      create_post_for(stranger, { armed_param => true, targets_field => [target.id] })
       expect(response.status).to eq(200)
 
       created = Post.find(response.parsed_body["id"])

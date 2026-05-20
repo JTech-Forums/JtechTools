@@ -49,8 +49,7 @@ export default class ModNotesPanel extends Component {
         <ul class="mod-notes-list">
           {{#each this.notes as |note|}}
             <li
-              class="mod-notes-item
-                {{if note.unread 'mod-notes-item--unread'}}"
+              class="mod-notes-item {{if note.unread 'mod-notes-item--unread'}}"
             >
               <a href={{note.url}} class="mod-notes-item-link">
                 {{icon "shield-halved"}}

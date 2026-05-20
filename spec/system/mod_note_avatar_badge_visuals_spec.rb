@@ -22,11 +22,7 @@ RSpec.describe "Moderator-note avatar badge visuals", type: :system do
   def avatar_shot(name)
     begin
       Timeout.timeout(5) do
-        until page.evaluate_script(
-                "Array.from(document.images).every((i) => i.complete)",
-              )
-          sleep 0.1
-        end
+        sleep 0.1 until page.evaluate_script("Array.from(document.images).every((i) => i.complete)")
       end
     rescue Timeout::Error
       # Slow image — capture anyway.
@@ -46,26 +42,18 @@ RSpec.describe "Moderator-note avatar badge visuals", type: :system do
   # this is the most reliable way to force `mod_note_unread_count` to N.
   def seed_unread_notes(count, base_time: Time.zone.now)
     count.times do |i|
-      topic =
-        Fabricate(
-          :topic,
-          category: category,
-          title: "Mod note thread #{i + 1}",
-        )
+      topic = Fabricate(:topic, category: category, title: "Mod note thread #{i + 1}")
       Fabricate(:post, topic: topic, raw: "Body for thread #{i + 1}.")
       topic.custom_fields["mod_topic_private_note"] = "Note #{i + 1}."
       topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-      topic.custom_fields["mod_topic_private_note_activity_at"] =
-        (base_time + i.seconds).iso8601
+      topic.custom_fields["mod_topic_private_note_activity_at"] = (base_time + i.seconds).iso8601
       topic.save_custom_fields(true)
     end
   end
 
   # Force seen_at to "now+future" so any existing notes don't bleed in.
   def reset_seen_to_future
-    moderator.custom_fields[
-      DiscourseModCategories::USER_NOTES_SEEN_FIELD
-    ] = 1.hour.from_now.iso8601
+    moderator.custom_fields[DiscourseModCategories::USER_NOTES_SEEN_FIELD] = 1.hour.from_now.iso8601
     moderator.save_custom_fields(true)
   end
 
@@ -76,9 +64,10 @@ RSpec.describe "Moderator-note avatar badge visuals", type: :system do
     Timeout.timeout(15) do
       loop do
         count =
-          page.evaluate_script(
-            "document.querySelector('.mod-note-avatar-pip')?.dataset.count || ''",
-          ).to_s.strip
+          page
+            .evaluate_script("document.querySelector('.mod-note-avatar-pip')?.dataset.count || ''")
+            .to_s
+            .strip
         break if count == expected_label
         sleep 0.2
       end
@@ -88,10 +77,7 @@ RSpec.describe "Moderator-note avatar badge visuals", type: :system do
   def wait_for_pip_absent
     Timeout.timeout(15) do
       loop do
-        visible =
-          page.evaluate_script(
-            "!!document.querySelector('.mod-note-avatar-pip.visible')",
-          )
+        visible = page.evaluate_script("!!document.querySelector('.mod-note-avatar-pip.visible')")
         break unless visible
         sleep 0.2
       end
@@ -156,9 +142,10 @@ RSpec.describe "Moderator-note avatar badge visuals", type: :system do
     Timeout.timeout(10) do
       loop do
         count =
-          page.evaluate_script(
-            "document.querySelector('.mod-note-avatar-pip')?.dataset.count || ''",
-          ).to_s.strip
+          page
+            .evaluate_script("document.querySelector('.mod-note-avatar-pip')?.dataset.count || ''")
+            .to_s
+            .strip
         break if count.empty? || count == "0"
         sleep 0.2
       end

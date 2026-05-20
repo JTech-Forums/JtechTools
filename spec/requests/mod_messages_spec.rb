@@ -28,9 +28,7 @@ RSpec.describe "Moderator messages endpoints" do
       expect(topic.reload.custom_fields["mod_topic_footer_message"]).to eq(
         "Read the pinned guidelines.",
       )
-      expect(topic.custom_fields["mod_topic_reply_prompt"]).to eq(
-        "Is your reply on-topic?",
-      )
+      expect(topic.custom_fields["mod_topic_reply_prompt"]).to eq("Is your reply on-topic?")
     end
 
     it "lets an admin set the messages" do
@@ -42,9 +40,7 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(200)
-      expect(topic.reload.custom_fields["mod_topic_footer_message"]).to eq(
-        "Set by an admin",
-      )
+      expect(topic.reload.custom_fields["mod_topic_footer_message"]).to eq("Set by an admin")
     end
 
     it "forbids a regular user (only mods/admins may set it)" do
@@ -72,10 +68,7 @@ RSpec.describe "Moderator messages endpoints" do
     it "returns 404 for a missing topic" do
       sign_in(moderator)
 
-      put "/discourse-mod-categories/topic/0.json",
-          params: {
-            footer_message: "x",
-          }
+      put "/discourse-mod-categories/topic/0.json", params: { footer_message: "x" }
 
       expect(response.status).to eq(404)
     end
@@ -91,9 +84,7 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(200)
-      expect(topic.reload.custom_fields["mod_topic_reply_prompt"]).to eq(
-        "existing prompt",
-      )
+      expect(topic.reload.custom_fields["mod_topic_reply_prompt"]).to eq("existing prompt")
     end
 
     it "lets a moderator pin a post to the bottom" do
@@ -105,9 +96,7 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(200)
-      expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to eq(
-        first_post.id,
-      )
+      expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to eq(first_post.id)
     end
 
     it "lets a moderator unpin by sending a blank pinned_post_id" do
@@ -115,15 +104,10 @@ RSpec.describe "Moderator messages endpoints" do
       topic.save_custom_fields(true)
       sign_in(moderator)
 
-      put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: {
-            pinned_post_id: "",
-          }
+      put "/discourse-mod-categories/topic/#{topic.id}.json", params: { pinned_post_id: "" }
 
       expect(response.status).to eq(200)
-      expect(
-        topic.reload.custom_fields["mod_topic_pinned_post_id"],
-      ).to be_blank
+      expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to be_blank
     end
 
     it "rejects a pinned_post_id that is not a post in this topic" do
@@ -136,9 +120,7 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(400)
-      expect(
-        topic.reload.custom_fields["mod_topic_pinned_post_id"],
-      ).to be_blank
+      expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to be_blank
     end
 
     it "forbids a regular user from pinning a post" do
@@ -150,9 +132,7 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(403)
-      expect(
-        topic.reload.custom_fields["mod_topic_pinned_post_id"],
-      ).to be_blank
+      expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to be_blank
     end
 
     it "accepts a long, unicode footer message" do
@@ -165,9 +145,7 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(200)
-      expect(topic.reload.custom_fields["mod_topic_footer_message"]).to eq(
-        long_message,
-      )
+      expect(topic.reload.custom_fields["mod_topic_footer_message"]).to eq(long_message)
     end
 
     it "clears the reply prompt when sent an empty string" do
@@ -175,10 +153,7 @@ RSpec.describe "Moderator messages endpoints" do
       topic.save_custom_fields(true)
       sign_in(moderator)
 
-      put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: {
-            reply_prompt: "",
-          }
+      put "/discourse-mod-categories/topic/#{topic.id}.json", params: { reply_prompt: "" }
 
       expect(response.status).to eq(200)
       expect(topic.reload.custom_fields["mod_topic_reply_prompt"]).to eq("")
@@ -192,9 +167,7 @@ RSpec.describe "Moderator messages endpoints" do
       put "/discourse-mod-categories/topic/#{topic.id}.json", params: {}
 
       expect(response.status).to eq(200)
-      expect(topic.reload.custom_fields["mod_topic_footer_message"]).to eq(
-        "Keep me",
-      )
+      expect(topic.reload.custom_fields["mod_topic_footer_message"]).to eq("Keep me")
     end
 
     it "pins, then unpins, leaving no pinned post" do
@@ -204,17 +177,10 @@ RSpec.describe "Moderator messages endpoints" do
           params: {
             pinned_post_id: first_post.id,
           }
-      expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to eq(
-        first_post.id,
-      )
+      expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to eq(first_post.id)
 
-      put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: {
-            pinned_post_id: "",
-          }
-      expect(
-        topic.reload.custom_fields["mod_topic_pinned_post_id"],
-      ).to be_blank
+      put "/discourse-mod-categories/topic/#{topic.id}.json", params: { pinned_post_id: "" }
+      expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to be_blank
     end
 
     it "treats pinned_post_id 0 as unpin" do
@@ -222,15 +188,10 @@ RSpec.describe "Moderator messages endpoints" do
       topic.save_custom_fields(true)
       sign_in(moderator)
 
-      put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: {
-            pinned_post_id: "0",
-          }
+      put "/discourse-mod-categories/topic/#{topic.id}.json", params: { pinned_post_id: "0" }
 
       expect(response.status).to eq(200)
-      expect(
-        topic.reload.custom_fields["mod_topic_pinned_post_id"],
-      ).to be_blank
+      expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to be_blank
     end
 
     it "lets a moderator require reply approval for the topic" do
@@ -242,9 +203,7 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(200)
-      expect(
-        topic.reload.custom_fields["mod_topic_require_reply_approval"],
-      ).to eq(true)
+      expect(topic.reload.custom_fields["mod_topic_require_reply_approval"]).to eq(true)
     end
 
     it "lets a moderator turn reply approval back off" do
@@ -258,9 +217,7 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(200)
-      expect(
-        topic.reload.custom_fields["mod_topic_require_reply_approval"],
-      ).to eq(false)
+      expect(topic.reload.custom_fields["mod_topic_require_reply_approval"]).to eq(false)
     end
 
     it "forbids a regular user from changing reply approval" do
@@ -284,19 +241,11 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(200)
-      expect(topic.reload.custom_fields["mod_topic_private_note"]).to eq(
-        "For staff only",
-      )
-      expect(
-        topic.custom_fields["mod_topic_private_note_position"],
-      ).to eq("top")
+      expect(topic.reload.custom_fields["mod_topic_private_note"]).to eq("For staff only")
+      expect(topic.custom_fields["mod_topic_private_note_position"]).to eq("top")
       # The moderator who set the note is recorded as its author.
-      expect(
-        topic.custom_fields["mod_topic_private_note_user_id"],
-      ).to eq(moderator.id)
-      expect(response.parsed_body["private_note_author"]["username"]).to eq(
-        moderator.username,
-      )
+      expect(topic.custom_fields["mod_topic_private_note_user_id"]).to eq(moderator.id)
+      expect(response.parsed_body["private_note_author"]["username"]).to eq(moderator.username)
     end
 
     it "falls back to bottom for an invalid note position" do
@@ -309,9 +258,7 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(200)
-      expect(
-        topic.reload.custom_fields["mod_topic_private_note_position"],
-      ).to eq("bottom")
+      expect(topic.reload.custom_fields["mod_topic_private_note_position"]).to eq("bottom")
     end
 
     it "forbids a regular user from setting a private note" do
@@ -323,9 +270,7 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(403)
-      expect(
-        topic.reload.custom_fields["mod_topic_private_note"],
-      ).to be_blank
+      expect(topic.reload.custom_fields["mod_topic_private_note"]).to be_blank
     end
   end
 
@@ -339,9 +284,9 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(200)
-      expect(
-        category.reload.custom_fields["mod_category_new_topic_prompt"],
-      ).to eq("Have you searched for an existing topic?")
+      expect(category.reload.custom_fields["mod_category_new_topic_prompt"]).to eq(
+        "Have you searched for an existing topic?",
+      )
     end
 
     it "lets an admin set the per-category new-topic prompt" do
@@ -353,9 +298,9 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(200)
-      expect(
-        category.reload.custom_fields["mod_category_new_topic_prompt"],
-      ).to eq("Set by an admin")
+      expect(category.reload.custom_fields["mod_category_new_topic_prompt"]).to eq(
+        "Set by an admin",
+      )
     end
 
     it "forbids a regular user (only mods/admins may set it)" do
@@ -367,9 +312,7 @@ RSpec.describe "Moderator messages endpoints" do
           }
 
       expect(response.status).to eq(403)
-      expect(
-        category.reload.custom_fields["mod_category_new_topic_prompt"],
-      ).to be_blank
+      expect(category.reload.custom_fields["mod_category_new_topic_prompt"]).to be_blank
     end
 
     it "forbids an anonymous user" do
@@ -384,10 +327,7 @@ RSpec.describe "Moderator messages endpoints" do
     it "returns 404 for a missing category" do
       sign_in(moderator)
 
-      put "/discourse-mod-categories/category/0.json",
-          params: {
-            new_topic_prompt: "x",
-          }
+      put "/discourse-mod-categories/category/0.json", params: { new_topic_prompt: "x" }
 
       expect(response.status).to eq(404)
     end
@@ -397,15 +337,10 @@ RSpec.describe "Moderator messages endpoints" do
       category.save_custom_fields(true)
       sign_in(moderator)
 
-      put "/discourse-mod-categories/category/#{category.id}.json",
-          params: {
-            new_topic_prompt: "",
-          }
+      put "/discourse-mod-categories/category/#{category.id}.json", params: { new_topic_prompt: "" }
 
       expect(response.status).to eq(200)
-      expect(
-        category.reload.custom_fields["mod_category_new_topic_prompt"],
-      ).to eq("")
+      expect(category.reload.custom_fields["mod_category_new_topic_prompt"]).to eq("")
     end
 
     it "stores the new-topic prompt trust-level cap" do
@@ -419,9 +354,7 @@ RSpec.describe "Moderator messages endpoints" do
 
       expect(response.status).to eq(200)
       expect(response.parsed_body["new_topic_prompt_max_tl"]).to eq(1)
-      expect(
-        category.reload.custom_fields["mod_category_new_topic_prompt_max_tl"],
-      ).to eq(1)
+      expect(category.reload.custom_fields["mod_category_new_topic_prompt_max_tl"]).to eq(1)
     end
 
     it "clamps an out-of-range new-topic trust-level cap to 0-4" do
@@ -455,9 +388,7 @@ RSpec.describe "Moderator messages endpoints" do
 
       expect(response.status).to eq(200)
       expect(response.parsed_body["reply_prompt_max_tl"]).to eq(1)
-      expect(
-        topic.reload.custom_fields["mod_topic_reply_prompt_max_tl"],
-      ).to eq(1)
+      expect(topic.reload.custom_fields["mod_topic_reply_prompt_max_tl"]).to eq(1)
     end
 
     it "clamps an out-of-range reply trust-level cap to 0-4" do
@@ -476,14 +407,9 @@ RSpec.describe "Moderator messages endpoints" do
       topic.save_custom_fields(true)
       sign_in(moderator)
 
-      put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: {
-            reply_prompt: "changed",
-          }
+      put "/discourse-mod-categories/topic/#{topic.id}.json", params: { reply_prompt: "changed" }
 
-      expect(
-        topic.reload.custom_fields["mod_topic_reply_prompt_max_tl"],
-      ).to eq(2)
+      expect(topic.reload.custom_fields["mod_topic_reply_prompt_max_tl"]).to eq(2)
     end
   end
 
@@ -497,8 +423,7 @@ RSpec.describe "Moderator messages endpoints" do
            }
 
       expect(response.status).to eq(200)
-      replies =
-        topic.reload.custom_fields["mod_topic_private_note_replies"]
+      replies = topic.reload.custom_fields["mod_topic_private_note_replies"]
       expect(replies.last["raw"]).to eq("Following up on this note.")
       expect(replies.last["user_id"]).to eq(moderator.id)
       expect(replies.last["created_at"]).to be_present
@@ -516,11 +441,8 @@ RSpec.describe "Moderator messages endpoints" do
              raw: "Second reply.",
            }
 
-      replies =
-        topic.reload.custom_fields["mod_topic_private_note_replies"]
-      expect(replies.map { |r| r["raw"] }).to eq(
-        ["First reply.", "Second reply."],
-      )
+      replies = topic.reload.custom_fields["mod_topic_private_note_replies"]
+      expect(replies.map { |r| r["raw"] }).to eq(["First reply.", "Second reply."])
     end
 
     it "returns the serialized replies with author info" do
@@ -539,10 +461,7 @@ RSpec.describe "Moderator messages endpoints" do
     it "rejects a blank reply" do
       sign_in(moderator)
 
-      post "/discourse-mod-categories/topic/#{topic.id}/note-reply.json",
-           params: {
-             raw: "   ",
-           }
+      post "/discourse-mod-categories/topic/#{topic.id}/note-reply.json", params: { raw: "   " }
 
       expect(response.status).to eq(400)
     end
@@ -556,9 +475,7 @@ RSpec.describe "Moderator messages endpoints" do
            }
 
       expect(response.status).to eq(403)
-      expect(
-        topic.reload.custom_fields["mod_topic_private_note_replies"],
-      ).to be_blank
+      expect(topic.reload.custom_fields["mod_topic_private_note_replies"]).to be_blank
     end
   end
 
@@ -577,9 +494,7 @@ RSpec.describe "Moderator messages endpoints" do
            params: {
              raw: "Second reply.",
            }
-      topic.reload.custom_fields["mod_topic_private_note_replies"].map do |r|
-        r["id"]
-      end
+      topic.reload.custom_fields["mod_topic_private_note_replies"].map { |r| r["id"] }
     end
 
     describe "PUT /discourse-mod-categories/topic/:topic_id/note-reply" do
@@ -644,9 +559,7 @@ RSpec.describe "Moderator messages endpoints" do
 
         expect(response.status).to eq(403)
         replies = topic.reload.custom_fields["mod_topic_private_note_replies"]
-        expect(replies.find { |r| r["id"] == ids.first }["raw"]).to eq(
-          "First reply.",
-        )
+        expect(replies.find { |r| r["id"] == ids.first }["raw"]).to eq("First reply.")
       end
 
       it "forbids an anonymous user from editing a reply" do
@@ -703,9 +616,7 @@ RSpec.describe "Moderator messages endpoints" do
                }
 
         expect(response.status).to eq(403)
-        expect(
-          topic.reload.custom_fields["mod_topic_private_note_replies"].size,
-        ).to eq(2)
+        expect(topic.reload.custom_fields["mod_topic_private_note_replies"].size).to eq(2)
       end
     end
 
@@ -719,9 +630,7 @@ RSpec.describe "Moderator messages endpoints" do
         expect(response.status).to eq(200)
         topic.reload
         expect(topic.custom_fields["mod_topic_private_note"]).to be_blank
-        expect(
-          topic.custom_fields["mod_topic_private_note_replies"],
-        ).to be_blank
+        expect(topic.custom_fields["mod_topic_private_note_replies"]).to be_blank
         expect(response.parsed_body["private_note"]).to eq("")
         expect(response.parsed_body["replies"]).to eq([])
       end
@@ -734,9 +643,7 @@ RSpec.describe "Moderator messages endpoints" do
         delete "/discourse-mod-categories/topic/#{topic.id}/note.json"
 
         expect(response.status).to eq(403)
-        expect(
-          topic.reload.custom_fields["mod_topic_private_note"],
-        ).to eq("The note body.")
+        expect(topic.reload.custom_fields["mod_topic_private_note"]).to eq("The note body.")
       end
 
       it "forbids an anonymous user from deleting the note" do
@@ -754,10 +661,7 @@ RSpec.describe "Moderator messages endpoints" do
   describe "GET /discourse-mod-categories/notes-feed" do
     before do
       topic.custom_fields["mod_topic_private_note"] = "A note to review."
-      topic.custom_fields["mod_topic_private_note_activity_at"] = Time
-        .zone
-        .now
-        .iso8601
+      topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
       topic.save_custom_fields(true)
     end
 
@@ -788,9 +692,7 @@ RSpec.describe "Moderator messages endpoints" do
       post "/discourse-mod-categories/notes-feed/seen.json"
 
       expect(response.status).to eq(200)
-      expect(
-        moderator.reload.custom_fields["mod_notes_seen_at"],
-      ).to be_present
+      expect(moderator.reload.custom_fields["mod_notes_seen_at"]).to be_present
     end
 
     it "forbids a regular user" do
@@ -836,10 +738,7 @@ RSpec.describe "Moderator messages endpoints" do
     it "does not notify the moderator who set the note" do
       sign_in(moderator)
 
-      put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: {
-            private_note: "A note.",
-          }
+      put "/discourse-mod-categories/topic/#{topic.id}.json", params: { private_note: "A note." }
 
       expect(custom_notifications(moderator).count).to eq(0)
     end
@@ -847,10 +746,7 @@ RSpec.describe "Moderator messages endpoints" do
     it "does not notify regular users" do
       sign_in(moderator)
 
-      put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: {
-            private_note: "A note.",
-          }
+      put "/discourse-mod-categories/topic/#{topic.id}.json", params: { private_note: "A note." }
 
       expect(custom_notifications(user).count).to eq(0)
     end

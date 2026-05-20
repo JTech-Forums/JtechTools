@@ -20,14 +20,16 @@ RSpec.describe "Moderator messages endpoints — edge cases" do
       sign_in(moderator)
 
       put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: { footer_message: "Same value." }
+          params: {
+            footer_message: "Same value.",
+          }
       put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: { footer_message: "Same value." }
+          params: {
+            footer_message: "Same value.",
+          }
 
       expect(response.status).to eq(200)
-      expect(topic.reload.custom_fields["mod_topic_footer_message"]).to eq(
-        "Same value.",
-      )
+      expect(topic.reload.custom_fields["mod_topic_footer_message"]).to eq("Same value.")
     end
 
     it "leaves the footer message untouched when only the reply prompt changes" do
@@ -36,22 +38,23 @@ RSpec.describe "Moderator messages endpoints — edge cases" do
       sign_in(moderator)
 
       put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: { reply_prompt: "A new reply prompt." }
+          params: {
+            reply_prompt: "A new reply prompt.",
+          }
 
       expect(response.status).to eq(200)
-      expect(topic.reload.custom_fields["mod_topic_footer_message"]).to eq(
-        "Keep me.",
-      )
-      expect(topic.custom_fields["mod_topic_reply_prompt"]).to eq(
-        "A new reply prompt.",
-      )
+      expect(topic.reload.custom_fields["mod_topic_footer_message"]).to eq("Keep me.")
+      expect(topic.custom_fields["mod_topic_reply_prompt"]).to eq("A new reply prompt.")
     end
 
     it "accepts whitespace-only inputs without crashing" do
       sign_in(moderator)
 
       put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: { footer_message: "   ", reply_prompt: "\n\t" }
+          params: {
+            footer_message: "   ",
+            reply_prompt: "\n\t",
+          }
 
       expect(response.status).to eq(200)
     end
@@ -62,12 +65,12 @@ RSpec.describe "Moderator messages endpoints — edge cases" do
       sign_in(moderator)
 
       put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: { require_reply_approval: "true" }
+          params: {
+            require_reply_approval: "true",
+          }
 
       expect(response.status).to eq(200)
-      expect(
-        topic.reload.custom_fields["mod_topic_require_reply_approval"],
-      ).to eq(true)
+      expect(topic.reload.custom_fields["mod_topic_require_reply_approval"]).to eq(true)
     end
 
     it "treats 'false' (string) as false" do
@@ -76,12 +79,12 @@ RSpec.describe "Moderator messages endpoints — edge cases" do
       sign_in(moderator)
 
       put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: { require_reply_approval: "false" }
+          params: {
+            require_reply_approval: "false",
+          }
 
       expect(response.status).to eq(200)
-      expect(
-        topic.reload.custom_fields["mod_topic_require_reply_approval"],
-      ).to eq(false)
+      expect(topic.reload.custom_fields["mod_topic_require_reply_approval"]).to eq(false)
     end
   end
 
@@ -90,7 +93,10 @@ RSpec.describe "Moderator messages endpoints — edge cases" do
       sign_in(moderator)
 
       put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: { reply_prompt: "x", reply_prompt_max_tl: "2" }
+          params: {
+            reply_prompt: "x",
+            reply_prompt_max_tl: "2",
+          }
 
       expect(response.parsed_body["reply_prompt_max_tl"]).to eq(2)
     end
@@ -110,29 +116,19 @@ RSpec.describe "Moderator messages endpoints — edge cases" do
 
   describe "GET /discourse-mod-categories/notes-feed (ordering)" do
     fab!(:older_topic) do
-      Fabricate(
-        :topic,
-        category: category,
-        title: "An older thread waiting on a moderator review",
-      )
+      Fabricate(:topic, category: category, title: "An older thread waiting on a moderator review")
     end
     fab!(:newer_topic) do
-      Fabricate(
-        :topic,
-        category: category,
-        title: "A newer thread waiting on a moderator review",
-      )
+      Fabricate(:topic, category: category, title: "A newer thread waiting on a moderator review")
     end
 
     before do
       older_topic.custom_fields["mod_topic_private_note"] = "Older note."
-      older_topic.custom_fields["mod_topic_private_note_activity_at"] =
-        3.days.ago.iso8601
+      older_topic.custom_fields["mod_topic_private_note_activity_at"] = 3.days.ago.iso8601
       older_topic.save_custom_fields(true)
 
       newer_topic.custom_fields["mod_topic_private_note"] = "Newer note."
-      newer_topic.custom_fields["mod_topic_private_note_activity_at"] =
-        Time.zone.now.iso8601
+      newer_topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
       newer_topic.save_custom_fields(true)
     end
 
@@ -165,11 +161,12 @@ RSpec.describe "Moderator messages endpoints — edge cases" do
         sign_in(moderator)
 
         put "/discourse-mod-categories/topic/#{topic.id}.json",
-            params: { private_note: "n", private_note_position: pos }
+            params: {
+              private_note: "n",
+              private_note_position: pos,
+            }
 
-        expect(
-          topic.reload.custom_fields["mod_topic_private_note_position"],
-        ).to eq(pos)
+        expect(topic.reload.custom_fields["mod_topic_private_note_position"]).to eq(pos)
       end
     end
 
@@ -178,11 +175,12 @@ RSpec.describe "Moderator messages endpoints — edge cases" do
         sign_in(moderator)
 
         put "/discourse-mod-categories/topic/#{topic.id}.json",
-            params: { private_note: "n", private_note_position: pos }
+            params: {
+              private_note: "n",
+              private_note_position: pos,
+            }
 
-        expect(
-          topic.reload.custom_fields["mod_topic_private_note_position"],
-        ).to eq("bottom")
+        expect(topic.reload.custom_fields["mod_topic_private_note_position"]).to eq("bottom")
       end
     end
   end
@@ -193,13 +191,12 @@ RSpec.describe "Moderator messages endpoints — edge cases" do
 
       4.times do |i|
         post "/discourse-mod-categories/topic/#{topic.id}/note-reply.json",
-             params: { raw: "Reply #{i}." }
+             params: {
+               raw: "Reply #{i}.",
+             }
       end
 
-      ids =
-        topic.reload.custom_fields["mod_topic_private_note_replies"].map do |r|
-          r["id"]
-        end
+      ids = topic.reload.custom_fields["mod_topic_private_note_replies"].map { |r| r["id"] }
 
       expect(ids.size).to eq(4)
       expect(ids.uniq.size).to eq(4)
@@ -208,8 +205,7 @@ RSpec.describe "Moderator messages endpoints — edge cases" do
     it "records the moderator id and created_at for each reply" do
       sign_in(moderator)
 
-      post "/discourse-mod-categories/topic/#{topic.id}/note-reply.json",
-           params: { raw: "Hello." }
+      post "/discourse-mod-categories/topic/#{topic.id}/note-reply.json", params: { raw: "Hello." }
 
       reply = topic.reload.custom_fields["mod_topic_private_note_replies"].last
       expect(reply["user_id"]).to eq(moderator.id)

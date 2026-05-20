@@ -54,7 +54,12 @@ export function precheckPromptFor(composer, siteSettings, currentUser) {
     if (!category) {
       return null;
     }
-    if (trustLevelExempt(currentUser, category.mod_category_new_topic_prompt_max_tl)) {
+    if (
+      trustLevelExempt(
+        currentUser,
+        category.mod_category_new_topic_prompt_max_tl
+      )
+    ) {
       return null;
     }
     return nonBlank(category.mod_category_new_topic_prompt);

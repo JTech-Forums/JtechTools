@@ -58,7 +58,11 @@ export default {
     // transition, etc.) rewrites the <title> node, reassert the prefix.
     if (titleEl && typeof MutationObserver !== "undefined") {
       const observer = new MutationObserver(reapply);
-      observer.observe(titleEl, { childList: true, characterData: true, subtree: true });
+      observer.observe(titleEl, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
     }
 
     const recompute = () => {

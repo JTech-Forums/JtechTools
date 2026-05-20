@@ -13,20 +13,14 @@ RSpec.describe "Moderator whisper", type: :system do
   fab!(:other_target) { Fabricate(:user, username: "target_tina") }
   fab!(:stranger) { Fabricate(:user, username: "stranger_sam") }
   fab!(:category)
-  fab!(:topic) do
-    Fabricate(:topic, category: category, title: "A thread to whisper in")
-  end
+  fab!(:topic) { Fabricate(:topic, category: category, title: "A thread to whisper in") }
   fab!(:op) { Fabricate(:post, topic: topic, raw: "The original post here.") }
   fab!(:group_member) { Fabricate(:user, username: "group_gabe") }
   fab!(:whisper_group) { Fabricate(:group, name: "whisper_squad") }
 
   let(:targets_field) { DiscourseModCategories::POST_WHISPER_TARGETS_FIELD }
-  let(:groups_field) do
-    DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
-  end
-  let(:participants_field) do
-    DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
-  end
+  let(:groups_field) { DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD }
+  let(:participants_field) { DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD }
 
   before do
     # `mod_categories_enabled` is the plugin's master switch — the whole
@@ -37,18 +31,13 @@ RSpec.describe "Moderator whisper", type: :system do
     SiteSetting.body_min_entropy = 1
     SiteSetting.auto_silence_fast_typers_on_first_post = false
     Group.refresh_automatic_groups!
-    SiteSetting.approve_unless_allowed_groups =
-      Group::AUTO_GROUPS[:trust_level_0].to_s
+    SiteSetting.approve_unless_allowed_groups = Group::AUTO_GROUPS[:trust_level_0].to_s
   end
 
   def shot(name)
     begin
       Timeout.timeout(8) do
-        until page.evaluate_script(
-                "Array.from(document.images).every((i) => i.complete)",
-              )
-          sleep 0.1
-        end
+        sleep 0.1 until page.evaluate_script("Array.from(document.images).every((i) => i.complete)")
       end
     rescue Timeout::Error
       # Capture anyway rather than failing the spec over a slow image.
@@ -63,9 +52,9 @@ RSpec.describe "Moderator whisper", type: :system do
 
   def whisper_button_selector
     ".d-editor-button-bar button.mod-whisper-target, " \
-      ".d-editor-button-bar button[title='#{I18n.t(
-        "js.discourse_mod_categories.whisper.toolbar_title",
-      )}']"
+      ".d-editor-button-bar button[title='#{
+        I18n.t("js.discourse_mod_categories.whisper.toolbar_title")
+      }']"
   end
 
   def whisper_toolbar_button
@@ -101,10 +90,7 @@ RSpec.describe "Moderator whisper", type: :system do
     it "renders the group in the whisper banner" do
       sign_in(moderator)
       visit("/t/#{topic.slug}/#{topic.id}")
-      expect(page).to have_css(
-        ".cooked.mod-whisper .mod-whisper-banner",
-        wait: 15,
-      )
+      expect(page).to have_css(".cooked.mod-whisper .mod-whisper-banner", wait: 15)
       expect(page).to have_css(
         ".mod-whisper-banner .mod-whisper-banner__group",
         text: whisper_group.name,
@@ -116,10 +102,7 @@ RSpec.describe "Moderator whisper", type: :system do
     it "shows the whisper to a member of the target group" do
       sign_in(group_member)
       visit("/t/#{topic.slug}/#{topic.id}")
-      expect(page).to have_css(
-        ".cooked.mod-whisper .mod-whisper-banner",
-        wait: 15,
-      )
+      expect(page).to have_css(".cooked.mod-whisper .mod-whisper-banner", wait: 15)
       shot("77_group_member_sees_whisper")
     end
 
@@ -164,15 +147,10 @@ RSpec.describe "Moderator whisper", type: :system do
       expect(page).to have_no_css(".mod-whisper-target-modal", wait: 10)
 
       expect(page).to have_css(".mod-whisper-armed-pill", wait: 10)
-      expect(page).to have_css(
-        ".mod-whisper-armed-pill__user",
-        text: "@#{recipient.username}",
-      )
+      expect(page).to have_css(".mod-whisper-armed-pill__user", text: "@#{recipient.username}")
       shot("65_whisper_armed_pill")
 
-      find(".d-editor-input").fill_in(
-        with: "A private aside for the two of you.",
-      )
+      find(".d-editor-input").fill_in(with: "A private aside for the two of you.")
       find(".save-or-cancel .create").click
 
       expect(page).to have_css(
@@ -209,9 +187,7 @@ RSpec.describe "Moderator whisper", type: :system do
       expect(page).to have_css(".mod-whisper-armed-pill", wait: 10)
       expect(page).to have_css(
         ".mod-whisper-armed-pill__label",
-        text: I18n.t(
-          "js.discourse_mod_categories.whisper.armed_pill_staff_only",
-        ),
+        text: I18n.t("js.discourse_mod_categories.whisper.armed_pill_staff_only"),
       )
       shot("65b_staff_only_whisper_armed")
 
@@ -219,10 +195,7 @@ RSpec.describe "Moderator whisper", type: :system do
       find(".save-or-cancel .create").click
 
       # The banner survives the post stream inside .cooked.
-      expect(page).to have_css(
-        ".cooked.mod-whisper .mod-whisper-banner",
-        wait: 15,
-      )
+      expect(page).to have_css(".cooked.mod-whisper .mod-whisper-banner", wait: 15)
       expect(page).to have_css(
         ".cooked .mod-whisper-banner",
         text: I18n.t("js.discourse_mod_categories.whisper.banner_to_staff"),
@@ -249,9 +222,7 @@ RSpec.describe "Moderator whisper", type: :system do
       expect(page).to have_css(".mod-whisper-banner", wait: 15)
 
       # Reply directly to the whisper post (article#post_<n>).
-      within("#post_#{whisper.post_number}") do
-        find(".post-controls button.reply").click
-      end
+      within("#post_#{whisper.post_number}") { find(".post-controls button.reply").click }
       expect(page).to have_css(".d-editor-input", wait: 10)
 
       expect(page).to have_css(".mod-whisper-armed-pill", wait: 10)
@@ -265,10 +236,7 @@ RSpec.describe "Moderator whisper", type: :system do
     it "lets the recipient see the whisper banner" do
       sign_in(recipient)
       visit("/t/#{topic.slug}/#{topic.id}")
-      expect(page).to have_css(
-        ".cooked.mod-whisper .mod-whisper-banner",
-        wait: 15,
-      )
+      expect(page).to have_css(".cooked.mod-whisper .mod-whisper-banner", wait: 15)
       shot("67_recipient_sees_whisper")
     end
 
@@ -283,10 +251,7 @@ RSpec.describe "Moderator whisper", type: :system do
     it "shows the whisper to a staff member for oversight" do
       sign_in(admin)
       visit("/t/#{topic.slug}/#{topic.id}")
-      expect(page).to have_css(
-        ".cooked.mod-whisper .mod-whisper-banner",
-        wait: 15,
-      )
+      expect(page).to have_css(".cooked.mod-whisper .mod-whisper-banner", wait: 15)
       shot("69_staff_oversight")
     end
   end
@@ -305,9 +270,7 @@ RSpec.describe "Moderator whisper", type: :system do
       expect(page).to have_css(".mod-whisper-armed-pill", wait: 10)
       expect(page).to have_css(
         ".mod-whisper-armed-pill__label",
-        text: I18n.t(
-          "js.discourse_mod_categories.whisper.armed_pill_staff_only",
-        ),
+        text: I18n.t("js.discourse_mod_categories.whisper.armed_pill_staff_only"),
       )
       shot("70_participant_whisper_back_armed")
 
@@ -346,10 +309,7 @@ RSpec.describe "Moderator whisper", type: :system do
 
     it "exposes the mod_whisper_enabled setting in the admin UI" do
       visit("/admin/site_settings/category/all_results?filter=mod_whisper")
-      expect(page).to have_css(
-        ".admin-detail .setting",
-        wait: 10,
-      )
+      expect(page).to have_css(".admin-detail .setting", wait: 10)
       shot("73_site_setting_page")
     end
   end
@@ -364,19 +324,16 @@ RSpec.describe "Moderator whisper", type: :system do
 
       # Open the post admin (wrench) menu on the whisper post.
       within("#post_#{topic.reload.posts.last.post_number}") do
-        find(".post-controls .show-more-actions").click if page.has_css?(
-          ".post-controls .show-more-actions",
-        )
+        if page.has_css?(".post-controls .show-more-actions")
+          find(".post-controls .show-more-actions").click
+        end
         find(".post-controls .show-post-admin-menu").click
       end
       expect(page).to have_css(".mod-whisper-add-participant", wait: 10)
       shot("79_whisper_post_admin_menu")
 
       find(".mod-whisper-add-participant").click
-      expect(page).to have_css(
-        ".mod-whisper-add-participant-modal",
-        wait: 10,
-      )
+      expect(page).to have_css(".mod-whisper-add-participant-modal", wait: 10)
 
       chooser =
         PageObjects::Components::SelectKit.new(
@@ -389,15 +346,12 @@ RSpec.describe "Moderator whisper", type: :system do
       shot("80_whisper_add_participant_modal")
 
       find(".mod-whisper-add-participant-confirm").click
-      expect(page).to have_no_css(
-        ".mod-whisper-add-participant-modal",
-        wait: 10,
-      )
+      expect(page).to have_no_css(".mod-whisper-add-participant-modal", wait: 10)
       shot("81_whisper_participant_added")
 
-      expect(
-        Array(topic.reload.custom_fields[participants_field]).map(&:to_i),
-      ).to include(stranger.id)
+      expect(Array(topic.reload.custom_fields[participants_field]).map(&:to_i)).to include(
+        stranger.id,
+      )
     end
   end
 

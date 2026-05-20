@@ -81,9 +81,7 @@ module ::DiscourseModCategories
       targeted_checklists.find do |checklist|
         items = checklist["items"]
         next false unless items.is_a?(Array) && items.any?
-        next false unless Array(checklist["user_ids"]).map(&:to_i).include?(
-          user.id,
-        )
+        next false if Array(checklist["user_ids"]).map(&:to_i).exclude?(user.id)
         checklist["version"].to_i > targeted_accepted[checklist["id"]].to_i
       end
 
@@ -110,9 +108,9 @@ module ::DiscourseModCategories
       topic_checklist = topic_prompt_checklist(topic_id)
       if topic_checklist
         mode = topic_checklist["mode"].to_s
-        mode = "checklist" unless %w[statement checklist].include?(mode)
+        mode = "checklist" if %w[statement checklist].exclude?(mode)
         frequency = topic_checklist["frequency"].to_s
-        frequency = "once" unless %w[once every_reply].include?(frequency)
+        frequency = "once" if %w[once every_reply].exclude?(frequency)
 
         max_tl =
           if topic_checklist.key?("max_tl")
@@ -129,7 +127,12 @@ module ::DiscourseModCategories
           accepted_version = 0
           if frequency == "once"
             accepted_map = user.custom_fields[USER_TOPIC_CHECKLIST_FIELD]
-            accepted_map = JSON.parse(accepted_map) rescue {} if accepted_map.is_a?(String)
+            accepted_map =
+              begin
+                JSON.parse(accepted_map)
+              rescue StandardError
+                {}
+              end if accepted_map.is_a?(String)
             accepted_map = {} unless accepted_map.is_a?(Hash)
             accepted_version = accepted_map[topic_id.to_s].to_i
           end
@@ -192,11 +195,16 @@ module ::DiscourseModCategories
     return nil unless topic
 
     raw = topic.custom_fields[TOPIC_PROMPT_CHECKLIST_FIELD]
-    raw = JSON.parse(raw) rescue nil if raw.is_a?(String)
+    raw =
+      begin
+        JSON.parse(raw)
+      rescue StandardError
+        nil
+      end if raw.is_a?(String)
     return nil unless raw.is_a?(Hash)
 
     mode = raw["mode"].to_s
-    mode = "checklist" unless %w[statement checklist].include?(mode)
+    mode = "checklist" if %w[statement checklist].exclude?(mode)
 
     if mode == "statement"
       return nil if raw["statement"].to_s.strip.empty?
@@ -244,70 +252,37 @@ after_initialize do
 
   # Per-topic and per-category storage for the moderator-set messages.
   register_topic_custom_field_type(DiscourseModCategories::TOPIC_FOOTER_FIELD, :string)
-  register_topic_custom_field_type(
-    DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD,
-    :string,
-  )
-  register_topic_custom_field_type(
-    DiscourseModCategories::TOPIC_PINNED_POST_FIELD,
-    :integer,
-  )
+  register_topic_custom_field_type(DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD, :string)
+  register_topic_custom_field_type(DiscourseModCategories::TOPIC_PINNED_POST_FIELD, :integer)
   register_topic_custom_field_type(
     DiscourseModCategories::TOPIC_REQUIRE_REPLY_APPROVAL_FIELD,
     :boolean,
   )
-  register_topic_custom_field_type(
-    DiscourseModCategories::TOPIC_PRIVATE_NOTE_FIELD,
-    :string,
-  )
+  register_topic_custom_field_type(DiscourseModCategories::TOPIC_PRIVATE_NOTE_FIELD, :string)
   register_topic_custom_field_type(
     DiscourseModCategories::TOPIC_PRIVATE_NOTE_POSITION_FIELD,
     :string,
   )
-  register_topic_custom_field_type(
-    DiscourseModCategories::TOPIC_PRIVATE_NOTE_USER_FIELD,
-    :integer,
-  )
+  register_topic_custom_field_type(DiscourseModCategories::TOPIC_PRIVATE_NOTE_USER_FIELD, :integer)
   register_topic_custom_field_type(
     DiscourseModCategories::TOPIC_PRIVATE_NOTE_CREATED_AT_FIELD,
     :string,
   )
-  register_topic_custom_field_type(
-    DiscourseModCategories::TOPIC_PRIVATE_NOTE_REPLIES_FIELD,
-    :json,
-  )
+  register_topic_custom_field_type(DiscourseModCategories::TOPIC_PRIVATE_NOTE_REPLIES_FIELD, :json)
   register_topic_custom_field_type(
     DiscourseModCategories::TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD,
     :string,
   )
-  register_user_custom_field_type(
-    DiscourseModCategories::USER_NOTES_SEEN_FIELD,
-    :string,
-  )
-  register_user_custom_field_type(
-    DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD,
-    :integer,
-  )
-  register_user_custom_field_type(
-    DiscourseModCategories::USER_TARGETED_CHECKLIST_FIELD,
-    :json,
-  )
-  register_topic_custom_field_type(
-    DiscourseModCategories::TOPIC_PROMPT_CHECKLIST_FIELD,
-    :json,
-  )
-  register_user_custom_field_type(
-    DiscourseModCategories::USER_TOPIC_CHECKLIST_FIELD,
-    :json,
-  )
+  register_user_custom_field_type(DiscourseModCategories::USER_NOTES_SEEN_FIELD, :string)
+  register_user_custom_field_type(DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD, :integer)
+  register_user_custom_field_type(DiscourseModCategories::USER_TARGETED_CHECKLIST_FIELD, :json)
+  register_topic_custom_field_type(DiscourseModCategories::TOPIC_PROMPT_CHECKLIST_FIELD, :json)
+  register_user_custom_field_type(DiscourseModCategories::USER_TOPIC_CHECKLIST_FIELD, :json)
   register_category_custom_field_type(
     DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD,
     :string,
   )
-  register_topic_custom_field_type(
-    DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD,
-    :integer,
-  )
+  register_topic_custom_field_type(DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD, :integer)
   register_category_custom_field_type(
     DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD,
     :integer,
@@ -322,33 +297,32 @@ after_initialize do
     object.topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD]
   end
   add_to_serializer(:topic_view, :mod_topic_reply_prompt_max_tl) do
-    object.topic.custom_fields[
-      DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD
-    ]
+    object.topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD]
   end
   add_to_serializer(:topic_view, :mod_topic_pinned_post_id) do
     object.topic.custom_fields[DiscourseModCategories::TOPIC_PINNED_POST_FIELD]
   end
   add_to_serializer(:topic_view, :mod_topic_require_reply_approval) do
-    !!object.topic.custom_fields[
-      DiscourseModCategories::TOPIC_REQUIRE_REPLY_APPROVAL_FIELD
-    ]
+    !!object.topic.custom_fields[DiscourseModCategories::TOPIC_REQUIRE_REPLY_APPROVAL_FIELD]
   end
 
   # The per-topic prompt checklist — surfaced on the topic so the
   # frontend editor modal can read its current state, and the gate can
   # detect an active checklist without an extra round trip.
   add_to_serializer(:topic_view, :mod_topic_prompt_checklist) do
-    raw = object.topic.custom_fields[
-      DiscourseModCategories::TOPIC_PROMPT_CHECKLIST_FIELD
-    ]
-    raw = JSON.parse(raw) rescue nil if raw.is_a?(String)
+    raw = object.topic.custom_fields[DiscourseModCategories::TOPIC_PROMPT_CHECKLIST_FIELD]
+    raw =
+      begin
+        JSON.parse(raw)
+      rescue StandardError
+        nil
+      end if raw.is_a?(String)
     next nil unless raw.is_a?(Hash)
     items = raw["items"].is_a?(Array) ? raw["items"] : []
     mode = raw["mode"].to_s
-    mode = "checklist" unless %w[statement checklist].include?(mode)
+    mode = "checklist" if %w[statement checklist].exclude?(mode)
     frequency = raw["frequency"].to_s
-    frequency = "once" unless %w[once every_reply].include?(frequency)
+    frequency = "once" if %w[once every_reply].exclude?(frequency)
     max_tl = raw.key?("max_tl") ? raw["max_tl"].to_i : 4
     # An inactive (mode=statement with blank statement, or mode=checklist
     # with no items) config serializes to null — the gate skips it anyway.
@@ -380,49 +354,29 @@ after_initialize do
     :topic_view,
     :mod_topic_private_note_position,
     include_condition: -> { scope.is_staff? },
-  ) do
-    object.topic.custom_fields[
-      DiscourseModCategories::TOPIC_PRIVATE_NOTE_POSITION_FIELD
-    ]
-  end
+  ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_PRIVATE_NOTE_POSITION_FIELD] }
   # Who set the note — staff only, so the note can be shown like a post.
   add_to_serializer(
     :topic_view,
     :mod_topic_private_note_author,
     include_condition: -> { scope.is_staff? },
   ) do
-    user_id =
-      object.topic.custom_fields[
-        DiscourseModCategories::TOPIC_PRIVATE_NOTE_USER_FIELD
-      ]
+    user_id = object.topic.custom_fields[DiscourseModCategories::TOPIC_PRIVATE_NOTE_USER_FIELD]
     user = user_id && User.find_by(id: user_id)
-    if user
-      {
-        username: user.username,
-        name: user.name,
-        avatar_template: user.avatar_template,
-      }
-    end
+    { username: user.username, name: user.name, avatar_template: user.avatar_template } if user
   end
   add_to_serializer(
     :topic_view,
     :mod_topic_private_note_created_at,
     include_condition: -> { scope.is_staff? },
-  ) do
-    object.topic.custom_fields[
-      DiscourseModCategories::TOPIC_PRIVATE_NOTE_CREATED_AT_FIELD
-    ]
-  end
+  ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_PRIVATE_NOTE_CREATED_AT_FIELD] }
   # The thread of staff replies to the note.
   add_to_serializer(
     :topic_view,
     :mod_topic_private_note_replies,
     include_condition: -> { scope.is_staff? },
   ) do
-    raw =
-      object.topic.custom_fields[
-        DiscourseModCategories::TOPIC_PRIVATE_NOTE_REPLIES_FIELD
-      ]
+    raw = object.topic.custom_fields[DiscourseModCategories::TOPIC_PRIVATE_NOTE_REPLIES_FIELD]
     entries = raw.is_a?(Array) ? raw : []
     entries.map do |entry|
       author = entry["user_id"] && User.find_by(id: entry["user_id"])
@@ -446,13 +400,13 @@ after_initialize do
     next 0 unless object.staff?
 
     seen_at =
-      object.custom_fields[
-        DiscourseModCategories::USER_NOTES_SEEN_FIELD
-      ].presence || "1970-01-01T00:00:00Z"
+      object.custom_fields[DiscourseModCategories::USER_NOTES_SEEN_FIELD].presence ||
+        "1970-01-01T00:00:00Z"
 
-    TopicCustomField.where(
-      name: DiscourseModCategories::TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD,
-    ).where("value > ?", seen_at).count
+    TopicCustomField
+      .where(name: DiscourseModCategories::TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD)
+      .where("value > ?", seen_at)
+      .count
   end
 
   # First-post checklist: the single checklist the current user most needs
@@ -477,9 +431,7 @@ after_initialize do
 
     topic = Topic.find_by(id: topic_id)
     next nil unless topic
-    next nil unless topic.custom_fields[
-                 DiscourseModCategories::TOPIC_REQUIRE_REPLY_APPROVAL_FIELD
-               ]
+    next nil unless topic.custom_fields[DiscourseModCategories::TOPIC_REQUIRE_REPLY_APPROVAL_FIELD]
 
     # Staff (and anyone who can review the topic) post without approval.
     next nil if manager.user&.guardian&.can_review_topic?(topic)
@@ -489,14 +441,10 @@ after_initialize do
 
   # Expose the per-category prompt on every serialized category so the
   # composer can read it for the category a new topic is being created in.
-  Site.preloaded_category_custom_fields <<
-    DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD
-  Site.preloaded_category_custom_fields <<
-    DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD
+  Site.preloaded_category_custom_fields << DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD
+  Site.preloaded_category_custom_fields << DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD
   add_to_serializer(:basic_category, :mod_category_new_topic_prompt) do
-    object.custom_fields[
-      DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD
-    ]
+    object.custom_fields[DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD]
   end
 
   # ---------------------------------------------------------------------
@@ -505,58 +453,34 @@ after_initialize do
 
   # Merge new non-staff participant ids into a topic's cumulative whisper-
   # participant list and persist immediately (the topic is already saved).
-  merge_whisper_participants = lambda do |topic, new_ids|
-    existing =
-      Array(
-        topic.custom_fields[
-          DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
-        ],
-      ).map(&:to_i)
-    merged = (existing + new_ids.map(&:to_i)).reject { |i| i <= 0 }.uniq
-    next if merged.sort == existing.sort
+  merge_whisper_participants =
+    lambda do |topic, new_ids|
+      existing =
+        Array(topic.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]).map(
+          &:to_i
+        )
+      merged = (existing + new_ids.map(&:to_i)).reject { |i| i <= 0 }.uniq
+      next if merged.sort == existing.sort
 
-    topic.custom_fields[
-      DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
-    ] = merged
-    topic.save_custom_fields(true)
-  end
+      topic.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD] = merged
+      topic.save_custom_fields(true)
+    end
 
-  register_post_custom_field_type(
-    DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-    :json,
-  )
-  register_post_custom_field_type(
-    DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD,
-    :json,
-  )
-  register_topic_custom_field_type(
-    DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD,
-    :json,
-  )
-  add_permitted_post_create_param(
-    DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-    :array,
-  )
-  add_permitted_post_create_param(
-    DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD,
-    :array,
-  )
+  register_post_custom_field_type(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD, :json)
+  register_post_custom_field_type(DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD, :json)
+  register_topic_custom_field_type(DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD, :json)
+  add_permitted_post_create_param(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD, :array)
+  add_permitted_post_create_param(DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD, :array)
   # Permitted as a scalar (:string) — `add_permitted_post_create_param` only
   # special-cases :array/:hash, and an unrecognized type would drop the param
   # entirely. The value arrives as the string "true"/"false" and is cast with
   # ActiveModel::Type::Boolean in the before_create_post handler below.
-  add_permitted_post_create_param(
-    DiscourseModCategories::POST_WHISPER_ARMED_PARAM,
-    :string,
-  )
+  add_permitted_post_create_param(DiscourseModCategories::POST_WHISPER_ARMED_PARAM, :string)
 
   # Expose the topic's cumulative whisper participants so the composer can
   # tell whether the current (non-staff) user may whisper back.
   add_to_serializer(:topic_view, :mod_whisper_participant_ids) do
-    raw =
-      object.topic.custom_fields[
-        DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
-      ]
+    raw = object.topic.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]
     Array(raw).map(&:to_i)
   end
 
@@ -578,9 +502,7 @@ after_initialize do
     next unless SiteSetting.mod_whisper_enabled
 
     armed =
-      ::ActiveModel::Type::Boolean.new.cast(
-        opts[DiscourseModCategories::POST_WHISPER_ARMED_PARAM],
-      )
+      ::ActiveModel::Type::Boolean.new.cast(opts[DiscourseModCategories::POST_WHISPER_ARMED_PARAM])
     next unless armed
 
     normalize_ids =
@@ -592,12 +514,9 @@ after_initialize do
           .first(DiscourseModCategories::MAX_WHISPER_TARGETS)
       end
 
-    requested_ids =
-      normalize_ids.call(opts[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD])
+    requested_ids = normalize_ids.call(opts[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD])
     requested_group_ids =
-      normalize_ids.call(
-        opts[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD],
-      )
+      normalize_ids.call(opts[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD])
 
     author = post.user
     topic = post.topic
@@ -609,37 +528,24 @@ after_initialize do
       valid_ids = ::User.where(id: requested_ids).pluck(:id)
       valid_group_ids = ::Group.where(id: requested_group_ids).pluck(:id)
 
-      post.custom_fields[
-        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD
-      ] = valid_ids
-      post.custom_fields[
-        DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
-      ] = valid_group_ids
+      post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD] = valid_ids
+      post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD] = valid_group_ids
 
       # Record the non-staff targets as cumulative topic participants.
-      non_staff_ids =
-        ::User.where(id: valid_ids).where(admin: false, moderator: false).pluck(
-          :id,
-        )
+      non_staff_ids = ::User.where(id: valid_ids).where(admin: false, moderator: false).pluck(:id)
       merge_whisper_participants.call(topic, non_staff_ids) if non_staff_ids.any?
     else
       # Non-staff: only an existing topic whisper participant may whisper,
       # and only ever staff-only (forced empty targets). A non-participant
       # who somehow arms a whisper does not whisper (defense in depth).
       participant_ids =
-        Array(
-          topic.custom_fields[
-            DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
-          ],
-        ).map(&:to_i)
-      next unless participant_ids.include?(author.id)
+        Array(topic.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]).map(
+          &:to_i
+        )
+      next if participant_ids.exclude?(author.id)
 
-      post.custom_fields[
-        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD
-      ] = []
-      post.custom_fields[
-        DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
-      ] = []
+      post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD] = []
+      post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD] = []
     end
   end
 
@@ -647,16 +553,10 @@ after_initialize do
   # notify the chosen targets; a non-staff whisper-back notifies all staff.
   on(:post_created) do |post, opts, user|
     next unless SiteSetting.mod_whisper_enabled
-    next unless post.custom_fields.key?(
-      DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-    )
+    next unless post.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
 
     target_ids =
-      Array(
-        post.custom_fields[
-          DiscourseModCategories::POST_WHISPER_TARGETS_FIELD
-        ],
-      ).map(&:to_i)
+      Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
 
     recipient_ids =
       if user&.staff?
@@ -687,118 +587,70 @@ after_initialize do
   end
 
   add_to_serializer(:post, :mod_is_whisper) do
-    object.custom_fields.key?(
-      DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-    )
+    object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
   end
-  add_to_serializer(:post, :include_mod_is_whisper?) do
-    SiteSetting.mod_whisper_enabled
-  end
+  add_to_serializer(:post, :include_mod_is_whisper?) { SiteSetting.mod_whisper_enabled }
 
   add_to_serializer(:post, :mod_whisper_target_user_ids) do
-    Array(
-      object.custom_fields[
-        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD
-      ],
-    ).map(&:to_i)
+    Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
   end
   add_to_serializer(:post, :include_mod_whisper_target_user_ids?) do
     SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(
-        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-      )
+      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
   end
 
   add_to_serializer(:post, :mod_whisper_target_group_ids) do
-    Array(
-      object.custom_fields[
-        DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
-      ],
-    ).map(&:to_i)
+    Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).map(
+      &:to_i
+    )
   end
   add_to_serializer(:post, :include_mod_whisper_target_group_ids?) do
     SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(
-        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-      )
+      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
   end
 
   add_to_serializer(:post, :mod_whisper_target_groups) do
     ids =
-      Array(
-        object.custom_fields[
-          DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
-        ],
-      ).map(&:to_i)
-    ::Group
-      .where(id: ids)
-      .map { |g| { id: g.id, name: g.name } }
+      Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).map(
+        &:to_i
+      )
+    ::Group.where(id: ids).map { |g| { id: g.id, name: g.name } }
   end
   add_to_serializer(:post, :include_mod_whisper_target_groups?) do
     SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(
-        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-      )
+      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
   end
 
   add_to_serializer(:post, :mod_whisper_targets) do
     ids =
-      Array(
-        object.custom_fields[
-          DiscourseModCategories::POST_WHISPER_TARGETS_FIELD
-        ],
-      ).map(&:to_i)
+      Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
     ::User
       .where(id: ids)
-      .map do |u|
-        {
-          id: u.id,
-          username: u.username,
-          avatar_template: u.avatar_template,
-        }
-      end
+      .map { |u| { id: u.id, username: u.username, avatar_template: u.avatar_template } }
   end
   add_to_serializer(:post, :include_mod_whisper_targets?) do
     SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(
-        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-      )
+      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
   end
 
   # A whisper with no user targets AND no group targets is a staff-only
   # whisper-back.
   add_to_serializer(:post, :mod_whisper_is_staff_only) do
-    Array(
-      object.custom_fields[
-        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD
-      ],
-    ).empty? &&
-      Array(
-        object.custom_fields[
-          DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
-        ],
-      ).empty?
+    Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).empty? &&
+      Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).empty?
   end
   add_to_serializer(:post, :include_mod_whisper_is_staff_only?) do
     SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(
-        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-      )
+      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
   end
 
-  add_to_serializer(:post, :mod_whisper_author_is_staff) do
-    !!object.user&.staff?
-  end
+  add_to_serializer(:post, :mod_whisper_author_is_staff) { !!object.user&.staff? }
   add_to_serializer(:post, :include_mod_whisper_author_is_staff?) do
     SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(
-        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-      )
+      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
   end
 
   add_to_serializer(:basic_category, :mod_category_new_topic_prompt_max_tl) do
-    object.custom_fields[
-      DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD
-    ]
+    object.custom_fields[DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD]
   end
 end

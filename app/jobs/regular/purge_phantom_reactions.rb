@@ -6,7 +6,7 @@ module Jobs
       restricted = DiscourseNoLikes.restricted_category_ids
       return if restricted.empty?
 
-      like_type      = PostActionType.types[:like]
+      like_type = PostActionType.types[:like]
       restricted_str = restricted.map(&:to_i).join(",")
 
       # 1. Back-fill the audit table with any existing phantom likes not yet recorded
@@ -25,9 +25,7 @@ module Jobs
 
       # 2. Only recalculate stats if leaderboard counting is disabled
       unless SiteSetting.dislike_count_in_leaderboard
-        affected_ids =
-          DB
-            .query_single(<<~SQL)
+        affected_ids = DB.query_single(<<~SQL).uniq
               SELECT DISTINCT u FROM (
                 SELECT p.user_id AS u
                   FROM post_actions pa
@@ -46,7 +44,6 @@ module Jobs
                    AND t.category_id IN (#{restricted_str})
               ) sub
             SQL
-            .uniq
 
         if affected_ids.any?
           affected_ids.each do |uid|

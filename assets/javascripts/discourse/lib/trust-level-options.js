@@ -6,7 +6,10 @@ import { i18n } from "discourse-i18n";
 export function trustLevelOptions(includeAll = true) {
   const options = [];
   if (includeAll) {
-    options.push({ id: "4", name: i18n("discourse_mod_categories.audience.all") });
+    options.push({
+      id: "4",
+      name: i18n("discourse_mod_categories.audience.all"),
+    });
   }
   options.push(
     { id: "0", name: i18n("discourse_mod_categories.audience.tl0") },
@@ -14,7 +17,10 @@ export function trustLevelOptions(includeAll = true) {
     { id: "2", name: i18n("discourse_mod_categories.audience.tl2") }
   );
   if (includeAll) {
-    options.push({ id: "3", name: i18n("discourse_mod_categories.audience.tl3") });
+    options.push({
+      id: "3",
+      name: i18n("discourse_mod_categories.audience.tl3"),
+    });
   }
   return options;
 }

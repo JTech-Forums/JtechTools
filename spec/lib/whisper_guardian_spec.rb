@@ -17,12 +17,8 @@ RSpec.describe "Whisper Guardian" do
   fab!(:whisper_group) { Fabricate(:group, name: "whisper_squad") }
 
   let(:targets_field) { DiscourseModCategories::POST_WHISPER_TARGETS_FIELD }
-  let(:groups_field) do
-    DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
-  end
-  let(:participants_field) do
-    DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
-  end
+  let(:groups_field) { DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD }
+  let(:participants_field) { DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD }
 
   before do
     SiteSetting.mod_categories_enabled = true
@@ -163,9 +159,7 @@ RSpec.describe "Whisper Guardian" do
       SiteSetting.mod_whisper_enabled = false
       add_participants([participant.id])
       expect(Guardian.new(admin).can_whisper_in_topic?(topic)).to eq(false)
-      expect(Guardian.new(participant).can_whisper_in_topic?(topic)).to eq(
-        false,
-      )
+      expect(Guardian.new(participant).can_whisper_in_topic?(topic)).to eq(false)
     end
   end
 end

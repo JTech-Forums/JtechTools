@@ -43,7 +43,10 @@ module("Unit | discourse-mod | mod-note-unread-title", function () {
   test("stripUnreadPrefix removes the (N) shape but leaves other text alone", function (assert) {
     assert.strictEqual(stripUnreadPrefix("(7) My Forum"), "My Forum");
     assert.strictEqual(stripUnreadPrefix("My Forum"), "My Forum");
-    assert.strictEqual(stripUnreadPrefix("(notes) My Forum"), "(notes) My Forum");
+    assert.strictEqual(
+      stripUnreadPrefix("(notes) My Forum"),
+      "(notes) My Forum"
+    );
   });
 
   test("negative or non-numeric counts are treated as zero", function (assert) {

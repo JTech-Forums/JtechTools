@@ -9,19 +9,11 @@ require "rails_helper"
 # to tmp/capybara/ and published as the CI artifact.
 RSpec.describe "Per-topic prompt checklist", type: :system do
   fab!(:moderator)
-  fab!(:user) do
-    Fabricate(:user, trust_level: TrustLevel[2], refresh_auto_groups: true)
-  end
-  fab!(:tl0_user) do
-    Fabricate(:user, trust_level: TrustLevel[0], refresh_auto_groups: true)
-  end
+  fab!(:user) { Fabricate(:user, trust_level: TrustLevel[2], refresh_auto_groups: true) }
+  fab!(:tl0_user) { Fabricate(:user, trust_level: TrustLevel[0], refresh_auto_groups: true) }
   fab!(:category)
-  fab!(:topic) do
-    Fabricate(:topic, category: category, title: "Gated reply thread")
-  end
-  fab!(:first_post) do
-    Fabricate(:post, topic: topic, raw: "The original post in this thread.")
-  end
+  fab!(:topic) { Fabricate(:topic, category: category, title: "Gated reply thread") }
+  fab!(:first_post) { Fabricate(:post, topic: topic, raw: "The original post in this thread.") }
 
   TOPIC_FIELD = DiscourseModCategories::TOPIC_PROMPT_CHECKLIST_FIELD
   USER_FIELD = DiscourseModCategories::USER_TOPIC_CHECKLIST_FIELD
@@ -31,19 +23,14 @@ RSpec.describe "Per-topic prompt checklist", type: :system do
     SiteSetting.min_post_length = 5
     SiteSetting.body_min_entropy = 1
     SiteSetting.auto_silence_fast_typers_on_first_post = false
-    SiteSetting.approve_unless_allowed_groups =
-      Group::AUTO_GROUPS[:trust_level_0].to_s
+    SiteSetting.approve_unless_allowed_groups = Group::AUTO_GROUPS[:trust_level_0].to_s
     SiteSetting.approve_post_count = 0
   end
 
   def shot(name)
     begin
       Timeout.timeout(8) do
-        until page.evaluate_script(
-                "Array.from(document.images).every((i) => i.complete)",
-              )
-          sleep 0.1
-        end
+        sleep 0.1 until page.evaluate_script("Array.from(document.images).every((i) => i.complete)")
       end
     rescue Timeout::Error
     end
@@ -77,10 +64,7 @@ RSpec.describe "Per-topic prompt checklist", type: :system do
     shot("171_topic_page_moderator")
 
     open_admin_menu
-    expect(page).to have_css(
-      ".mod-topic-prompt-checklist-button",
-      wait: 10,
-    )
+    expect(page).to have_css(".mod-topic-prompt-checklist-button", wait: 10)
     shot("172_topic_admin_menu_with_prompt_checklist")
 
     find(".mod-topic-prompt-checklist-button").click
@@ -89,14 +73,14 @@ RSpec.describe "Per-topic prompt checklist", type: :system do
     shot("173_topic_prompt_checklist_modal_empty")
 
     find(".mod-topic-prompt-checklist-add").click
-    all(".mod-topic-prompt-checklist-modal .mod-checklist-row-label").last
-      .fill_in(with: "Confirm this is a real reply, not spam")
-    find(".mod-topic-prompt-checklist-add").click
-    all(".mod-topic-prompt-checklist-modal .mod-checklist-row-label").last
-      .fill_in(with: "I read the topic guidelines")
-    find(".mod-topic-prompt-checklist-button-label").fill_in(
-      with: "I agree, post my reply",
+    all(".mod-topic-prompt-checklist-modal .mod-checklist-row-label").last.fill_in(
+      with: "Confirm this is a real reply, not spam",
     )
+    find(".mod-topic-prompt-checklist-add").click
+    all(".mod-topic-prompt-checklist-modal .mod-checklist-row-label").last.fill_in(
+      with: "I read the topic guidelines",
+    )
+    find(".mod-topic-prompt-checklist-button-label").fill_in(with: "I agree, post my reply")
     shot("174_topic_prompt_checklist_modal_filled")
 
     find(".mod-topic-prompt-checklist-save").click
@@ -142,17 +126,11 @@ RSpec.describe "Per-topic prompt checklist", type: :system do
   end
 
   it "re-prompts the same user after a version bump" do
-    set_topic_checklist(
-      version: 1,
-      items: [{ "label" => "Rule one", "url" => "" }],
-    )
+    set_topic_checklist(version: 1, items: [{ "label" => "Rule one", "url" => "" }])
     user.upsert_custom_fields(USER_FIELD => { topic.id.to_s => 1 })
 
     # Staff bump.
-    set_topic_checklist(
-      version: 2,
-      items: [{ "label" => "Updated rule one", "url" => "" }],
-    )
+    set_topic_checklist(version: 2, items: [{ "label" => "Updated rule one", "url" => "" }])
 
     sign_in(user)
     visit("/t/#{topic.slug}/#{topic.id}")
@@ -253,28 +231,21 @@ RSpec.describe "Per-topic prompt checklist", type: :system do
     find(".mod-topic-prompt-checklist-button").click
     expect(page).to have_css(".mod-topic-prompt-checklist-modal", wait: 10)
 
-    mode =
-      PageObjects::Components::SelectKit.new(
-        ".mod-topic-prompt-checklist-mode",
-      )
+    mode = PageObjects::Components::SelectKit.new(".mod-topic-prompt-checklist-mode")
     mode.expand
     mode.select_row_by_value("statement")
     expect(page).to have_css(".mod-topic-prompt-checklist-statement", wait: 10)
     find(".mod-topic-prompt-checklist-statement").fill_in(
       with: "Please read the rules before posting.",
     )
-    find(".mod-topic-prompt-checklist-button-label").fill_in(
-      with: "I agree",
-    )
+    find(".mod-topic-prompt-checklist-button-label").fill_in(with: "I agree")
     find(".mod-topic-prompt-checklist-save").click
     expect(page).to have_css(".fk-d-toast", wait: 10)
     shot("187_topic_prompt_statement_editor_saved")
 
     stored = topic.reload.custom_fields[TOPIC_FIELD]
     expect(stored["mode"]).to eq("statement")
-    expect(stored["statement"]).to eq(
-      "Please read the rules before posting.",
-    )
+    expect(stored["statement"]).to eq("Please read the rules before posting.")
 
     # A regular user replying is now prompted with the statement modal,
     # with the accept button enabled immediately and no checkboxes.

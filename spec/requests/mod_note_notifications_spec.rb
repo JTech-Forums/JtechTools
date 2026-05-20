@@ -11,9 +11,9 @@ require "rails_helper"
 RSpec.describe "Moderator-note notifications" do
   fab!(:admin)
   fab!(:moderator)
-  fab!(:other_moderator) { Fabricate(:moderator) }
+  fab!(:other_moderator, :moderator)
   fab!(:user)
-  fab!(:other_user) { Fabricate(:user) }
+  fab!(:other_user, :user)
   fab!(:category)
   fab!(:topic) { Fabricate(:topic, category: category) }
   fab!(:first_post) { Fabricate(:post, topic: topic) }
@@ -22,9 +22,7 @@ RSpec.describe "Moderator-note notifications" do
     SiteSetting.mod_categories_enabled = true
     # The live pop-up alert is only published to staff seen recently
     # (Discourse's `allow_live_notifications?` gate), so mark them present.
-    [admin, moderator, other_moderator].each do |u|
-      u.update!(last_seen_at: Time.zone.now)
-    end
+    [admin, moderator, other_moderator].each { |u| u.update!(last_seen_at: Time.zone.now) }
   end
 
   def custom_notifications(target)
@@ -36,10 +34,7 @@ RSpec.describe "Moderator-note notifications" do
   end
 
   def set_note(raw = "Heads up, staff.")
-    put "/discourse-mod-categories/topic/#{topic.id}.json",
-        params: {
-          private_note: raw,
-        }
+    put "/discourse-mod-categories/topic/#{topic.id}.json", params: { private_note: raw }
   end
 
   describe "setting a private note" do
@@ -76,9 +71,7 @@ RSpec.describe "Moderator-note notifications" do
 
       data = JSON.parse(custom_notifications(admin).first.data)
       expect(data["display_username"]).to eq(moderator.username)
-      expect(data["message"]).to eq(
-        "discourse_mod_categories.note_notification",
-      )
+      expect(data["message"]).to eq("discourse_mod_categories.note_notification")
     end
 
     it "creates the notification as high priority so it pops up live" do
@@ -97,18 +90,16 @@ RSpec.describe "Moderator-note notifications" do
       data = JSON.parse(custom_notifications(admin).first.data)
       expect(data["mod_note"]).to eq(true)
       expect(data["topic_title"]).to eq(topic.title)
-      expect(data["url"]).to eq(
-        "#{topic.relative_url}/#{topic.reload.highest_post_number}",
-      )
+      expect(data["url"]).to eq("#{topic.relative_url}/#{topic.reload.highest_post_number}")
     end
 
     it "publishes a live pop-up alert to every other staff member" do
       sign_in(moderator)
 
       messages =
-        MessageBus.track_publish { set_note } .select do |m|
-          m.channel.start_with?("/notification-alert/")
-        end
+        MessageBus
+          .track_publish { set_note }
+          .select { |m| m.channel.start_with?("/notification-alert/") }
 
       alerted = messages.map(&:channel)
       expect(alerted).to include("/notification-alert/#{admin.id}")
@@ -116,9 +107,7 @@ RSpec.describe "Moderator-note notifications" do
       expect(alerted).not_to include("/notification-alert/#{moderator.id}")
 
       payload = messages.first.data
-      expect(payload[:post_url]).to eq(
-        "#{topic.relative_url}/#{topic.reload.highest_post_number}",
-      )
+      expect(payload[:post_url]).to eq("#{topic.relative_url}/#{topic.reload.highest_post_number}")
       expect(payload[:translated_title]).to include(moderator.username)
       expect(payload[:translated_title]).to include(topic.title)
     end
@@ -178,10 +167,7 @@ RSpec.describe "Moderator-note notifications" do
         end
 
       expect(custom_notifications(admin).first.high_priority).to eq(true)
-      alerted =
-        messages
-          .map(&:channel)
-          .select { |c| c.start_with?("/notification-alert/") }
+      alerted = messages.map(&:channel).select { |c| c.start_with?("/notification-alert/") }
       expect(alerted).to include("/notification-alert/#{admin.id}")
     end
 
@@ -211,10 +197,7 @@ RSpec.describe "Moderator-note notifications" do
       sign_in(moderator)
 
       expect {
-        post "/discourse-mod-categories/topic/#{topic.id}/note-reply.json",
-             params: {
-               raw: "   ",
-             }
+        post "/discourse-mod-categories/topic/#{topic.id}/note-reply.json", params: { raw: "   " }
       }.not_to change { custom_notifications(admin).count }
     end
   end

@@ -76,9 +76,7 @@ RSpec.describe "Moderator messages serialization" do
 
       get "/t/#{topic.id}.json"
 
-      expect(response.parsed_body).not_to have_key(
-        "mod_topic_private_note_author",
-      )
+      expect(response.parsed_body).not_to have_key("mod_topic_private_note_author")
     end
 
     it "exposes the private note to staff" do
@@ -114,24 +112,19 @@ RSpec.describe "Moderator messages serialization" do
 
   describe "moderator-note unread count" do
     it "exposes an unread count to staff via the current user" do
-      topic.custom_fields["mod_topic_private_note_activity_at"] = Time
-        .zone
-        .now
-        .iso8601
+      topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
       topic.save_custom_fields(true)
       sign_in(moderator)
 
       get "/session/current.json"
 
       expect(response.status).to eq(200)
-      count =
-        response.parsed_body["current_user"]["mod_note_unread_count"]
+      count = response.parsed_body["current_user"]["mod_note_unread_count"]
       expect(count).to be >= 1
     end
 
     it "reports zero once the staff member has seen the feed" do
-      topic.custom_fields["mod_topic_private_note_activity_at"] =
-        2.days.ago.iso8601
+      topic.custom_fields["mod_topic_private_note_activity_at"] = 2.days.ago.iso8601
       topic.save_custom_fields(true)
       moderator.custom_fields["mod_notes_seen_at"] = Time.zone.now.iso8601
       moderator.save_custom_fields(true)
@@ -139,9 +132,7 @@ RSpec.describe "Moderator messages serialization" do
 
       get "/session/current.json"
 
-      expect(
-        response.parsed_body["current_user"]["mod_note_unread_count"],
-      ).to eq(0)
+      expect(response.parsed_body["current_user"]["mod_note_unread_count"]).to eq(0)
     end
   end
 end

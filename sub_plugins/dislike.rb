@@ -196,7 +196,14 @@ after_initialize do
 
       def dnl_record_phantom_emoji
         return unless DiscourseNoLikes.restricted?(post)
-        main_id = (DiscourseReactions::Reaction.main_reaction_id.to_s rescue "heart")
+        main_id =
+          (
+            begin
+              DiscourseReactions::Reaction.main_reaction_id.to_s
+            rescue StandardError
+              "heart"
+            end
+          )
         rv = reaction&.reaction_value.to_s
         return if rv == main_id
 

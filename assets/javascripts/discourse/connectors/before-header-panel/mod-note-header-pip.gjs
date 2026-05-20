@@ -5,6 +5,4 @@ import ModNoteHeaderPip from "../../components/mod-note-header-pip";
 // whether the user menu is open. The `before-header-panel-outlet` outlet
 // sits inside the header just before the user-menu panel, so the pip lines
 // up alongside the existing notification icons.
-<template>
-  <ModNoteHeaderPip />
-</template>
+<template><ModNoteHeaderPip /></template>

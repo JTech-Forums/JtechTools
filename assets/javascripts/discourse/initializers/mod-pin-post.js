@@ -25,8 +25,7 @@ export default {
     withPluginApi("1.0", (api) => {
       api.addPostAdminMenuButton((post) => {
         const topic = post.topic;
-        const pinned =
-          !!topic && topic.mod_topic_pinned_post_id === post.id;
+        const pinned = !!topic && topic.mod_topic_pinned_post_id === post.id;
 
         return {
           icon: "thumbtack",

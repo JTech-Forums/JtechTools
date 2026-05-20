@@ -558,7 +558,7 @@
 }
 
 // Stack the cramped controls on narrow viewports.
-@media (max-width: 700px) {
+@media (width <= 700px) {
   .mod-checklist-row {
     flex-direction: column;
     align-items: stretch;

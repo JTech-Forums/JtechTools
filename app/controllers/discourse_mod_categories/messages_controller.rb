@@ -5,33 +5,25 @@ module ::DiscourseModCategories
   # Guardian-gated so only moderators and admins can write; regular users
   # get a 403.
   class MessagesController < ::ApplicationController
+    requires_plugin "jtech"
     requires_login
 
     TOPIC_FOOTER_FIELD = DiscourseModCategories::TOPIC_FOOTER_FIELD
     TOPIC_REPLY_PROMPT_FIELD = DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD
     TOPIC_PINNED_POST_FIELD = DiscourseModCategories::TOPIC_PINNED_POST_FIELD
-    TOPIC_REQUIRE_REPLY_APPROVAL_FIELD =
-      DiscourseModCategories::TOPIC_REQUIRE_REPLY_APPROVAL_FIELD
+    TOPIC_REQUIRE_REPLY_APPROVAL_FIELD = DiscourseModCategories::TOPIC_REQUIRE_REPLY_APPROVAL_FIELD
     TOPIC_PRIVATE_NOTE_FIELD = DiscourseModCategories::TOPIC_PRIVATE_NOTE_FIELD
-    TOPIC_PRIVATE_NOTE_POSITION_FIELD =
-      DiscourseModCategories::TOPIC_PRIVATE_NOTE_POSITION_FIELD
-    TOPIC_PRIVATE_NOTE_USER_FIELD =
-      DiscourseModCategories::TOPIC_PRIVATE_NOTE_USER_FIELD
+    TOPIC_PRIVATE_NOTE_POSITION_FIELD = DiscourseModCategories::TOPIC_PRIVATE_NOTE_POSITION_FIELD
+    TOPIC_PRIVATE_NOTE_USER_FIELD = DiscourseModCategories::TOPIC_PRIVATE_NOTE_USER_FIELD
     TOPIC_PRIVATE_NOTE_CREATED_AT_FIELD =
       DiscourseModCategories::TOPIC_PRIVATE_NOTE_CREATED_AT_FIELD
-    TOPIC_PRIVATE_NOTE_REPLIES_FIELD =
-      DiscourseModCategories::TOPIC_PRIVATE_NOTE_REPLIES_FIELD
-    TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD =
-      DiscourseModCategories::TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD
+    TOPIC_PRIVATE_NOTE_REPLIES_FIELD = DiscourseModCategories::TOPIC_PRIVATE_NOTE_REPLIES_FIELD
+    TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD = DiscourseModCategories::TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD
     USER_NOTES_SEEN_FIELD = DiscourseModCategories::USER_NOTES_SEEN_FIELD
-    CATEGORY_NEW_TOPIC_PROMPT_FIELD =
-      DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD
-    TOPIC_REPLY_PROMPT_TL_FIELD =
-      DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD
-    CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD =
-      DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD
-    TOPIC_WHISPER_PARTICIPANTS_FIELD =
-      DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
+    CATEGORY_NEW_TOPIC_PROMPT_FIELD = DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD
+    TOPIC_REPLY_PROMPT_TL_FIELD = DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD
+    CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD = DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD
+    TOPIC_WHISPER_PARTICIPANTS_FIELD = DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
 
     def update_topic
       topic = Topic.find_by(id: params[:topic_id])
@@ -48,8 +40,9 @@ module ::DiscourseModCategories
       end
 
       if params.key?(:reply_prompt_max_tl)
-        topic.custom_fields[TOPIC_REPLY_PROMPT_TL_FIELD] =
-          normalize_max_tl(params[:reply_prompt_max_tl])
+        topic.custom_fields[TOPIC_REPLY_PROMPT_TL_FIELD] = normalize_max_tl(
+          params[:reply_prompt_max_tl],
+        )
       end
 
       if params.key?(:pinned_post_id)
@@ -64,53 +57,40 @@ module ::DiscourseModCategories
       end
 
       if params.key?(:require_reply_approval)
-        topic.custom_fields[TOPIC_REQUIRE_REPLY_APPROVAL_FIELD] =
-          ActiveModel::Type::Boolean.new.cast(
-            params[:require_reply_approval],
-          ) || false
+        topic.custom_fields[
+          TOPIC_REQUIRE_REPLY_APPROVAL_FIELD
+        ] = ActiveModel::Type::Boolean.new.cast(params[:require_reply_approval]) || false
       end
 
       if params.key?(:private_note)
-        topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD] =
-          params[:private_note].to_s
+        topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD] = params[:private_note].to_s
         # Record who set the note, and when, so it can be shown like a post.
         topic.custom_fields[TOPIC_PRIVATE_NOTE_USER_FIELD] = current_user.id
-        topic.custom_fields[TOPIC_PRIVATE_NOTE_CREATED_AT_FIELD] = Time
-          .zone
-          .now
-          .iso8601
-        topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time
-          .zone
-          .now
-          .iso8601
+        topic.custom_fields[TOPIC_PRIVATE_NOTE_CREATED_AT_FIELD] = Time.zone.now.iso8601
+        topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
       end
 
       if params.key?(:private_note_position)
         position = params[:private_note_position].to_s
-        position = "bottom" unless %w[top bottom].include?(position)
+        position = "bottom" if %w[top bottom].exclude?(position)
         topic.custom_fields[TOPIC_PRIVATE_NOTE_POSITION_FIELD] = position
       end
 
       topic.save_custom_fields(true)
 
-      if params.key?(:private_note) &&
-           topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].present?
+      if params.key?(:private_note) && topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].present?
         notify_staff_of_note(topic)
       end
 
       render json: {
                footer_message: topic.custom_fields[TOPIC_FOOTER_FIELD].to_s,
                reply_prompt: topic.custom_fields[TOPIC_REPLY_PROMPT_FIELD].to_s,
-               reply_prompt_max_tl:
-                 topic.custom_fields[TOPIC_REPLY_PROMPT_TL_FIELD],
+               reply_prompt_max_tl: topic.custom_fields[TOPIC_REPLY_PROMPT_TL_FIELD],
                pinned_post_id: topic.custom_fields[TOPIC_PINNED_POST_FIELD],
-               require_reply_approval:
-                 !!topic.custom_fields[TOPIC_REQUIRE_REPLY_APPROVAL_FIELD],
-               private_note:
-                 topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].to_s,
+               require_reply_approval: !!topic.custom_fields[TOPIC_REQUIRE_REPLY_APPROVAL_FIELD],
+               private_note: topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].to_s,
                private_note_position:
-                 topic.custom_fields[TOPIC_PRIVATE_NOTE_POSITION_FIELD].presence ||
-                   "bottom",
+                 topic.custom_fields[TOPIC_PRIVATE_NOTE_POSITION_FIELD].presence || "bottom",
                private_note_author: private_note_author(topic),
              }
     end
@@ -123,22 +103,19 @@ module ::DiscourseModCategories
       # plugin; reuse that gate for the per-category prompt.
       guardian.ensure_can_edit_category!(category)
 
-      category.custom_fields[CATEGORY_NEW_TOPIC_PROMPT_FIELD] = params[
-        :new_topic_prompt
-      ].to_s
+      category.custom_fields[CATEGORY_NEW_TOPIC_PROMPT_FIELD] = params[:new_topic_prompt].to_s
 
       if params.key?(:new_topic_prompt_max_tl)
-        category.custom_fields[CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD] =
-          normalize_max_tl(params[:new_topic_prompt_max_tl])
+        category.custom_fields[CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD] = normalize_max_tl(
+          params[:new_topic_prompt_max_tl],
+        )
       end
 
       category.save_custom_fields(true)
 
       render json: {
-               new_topic_prompt:
-                 category.custom_fields[CATEGORY_NEW_TOPIC_PROMPT_FIELD].to_s,
-               new_topic_prompt_max_tl:
-                 category.custom_fields[CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD],
+               new_topic_prompt: category.custom_fields[CATEGORY_NEW_TOPIC_PROMPT_FIELD].to_s,
+               new_topic_prompt_max_tl: category.custom_fields[CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD],
              }
     end
 
@@ -160,10 +137,7 @@ module ::DiscourseModCategories
         "created_at" => Time.zone.now.iso8601,
       }
       topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
-      topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time
-        .zone
-        .now
-        .iso8601
+      topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
       topic.save_custom_fields(true)
       notify_staff_of_note(topic)
 
@@ -187,10 +161,7 @@ module ::DiscourseModCategories
 
       reply["raw"] = raw
       topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
-      topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time
-        .zone
-        .now
-        .iso8601
+      topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
       topic.save_custom_fields(true)
 
       render json: note_thread_json(topic)
@@ -205,16 +176,13 @@ module ::DiscourseModCategories
 
       reply_id = params[:reply_id].to_s
       replies = note_replies(topic)
-      raise Discourse::InvalidParameters.new(:reply_id) unless replies.any? do |r|
-        r["id"] == reply_id
+      unless replies.any? { |r| r["id"] == reply_id }
+        raise Discourse::InvalidParameters.new(:reply_id)
       end
 
       replies.reject! { |r| r["id"] == reply_id }
       topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
-      topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time
-        .zone
-        .now
-        .iso8601
+      topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
       topic.save_custom_fields(true)
 
       render json: note_thread_json(topic)
@@ -231,10 +199,7 @@ module ::DiscourseModCategories
       topic.custom_fields[TOPIC_PRIVATE_NOTE_USER_FIELD] = nil
       topic.custom_fields[TOPIC_PRIVATE_NOTE_CREATED_AT_FIELD] = nil
       topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = []
-      topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time
-        .zone
-        .now
-        .iso8601
+      topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
       topic.save_custom_fields(true)
 
       render json: note_thread_json(topic)
@@ -253,9 +218,7 @@ module ::DiscourseModCategories
           .limit(50)
           .pluck(:topic_id)
 
-      seen_at =
-        current_user.custom_fields[USER_NOTES_SEEN_FIELD].presence ||
-          "1970-01-01T00:00:00Z"
+      seen_at = current_user.custom_fields[USER_NOTES_SEEN_FIELD].presence || "1970-01-01T00:00:00Z"
 
       notes =
         Topic
@@ -264,8 +227,7 @@ module ::DiscourseModCategories
             note = topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].to_s
             next if note.blank?
             replies = topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD]
-            activity_at =
-              topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD].to_s
+            activity_at = topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD].to_s
             {
               topic_id: topic.id,
               topic_title: topic.title,
@@ -341,8 +303,7 @@ module ::DiscourseModCategories
         end
       raise Discourse::InvalidParameters.new(:username) unless user
 
-      existing =
-        Array(topic.custom_fields[TOPIC_WHISPER_PARTICIPANTS_FIELD]).map(&:to_i)
+      existing = Array(topic.custom_fields[TOPIC_WHISPER_PARTICIPANTS_FIELD]).map(&:to_i)
       merged = (existing + [user.id]).reject { |i| i <= 0 }.uniq
 
       if merged.sort != existing.sort
@@ -464,11 +425,7 @@ module ::DiscourseModCategories
           ),
       }
 
-      MessageBus.publish(
-        "/notification-alert/#{staff_user.id}",
-        payload,
-        user_ids: [staff_user.id],
-      )
+      MessageBus.publish("/notification-alert/#{staff_user.id}", payload, user_ids: [staff_user.id])
     end
 
     def private_note_author(topic)
@@ -476,11 +433,7 @@ module ::DiscourseModCategories
       user = user_id && User.find_by(id: user_id)
       return nil unless user
 
-      {
-        username: user.username,
-        name: user.name,
-        avatar_template: user.avatar_template,
-      }
+      { username: user.username, name: user.name, avatar_template: user.avatar_template }
     end
 
     # Reads the topic's reply thread, backfilling a stable `id` onto any
@@ -498,8 +451,7 @@ module ::DiscourseModCategories
       {
         private_note: topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].to_s,
         private_note_author: private_note_author(topic),
-        private_note_created_at:
-          topic.custom_fields[TOPIC_PRIVATE_NOTE_CREATED_AT_FIELD],
+        private_note_created_at: topic.custom_fields[TOPIC_PRIVATE_NOTE_CREATED_AT_FIELD],
         replies: serialized_note_replies(topic),
       }
     end

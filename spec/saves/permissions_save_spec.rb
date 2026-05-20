@@ -17,7 +17,7 @@ RSpec.describe "Category save — permissions", type: :request do
 
   def expect_not_500
     expect(response.status).not_to eq(500),
-                                  "permissions save crashed (500). body starts: #{response.body[0, 200]}"
+    "permissions save crashed (500). body starts: #{response.body[0, 200]}"
   end
 
   describe "setting permissions to a single group at 'create_post' (level 2)" do

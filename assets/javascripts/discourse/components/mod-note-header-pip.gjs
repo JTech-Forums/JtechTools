@@ -106,10 +106,7 @@ export default class ModNoteHeaderPip extends Component {
       this.#renderCount(this.currentUser?.mod_note_unread_count || 0);
     };
     if (typeof this.currentUser.addObserver === "function") {
-      this.currentUser.addObserver(
-        "mod_note_unread_count",
-        this.#onUserChange
-      );
+      this.currentUser.addObserver("mod_note_unread_count", this.#onUserChange);
     }
 
     const messageBus = getOwner(this)?.lookup?.("service:message-bus");

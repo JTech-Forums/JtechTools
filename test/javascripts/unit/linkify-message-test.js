@@ -63,7 +63,10 @@ module("Unit | discourse-mod | linkify-message", function () {
   });
 
   test("does not linkify a bare domain without a scheme", function (assert) {
-    assert.strictEqual(html("visit example.com please"), "visit example.com please");
+    assert.strictEqual(
+      html("visit example.com please"),
+      "visit example.com please"
+    );
   });
 
   test("does not linkify ftp or other schemes", function (assert) {

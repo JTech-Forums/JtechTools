@@ -13,6 +13,7 @@ module ::DiscourseModCategories
   # Any user records that they have acknowledged a checklist; staff read and
   # edit the lists and the acceptance audit log.
   class ChecklistController < ::ApplicationController
+    requires_plugin "jtech"
     requires_login
 
     NS = DiscourseModCategories::CHECKLIST_STORE_NAMESPACE
@@ -67,10 +68,7 @@ module ::DiscourseModCategories
       topic_id = params[:topic_id].presence
       render json: {
                checklist:
-                 DiscourseModCategories.owed_checklist_for(
-                   current_user,
-                   topic_id: topic_id,
-                 ),
+                 DiscourseModCategories.owed_checklist_for(current_user, topic_id: topic_id),
              }
     end
 
@@ -84,9 +82,7 @@ module ::DiscourseModCategories
 
       if kind == "targeted"
         checklist =
-          DiscourseModCategories.targeted_checklists.find do |c|
-            c["id"] == params[:id].to_s
-          end
+          DiscourseModCategories.targeted_checklists.find { |c| c["id"] == params[:id].to_s }
         raise Discourse::NotFound unless checklist
 
         accepted_version = [submitted, checklist["version"].to_i].min
@@ -109,8 +105,7 @@ module ::DiscourseModCategories
         current_user.save_custom_fields(true)
         append_log_entry(accepted_version, kind: "topic", id: topic_id.to_s)
       else
-        current =
-          DiscourseModCategories.checklist_config&.dig("version").to_i
+        current = DiscourseModCategories.checklist_config&.dig("version").to_i
         accepted_version = [submitted, current].min
         current_user.custom_fields[VERSION_FIELD] = accepted_version
         current_user.save_custom_fields(true)
@@ -211,9 +206,9 @@ module ::DiscourseModCategories
       guardian.ensure_can_manage_mod_messages!
 
       mode = params[:mode].to_s
-      mode = "checklist" unless %w[statement checklist].include?(mode)
+      mode = "checklist" if %w[statement checklist].exclude?(mode)
       frequency = params[:frequency].to_s
-      frequency = "once" unless %w[once every_reply].include?(frequency)
+      frequency = "once" if %w[once every_reply].exclude?(frequency)
       statement = params[:statement].to_s
       max_tl = normalize_topic_max_tl(params[:max_tl])
 
@@ -236,12 +231,8 @@ module ::DiscourseModCategories
       # new config supersedes them, and the composer gate already prefers
       # the per-topic checklist. Clearing means a stale legacy prompt
       # never appears after the staff explicitly saves the new config.
-      topic.custom_fields[
-        DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD
-      ] = nil
-      topic.custom_fields[
-        DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD
-      ] = nil
+      topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD] = nil
+      topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD] = nil
       topic.save_custom_fields(true)
 
       render json: topic_checklist_json(topic)
@@ -382,7 +373,12 @@ module ::DiscourseModCategories
     # string-stored value back to a hash.
     def topic_checklist_raw(topic)
       raw = topic.custom_fields[TOPIC_FIELD]
-      raw = JSON.parse(raw) rescue nil if raw.is_a?(String)
+      raw =
+        begin
+          JSON.parse(raw)
+        rescue StandardError
+          nil
+        end if raw.is_a?(String)
       raw.is_a?(Hash) ? raw : nil
     end
 
@@ -395,18 +391,17 @@ module ::DiscourseModCategories
       raw = topic_checklist_raw(topic)
 
       if raw.nil?
-        legacy_text =
-          topic.custom_fields[
-            DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD
-          ].to_s
+        legacy_text = topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD].to_s
         if legacy_text.strip.length > 0
+          legacy_max_tl = topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD]
           legacy_max_tl =
-            topic.custom_fields[
-              DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD
-            ]
-          legacy_max_tl =
-            legacy_max_tl.nil? || legacy_max_tl.to_s.strip.empty? ? 4 :
-              [[legacy_max_tl.to_i, 0].max, 4].min
+            (
+              if legacy_max_tl.nil? || legacy_max_tl.to_s.strip.empty?
+                4
+              else
+                [[legacy_max_tl.to_i, 0].max, 4].min
+              end
+            )
           return(
             {
               topic_id: topic.id,
@@ -426,9 +421,9 @@ module ::DiscourseModCategories
       end
 
       mode = raw["mode"].to_s
-      mode = "checklist" unless %w[statement checklist].include?(mode)
+      mode = "checklist" if %w[statement checklist].exclude?(mode)
       frequency = raw["frequency"].to_s
-      frequency = "once" unless %w[once every_reply].include?(frequency)
+      frequency = "once" if %w[once every_reply].exclude?(frequency)
       max_tl = raw.key?("max_tl") ? normalize_topic_max_tl(raw["max_tl"]) : 4
 
       {

@@ -48,18 +48,24 @@ export default class ModTopicPromptChecklistModal extends Component {
   modeOptions = [
     {
       id: "statement",
-      name: i18n("discourse_mod_categories.topic_prompt_checklist.mode_statement"),
+      name: i18n(
+        "discourse_mod_categories.topic_prompt_checklist.mode_statement"
+      ),
     },
     {
       id: "checklist",
-      name: i18n("discourse_mod_categories.topic_prompt_checklist.mode_checklist"),
+      name: i18n(
+        "discourse_mod_categories.topic_prompt_checklist.mode_checklist"
+      ),
     },
   ];
 
   frequencyOptions = [
     {
       id: "once",
-      name: i18n("discourse_mod_categories.topic_prompt_checklist.frequency_once"),
+      name: i18n(
+        "discourse_mod_categories.topic_prompt_checklist.frequency_once"
+      ),
     },
     {
       id: "every_reply",
@@ -269,9 +275,7 @@ export default class ModTopicPromptChecklistModal extends Component {
 
         {{#if this.loading}}
           <p class="mod-topic-prompt-checklist-loading">
-            {{i18n
-              "discourse_mod_categories.topic_prompt_checklist.loading"
-            }}
+            {{i18n "discourse_mod_categories.topic_prompt_checklist.loading"}}
           </p>
         {{else}}
           {{#if this.fromLegacy}}

@@ -26,7 +26,9 @@ RSpec.describe "Category save — JTech live-payload reproduction", type: :reque
       slug: category.slug,
       color: "00615a",
       text_color: "FFFFFF",
-      permissions: { "everyone" => 1 },
+      permissions: {
+        "everyone" => 1,
+      },
       position: 3,
       allow_badges: true,
       custom_fields: {
@@ -51,7 +53,7 @@ RSpec.describe "Category save — JTech live-payload reproduction", type: :reque
 
   def expect_not_500(label)
     expect(response.status).not_to eq(500),
-                                  "#{label} crashed (500). body starts: #{response.body[0, 400]}"
+    "#{label} crashed (500). body starts: #{response.body[0, 400]}"
   end
 
   describe "minimal — base fields only, no review-mode, no localizations" do
@@ -71,7 +73,9 @@ RSpec.describe "Category save — JTech live-payload reproduction", type: :reque
   describe "the new approval-mode-with-exempt-group fields" do
     let(:payload) do
       base_payload.merge(
-        category_setting_attributes: { topic_posting_review_mode: "everyone_except" },
+        category_setting_attributes: {
+          topic_posting_review_mode: "everyone_except",
+        },
         topic_posting_review_group_ids: [tl3_group.id],
       )
     end
@@ -102,7 +106,9 @@ RSpec.describe "Category save — JTech live-payload reproduction", type: :reque
   describe "category_setting_attributes mode on its own (no group_ids)" do
     let(:payload) do
       base_payload.merge(
-        category_setting_attributes: { topic_posting_review_mode: "everyone_except" },
+        category_setting_attributes: {
+          topic_posting_review_mode: "everyone_except",
+        },
       )
     end
 
@@ -165,7 +171,9 @@ RSpec.describe "Category save — JTech live-payload reproduction", type: :reque
   describe "the full live payload all-at-once" do
     let(:payload) do
       base_payload.merge(
-        category_setting_attributes: { topic_posting_review_mode: "everyone_except" },
+        category_setting_attributes: {
+          topic_posting_review_mode: "everyone_except",
+        },
         topic_posting_review_group_ids: [tl3_group.id],
         category_types: %w[discussion support],
         category_type_site_settings: {
@@ -173,12 +181,13 @@ RSpec.describe "Category save — JTech live-payload reproduction", type: :reque
           prioritize_solved_topics_in_search: true,
           show_who_marked_solved: true,
         },
-        custom_fields: base_payload[:custom_fields].merge(
-          "enable_accepted_answers" => "true",
-          "notify_on_staff_accept_solved" => "true",
-          "empty_box_on_unsolved" => "false",
-          "solved_topics_auto_close_hours" => "48",
-        ),
+        custom_fields:
+          base_payload[:custom_fields].merge(
+            "enable_accepted_answers" => "true",
+            "notify_on_staff_accept_solved" => "true",
+            "empty_box_on_unsolved" => "false",
+            "solved_topics_auto_close_hours" => "48",
+          ),
       )
     end
 
