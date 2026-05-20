@@ -2,7 +2,7 @@
 
 # name: JtechTools
 # about: Jtech — combined Discourse plugin (dislike, another-smtp, mini-mod, mod-categories, dumbcourse)
-# version: 0.1.0
+# version: 0.1.1
 # authors: TripleU, Shalom_Karr, Ars18
 # url: https://github.com/JTech-Forums/JtechTools
 # required_version: 3.0.0
