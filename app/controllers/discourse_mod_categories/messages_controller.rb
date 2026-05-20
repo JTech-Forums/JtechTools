@@ -249,8 +249,10 @@ module ::DiscourseModCategories
     def notes_feed_seen
       guardian.ensure_can_manage_mod_messages!
 
-      current_user.custom_fields[USER_NOTES_SEEN_FIELD] = Time.zone.now.iso8601
-      current_user.save_custom_fields(true)
+      current_user.with_lock do
+        current_user.custom_fields[USER_NOTES_SEEN_FIELD] = Time.zone.now.iso8601
+        current_user.save_custom_fields(true)
+      end
 
       # Also flip the underlying Notification rows to read. Otherwise the
       # bell counter keeps reflecting the prior mod-note bumps after the
