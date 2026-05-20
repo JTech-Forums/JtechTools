@@ -1,5 +1,5 @@
 import { module, test } from "qunit";
-import modNoteNotificationRenderer from "discourse/plugins/discourse-mod/discourse/lib/mod-note-notification";
+import modNoteNotificationRenderer from "discourse/plugins/JtechTools/discourse/lib/mod-note-notification";
 
 // Unit tests for the moderator-note notification-type renderer. The renderer
 // is a factory that receives a NotificationTypeBase class and returns a

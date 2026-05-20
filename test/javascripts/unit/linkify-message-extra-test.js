@@ -1,5 +1,5 @@
 import { module, test } from "qunit";
-import { messageToHtml } from "discourse/plugins/discourse-mod/discourse/lib/linkify-message";
+import { messageToHtml } from "discourse/plugins/JtechTools/discourse/lib/linkify-message";
 
 // Extra edge-case coverage for the shared message renderer (escaping +
 // URL linkification + line breaks). Complements linkify-message-test.js.

@@ -1,5 +1,5 @@
 import { module, test } from "qunit";
-import { messageToHtml } from "discourse/plugins/discourse-mod/discourse/lib/linkify-message";
+import { messageToHtml } from "discourse/plugins/JtechTools/discourse/lib/linkify-message";
 
 // Pure-function unit tests for the shared message renderer used by the
 // precheck confirmation dialog and the category prompt preview. It escapes

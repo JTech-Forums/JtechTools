@@ -1,5 +1,5 @@
 import { module, test } from "qunit";
-import { computeReplyAudience } from "discourse/plugins/discourse-mod/discourse/lib/mod-whisper-reply-audience";
+import { computeReplyAudience } from "discourse/plugins/JtechTools/discourse/lib/mod-whisper-reply-audience";
 
 // Pure-function unit tests for the whisper reply-audience helper. End-to-end
 // behaviour is in spec/system.

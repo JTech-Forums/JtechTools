@@ -3,7 +3,7 @@ import {
   shouldRenderTopicFooterMessage,
   topicFooterFeatureActive,
   topicFooterMessage,
-} from "discourse/plugins/discourse-mod/discourse/lib/topic-footer-message";
+} from "discourse/plugins/JtechTools/discourse/lib/topic-footer-message";
 
 // Exhaustive matrix coverage for the moderator-set bottom-pinned message
 // visibility decision (reads the topic's mod_topic_footer_message custom

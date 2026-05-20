@@ -2,7 +2,7 @@ import { module, test } from "qunit";
 import {
   applyUnreadPrefix,
   stripUnreadPrefix,
-} from "discourse/plugins/discourse-mod/discourse/lib/mod-note-unread-title";
+} from "discourse/plugins/JtechTools/discourse/lib/mod-note-unread-title";
 
 // Pure-function unit tests for the moderator-notes browser-tab title
 // prefix. The header pip is a tracked-property render, so its reactivity

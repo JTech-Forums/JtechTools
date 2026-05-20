@@ -3,7 +3,7 @@ import { CREATE_TOPIC } from "discourse/models/composer";
 import {
   precheckPromptFor,
   REPLY_ACTION,
-} from "discourse/plugins/discourse-mod/discourse/lib/precheck-prompt";
+} from "discourse/plugins/JtechTools/discourse/lib/precheck-prompt";
 
 // Exhaustive matrix coverage for the composer precheck prompt resolution.
 // Pure-function unit tests; end-to-end behaviour is in spec/system.

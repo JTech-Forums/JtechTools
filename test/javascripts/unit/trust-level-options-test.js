@@ -1,5 +1,5 @@
 import { module, test } from "qunit";
-import { trustLevelOptions } from "discourse/plugins/discourse-mod/discourse/lib/trust-level-options";
+import { trustLevelOptions } from "discourse/plugins/JtechTools/discourse/lib/trust-level-options";
 
 // Pure-function unit tests for the trust-level audience dropdown options.
 // The prompt caps include "Everyone" (4) and "Up to regulars" (3); the

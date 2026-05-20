@@ -3,8 +3,8 @@ import { CREATE_TOPIC } from "discourse/models/composer";
 import {
   firstPostChecklistFor,
   refreshOwedChecklist,
-} from "discourse/plugins/discourse-mod/discourse/lib/first-post-checklist";
-import { REPLY_ACTION } from "discourse/plugins/discourse-mod/discourse/lib/precheck-prompt";
+} from "discourse/plugins/JtechTools/discourse/lib/first-post-checklist";
+import { REPLY_ACTION } from "discourse/plugins/JtechTools/discourse/lib/precheck-prompt";
 
 // Pure-function unit tests for first-post checklist gate resolution. The
 // server decides eligibility (trust level / version); the frontend only
