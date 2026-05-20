@@ -2,7 +2,7 @@
 
 module DiscourseDumbcourse
   class PushController < ::ApplicationController
-    requires_plugin "jtech"
+    requires_plugin "JtechTools"
     requires_login except: [:server_info]
     skip_before_action :verify_authenticity_token
 

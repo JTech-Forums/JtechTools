@@ -8,10 +8,10 @@
   ],
   "compilerOptions": {
     "paths": {
-      "discourse/plugins/jtech/*": [
+      "discourse/plugins/JtechTools/*": [
         "./assets/javascripts/*"
       ],
-      "discourse/plugins/jtech/admin/*": [
+      "discourse/plugins/JtechTools/admin/*": [
         "./admin/assets/javascripts/admin/*"
       ],
       "admin/*": ["./node_modules/discourse/declarations/admin/*"],

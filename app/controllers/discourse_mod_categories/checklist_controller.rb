@@ -13,7 +13,7 @@ module ::DiscourseModCategories
   # Any user records that they have acknowledged a checklist; staff read and
   # edit the lists and the acceptance audit log.
   class ChecklistController < ::ApplicationController
-    requires_plugin "jtech"
+    requires_plugin "JtechTools"
     requires_login
 
     NS = DiscourseModCategories::CHECKLIST_STORE_NAMESPACE
