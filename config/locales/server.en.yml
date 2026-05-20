@@ -1,0 +1,90 @@
+en:
+  site_settings:
+    categories:
+      jtech: Jtech
+      jtech_dislike: Jtech — Dislike
+      jtech_smtp: Jtech — Alternate SMTP
+      jtech_mini_mod: Jtech — Mini-mod
+      jtech_mod: Jtech — Mod
+      jtech_dumbcourse: Jtech — Dumbcourse
+    jtech_enabled: Master gate for the Jtech plugin bundle. Each sub-plugin keeps
+      its own enable setting below for fine-grained control.
+    discourse_no_likes_enabled: Enable discourse-no-likes
+    no_reactions_category_ids: Categories where reactions are phantom (shown but not
+      counted in stats)
+    dislike_hide_like_button: Hide the like/reaction button entirely in restricted
+      categories
+    dislike_count_in_leaderboard: Count phantom likes in user stats (likes_given /
+      likes_received) for leaderboards
+    dislike_show_in_history: Show phantom likes in user activity history feeds
+    dislike_allowed_like_groups: Only these groups can like in restricted categories
+      (empty = everyone)
+    purge_phantom_likes_now: Retroactively clear phantom likes — recalculates stats
+      for all affected users (resets automatically after running)
+    mini_mod_enabled: Allow category group moderators to create and edit categories
+      they moderate.
+    mini_mod_manage_all_categories: Allow category group moderators to manage all
+      categories, not just the ones they moderate.
+    mini_mod_manage_tags: Allow category group moderators to create, edit, and delete
+      tags.
+    mini_mod_can_post_in_closed_topics: Allow category group moderators to reply on
+      closed topics in categories they moderate. Disabled by default; site staff are
+      unaffected.
+    mini_mod_can_reopen_topics: Allow category group moderators to reopen closed topics
+      in categories they moderate. Disabled by default; site staff are unaffected.
+    tl4_can_post_in_closed_topics: Allow trust level 4 users to reply on closed topics.
+      Disabled by default; site staff are unaffected.
+    tl4_can_reopen_topics: Allow trust level 4 users to reopen closed topics. Disabled
+      by default; site staff are unaffected.
+    mod_categories_enabled: Allow moderators to create, edit, and delete categories.
+    precheck_new_topic_enabled: Enable the per-category 'before you post a new topic'
+      confirmation prompt. Moderators set the message on each category.
+    topic_footer_message_enabled: Enable the per-topic pinned footer message. Moderators
+      set the message on each topic.
+    topic_reply_prompt_enabled: Enable the per-topic 'before you post a reply' confirmation
+      prompt. Moderators set the message on each topic.
+    mod_whisper_enabled: Enable moderator whisper posts — in-topic replies visible
+      only to staff, the post author, the topic's whisper participants, and any users
+      staff explicitly target.
+    dumbcourse_enabled: Enable Dumbcourse
+    dumbcourse_default_theme: Default Dumbcourse theme
+    dumbcourse_default_view: Default Dumbcourse view
+    dumbcourse_base_path: 'Base path for Dumbcourse (default: dumb)'
+    dumbcourse_sidebar_link_enabled: Show Dumbcourse link in sidebar
+    dumbcourse_show_category_names: Show category names
+    dumbcourse_topic_posters_visibility: Show latest user profiles on topic list
+    dumbcourse_online_glow_enabled: Show online glow on topic user profiles
+    dumbcourse_topic_posters_visibility_choices:
+      all: All devices
+      desktop: Desktop only
+      mobile: Mobile only
+      none: 'Off'
+    dumbcourse_push_enabled: Enable push notifications for Dumbcourse app (SSE disabled
+      — Redis publish only)
+    dumbcourse_pagination_enabled: Use page-based pagination instead of infinite scroll
+      on Dumbcourse topic lists
+    dumbcourse_topics_per_page: Topics shown per page when pagination is enabled
+    dumbcourse_languagetool_enabled: Enable LanguageTool refine button
+    dumbcourse_languagetool_enabled_description: Adds a Refine (spell/grammar) button
+      in the composer.
+    dumbcourse_languagetool_mode: LanguageTool mode
+    dumbcourse_languagetool_mode_description: Choose self-hosted or the official LanguageTool
+      API.
+    dumbcourse_languagetool_mode_choices:
+      self_hosted: Self-hosted
+      official_api: Official API
+    dumbcourse_languagetool_url: LanguageTool server URL
+    dumbcourse_languagetool_url_description: Base URL for your self-hosted server
+      (no /v2/check).
+    dumbcourse_languagetool_secret: LanguageTool server secret (optional)
+    dumbcourse_languagetool_secret_description: Optional bearer token sent as Authorization
+      header.
+    dumbcourse_languagetool_api_url: LanguageTool official API URL
+    dumbcourse_languagetool_api_url_description: 'Official endpoint. Default: https://api.languagetool.org/v2/check'
+    dumbcourse_languagetool_api_username: LanguageTool API username (optional)
+    dumbcourse_languagetool_api_username_description: Only required for official API
+      plans that use username + API key.
+    dumbcourse_languagetool_api_key: LanguageTool API key (optional)
+    dumbcourse_languagetool_api_key_description: Required when a username is set.
+  discourse_mod_categories:
+    note_notification_alert: '%{username} added a moderator note on "%{topic}"'

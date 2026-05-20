@@ -1,0 +1,200 @@
+en:
+  js:
+    discourse_mod_categories:
+      precheck:
+        title: Before you post
+        confirm: Post anyway
+        go_back: Go back
+      topic_prompt_checklist:
+        menu_label: Prompt Checklist
+        title: Prompt Checklist for this topic
+        intro: Users replying to this topic see a confirmation before their reply
+          is allowed through. Saving bumps the version, so any user who already accepted
+          is re-prompted.
+        loading: Loading…
+        inactive: Inactive — no items in checklist mode (or blank statement in statement
+          mode) means replies are not gated.
+        current_version: 'Current version: %{count}'
+        item_label: Checkbox text
+        item_url: Link URL (optional)
+        add_item: Add item
+        remove_item: Remove item
+        button_label_label: Accept button text
+        button_label_placeholder: I agree, post my reply
+        save: Save
+        clear: Clear
+        cancel: Cancel
+        saved_toast: Topic prompt checklist saved
+        cleared_toast: Topic prompt checklist cleared
+        mode_label: Mode
+        mode_statement: Statement — one message, single accept button
+        mode_checklist: Checklist — multiple items, all must be ticked
+        statement_label: Statement text
+        statement_placeholder: Write the confirmation message users see before their
+          reply is allowed through. Markdown is supported.
+        frequency_label: Show this prompt
+        frequency_once: Once per user per topic
+        frequency_every_reply: On every reply
+        max_tl_label: Show this prompt to
+        legacy_migration_notice: This topic has an older reply-prompt set under "Moderator
+          Actions". It has been pre-filled below in Statement mode — review and click
+          Save to migrate.
+      topic_messages:
+        menu_label: Moderator Actions
+        title: Moderator Actions for this topic
+        footer_label: Pinned footer message
+        footer_hint: Shown in a banner at the bottom of this topic. Leave blank for
+          none.
+        approval_label: Require approval for replies
+        approval_hint: When on, replies to this topic go to the review queue for a
+          moderator to approve. Staff replies are posted directly.
+        note_label: Private moderator note
+        note_hint: Visible only to staff on this topic — never shown to regular users.
+          Leave blank for none.
+        note_position_label: Show the note
+        note_position_top: At the top of the topic
+        note_position_bottom: At the bottom of the topic
+        save: Save
+        cancel: Cancel
+        saved_toast: Moderator settings saved
+        section_visible: What users see
+        section_moderation: Moderation tools
+      footer_message:
+        label: Moderator message
+      private_note:
+        heading: Moderator note (staff only)
+        just_now: just now
+        reply: Reply
+        add_reply: Add reply
+        cancel: Cancel
+        save: Save
+        reply_placeholder: Reply to this moderator note…
+        edit_reply: Edit reply
+        delete_reply: Delete reply
+        delete_reply_confirm: Delete this reply from the moderator note thread?
+        edit_note: Edit note
+        delete_note: Delete note
+        delete_note_confirm: Delete this moderator note and all its replies?
+      notes_tab:
+        title: Moderator notes
+        loading: Loading…
+        empty: No moderator notes yet.
+      note_notification: '%{username} added a moderator note'
+      note_notification_title: Moderator note
+      audience:
+        label: Show this prompt to
+        all: Everyone
+        tl0: New users only (TL0)
+        tl1: New and basic users (TL0 and TL1)
+        tl2: Up to members (TL0 to TL2)
+        tl3: Up to regulars (TL0 to TL3)
+      first_post_checklist:
+        modal_title: Before you post
+        intro: Please confirm each item below before posting for the first time.
+        last_updated: 'Last updated:'
+        confirm: I agree, post
+        cancel: Cancel
+        open_link: Open link
+        editor_title: First-post checklist
+        editor_intro: New members must tick every item below before they can post.
+          Saving changes re-prompts everyone who already accepted.
+        loading: Loading…
+        inactive: Inactive — with no items, users are not prompted. Add an item below
+          to start the checklist.
+        item_label: Checkbox text
+        item_url: Link URL (optional)
+        add_item: Add item
+        remove_item: Remove item
+        move_up_item: Move item up
+        move_down_item: Move item down
+        save: Save checklist
+        saved: Saved
+        empty: No items yet. Add one to start the checklist.
+        audience_label: Who must accept before their next post
+        button_label_label: Accept button text
+        button_label_placeholder: I agree, post
+        sidebar_title: Configure the first-post checklist
+        sidebar_text: First-post checklist
+        current_version: 'Current version: %{count}'
+        log_title: Acceptance log
+        log_empty: No one has accepted the checklist yet.
+        log_user: User
+        log_version: Version
+        log_when: Accepted
+        log_filter_current: Current version only (%{count})
+        require_reaccept: Require re-accept
+        reaccept_done: '%{username} will be prompted again on their next post'
+        targeted_title: Targeted checklists
+        targeted_intro: Separate checklists aimed at specific users. A targeted checklist
+          is always shown to its listed users — regardless of trust level or staff
+          status.
+        targeted_add: Add targeted checklist
+        targeted_name_label: Name
+        targeted_users_label: Target users
+        targeted_save: Save targeted checklist
+        targeted_delete: Delete
+        targeted_saved: Targeted checklist saved
+      category_settings:
+        new_topic_prompt_label: Before-new-topic prompt
+        new_topic_prompt_hint: Shown as a confirmation when someone starts a new topic
+          in this category. Leave blank for none.
+        preview_label: Preview
+        save: Save message
+        saved: Saved
+      pin_post:
+        pin: Pin to Bottom
+        unpin: Unpin from Bottom
+        pinned_label: Pinned post
+        jump_to_original: Go to the original post
+      whisper:
+        toolbar_title: Whisper this reply
+        modal_title: Whisper to users or groups
+        modal_instructions: Choose up to 10 users or groups who should see this reply.
+          Staff always see whispers.
+        search_placeholder: Search for a user or group…
+        confirm: Whisper
+        clear: Clear
+        armed_pill_prefix: Whispering to
+        armed_pill_staff_only: Whispering to staff
+        clear_armed: Clear whisper
+        banner_to: Whisper to
+        banner_to_staff: Whisper to staff
+        whisper_notification: whispered to you
+        add_participant:
+          menu_label: Add user to whisper
+          modal_title: Add a user to the whisper conversation
+          modal_instructions: Choose the users to add to this topic's whisper conversation.
+            They will see every whisper in this topic from now on.
+          search_placeholder: Search for a user…
+          confirm: Add to whisper
+          cancel: Cancel
+          added_toast:
+            one: Added %{count} user to the whisper conversation
+            other: Added %{count} users to the whisper conversation
+    dumbcourse:
+      sidebar_section_title: Dumbcourse
+      sidebar_link_text: Dumbcourse
+      sidebar_link_title: Open Dumbcourse
+  site_settings:
+    discourse_another_email_enabled: Enable another smtp server for special email
+      addresses
+    discourse_another_email_smtp_authentication_mode: smtp_authentication_mode
+    discourse_another_email_enabling_mails: Email domains that use the other smtp
+      server
+    discourse_another_email_smtp_address: another_email_smtp_address
+    discourse_another_email_smtp_port: another_email_smtp_port
+    discourse_another_email_smtp_username: another_email_smtp_username
+    discourse_another_email_smtp_password: another_email_smtp_password
+    discourse_another_email_maillist_allowing_emails: which emails are allowed in
+      maillist mode?
+    discourse_another_email_force_from_domain: Force from address domain (e.g., example.com).
+      When set, all emails will be sent from this domain.
+    discourse_another_email_force_smtp_username_to_sender: Force SMTP username to
+      match the sender email address
+  admin_js:
+    admin:
+      site_settings:
+        categories:
+          discourse_mini_mod: Discourse Mini Mod
+          trust_level_4: Trust Level 4
+          discourse_mod_categories: Moderator Category Management

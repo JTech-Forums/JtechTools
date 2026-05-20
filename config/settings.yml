@@ -1,0 +1,190 @@
+# Jtech — combined plugin settings.
+# Each top-level key (jtech, jtech_dislike, jtech_smtp, jtech_mini_mod,
+# jtech_mod, jtech_dumbcourse) is rendered as its own admin-UI tab.
+# Setting names are unchanged from the original sub-plugins; only the
+# category grouping is new. trust_level_4 is the Discourse core category.
+
+jtech:
+  jtech_enabled:
+    default: true
+    client: true
+
+jtech_dislike:
+  discourse_no_likes_enabled:
+    default: true
+    client: false
+  no_reactions_category_ids:
+    default: ''
+    client: false
+    type: category_list
+  dislike_hide_like_button:
+    default: false
+    client: false
+  dislike_count_in_leaderboard:
+    default: false
+    client: false
+  dislike_show_in_history:
+    default: false
+    client: false
+  dislike_allowed_like_groups:
+    default: ''
+    client: false
+    type: group_list
+    allow_any: true
+  purge_phantom_likes_now:
+    default: false
+    client: false
+    type: bool
+
+jtech_smtp:
+  discourse_another_email_enabled:
+    default: false
+    client: false
+  discourse_another_email_smtp_authentication_mode:
+    default: plain
+    client: false
+  discourse_another_email_smtp_address:
+    default: 172.17.0.1
+    client: false
+  discourse_another_email_smtp_port:
+    default: 587
+    client: false
+    min: 0
+    max: 65537
+  discourse_another_email_smtp_username:
+    default: username@example.com
+    client: false
+  discourse_another_email_smtp_password:
+    default: password
+    client: false
+    secret: true
+  discourse_another_email_force_from_domain:
+    default: ''
+    client: false
+    description: Force all from addresses to use this domain (e.g., example.com).
+      Leave empty to disable.
+  discourse_another_email_force_smtp_username_to_sender:
+    default: false
+    client: false
+    description: Force SMTP username to match the sender address
+
+jtech_mini_mod:
+  mini_mod_enabled:
+    default: false
+    client: true
+  mini_mod_manage_all_categories:
+    default: false
+    client: true
+  mini_mod_manage_tags:
+    default: false
+    client: true
+  mini_mod_can_post_in_closed_topics:
+    default: false
+    client: false
+  mini_mod_can_reopen_topics:
+    default: false
+    client: false
+
+trust_level_4:
+  tl4_can_post_in_closed_topics:
+    default: false
+    client: false
+  tl4_can_reopen_topics:
+    default: false
+    client: false
+
+jtech_mod:
+  mod_categories_enabled:
+    default: false
+    client: true
+  precheck_new_topic_enabled:
+    default: true
+    client: true
+  topic_footer_message_enabled:
+    default: true
+    client: true
+  topic_reply_prompt_enabled:
+    default: true
+    client: true
+  mod_whisper_enabled:
+    default: true
+    client: true
+
+jtech_dumbcourse:
+  dumbcourse_enabled:
+    default: true
+    client: true
+  dumbcourse_default_theme:
+    default: dark
+    client: true
+    type: enum
+    choices:
+    - dark
+    - light
+  dumbcourse_default_view:
+    default: latest
+    client: true
+    type: enum
+    choices:
+    - latest
+    - new
+    - top
+    - unseen
+    - hot
+    - my
+    - categories
+  dumbcourse_base_path:
+    default: dumb
+    client: true
+  dumbcourse_sidebar_link_enabled:
+    default: true
+    client: true
+  dumbcourse_show_category_names:
+    default: true
+    client: true
+  dumbcourse_topic_posters_visibility:
+    default: all
+    client: true
+    type: enum
+    choices:
+    - all
+    - desktop
+    - mobile
+    - none
+  dumbcourse_online_glow_enabled:
+    default: true
+    client: true
+  dumbcourse_push_enabled:
+    default: false
+    client: false
+  dumbcourse_pagination_enabled:
+    default: false
+    client: true
+  dumbcourse_topics_per_page:
+    default: 30
+    min: 10
+    max: 100
+    client: true
+  dumbcourse_languagetool_enabled:
+    default: false
+    client: false
+  dumbcourse_languagetool_mode:
+    default: self_hosted
+    client: false
+    type: enum
+    enum: DumbcourseLanguagetoolModeSiteSetting
+  dumbcourse_languagetool_url:
+    default: ''
+    client: false
+  dumbcourse_languagetool_secret:
+    default: ''
+    client: false
+  dumbcourse_languagetool_api_url:
+    default: https://api.languagetool.org/v2/check
+    client: false
+  dumbcourse_languagetool_api_username:
+    default: ''
+    client: false
+  dumbcourse_languagetool_api_key:
+    default: ''
+    client: false

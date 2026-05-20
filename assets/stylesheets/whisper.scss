@@ -1,0 +1,135 @@
+// Moderator whisper styling. Two colour codes:
+//   --staff  : staff-authored whisper to chosen users (indigo)
+//   --user   : staff-only whisper-back / staff-only whisper (amber)
+
+// Tint the composer whenever a whisper is armed. The armed-pill connector
+// (rendered into the composer-fields outlet only when a whisper is armed) is
+// the DOM signal; :has() does the rest.
+.composer-fields:has(.mod-whisper-armed-pill),
+.d-editor-container:has(.mod-whisper-armed-pill) {
+  background-color: rgba(99, 102, 241, 0.08);
+}
+
+.composer-fields:has(.mod-whisper-armed-pill)
+  .d-editor-button-bar
+  button.mod-whisper-target {
+  color: var(--tertiary);
+  background-color: rgba(99, 102, 241, 0.18);
+}
+
+.mod-whisper-armed-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 4px;
+  padding: 3px 6px 3px 12px;
+  font-size: var(--font-down-1);
+  color: var(--tertiary);
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 999px;
+  width: fit-content;
+  max-width: 100%;
+
+  &__label {
+    opacity: 0.85;
+  }
+
+  &__users {
+    display: inline;
+  }
+
+  &__user,
+  &__group {
+    font-weight: 600;
+  }
+
+  &__close.btn {
+    padding: 0 6px;
+    min-width: 0;
+    min-height: 0;
+    color: var(--tertiary);
+    background: transparent;
+
+    &:hover {
+      background: rgba(99, 102, 241, 0.25);
+    }
+
+    .d-icon {
+      margin: 0;
+    }
+  }
+}
+
+// Full-width strip rendered above a whisper post's cooked body by
+// api.decorateCookedElement in the initializer.
+.mod-whisper-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: var(--font-down-1);
+  padding: 4px 10px;
+  margin: 0 0 8px;
+  border-radius: 4px;
+
+  .mod-whisper-eye {
+    flex-shrink: 0;
+  }
+
+  &__label {
+    opacity: 0.85;
+  }
+
+  &__user,
+  &__group {
+    font-weight: 600;
+    text-decoration: none;
+  }
+}
+
+// The decorator marks the `.cooked` element itself — a marker on the post
+// <article> does not survive Glimmer post-stream reconciliation.
+.cooked.mod-whisper {
+  padding-left: 12px;
+}
+
+.cooked.mod-whisper--staff {
+  background: rgba(99, 102, 241, 0.05);
+  border-left: 3px solid rgba(99, 102, 241, 0.55);
+
+  .mod-whisper-banner {
+    color: var(--tertiary);
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+  }
+
+  .mod-whisper-banner__user,
+  .mod-whisper-banner__group {
+    color: var(--tertiary);
+  }
+}
+
+.cooked.mod-whisper--user {
+  background: rgba(217, 119, 6, 0.05);
+  border-left: 3px solid rgba(217, 119, 6, 0.55);
+
+  .mod-whisper-banner {
+    color: #b45309;
+    background: rgba(217, 119, 6, 0.1);
+    border: 1px solid rgba(217, 119, 6, 0.25);
+  }
+}
+
+.mod-whisper-target-modal {
+  .select-kit {
+    width: 100%;
+  }
+
+  &__instructions {
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+    margin-bottom: 12px;
+  }
+}

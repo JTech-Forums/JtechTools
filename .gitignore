@@ -1,0 +1,8 @@
+node_modules/
+/gems
+/auto_generated
+.eslintcache
+.DS_Store
+*.log
+tmp/
+.claude/

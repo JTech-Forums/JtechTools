@@ -1,0 +1,7 @@
+{
+  "name": "jtech",
+  "about": "Jtech — combined Discourse plugin (dislike, another-smtp, mini-mod, mod-categories, dumbcourse)",
+  "version": "0.1.0",
+  "authors": "TripleU",
+  "url": "https://github.com/JTech-Forums/JtechTools"
+}

@@ -1,0 +1,571 @@
+// The moderator footer message — styled as an official/system notice:
+// a tinted, bordered box with an accent left border and a shield icon.
+.topic-footer-message {
+  display: flex;
+  gap: 0.75em;
+  margin: 1.5em 0;
+  padding: 1em 1.25em;
+  border: 1px solid var(--tertiary-low);
+  border-left: 4px solid var(--tertiary);
+  border-radius: var(--d-border-radius, 0.25em);
+  background: var(--tertiary-very-low, var(--primary-very-low));
+  color: var(--primary);
+  overflow-wrap: anywhere;
+
+  .topic-footer-message-icon {
+    flex-shrink: 0;
+    line-height: 1;
+
+    .d-icon {
+      color: var(--tertiary);
+      font-size: var(--font-up-2);
+    }
+  }
+
+  .topic-footer-message-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .topic-footer-message-label {
+    margin-bottom: 0.25em;
+    font-weight: 700;
+    color: var(--tertiary);
+  }
+
+  .topic-footer-message-content {
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    > :first-child {
+      margin-top: 0;
+    }
+
+    > :last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.mod-topic-messages-modal {
+  .mod-messages-label {
+    font-weight: 700;
+  }
+
+  .mod-messages-hint {
+    margin: 0.15em 0 0.4em;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+// The pinned post renders as a regular post at the bottom of the topic
+// (right after the post stream), not as a footer banner.
+.topic-footer-pinned-post {
+  margin: 0;
+  padding: 1em 0;
+  border-top: 1px solid var(--primary-low);
+
+  .pinned-post {
+    display: flex;
+    gap: 0.75em;
+  }
+
+  .pinned-post-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .pinned-post-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pinned-post-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 0.25em;
+  }
+
+  .pinned-post-username {
+    font-weight: 700;
+  }
+
+  .pinned-post-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    padding: 0.1em 0.5em;
+    border-radius: 0.7em;
+    background: var(--primary-low);
+    color: var(--primary-medium);
+    font-size: var(--font-down-2);
+  }
+
+  .pinned-post-jump {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    color: var(--primary-medium);
+
+    &:hover {
+      color: var(--primary);
+    }
+  }
+}
+
+// Badge shown on the pinned post in its real position in the post stream.
+.mod-pinned-in-stream-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  margin-bottom: 0.5em;
+  padding: 0.15em 0.6em;
+  border-radius: 0.7em;
+  background: var(--primary-low);
+  color: var(--primary-medium);
+  font-size: var(--font-down-2);
+  font-weight: 700;
+
+  .d-icon {
+    color: var(--primary-medium);
+  }
+}
+
+.mod-approval-control {
+  .mod-approval-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    cursor: pointer;
+  }
+}
+
+// Staff-only moderator note — shown like a (whisper-style) post: the
+// moderator's avatar and name, in a muted, dashed-border card.
+.mod-private-note {
+  margin: 1em 0;
+  padding: 0.75em 1em;
+  border: 1px dashed var(--primary-medium);
+  border-radius: var(--d-border-radius, 0.25em);
+  background: var(--primary-very-low);
+  overflow-wrap: anywhere;
+
+  .mod-private-note-marker {
+    display: flex;
+    align-items: center;
+    gap: 0.35em;
+    margin-bottom: 0.5em;
+    font-weight: 700;
+    color: var(--primary-medium);
+    text-transform: uppercase;
+    font-size: var(--font-down-1);
+  }
+
+  .mod-private-note-post {
+    display: flex;
+    gap: 0.75em;
+  }
+
+  .mod-private-note-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .mod-private-note-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mod-private-note-username {
+    font-weight: 700;
+  }
+
+  .mod-private-note-byline {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    margin-bottom: 0.25em;
+  }
+
+  .mod-private-note-time {
+    color: var(--primary-medium);
+    font-size: var(--font-down-2);
+  }
+
+  .mod-private-note-reply {
+    margin-top: 0.75em;
+    padding-top: 0.75em;
+    border-top: 1px solid var(--primary-low);
+  }
+
+  .mod-private-note-reply-text {
+    overflow-wrap: anywhere;
+
+    > :first-child {
+      margin-top: 0;
+    }
+
+    > :last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .mod-private-note-reply-button {
+    margin-top: 0.6em;
+  }
+
+  .mod-private-note-reply-box {
+    margin-top: 0.6em;
+
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+
+  .mod-private-note-reply-actions {
+    display: flex;
+    gap: 0.4em;
+    margin-top: 0.4em;
+  }
+}
+
+.mod-private-note-control {
+  .mod-private-note-position-input {
+    margin-top: 0.25em;
+  }
+}
+
+// The staff "Moderator notes" user-menu tab panel.
+.mod-notes-panel {
+  .mod-notes-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .mod-notes-item-link {
+    display: flex;
+    gap: 0.5em;
+    padding: 0.6em 0.75em;
+    color: var(--primary);
+
+    &:hover {
+      background: var(--highlight-low, var(--primary-very-low));
+    }
+  }
+
+  .mod-notes-item--unread .mod-notes-item-link {
+    background: var(--tertiary-low, var(--primary-low));
+  }
+
+  .mod-notes-item-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .mod-notes-item-title {
+    font-weight: 700;
+  }
+
+  .mod-notes-item-note {
+    color: var(--primary-medium);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mod-notes-empty {
+    padding: 1em;
+    color: var(--primary-medium);
+    text-align: center;
+  }
+}
+
+.mod-new-topic-prompt {
+  .mod-messages-label {
+    font-weight: 700;
+  }
+
+  .mod-messages-hint {
+    margin: 0.15em 0 0.4em;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mod-new-topic-prompt-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-top: 0.5em;
+  }
+
+  .mod-saved-indicator {
+    color: var(--success);
+  }
+}
+
+// First-post checklist modal shown to new users before their first post.
+.mod-first-post-checklist-modal {
+  .mod-checklist-intro {
+    color: var(--primary-medium);
+  }
+
+  .mod-checklist-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .mod-checklist-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    padding: 0.4em 0;
+    border-bottom: 1px solid var(--primary-low);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .mod-checklist-item-label {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    flex: 1;
+    cursor: pointer;
+  }
+
+  .mod-checklist-link {
+    white-space: nowrap;
+  }
+}
+
+// First-post checklist editor on /mod-checklist.
+.mod-checklist-page {
+  max-width: 720px;
+  margin: 1em auto;
+  padding: 0 1em;
+
+  .mod-checklist-editor-intro {
+    color: var(--primary-medium);
+  }
+
+  .mod-checklist-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 0.5em;
+  }
+
+  .mod-checklist-row-label {
+    flex: 2;
+    margin: 0;
+  }
+
+  .mod-checklist-row-url {
+    flex: 3;
+    margin: 0;
+  }
+
+  .mod-checklist-empty {
+    color: var(--primary-medium);
+    font-style: italic;
+  }
+
+  .mod-checklist-editor-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-top: 1em;
+  }
+
+  .mod-checklist-saved {
+    color: var(--success);
+  }
+}
+
+.mod-checklist-page {
+  .mod-checklist-field {
+    margin-top: 1em;
+  }
+
+  .mod-checklist-field-label {
+    font-weight: 700;
+  }
+
+  .mod-checklist-button-label {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+  }
+}
+
+.mod-checklist-page {
+  .mod-checklist-log {
+    margin-top: 2em;
+    border-top: 1px solid var(--primary-low);
+    padding-top: 1em;
+  }
+
+  .mod-checklist-log-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      text-align: left;
+      padding: 0.4em 0.6em;
+      border-bottom: 1px solid var(--primary-low);
+    }
+
+    th {
+      color: var(--primary-medium);
+      font-size: var(--font-down-1);
+    }
+  }
+
+  .mod-checklist-log-empty {
+    color: var(--primary-medium);
+    font-style: italic;
+  }
+}
+
+// Wider, sectioned Moderator Actions modal.
+.mod-topic-messages-modal {
+  .d-modal__container {
+    max-width: 720px;
+  }
+
+  .mod-messages-section {
+    margin: 1.2em 0 0.4em;
+    padding-bottom: 0.2em;
+    border-bottom: 1px solid var(--primary-low);
+    font-size: var(--font-up-1);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+}
+
+.mod-checklist-page {
+  .mod-checklist-log-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1em;
+    flex-wrap: wrap;
+  }
+
+  .mod-checklist-log-count {
+    display: inline-block;
+    margin-left: 0.4em;
+    padding: 0 0.5em;
+    border-radius: 0.8em;
+    background: var(--primary-low);
+    font-size: var(--font-down-1);
+  }
+
+  .mod-checklist-log-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.35em;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+}
+
+// First-post checklist modal — wide, to fit the editor + audit log.
+.mod-checklist-modal {
+  .d-modal__container {
+    max-width: 820px;
+  }
+
+  .d-modal__body {
+    max-height: 75vh;
+  }
+
+  .mod-checklist-page {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.mod-checklist-inactive {
+  margin: 0.6em 0;
+  padding: 0.6em 0.8em;
+  border-left: 3px solid var(--danger);
+  background: var(--danger-low);
+  border-radius: 0 4px 4px 0;
+}
+
+.mod-checklist-version {
+  color: var(--primary-medium);
+  font-size: var(--font-down-1);
+}
+
+.mod-checklist-loading {
+  color: var(--primary-medium);
+}
+
+// Live preview of the category new-topic prompt.
+.mod-prompt-preview {
+  margin: 0.5em 0;
+  padding: 0.6em 0.8em;
+  background: var(--primary-very-low);
+  border: 1px solid var(--primary-low);
+  border-radius: 4px;
+
+  .mod-prompt-preview-label {
+    display: block;
+    margin-bottom: 0.3em;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+    text-transform: uppercase;
+  }
+}
+
+// Move-up / move-down / remove buttons grouped at the end of a row.
+.mod-checklist-page {
+  .mod-checklist-row-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.15em;
+    flex-shrink: 0;
+  }
+}
+
+// Stack the cramped controls on narrow viewports.
+@media (max-width: 700px) {
+  .mod-checklist-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mod-checklist-modal .d-modal__container,
+  .mod-topic-messages-modal .d-modal__container {
+    max-width: 100%;
+  }
+}
