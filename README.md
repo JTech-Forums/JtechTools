@@ -64,7 +64,7 @@ Discourse plugins can only register a single `enabled_site_setting` at load time
 
 ```bash
 cd /var/discourse/plugins
-git clone https://github.com/JTech-Forums/JtechTools.git
+git clone https://github.com/JTech-Forums/JtechTools.git jtech-tools
 cd /var/discourse
 ./launcher rebuild app
 ```

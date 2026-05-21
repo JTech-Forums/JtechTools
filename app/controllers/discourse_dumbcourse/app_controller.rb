@@ -4,7 +4,7 @@ require "rack/mime"
 
 module DiscourseDumbcourse
   class AppController < ::ActionController::Base
-    requires_plugin "JtechTools"
+    requires_plugin "jtech-tools"
     include ::CurrentUser
 
     layout false

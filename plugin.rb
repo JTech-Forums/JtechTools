@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# name: JtechTools
+# name: jtech-tools
 # about: Jtech — combined Discourse plugin (dislike, another-smtp, mini-mod, mod-categories, dumbcourse, translator-tweaks)
 # version: 0.1.1
 # authors: TripleU, Shalom_Karr, Ars18

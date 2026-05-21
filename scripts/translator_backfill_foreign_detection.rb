@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-# Run via: docker exec app rails runner /var/www/discourse/plugins/JtechTools/scripts/translator_backfill_foreign_detection.rb
+# Run via: docker exec app rails runner /var/www/discourse/plugins/jtech-tools/scripts/translator_backfill_foreign_detection.rb
 #
 # Requires the upstream discourse/discourse-translator plugin to be installed
-# alongside JtechTools — this script enqueues its DetectTranslatableLanguage
+# alongside jtech-tools — this script enqueues its DetectTranslatableLanguage
 # job. The script lives here because the rest of alltechdev's tweaks to that
 # plugin are applied at boot from sub_plugins/translator_tweaks.rb, so it
 # made sense to bundle the one-shot script with them.

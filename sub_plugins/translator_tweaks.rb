@@ -40,7 +40,7 @@ after_initialize do
   #
   # Method-resolution note: we prepend onto Guardian. Upstream's prepend wins
   # the outermost position because the translator plugin loads after
-  # JtechTools alphabetically — but upstream `can_translate?` only ever
+  # jtech-tools alphabetically — but upstream `can_translate?` only ever
   # returns false early or falls through to `super`. Our prepend sits in the
   # super-chain and blocks the "fall through to true" path for blank-locale
   # posts. Order works regardless of which plugin prepended first.
