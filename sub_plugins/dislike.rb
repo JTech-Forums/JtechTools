@@ -166,12 +166,14 @@ after_initialize do
     next unless (post = post_action.post)
     next unless DiscourseNoLikes.restricted?(post)
 
-    DiscourseNoLikes::PhantomReaction.create!(
-      post_id: post.id,
-      user_id: post_action.user_id,
-      category_id: post.topic.category_id,
-      reaction_type: "like",
-    )
+    if SiteSetting.dislike_record_audit_trail
+      DiscourseNoLikes::PhantomReaction.create!(
+        post_id: post.id,
+        user_id: post_action.user_id,
+        category_id: post.topic.category_id,
+        reaction_type: "like",
+      )
+    end
 
     # Only suppress notification if history is disabled
     unless SiteSetting.dislike_show_in_history
@@ -206,6 +208,7 @@ after_initialize do
           )
         rv = reaction&.reaction_value.to_s
         return if rv == main_id
+        return unless SiteSetting.dislike_record_audit_trail
 
         DiscourseNoLikes::PhantomReaction.create!(
           post_id: post_id,
