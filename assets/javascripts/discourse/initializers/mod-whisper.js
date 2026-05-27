@@ -61,6 +61,8 @@ export default {
               model.set("modWhisperTargetGroupIds", []);
               model.set("modWhisperTargetGroupNames", []);
               model.set("modWhisperTargetGroups", []);
+              model.set("modWhisperTargetBadgeIds", []);
+              model.set("modWhisperTargetBadges", []);
             }
             // Non-participant: no-op.
           },
@@ -75,6 +77,11 @@ export default {
       api.serializeOnCreate(
         "mod_whisper_target_group_ids",
         "modWhisperTargetGroupIds"
+      );
+
+      api.serializeOnCreate(
+        "mod_whisper_target_badge_ids",
+        "modWhisperTargetBadgeIds"
       );
 
       // A boolean armed flag survives form-encoding even when the target id
@@ -93,6 +100,8 @@ export default {
           "mod_whisper_targets",
           "mod_whisper_target_group_ids",
           "mod_whisper_target_groups",
+          "mod_whisper_target_badge_ids",
+          "mod_whisper_target_badges",
           "mod_whisper_is_staff_only",
           "mod_whisper_author_is_staff"
         );
@@ -103,6 +112,8 @@ export default {
           "mod_whisper_targets",
           "mod_whisper_target_group_ids",
           "mod_whisper_target_groups",
+          "mod_whisper_target_badge_ids",
+          "mod_whisper_target_badges",
           "mod_whisper_is_staff_only",
           "mod_whisper_author_is_staff"
         );
@@ -121,7 +132,11 @@ export default {
           const targetGroups = Array.isArray(post.mod_whisper_target_groups)
             ? post.mod_whisper_target_groups
             : [];
-          const staffOnly = !targets.length && !targetGroups.length;
+          const targetBadges = Array.isArray(post.mod_whisper_target_badges)
+            ? post.mod_whisper_target_badges
+            : [];
+          const staffOnly =
+            !targets.length && !targetGroups.length && !targetBadges.length;
 
           // Mark the cooked element itself — a marker on the post <article>
           // does not survive Glimmer post-stream reconciliation. SCSS tints
@@ -198,6 +213,15 @@ export default {
               link.textContent = g.name;
               banner.appendChild(link);
             });
+
+            targetBadges.forEach((b) => {
+              addSep();
+              const link = document.createElement("a");
+              link.className = "mod-whisper-banner__badge";
+              link.href = `/badges/${b.id}`;
+              link.textContent = b.name;
+              banner.appendChild(link);
+            });
           }
 
           cookedEl.insertBefore(banner, cookedEl.firstChild);
@@ -221,10 +245,13 @@ export default {
         }
 
         if (currentUser.staff) {
-          // Carry forward the original whisper's group targets so a staff
-          // reply stays visible to the same group audience.
+          // Carry forward the original whisper's group AND badge targets so
+          // a staff reply stays visible to the same audience.
           const replyGroups = Array.isArray(post.mod_whisper_target_groups)
             ? post.mod_whisper_target_groups
+            : [];
+          const replyBadges = Array.isArray(post.mod_whisper_target_badges)
+            ? post.mod_whisper_target_badges
             : [];
           model.set("modWhisperArmed", true);
           model.set(
@@ -236,6 +263,11 @@ export default {
             replyGroups.map((g) => g.name)
           );
           model.set("modWhisperTargetGroups", replyGroups);
+          model.set(
+            "modWhisperTargetBadgeIds",
+            replyBadges.map((b) => b.id)
+          );
+          model.set("modWhisperTargetBadges", replyBadges);
 
           const replyAudience = computeReplyAudience(post, currentUser.id);
           if (replyAudience.length) {
@@ -262,6 +294,8 @@ export default {
           model.set("modWhisperTargetGroupIds", []);
           model.set("modWhisperTargetGroupNames", []);
           model.set("modWhisperTargetGroups", []);
+          model.set("modWhisperTargetBadgeIds", []);
+          model.set("modWhisperTargetBadges", []);
         }
       });
     });

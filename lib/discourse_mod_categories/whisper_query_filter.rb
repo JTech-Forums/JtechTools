@@ -30,6 +30,7 @@ module DiscourseModCategories
       if user
         participant_field = DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
         groups_field = DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
+        badges_field = DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD
         where_sql = <<~SQL
           mw_pcf.id IS NULL
           OR posts.user_id = :uid
@@ -54,6 +55,18 @@ module DiscourseModCategories
               AND mw_gcf.value IS NOT NULL
               AND mw_gcf.value <> ''
               AND mw_gcf.value <> '[]'
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM post_custom_fields mw_bcf
+            JOIN user_badges mw_ub
+              ON mw_ub.user_id = :uid
+              AND mw_bcf.value::jsonb @> to_jsonb(mw_ub.badge_id)
+            WHERE mw_bcf.post_id = posts.id
+              AND mw_bcf.name = '#{badges_field}'
+              AND mw_bcf.value IS NOT NULL
+              AND mw_bcf.value <> ''
+              AND mw_bcf.value <> '[]'
           )
         SQL
 
