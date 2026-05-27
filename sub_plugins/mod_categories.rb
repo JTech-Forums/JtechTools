@@ -282,7 +282,7 @@ after_initialize do
       next unless saved_change_to_read?
       next unless read
       next unless notification_type == ::Notification.types[:custom]
-      next unless data.to_s.include?('"mod_note":true')
+      next if data.to_s.exclude?('"mod_note":true')
       user = ::User.find_by(id: user_id)
       user&.publish_notifications_state
     end

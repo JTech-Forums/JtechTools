@@ -63,9 +63,7 @@ export default class ModWhisperArmedPill extends Component {
   @action
   needsBadgeSep(badgeIndex) {
     return (
-      this.usernames.length > 0 ||
-      this.groupNames.length > 0 ||
-      badgeIndex > 0
+      this.usernames.length > 0 || this.groupNames.length > 0 || badgeIndex > 0
     );
   }
 

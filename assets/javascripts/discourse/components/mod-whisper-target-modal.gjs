@@ -224,7 +224,9 @@ export default class ModWhisperTargetModal extends Component {
         />
 
         {{#if this.badgeChoices.length}}
-          <p class="mod-whisper-target-modal__instructions mod-whisper-target-modal__badge-instructions">
+          <p
+            class="mod-whisper-target-modal__instructions mod-whisper-target-modal__badge-instructions"
+          >
             {{i18n "discourse_mod_categories.whisper.modal_badge_instructions"}}
           </p>
           <MultiSelect

@@ -111,9 +111,21 @@ RSpec.describe "Moderator messages serialization" do
   end
 
   describe "moderator-note unread count" do
+    # The count is derived from unread Notification rows tagged with
+    # `mod_note: true` in their data — the same rows that drive the avatar
+    # bell dot — so reading a mod-note from either the bell or the shield
+    # tab decrements both counts together.
+    def make_mod_note_notification(user, read: false)
+      ::Notification.create!(
+        notification_type: ::Notification.types[:custom],
+        user_id: user.id,
+        read: read,
+        data: { mod_note: true, topic_title: "x", display_username: "y" }.to_json,
+      )
+    end
+
     it "exposes an unread count to staff via the current user" do
-      topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
-      topic.save_custom_fields(true)
+      make_mod_note_notification(moderator)
       sign_in(moderator)
 
       get "/session/current.json"
@@ -123,11 +135,8 @@ RSpec.describe "Moderator messages serialization" do
       expect(count).to be >= 1
     end
 
-    it "reports zero once the staff member has seen the feed" do
-      topic.custom_fields["mod_topic_private_note_activity_at"] = 2.days.ago.iso8601
-      topic.save_custom_fields(true)
-      moderator.custom_fields["mod_notes_seen_at"] = Time.zone.now.iso8601
-      moderator.save_custom_fields(true)
+    it "reports zero once every mod-note notification is read" do
+      make_mod_note_notification(moderator, read: true)
       sign_in(moderator)
 
       get "/session/current.json"
