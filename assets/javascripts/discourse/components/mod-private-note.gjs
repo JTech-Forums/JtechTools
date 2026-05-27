@@ -206,6 +206,17 @@ export default class ModPrivateNote extends Component {
     }));
   }
 
+  // Up to MAX_PILL_AVATARS small avatars rendered inline in the pill.
+  // The rest go into the "+N" overflow indicator and remain accessible
+  // via the popover.
+  get pillViewers() {
+    return this.decoratedViewers.slice(0, 5);
+  }
+
+  get overflowCount() {
+    return Math.max(0, this.decoratedViewers.length - 5);
+  }
+
   // Cooks the raw note markdown and each reply body asynchronously. The
   // stored/edited values stay raw — only the display is cooked.
   async cookContent() {
@@ -600,15 +611,31 @@ export default class ModPrivateNote extends Component {
                 type="button"
                 class="mod-private-note-viewers-pill"
                 aria-expanded={{if this.viewersPopoverOpen "true" "false"}}
+                aria-label={{i18n
+                  "discourse_mod_categories.private_note.viewed_by"
+                  count=this.decoratedViewers.length
+                }}
                 {{on "click" this.toggleViewersPopover}}
               >
-                {{icon "eye"}}
-                <span class="mod-private-note-viewers-count">
-                  {{i18n
-                    "discourse_mod_categories.private_note.viewed_by"
-                    count=this.decoratedViewers.length
-                  }}
+                <span class="mod-private-note-viewers-pill-avatars">
+                  {{#each this.pillViewers as |viewer|}}
+                    {{#if viewer.avatarUrl}}
+                      <img
+                        class="mod-private-note-viewers-pill-avatar"
+                        src={{viewer.avatarUrl}}
+                        width="20"
+                        height="20"
+                        alt={{viewer.name}}
+                        title={{viewer.name}}
+                      />
+                    {{/if}}
+                  {{/each}}
                 </span>
+                {{#if this.overflowCount}}
+                  <span class="mod-private-note-viewers-pill-more">
+                    +{{this.overflowCount}}
+                  </span>
+                {{/if}}
               </button>
               {{#if this.viewersPopoverOpen}}
                 <ul class="mod-private-note-viewers-list" role="list">

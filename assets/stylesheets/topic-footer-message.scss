@@ -252,8 +252,8 @@
   .mod-private-note-viewers-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.35em;
-    padding: 0.2em 0.6em;
+    gap: 0.4em;
+    padding: 0.2em 0.5em 0.2em 0.35em;
     background: transparent;
     border: 1px solid var(--primary-low);
     border-radius: 999px;
@@ -265,10 +265,33 @@
       background: var(--primary-very-low);
       color: var(--primary);
     }
+  }
 
-    .d-icon {
-      flex: none;
+  .mod-private-note-viewers-pill-avatars {
+    display: inline-flex;
+    align-items: center;
+    // Negative left margin on each avatar past the first stacks them
+    // with a slight overlap — the classic "presence avatars" pattern.
+    > .mod-private-note-viewers-pill-avatar + .mod-private-note-viewers-pill-avatar {
+      margin-left: -0.45em;
     }
+  }
+
+  .mod-private-note-viewers-pill-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    // Ring outline so overlapping avatars are visually separated against
+    // both the panel background and each other.
+    box-shadow: 0 0 0 1.5px var(--primary-very-low);
+    background: var(--primary-very-low);
+    flex: none;
+  }
+
+  .mod-private-note-viewers-pill-more {
+    font-size: var(--font-down-2);
+    font-weight: 600;
+    color: var(--primary-medium);
   }
 
   .mod-private-note-viewers-list {
