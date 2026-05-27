@@ -271,19 +271,41 @@ module ::DiscourseModCategories
           .update_all(read: true)
 
       # Push the recalculated bell counts to every open tab so they refresh
-      # in lockstep with the shield tab being opened.
+      # in lockstep with the shield tab being opened. This also drops the
+      # in-dropdown shield-tab pip, which now derives from unread Notification
+      # rows (the same source the bell uses), so it stays in lockstep with
+      # the bell badge without a dedicated MessageBus channel.
       current_user.publish_notifications_state if marked > 0
 
-      # Reset any other browser tabs/devices the staff member has open so
-      # their header pip + title prefix clears in lockstep, not on the next
-      # page load.
-      MessageBus.publish(
-        "/mod-note-unread-count/#{current_user.id}",
-        { reset: true },
-        user_ids: [current_user.id],
-      )
-
       render json: success_json
+    end
+
+    # Resolves a badge id to the current set of usernames who hold it.
+    # Used by the PM composer "Add badge group" button to splice badge
+    # holders into the standard `target_recipients` field — the PM is then
+    # sent through the normal PostCreator path with no further plugin code.
+    # Self is excluded (no point messaging yourself); the list is deduped.
+    def badge_members
+      guardian.ensure_can_send_private_messages!
+      badge = Badge.find_by(id: params[:badge_id])
+      raise Discourse::NotFound unless badge
+
+      usernames =
+        User
+          .joins(:user_badges)
+          .where(user_badges: { badge_id: badge.id })
+          .where(active: true)
+          .where.not(id: current_user.id)
+          .distinct
+          .pluck(:username)
+
+      render json: {
+               usernames: usernames,
+               badge: {
+                 id: badge.id,
+                 name: badge.display_name,
+               },
+             }
     end
 
     # Adds a user to a topic's cumulative whisper conversation. From then on
@@ -387,20 +409,11 @@ module ::DiscourseModCategories
           )
 
           publish_note_alert(staff_user, topic, note, note_url)
-          publish_unread_count_bump(staff_user)
+          # The standard /notifications poll picks up the new unread row so
+          # both the bell dot and the in-dropdown shield-tab pip refresh
+          # together. No separate /mod-note-unread-count channel is needed.
+          staff_user.publish_notifications_state
         end
-    end
-
-    # Publishes a small "+1" payload on a dedicated MessageBus channel the
-    # header pip / title-prefix subscriber listens on. A separate channel
-    # (independent of `/notification-alert/`) keeps the client-side reactivity
-    # focused on the moderator-notes counter rather than the bell badge.
-    def publish_unread_count_bump(staff_user)
-      MessageBus.publish(
-        "/mod-note-unread-count/#{staff_user.id}",
-        { delta: 1 },
-        user_ids: [staff_user.id],
-      )
     end
 
     # Fires the small live notification pop-up for one staff member. The

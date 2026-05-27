@@ -148,10 +148,14 @@ en:
         jump_to_original: Go to the original post
       whisper:
         toolbar_title: Whisper this reply
-        modal_title: Whisper to users or groups
+        modal_title: Whisper to users, groups, or badges
         modal_instructions: Choose up to 10 users or groups who should see this reply.
           Staff always see whispers.
+        modal_badge_instructions: Optionally also include everyone who currently holds one of these badges.
+          Membership is checked when the post is viewed, so future grants and
+          revokes update the audience automatically.
         search_placeholder: Search for a user or group…
+        badge_search_placeholder: Search for a badge…
         confirm: Whisper
         clear: Clear
         armed_pill_prefix: Whispering to
@@ -171,6 +175,15 @@ en:
           added_toast:
             one: Added %{count} user to the whisper conversation
             other: Added %{count} users to the whisper conversation
+      pm_badge:
+        button: Add badge group
+        modal_title: Add badge holders as recipients
+        modal_instructions: Pick a badge. Every user who currently holds it
+          will be added as a recipient. The list is captured at send time,
+          so future badge changes don't affect this conversation.
+        search_placeholder: Search for a badge…
+        none: Choose a badge…
+        confirm: Add recipients
     dumbcourse:
       sidebar_section_title: Dumbcourse
       sidebar_link_text: Dumbcourse

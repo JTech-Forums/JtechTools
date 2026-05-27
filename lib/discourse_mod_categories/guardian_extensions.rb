@@ -57,6 +57,12 @@ module DiscourseModCategories
       if target_group_ids.any? && ::GroupUser.exists?(group_id: target_group_ids, user_id: @user.id)
         return super
       end
+      # Holders of any explicit target badge see it (membership evaluated
+      # lazily — a later grant brings the user into the audience).
+      target_badge_ids = mod_whisper_target_badge_ids(post)
+      if target_badge_ids.any? && ::UserBadge.exists?(badge_id: target_badge_ids, user_id: @user.id)
+        return super
+      end
       # Cumulative topic whisper participants see it.
       return super if mod_whisper_participant_ids(post.topic).include?(@user.id)
 
@@ -85,6 +91,13 @@ module DiscourseModCategories
 
     def mod_whisper_target_group_ids(post)
       raw = post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]
+      Array(raw)
+        .map { |id| id.is_a?(Numeric) || id.is_a?(String) ? id.to_i : 0 }
+        .reject { |id| id <= 0 }
+    end
+
+    def mod_whisper_target_badge_ids(post)
+      raw = post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]
       Array(raw)
         .map { |id| id.is_a?(Numeric) || id.is_a?(String) ? id.to_i : 0 }
         .reject { |id| id <= 0 }

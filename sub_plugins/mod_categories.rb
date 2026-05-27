@@ -8,12 +8,12 @@ require_relative "../lib/discourse_mod_categories/whisper_query_filter"
 
 register_asset "stylesheets/topic-footer-message.scss"
 register_asset "stylesheets/whisper.scss"
-register_asset "stylesheets/mod-note-header-pip.scss"
 register_svg_icon "list-check"
 register_svg_icon "shield-halved"
 register_svg_icon "user-plus"
 register_svg_icon "pencil"
 register_svg_icon "trash-can"
+register_svg_icon "certificate"
 
 module ::DiscourseModCategories
   # Custom-field keys for the moderator-set messages.
@@ -234,12 +234,31 @@ module ::DiscourseModCategories
   # the whisper. User targets and group targets are independent — a whisper
   # may carry either, both, or neither (an all-empty staff whisper).
   POST_WHISPER_TARGET_GROUPS_FIELD = "mod_whisper_target_group_ids"
+  # A whisper may target the holders of one or more badges; this per-post
+  # field holds the chosen badge ids (json int array). Membership is
+  # evaluated lazily at query time, so a user who later earns the badge
+  # gains visibility and a user who loses it loses visibility — same shape
+  # as group targets.
+  POST_WHISPER_TARGET_BADGES_FIELD = "mod_whisper_target_badge_ids"
   TOPIC_WHISPER_PARTICIPANTS_FIELD = "mod_whisper_participant_ids"
   MAX_WHISPER_TARGETS = 10
   # Explicit boolean armed flag sent by the composer. A boolean survives
   # form-encoding even when the target id array is empty, so it — not the
   # target count — is the single source of truth for "this post is a whisper".
   POST_WHISPER_ARMED_PARAM = "mod_whisper"
+
+  # Highest post_number in the topic that the given user can actually see —
+  # i.e. excluding whispers whose audience does not include them. Used as the
+  # per-user serialized `highest_post_number` so the topic-list unread badge
+  # is audience-aware: non-audience viewers see no badge bump from whispers,
+  # while audience members (staff, explicit user/group targets, topic whisper
+  # participants) see the whisper post count toward unread.
+  def self.whisper_audience_max_post_number(topic, user)
+    return nil unless topic
+    scope = ::Post.where(topic_id: topic.id, deleted_at: nil)
+    scope = WhisperQueryFilter.apply(scope, user)
+    scope.maximum(:post_number)
+  end
 
   class Engine < ::Rails::Engine
     engine_name "discourse_mod_categories"
@@ -249,6 +268,25 @@ end
 
 after_initialize do
   reloadable_patch { ::Guardian.prepend(DiscourseModCategories::GuardianExtensions) }
+
+  # Keep the shield-tab pip in sync when a mod-note notification is marked
+  # read from the standard bell dropdown. The reverse direction (opening the
+  # shield tab → marking the bell rows read) is already wired in
+  # MessagesController#notes_feed_seen via publish_notifications_state. This
+  # hook gives a single-row bell mark-read the same effect: republishing the
+  # bell count tells the user-state poll that the unread total dropped, and
+  # the next /session/current.json (or current-user serializer refresh) picks
+  # up the recomputed mod_note_unread_count.
+  reloadable_patch do
+    ::Notification.after_update_commit do
+      next unless saved_change_to_read?
+      next unless read
+      next unless notification_type == ::Notification.types[:custom]
+      next unless data.to_s.include?('"mod_note":true')
+      user = ::User.find_by(id: user_id)
+      user&.publish_notifications_state
+    end
+  end
 
   # Per-topic and per-category storage for the moderator-set messages.
   register_topic_custom_field_type(DiscourseModCategories::TOPIC_FOOTER_FIELD, :string)
@@ -395,17 +433,20 @@ after_initialize do
     end
   end
 
-  # Unread moderator-note count, for the staff member's user-menu tab.
+  # Unread moderator-note count, for the staff member's user-menu tab. Derived
+  # from the same unread Notification rows that drive the standard avatar
+  # bell dot, so reading a mod-note from the bell decrements this count and
+  # opening the shield tab (which marks the rows read) decrements the bell.
   add_to_serializer(:current_user, :mod_note_unread_count) do
     next 0 unless object.staff?
 
-    seen_at =
-      Array(object.custom_fields[DiscourseModCategories::USER_NOTES_SEEN_FIELD]).compact.max.presence ||
-        "1970-01-01T00:00:00Z"
-
-    TopicCustomField
-      .where(name: DiscourseModCategories::TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD)
-      .where("value > ?", seen_at)
+    ::Notification
+      .where(
+        user_id: object.id,
+        notification_type: ::Notification.types[:custom],
+        read: false,
+      )
+      .where("data LIKE ?", "%\"mod_note\":true%")
       .count
   end
 
@@ -468,9 +509,11 @@ after_initialize do
 
   register_post_custom_field_type(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD, :json)
   register_post_custom_field_type(DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD, :json)
+  register_post_custom_field_type(DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD, :json)
   register_topic_custom_field_type(DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD, :json)
   add_permitted_post_create_param(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD, :array)
   add_permitted_post_create_param(DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD, :array)
+  add_permitted_post_create_param(DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD, :array)
   # Permitted as a scalar (:string) — `add_permitted_post_create_param` only
   # special-cases :array/:hash, and an unrecognized type would drop the param
   # entirely. The value arrives as the string "true"/"false" and is cast with
@@ -517,22 +560,39 @@ after_initialize do
     requested_ids = normalize_ids.call(opts[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD])
     requested_group_ids =
       normalize_ids.call(opts[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD])
+    requested_badge_ids =
+      normalize_ids.call(opts[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD])
 
     author = post.user
     topic = post.topic
     next unless author && topic
 
     if author.staff?
-      # Staff whisper: keep only ids that map to real users / real groups. An
-      # EMPTY user AND group list is valid and means a staff-only whisper.
+      # Staff whisper: keep only ids that map to real users / real groups /
+      # real badges. An EMPTY user AND group AND badge list is valid and
+      # means a staff-only whisper.
       valid_ids = ::User.where(id: requested_ids).pluck(:id)
       valid_group_ids = ::Group.where(id: requested_group_ids).pluck(:id)
+      valid_badge_ids = ::Badge.where(id: requested_badge_ids).pluck(:id)
 
       post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD] = valid_ids
       post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD] = valid_group_ids
+      post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD] = valid_badge_ids
 
-      # Record the non-staff targets as cumulative topic participants.
+      # Record the non-staff targets (explicit users + current badge holders)
+      # as cumulative topic participants so they keep visibility on later
+      # whispers in the topic even after a badge revoke.
       non_staff_ids = ::User.where(id: valid_ids).where(admin: false, moderator: false).pluck(:id)
+      if valid_badge_ids.any?
+        non_staff_ids +=
+          ::User
+            .joins(:user_badges)
+            .where(user_badges: { badge_id: valid_badge_ids })
+            .where(admin: false, moderator: false)
+            .distinct
+            .pluck(:id)
+        non_staff_ids.uniq!
+      end
       merge_whisper_participants.call(topic, non_staff_ids) if non_staff_ids.any?
     else
       # Non-staff: only an existing topic whisper participant may whisper,
@@ -546,6 +606,7 @@ after_initialize do
 
       post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD] = []
       post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD] = []
+      post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD] = []
     end
   end
 
@@ -557,17 +618,47 @@ after_initialize do
 
     target_ids =
       Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
+    target_group_ids =
+      Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).map(&:to_i)
+    target_badge_ids =
+      Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(&:to_i)
+
+    topic = post.topic
+
+    # Roll back Topic#highest_post_number so non-audience viewers do not see
+    # a topic-list "+1 unread" badge for a whisper they can't read. The
+    # :listable_topic serializer override adds the bump back for audience
+    # members on serialization, so they still see the badge. Runs for EVERY
+    # whisper (including staff-only whisper-backs with no recipients).
+    if topic
+      non_whisper_max =
+        ::Post
+          .where(topic_id: topic.id, deleted_at: nil)
+          .where.not(
+            id:
+              ::PostCustomField.where(
+                name: DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
+              ).select(:post_id),
+          )
+          .maximum(:post_number) || 0
+
+      if non_whisper_max > 0 && non_whisper_max < topic.highest_post_number
+        ::Topic.where(id: topic.id).update_all(highest_post_number: non_whisper_max)
+      end
+    end
 
     recipient_ids =
       if user&.staff?
-        target_ids
+        ids = target_ids.dup
+        ids += ::GroupUser.where(group_id: target_group_ids).pluck(:user_id) if target_group_ids.any?
+        ids += ::UserBadge.where(badge_id: target_badge_ids).pluck(:user_id) if target_badge_ids.any?
+        ids
       else
         ::User.where(admin: true).or(::User.where(moderator: true)).pluck(:id)
       end
     recipient_ids = recipient_ids.uniq - [post.user_id]
     next if recipient_ids.empty?
 
-    topic = post.topic
     data = {
       topic_title: topic&.title,
       display_username: user&.username,
@@ -621,6 +712,26 @@ after_initialize do
       object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
   end
 
+  add_to_serializer(:post, :mod_whisper_target_badge_ids) do
+    Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(&:to_i)
+  end
+  add_to_serializer(:post, :include_mod_whisper_target_badge_ids?) do
+    SiteSetting.mod_whisper_enabled &&
+      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+  end
+
+  add_to_serializer(:post, :mod_whisper_target_badges) do
+    ids =
+      Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(
+        &:to_i
+      )
+    ::Badge.where(id: ids).map { |b| { id: b.id, name: b.display_name } }
+  end
+  add_to_serializer(:post, :include_mod_whisper_target_badges?) do
+    SiteSetting.mod_whisper_enabled &&
+      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+  end
+
   add_to_serializer(:post, :mod_whisper_targets) do
     ids =
       Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
@@ -633,11 +744,12 @@ after_initialize do
       object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
   end
 
-  # A whisper with no user targets AND no group targets is a staff-only
-  # whisper-back.
+  # A whisper with no user targets AND no group targets AND no badge
+  # targets is a staff-only whisper-back.
   add_to_serializer(:post, :mod_whisper_is_staff_only) do
     Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).empty? &&
-      Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).empty?
+      Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).empty? &&
+      Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).empty?
   end
   add_to_serializer(:post, :include_mod_whisper_is_staff_only?) do
     SiteSetting.mod_whisper_enabled &&
@@ -652,5 +764,19 @@ after_initialize do
 
   add_to_serializer(:basic_category, :mod_category_new_topic_prompt_max_tl) do
     object.custom_fields[DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD]
+  end
+
+  # Audience-aware highest_post_number for the topic list. Returns the max
+  # post_number in the topic that the CURRENT user can see — whispers are
+  # excluded for non-audience viewers and included for the audience (staff,
+  # explicit targets, group targets, topic participants). This is what makes
+  # the topic-list `(highest - last_read)` math audience-aware: non-audience
+  # viewers never see a badge bump from a whisper they can't read.
+  add_to_serializer(:listable_topic, :highest_post_number) do
+    raw = object.highest_post_number
+    next raw unless SiteSetting.mod_whisper_enabled
+
+    visible_max = DiscourseModCategories.whisper_audience_max_post_number(object, scope&.user)
+    visible_max || raw
   end
 end
