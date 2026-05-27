@@ -98,6 +98,36 @@ export default class ModPrivateNote extends Component {
     this.readTopicState(topic);
   }
 
+  // Notifications and the user-menu notes feed link to the topic with a
+  // `#mod-private-note` or `#mod-private-note-reply-<id>` hash. Without an
+  // explicit scroll, Discourse's post-stream scrolls the linked post into
+  // view AFTER the browser's native hash jump, leaving the target
+  // off-screen — especially when the topic only has one post, which
+  // silently lands at the top of the thread. Each reply article also
+  // carries its own id so a reply notification anchors to that reply.
+  @action
+  scrollToNoteIfAnchored() {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const hash = window.location.hash || "";
+    if (
+      hash !== "#mod-private-note" &&
+      !hash.startsWith("#mod-private-note-reply-")
+    ) {
+      return;
+    }
+    // Defer past Discourse's own scroll-to-post on initial topic load,
+    // and resolve the element after the replies finish rendering — a
+    // per-reply hash may point at an article that isn't in the DOM yet
+    // when the outer note container inserts.
+    setTimeout(() => {
+      const id = hash.slice(1);
+      const target = document.getElementById(id);
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 250);
+  }
+
   // Re-read all per-topic state from the current topic. Called on initial
   // insert and whenever the connector is reused for a different topic.
   @action
@@ -347,7 +377,11 @@ export default class ModPrivateNote extends Component {
       {{didUpdate this.refreshOnNavigation @topic.id}}
     >
       {{#if this.visible}}
-        <div class="mod-private-note">
+        <div
+          id="mod-private-note"
+          class="mod-private-note"
+          {{didInsert this.scrollToNoteIfAnchored}}
+        >
           <div class="mod-private-note-marker">
             {{icon "lock"}}
             <span>{{i18n
@@ -395,7 +429,10 @@ export default class ModPrivateNote extends Component {
           </article>
 
           {{#each this.decoratedReplies as |reply|}}
-            <article class="mod-private-note-post mod-private-note-reply">
+            <article
+              id="mod-private-note-reply-{{reply.id}}"
+              class="mod-private-note-post mod-private-note-reply"
+            >
               {{#if reply.avatarUrl}}
                 <img
                   class="mod-private-note-avatar"

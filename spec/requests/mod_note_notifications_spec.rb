@@ -90,7 +90,9 @@ RSpec.describe "Moderator-note notifications" do
       data = JSON.parse(custom_notifications(admin).first.data)
       expect(data["mod_note"]).to eq(true)
       expect(data["topic_title"]).to eq(topic.title)
-      expect(data["url"]).to eq("#{topic.relative_url}/#{topic.reload.highest_post_number}")
+      expect(data["url"]).to eq(
+        "#{topic.relative_url}/#{topic.reload.highest_post_number}#mod-private-note",
+      )
     end
 
     it "publishes a live pop-up alert to every other staff member" do
@@ -107,7 +109,9 @@ RSpec.describe "Moderator-note notifications" do
       expect(alerted).not_to include("/notification-alert/#{moderator.id}")
 
       payload = messages.first.data
-      expect(payload[:post_url]).to eq("#{topic.relative_url}/#{topic.reload.highest_post_number}")
+      expect(payload[:post_url]).to eq(
+        "#{topic.relative_url}/#{topic.reload.highest_post_number}#mod-private-note",
+      )
       expect(payload[:translated_title]).to include(moderator.username)
       expect(payload[:translated_title]).to include(topic.title)
     end
@@ -169,6 +173,50 @@ RSpec.describe "Moderator-note notifications" do
       expect(custom_notifications(admin).first.high_priority).to eq(true)
       alerted = messages.map(&:channel).select { |c| c.start_with?("/notification-alert/") }
       expect(alerted).to include("/notification-alert/#{admin.id}")
+    end
+
+    it "marks each reply notification as a reply with the excerpt and anchored URL" do
+      sign_in(moderator)
+
+      post "/discourse-mod-categories/topic/#{topic.id}/note-reply.json",
+           params: {
+             raw: "Following up on this thread.",
+           }
+
+      data = JSON.parse(custom_notifications(admin).first.data)
+      expect(data["mod_note"]).to eq(true)
+      expect(data["mod_note_kind"]).to eq("reply")
+      expect(data["excerpt"]).to eq("Following up on this thread.")
+      expect(data["reply_id"]).to be_present
+      expect(data["message"]).to eq("discourse_mod_categories.note_reply_notification")
+      expect(data["url"]).to eq(
+        "#{topic.relative_url}/#{topic.reload.highest_post_number}#mod-private-note-reply-#{data["reply_id"]}",
+      )
+    end
+
+    it "creates a distinct notification per reply so they stack in the bell" do
+      sign_in(moderator)
+
+      post "/discourse-mod-categories/topic/#{topic.id}/note-reply.json",
+           params: {
+             raw: "First reply.",
+           }
+      post "/discourse-mod-categories/topic/#{topic.id}/note-reply.json",
+           params: {
+             raw: "Second reply.",
+           }
+      post "/discourse-mod-categories/topic/#{topic.id}/note-reply.json",
+           params: {
+             raw: "Third reply.",
+           }
+
+      rows = custom_notifications(admin).order(:id)
+      expect(rows.count).to eq(3)
+
+      excerpts = rows.map { |n| JSON.parse(n.data)["excerpt"] }
+      reply_ids = rows.map { |n| JSON.parse(n.data)["reply_id"] }
+      expect(excerpts).to eq(["First reply.", "Second reply.", "Third reply."])
+      expect(reply_ids.uniq.size).to eq(3)
     end
 
     it "does not notify the moderator who wrote the reply" do

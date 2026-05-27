@@ -703,7 +703,7 @@ RSpec.describe "Moderator messages endpoints" do
       expect(response.status).to eq(403)
     end
 
-    it "links each note to the topic's last post" do
+    it "links each note to the topic's last post anchored at the mod-private-note section" do
       topic.custom_fields["mod_topic_private_note"] = "Review me."
       topic.save_custom_fields(true)
       sign_in(moderator)
@@ -711,7 +711,7 @@ RSpec.describe "Moderator messages endpoints" do
       get "/discourse-mod-categories/notes-feed.json"
 
       url = response.parsed_body["notes"].first["url"]
-      expect(url).to match(%r{/#{topic.id}/\d+\z})
+      expect(url).to match(%r{/#{topic.id}/\d+#mod-private-note\z})
     end
   end
 

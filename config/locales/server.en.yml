@@ -205,3 +205,4 @@ en:
 
   discourse_mod_categories:
     note_notification_alert: '%{username} added a moderator note on "%{topic}"'
+    note_reply_notification_alert: '%{username} replied to a moderator note on "%{topic}"'

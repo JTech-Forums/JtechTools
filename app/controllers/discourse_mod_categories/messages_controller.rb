@@ -130,16 +130,17 @@ module ::DiscourseModCategories
       raise Discourse::InvalidParameters.new(:raw) if raw.empty?
 
       replies = note_replies(topic)
-      replies << {
+      reply = {
         "id" => SecureRandom.hex(8),
         "user_id" => current_user.id,
         "raw" => raw,
         "created_at" => Time.zone.now.iso8601,
       }
+      replies << reply
       topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
       topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
       topic.save_custom_fields(true)
-      notify_staff_of_note(topic)
+      notify_staff_of_reply(topic, reply)
 
       render json: { replies: serialized_note_replies(topic) }
     end
@@ -231,7 +232,7 @@ module ::DiscourseModCategories
             {
               topic_id: topic.id,
               topic_title: topic.title,
-              url: "#{topic.relative_url}/#{topic.highest_post_number}",
+              url: "#{topic.relative_url}/#{topic.highest_post_number}#mod-private-note",
               note: note,
               reply_count: replies.is_a?(Array) ? replies.size : 0,
               activity_at: activity_at,
@@ -368,14 +369,16 @@ module ::DiscourseModCategories
     # the frontend notification-type renderer can render it with the shield
     # icon, accurate text, and a link straight to the moderator note. The
     # note lives on the topic, so the link resolves to the topic at its
-    # highest post number — the same target the notes feed uses.
+    # highest post number with a `#mod-private-note` anchor so the browser
+    # (and the component's own scroll-into-view) lands on the note section
+    # instead of the topic's first post when the topic is short.
     #
     # The live pop-up alert is published on the same `/notification-alert/`
     # MessageBus channel core uses for flags/replies. Creating a
     # `Notification` row alone only fills the bell list — it never pops up.
     def notify_staff_of_note(topic)
       note = topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].to_s
-      note_url = "#{topic.relative_url}/#{topic.highest_post_number}"
+      note_url = "#{topic.relative_url}/#{topic.highest_post_number}#mod-private-note"
 
       User
         .where(admin: true)
@@ -388,6 +391,8 @@ module ::DiscourseModCategories
             # Stable marker the frontend renderer keys off to recognize THIS
             # custom notification as a moderator note.
             mod_note: true,
+            mod_note_kind: "note",
+            excerpt: note.truncate(300),
             url: note_url,
             message: "discourse_mod_categories.note_notification",
             title: "discourse_mod_categories.note_notification_title",
@@ -406,6 +411,47 @@ module ::DiscourseModCategories
           # The standard /notifications poll picks up the new unread row so
           # both the bell dot and the in-dropdown shield-tab pip refresh
           # together. No separate /mod-note-unread-count channel is needed.
+          staff_user.publish_notifications_state
+        end
+    end
+
+    # Sends a notification for a single reply in the moderator-note thread.
+    # Each reply gets its own bell row and live pop-up — carrying the reply
+    # author, the reply excerpt, and a URL anchored at the specific reply —
+    # so multiple replies in the same topic stack as distinct entries instead
+    # of looking like duplicate "note added" rows.
+    def notify_staff_of_reply(topic, reply)
+      reply_id = reply["id"].to_s
+      reply_raw = reply["raw"].to_s
+      reply_url = "#{topic.relative_url}/#{topic.highest_post_number}#mod-private-note-reply-#{reply_id}"
+
+      User
+        .where(admin: true)
+        .or(User.where(moderator: true))
+        .where.not(id: current_user.id)
+        .find_each do |staff_user|
+          data = {
+            topic_title: topic.title,
+            display_username: current_user.username,
+            mod_note: true,
+            mod_note_kind: "reply",
+            reply_id: reply_id,
+            excerpt: reply_raw.truncate(300),
+            url: reply_url,
+            message: "discourse_mod_categories.note_reply_notification",
+            title: "discourse_mod_categories.note_reply_notification_title",
+          }
+
+          Notification.create!(
+            notification_type: Notification.types[:custom],
+            user_id: staff_user.id,
+            topic_id: topic.id,
+            post_number: topic.highest_post_number,
+            high_priority: true,
+            data: data.to_json,
+          )
+
+          publish_reply_alert(staff_user, topic, reply_raw, reply_url)
           staff_user.publish_notifications_state
         end
     end
@@ -429,6 +475,32 @@ module ::DiscourseModCategories
         translated_title:
           I18n.t(
             "discourse_mod_categories.note_notification_alert",
+            username: current_user.username,
+            topic: topic.title,
+          ),
+      }
+
+      MessageBus.publish("/notification-alert/#{staff_user.id}", payload, user_ids: [staff_user.id])
+    end
+
+    # Per-reply variant of publish_note_alert — the excerpt is the reply body
+    # so a stack of replies pops up as distinct toasts, and the title says
+    # "replied to" so the recipient can tell a reply from the original note.
+    def publish_reply_alert(staff_user, topic, reply_raw, reply_url)
+      return if staff_user.suspended?
+      return unless staff_user.allow_live_notifications?
+
+      payload = {
+        notification_type: Notification.types[:custom],
+        topic_title: topic.title,
+        topic_id: topic.id,
+        post_number: topic.highest_post_number,
+        excerpt: reply_raw.truncate(300),
+        username: current_user.username,
+        post_url: reply_url,
+        translated_title:
+          I18n.t(
+            "discourse_mod_categories.note_reply_notification_alert",
             username: current_user.username,
             topic: topic.title,
           ),

@@ -153,4 +153,95 @@ RSpec.describe "Feature screenshots" do
     sleep 0.5
     shot("06_pm_composer_add_badge_group_button")
   end
+
+  it "6. captures stacked per-reply mod-note notifications in the bell" do
+    topic = Fabricate(:topic, category: category, title: "Mod note reply demo")
+    Fabricate(:post, topic: topic, user: author, raw: "OP body for the visual capture.")
+    topic.custom_fields["mod_topic_private_note"] = "Please review this thread."
+    topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
+    topic.custom_fields["mod_topic_private_note_position"] = "bottom"
+    topic.custom_fields["mod_topic_private_note_created_at"] = Time.zone.now.iso8601
+    topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
+    topic.save_custom_fields(true)
+
+    # Fan out three distinct reply notifications, each with its own author,
+    # excerpt, and reply-anchored URL — same shape `notify_staff_of_reply`
+    # produces in production.
+    %w[r-aaaa r-bbbb r-cccc].each_with_index do |reply_id, index|
+      excerpt = ["First reply body.", "Second reply body.", "Third reply body."][index]
+      Notification.create!(
+        notification_type: Notification.types[:custom],
+        user_id: admin.id,
+        topic_id: topic.id,
+        post_number: topic.reload.highest_post_number,
+        high_priority: true,
+        data: {
+          topic_title: topic.title,
+          display_username: moderator.username,
+          mod_note: true,
+          mod_note_kind: "reply",
+          reply_id: reply_id,
+          excerpt: excerpt,
+          url: "#{topic.relative_url}/#{topic.highest_post_number}#mod-private-note-reply-#{reply_id}",
+          message: "discourse_mod_categories.note_reply_notification",
+          title: "discourse_mod_categories.note_reply_notification_title",
+        }.to_json,
+      )
+    end
+
+    sign_in(admin)
+    visit("/")
+    expect(page).to have_css(".d-header", wait: 15)
+    find(".header-dropdown-toggle.current-user button", match: :first).click
+    expect(page).to have_css(".notification.custom", wait: 10)
+    sleep 0.5
+    shot("07_bell_stacked_reply_notifications")
+  end
+
+  it "7. captures clicking a mod-note notification landing on the note section" do
+    topic = Fabricate(:topic, category: category, title: "Mod note anchor demo")
+    Fabricate(:post, topic: topic, user: author, raw: "OP body for the visual capture.")
+    topic.custom_fields["mod_topic_private_note"] =
+      "Heads up, staff — landing right here, not at the top of the topic."
+    topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
+    topic.custom_fields["mod_topic_private_note_position"] = "bottom"
+    topic.custom_fields["mod_topic_private_note_created_at"] = Time.zone.now.iso8601
+    topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
+    topic.save_custom_fields(true)
+
+    # Single-post topic → highest_post_number == 1, which used to drop the
+    # user at the top of the thread. The `#mod-private-note` anchor is what
+    # this screenshot exists to prove.
+    note_url =
+      "#{topic.relative_url}/#{topic.reload.highest_post_number}#mod-private-note"
+    Notification.create!(
+      notification_type: Notification.types[:custom],
+      user_id: admin.id,
+      topic_id: topic.id,
+      post_number: topic.highest_post_number,
+      high_priority: true,
+      data: {
+        topic_title: topic.title,
+        display_username: moderator.username,
+        mod_note: true,
+        mod_note_kind: "note",
+        excerpt: topic.custom_fields["mod_topic_private_note"],
+        url: note_url,
+        message: "discourse_mod_categories.note_notification",
+        title: "discourse_mod_categories.note_notification_title",
+      }.to_json,
+    )
+
+    sign_in(admin)
+    visit("/")
+    expect(page).to have_css(".d-header", wait: 15)
+    find(".header-dropdown-toggle.current-user button", match: :first).click
+    expect(page).to have_css(".notification.custom", wait: 10)
+    find(".notification.custom a", match: :first).click
+
+    expect(page).to have_css(".mod-private-note", wait: 15)
+    # Give the deferred scrollIntoView (~250ms) time to land before capture.
+    sleep 0.8
+    shot("08_mod_note_notification_lands_on_note")
+  end
 end
