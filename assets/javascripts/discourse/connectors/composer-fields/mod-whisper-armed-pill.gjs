@@ -31,7 +31,11 @@ export default class ModWhisperArmedPill extends Component {
   }
 
   get staffOnly() {
-    return this.usernames.length === 0 && this.groupNames.length === 0;
+    return (
+      this.usernames.length === 0 &&
+      this.groupNames.length === 0 &&
+      this.badges.length === 0
+    );
   }
 
   get usernames() {
@@ -51,6 +55,18 @@ export default class ModWhisperArmedPill extends Component {
     return this.usernames.length > 0 || groupIndex > 0;
   }
 
+  get badges() {
+    const composer = this.composer;
+    return composer ? get(composer, "modWhisperTargetBadges") || [] : [];
+  }
+
+  @action
+  needsBadgeSep(badgeIndex) {
+    return (
+      this.usernames.length > 0 || this.groupNames.length > 0 || badgeIndex > 0
+    );
+  }
+
   @action
   clearArmed() {
     const composer = this.composer;
@@ -64,6 +80,8 @@ export default class ModWhisperArmedPill extends Component {
     composer.set("modWhisperTargetGroupIds", null);
     composer.set("modWhisperTargetGroupNames", null);
     composer.set("modWhisperTargetGroups", null);
+    composer.set("modWhisperTargetBadgeIds", null);
+    composer.set("modWhisperTargetBadges", null);
   }
 
   <template>
@@ -90,6 +108,13 @@ export default class ModWhisperArmedPill extends Component {
                 >, </span>{{/if}}<span
                 class="mod-whisper-armed-pill__group"
               >{{name}}</span>
+            {{/each}}
+            {{#each this.badges as |badge index|}}
+              {{#if (this.needsBadgeSep index)}}<span
+                  class="mod-whisper-armed-pill__sep"
+                >, </span>{{/if}}<span
+                class="mod-whisper-armed-pill__badge"
+              >{{badge.name}}</span>
             {{/each}}
           </span>
         {{/if}}

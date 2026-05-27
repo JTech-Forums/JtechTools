@@ -32,6 +32,7 @@ Discourse::Application.routes.append do
     delete "/topic/:topic_id/note-reply" => "messages#delete_note_reply"
     delete "/topic/:topic_id/note" => "messages#delete_note"
     post "/topic/:topic_id/whisper-participant" => "messages#add_whisper_participant"
+    get "/badge-members/:badge_id" => "messages#badge_members"
     get "/notes-feed" => "messages#notes_feed"
     post "/notes-feed/seen" => "messages#notes_feed_seen"
     get "/checklist" => "checklist#show"
