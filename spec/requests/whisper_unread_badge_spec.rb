@@ -135,6 +135,11 @@ RSpec.describe "Whisper unread badge" do
     end
 
     it "stamps non_whisper_bumped_at into a topic custom field on whisper creation" do
+      # Backdate BOTH non-whisper posts so the max(:created_at) is
+      # deterministically regular_reply (15 min ago) — op was fabricated
+      # at ~now, so without the older backdate it would win the max() and
+      # the stamp wouldn't match what the assertion expects.
+      op.update_columns(created_at: 30.minutes.ago)
       regular_reply.update_columns(created_at: 15.minutes.ago)
 
       sign_in(moderator)
@@ -157,7 +162,7 @@ RSpec.describe "Whisper unread badge" do
   end
 
   describe "audience-aware /latest ordering" do
-    fab!(:public_topic) { Fabricate(:topic) }
+    fab!(:public_topic, :topic)
     fab!(:public_topic_op) { Fabricate(:post, topic: public_topic, user: author) }
 
     before do
@@ -205,14 +210,15 @@ RSpec.describe "Whisper unread badge" do
       expect(ids.index(public_topic.id)).to be < ids.index(topic.id)
     end
 
-    it "falls back to the default sort when the modifier raises" do
-      # Force the join to break by feeding a deliberately malformed value.
+    it "skips the timestamp cast when the non_whisper_bumped_at value is malformed" do
+      # The custom field is normally written by on(:post_created) as an
+      # iso8601 string, but a corrupted, hand-edited, or legacy value
+      # shouldn't blow up /latest. The modifier's regex guard
+      # `~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'` makes the CASE branch fall
+      # through to topics.bumped_at instead of attempting the cast.
       topic.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD] = "not-a-time"
       topic.save_custom_fields(true)
 
-      # The `LIKE '[%]'` guard means the participants JSONB cast never runs
-      # on malformed payloads; the timestamp cast on the non-whisper field
-      # value will raise, the rescue catches it, and /latest still loads.
       sign_in(stranger)
       get "/latest.json"
       expect(response.status).to eq(200)

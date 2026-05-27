@@ -764,10 +764,23 @@ after_initialize do
           "FALSE"
         end
 
+      # The regex guard `~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'` ensures the
+      # ::timestamp cast only runs on values that LOOK like ISO8601 dates,
+      # so a corrupted or human-edited custom-field value (e.g. legacy
+      # data, a typo, the literal string "not-a-time") falls through to
+      # topics.bumped_at instead of blowing up the entire /latest query.
+      # The outer `rescue StandardError` below is a last-resort net for
+      # Ruby-level errors raised while BUILDING the modifier scope (e.g.
+      # a future Discourse refactor changing AR method signatures); it
+      # cannot catch SQL execution errors because the reorder is lazy
+      # and runs after the modifier returns. The regex guard is the
+      # primary defense against bad data.
       effective_bumped_at = <<~SQL.squish
         CASE
           WHEN #{is_audience_sql} THEN topics.bumped_at
-          WHEN nwba.value IS NOT NULL AND nwba.value <> ''
+          WHEN nwba.value IS NOT NULL
+               AND nwba.value <> ''
+               AND nwba.value ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
             THEN nwba.value::timestamp
           ELSE topics.bumped_at
         END
