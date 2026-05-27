@@ -9,7 +9,7 @@ require "rails_helper"
 # and are picked up by the `feature-screenshots.yml` workflow's
 # `actions/upload-artifact@v6` step (`if: always()` — uploaded regardless
 # of pass/fail).
-RSpec.describe "Feature screenshots", type: :system do
+RSpec.describe "Feature screenshots" do
   fab!(:admin) { Fabricate(:admin, username: "screen_admin") }
   fab!(:moderator) { Fabricate(:moderator, username: "screen_mod") }
   fab!(:author, :user) { Fabricate(:user, username: "screen_author") }
