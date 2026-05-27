@@ -2,25 +2,28 @@
 
 require "rails_helper"
 
-# Visual captures of each behavior added by the
-# "Audience-aware whisper unread + merge mod-note bell + badge targeting"
-# change set, so a reviewer can eyeball them from CI without spinning up a
-# local Discourse. PNGs are written into `tmp/capybara/feature_screenshots/`
-# and are picked up by the `feature-screenshots.yml` workflow's
-# `actions/upload-artifact@v6` step (`if: always()` — uploaded regardless
-# of pass/fail).
+# Visual captures of the mod-note + whisper-bump behaviors so a reviewer
+# can eyeball each from CI without spinning up a local Discourse. PNGs
+# are written into `tmp/capybara/feature_screenshots/` and picked up by
+# the `feature-screenshots.yml` workflow's `actions/upload-artifact@v6`
+# step (`if: always()` — uploaded regardless of pass/fail).
+#
+# Scope: this spec is intentionally focused on the features actively
+# under development (mod-note anchor + per-reply fan-out, audience-aware
+# whisper bumping). Earlier broad-coverage scenarios were trimmed so the
+# CI artifact stays small and every shot has a clear reviewer purpose.
 RSpec.describe "Feature screenshots" do
   fab!(:admin) { Fabricate(:admin, username: "screen_admin") }
   fab!(:moderator) { Fabricate(:moderator, username: "screen_mod") }
+  fab!(:other_moderator, :moderator) { Fabricate(:moderator, username: "screen_other_mod") }
   fab!(:author, :user) { Fabricate(:user, username: "screen_author") }
   fab!(:audience_user, :user) { Fabricate(:user, username: "screen_audience") }
   fab!(:stranger, :user) { Fabricate(:user, username: "screen_stranger") }
-  fab!(:badge_holder, :user) { Fabricate(:user, username: "screen_badge_holder") }
-  fab!(:badge) { Fabricate(:badge, name: "ScreenshotBadge") }
   fab!(:category)
 
   let(:targets_field) { DiscourseModCategories::POST_WHISPER_TARGETS_FIELD }
   let(:participants_field) { DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD }
+  let(:nwba_field) { DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD }
 
   before do
     SiteSetting.mod_categories_enabled = true
@@ -30,8 +33,6 @@ RSpec.describe "Feature screenshots" do
     SiteSetting.auto_silence_fast_typers_on_first_post = false
     Group.refresh_automatic_groups!
     SiteSetting.approve_unless_allowed_groups = Group::AUTO_GROUPS[:trust_level_0].to_s
-
-    BadgeGranter.grant(badge, badge_holder)
 
     FileUtils.mkdir_p(File.join(Rails.root, "tmp/capybara/feature_screenshots"))
   end
@@ -44,148 +45,176 @@ RSpec.describe "Feature screenshots" do
     rescue Timeout::Error
       # Capture anyway rather than failing on a slow image.
     end
-    # Absolute path so the file lands where the workflow expects, regardless
-    # of Capybara.save_path. Relative paths are interpreted relative to
-    # Capybara.save_path (`tmp/capybara/`), which would produce
-    # `tmp/capybara/tmp/capybara/feature_screenshots/...`.
     path = File.join(Rails.root, "tmp/capybara/feature_screenshots/#{name}.png")
     page.save_screenshot(path)
   end
 
-  def topic_with_whisper(audience_ids: [audience_user.id])
-    topic = Fabricate(:topic, category: category, title: "Audience-aware whisper demo")
-    Fabricate(:post, topic: topic, user: author, raw: "OP body for the visual capture.")
-    Fabricate(:post, topic: topic, user: author, raw: "Public reply visible to everyone.")
-    whisper = Fabricate(:post, topic: topic, user: moderator, raw: "Mod-only whisper body.")
-    whisper.custom_fields[targets_field] = audience_ids
-    whisper.save_custom_fields(true)
-    topic.custom_fields[participants_field] = audience_ids
+  # Seeds a topic with a moderator note (default bottom placement) and
+  # optional staff replies. Returns the saved topic.
+  def seed_topic_with_note(title:, note:, position: "bottom", replies: [], filler_posts: 0)
+    topic = Fabricate(:topic, category: category, title: title)
+    Fabricate(:post, topic: topic, user: author, raw: "OP body for #{title}.")
+    filler_posts.times do |i|
+      Fabricate(
+        :post,
+        topic: topic,
+        user: author,
+        raw: "Filler reply ##{i + 1} keeping the thread long.",
+      )
+    end
+    topic.custom_fields["mod_topic_private_note"] = note
+    topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
+    topic.custom_fields["mod_topic_private_note_position"] = position
+    topic.custom_fields["mod_topic_private_note_created_at"] = 30.minutes.ago.iso8601
+    topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
+    topic.custom_fields["mod_topic_private_note_replies"] = replies if replies.any?
     topic.save_custom_fields(true)
-    # Mirror the on(:post_created) rollback so the visual matches what
-    # production sees after a whisper is posted.
-    non_whisper_max =
-      Post
-        .where(topic_id: topic.id, deleted_at: nil)
-        .where.not(id: PostCustomField.where(name: targets_field).select(:post_id))
-        .maximum(:post_number)
-    Topic.where(id: topic.id).update_all(highest_post_number: non_whisper_max) if non_whisper_max
-    topic.reload
+    topic
   end
 
-  it "1. captures the topic list with no unread bump for a non-audience viewer" do
-    topic_with_whisper
-    sign_in(stranger)
-    visit("/latest")
-    expect(page).to have_css(".topic-list", wait: 15)
-    shot("01_non_audience_no_badge")
-  end
-
-  it "2. captures the topic list WITH the unread bump for an audience viewer" do
-    topic_with_whisper(audience_ids: [audience_user.id])
-    sign_in(audience_user)
-    visit("/latest")
-    expect(page).to have_css(".topic-list", wait: 15)
-    shot("02_audience_sees_badge")
-  end
-
-  it "3. captures the standard bell with a mod-note notification (no separate header pip)" do
+  # Builds a single mod-note bell notification of either kind ("note" or
+  # "reply"), pointing at the topic's note section or a specific reply.
+  def fab_mod_note_notification(user:, topic:, kind: "note", reply_id: nil, excerpt: nil)
+    anchor =
+      kind == "reply" ? "#mod-private-note-reply-#{reply_id}" : "#mod-private-note"
     Notification.create!(
       notification_type: Notification.types[:custom],
-      user_id: moderator.id,
+      user_id: user.id,
+      topic_id: topic.id,
+      post_number: topic.reload.highest_post_number,
       high_priority: true,
       data: {
-        topic_title: "Heads up, staff",
-        display_username: admin.username,
+        topic_title: topic.title,
+        display_username: moderator.username,
         mod_note: true,
-        url: "/",
-        message: "discourse_mod_categories.note_notification",
-        title: "discourse_mod_categories.note_notification_title",
+        mod_note_kind: kind,
+        reply_id: reply_id,
+        excerpt: excerpt || topic.custom_fields["mod_topic_private_note"].to_s,
+        url: "#{topic.relative_url}/#{topic.highest_post_number}#{anchor}",
+        message:
+          kind == "reply" ? "discourse_mod_categories.note_reply_notification" : "discourse_mod_categories.note_notification",
+        title:
+          kind == "reply" ? "discourse_mod_categories.note_reply_notification_title" : "discourse_mod_categories.note_notification_title",
       }.to_json,
     )
-
-    sign_in(moderator)
-    visit("/")
-    expect(page).to have_css(".d-header", wait: 15)
-    shot("03_bell_header_no_separate_pip")
-
-    begin
-      find(".header-dropdown-toggle.current-user button", match: :first).click
-    rescue StandardError
-      nil
-    end
-    sleep 0.5
-    shot("04_user_menu_with_mod_note_in_bell")
   end
 
-  it "4. captures the whisper composer toolbar modal with the badge picker" do
-    topic = Fabricate(:topic, category: category, title: "Whisper composer demo")
-    Fabricate(:post, topic: topic, user: author, raw: "OP for whisper composer demo.")
+  # ──────────────────────────────────────────────────────────────────────
+  # Mod-note rendering on a topic page (renumbered "7-10" so the file
+  # filenames line up with reviewer expectations).
+  # ──────────────────────────────────────────────────────────────────────
+
+  it "7. captures the mod-private-note rendered ABOVE the post stream (top placement)" do
+    topic =
+      seed_topic_with_note(
+        title: "Mod note top placement demo",
+        note: "Pinned at the top so staff see it before posts.",
+        position: "top",
+      )
 
     sign_in(moderator)
     visit("/t/#{topic.slug}/#{topic.id}")
-    expect(page).to have_css(".topic-post", wait: 15)
-
-    find("#topic-footer-buttons .create", match: :first).click
-    expect(page).to have_css(".d-editor-input", wait: 15)
-
-    # The whisper toolbar button — clicking it as staff opens the target modal.
-    find(
-      ".d-editor-button-bar button.mod-whisper-target, " \
-        ".d-editor-button-bar button[title='" \
-        "#{I18n.t("js.discourse_mod_categories.whisper.toolbar_title")}']",
-      match: :first,
-    ).click
-
-    expect(page).to have_css(".mod-whisper-target-modal", wait: 15)
-    # The badge picker appears when at least one enabled badge exists; the
-    # fab!(:badge) at the top of the spec ensures that.
-    shot("05_whisper_modal_with_badge_picker")
+    expect(page).to have_css(".mod-private-note", wait: 15)
+    shot("07_mod_note_top_placement")
   end
 
-  it "5. captures the PM composer with the 'Add badge group' button" do
+  it "8. captures a mod-note thread with multiple staff replies" do
+    topic =
+      seed_topic_with_note(
+        title: "Mod note reply thread demo",
+        note: "Triage starts here.",
+        replies: [
+          {
+            "id" => "demo-rep-001",
+            "user_id" => moderator.id,
+            "raw" => "I'll DM the user and ask for context.",
+            "created_at" => 90.minutes.ago.iso8601,
+          },
+          {
+            "id" => "demo-rep-002",
+            "user_id" => other_moderator.id,
+            "raw" => "Sounds good — watching the next reply.",
+            "created_at" => 60.minutes.ago.iso8601,
+          },
+          {
+            "id" => "demo-rep-003",
+            "user_id" => admin.id,
+            "raw" => "Resolved on my end, closing the loop.",
+            "created_at" => 30.minutes.ago.iso8601,
+          },
+        ],
+      )
+
     sign_in(moderator)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".mod-private-note-reply", count: 3, wait: 15)
+    shot("08_mod_note_thread_with_replies")
+  end
+
+  it "9. captures the user-menu shield tab listing notes from multiple topics" do
+    3.times do |i|
+      seed_topic_with_note(
+        title: "Triage topic #{i + 1}",
+        note: "Triage note #{i + 1} — needs follow-up.",
+      )
+    end
+
+    sign_in(admin)
     visit("/")
     expect(page).to have_css(".d-header", wait: 15)
-
-    # Open a new PM via the URL fragment that opens the composer.
-    visit("/new-message?username=#{audience_user.username}")
-    expect(page).to have_css(".composer-fields", wait: 15)
-    sleep 0.5
-    shot("06_pm_composer_add_badge_group_button")
+    find(".header-dropdown-toggle.current-user button", match: :first).click
+    # Wait for the user menu's tab strip to render before clicking the
+    # shield tab — the previous run of this scenario failed because the
+    # find() fired before the menu's tabs were in the DOM.
+    expect(page).to have_css(
+      "[data-tab-id='discourse-mod-notes'], .user-menu-buttons .btn:has(.d-icon-shield-halved)",
+      wait: 15,
+    )
+    find(
+      "[data-tab-id='discourse-mod-notes'], .user-menu-buttons .btn:has(.d-icon-shield-halved)",
+      match: :first,
+    ).click
+    expect(page).to have_css(".mod-notes-panel .mod-notes-item", minimum: 3, wait: 15)
+    sleep 0.3
+    shot("09_shield_tab_with_multiple_notes")
   end
 
-  it "6. captures stacked per-reply mod-note notifications in the bell" do
-    topic = Fabricate(:topic, category: category, title: "Mod note reply demo")
-    Fabricate(:post, topic: topic, user: author, raw: "OP body for the visual capture.")
-    topic.custom_fields["mod_topic_private_note"] = "Please review this thread."
-    topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-    topic.custom_fields["mod_topic_private_note_position"] = "bottom"
-    topic.custom_fields["mod_topic_private_note_created_at"] = Time.zone.now.iso8601
-    topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
-    topic.save_custom_fields(true)
+  it "10. captures a bell reply notification rendering the reply excerpt as description" do
+    topic = Fabricate(:topic, category: category, title: "Bell reply excerpt demo")
+    Fabricate(:post, topic: topic, user: author, raw: "OP for bell reply excerpt demo.")
+    fab_mod_note_notification(
+      user: admin,
+      topic: topic,
+      kind: "reply",
+      reply_id: "bell-excerpt-001",
+      excerpt:
+        "Following up on the abuse report — please look at the new screenshot the user uploaded.",
+    )
 
-    # Fan out three distinct reply notifications, each with its own author,
-    # excerpt, and reply-anchored URL — same shape `notify_staff_of_reply`
-    # produces in production.
+    sign_in(admin)
+    visit("/")
+    expect(page).to have_css(".d-header", wait: 15)
+    find(".header-dropdown-toggle.current-user button", match: :first).click
+    expect(page).to have_css(".notification.custom", wait: 10)
+    sleep 0.3
+    shot("10_bell_reply_notification_shows_excerpt")
+  end
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Bell-notification click-through (renumbered "11-12").
+  # ──────────────────────────────────────────────────────────────────────
+
+  it "11. captures stacked per-reply mod-note notifications in the bell" do
+    topic =
+      seed_topic_with_note(title: "Stacked replies demo", note: "Please review this thread.")
+
     %w[r-aaaa r-bbbb r-cccc].each_with_index do |reply_id, index|
-      excerpt = ["First reply body.", "Second reply body.", "Third reply body."][index]
-      Notification.create!(
-        notification_type: Notification.types[:custom],
-        user_id: admin.id,
-        topic_id: topic.id,
-        post_number: topic.reload.highest_post_number,
-        high_priority: true,
-        data: {
-          topic_title: topic.title,
-          display_username: moderator.username,
-          mod_note: true,
-          mod_note_kind: "reply",
-          reply_id: reply_id,
-          excerpt: excerpt,
-          url: "#{topic.relative_url}/#{topic.highest_post_number}#mod-private-note-reply-#{reply_id}",
-          message: "discourse_mod_categories.note_reply_notification",
-          title: "discourse_mod_categories.note_reply_notification_title",
-        }.to_json,
+      fab_mod_note_notification(
+        user: admin,
+        topic: topic,
+        kind: "reply",
+        reply_id: reply_id,
+        excerpt: ["First reply body.", "Second reply body.", "Third reply body."][index],
       )
     end
 
@@ -195,41 +224,35 @@ RSpec.describe "Feature screenshots" do
     find(".header-dropdown-toggle.current-user button", match: :first).click
     expect(page).to have_css(".notification.custom", wait: 10)
     sleep 0.5
-    shot("07_bell_stacked_reply_notifications")
+    shot("11_bell_stacked_reply_notifications")
   end
 
-  it "7. captures clicking a mod-note notification landing on the note section" do
-    topic = Fabricate(:topic, category: category, title: "Mod note anchor demo")
-    Fabricate(:post, topic: topic, user: author, raw: "OP body for the visual capture.")
-    topic.custom_fields["mod_topic_private_note"] =
-      "Heads up, staff — landing right here, not at the top of the topic."
-    topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-    topic.custom_fields["mod_topic_private_note_position"] = "bottom"
-    topic.custom_fields["mod_topic_private_note_created_at"] = Time.zone.now.iso8601
-    topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
-    topic.save_custom_fields(true)
-
-    # Single-post topic → highest_post_number == 1, which used to drop the
-    # user at the top of the thread. The `#mod-private-note` anchor is what
-    # this screenshot exists to prove.
-    note_url =
-      "#{topic.relative_url}/#{topic.reload.highest_post_number}#mod-private-note"
-    Notification.create!(
-      notification_type: Notification.types[:custom],
-      user_id: admin.id,
-      topic_id: topic.id,
-      post_number: topic.highest_post_number,
-      high_priority: true,
-      data: {
-        topic_title: topic.title,
-        display_username: moderator.username,
-        mod_note: true,
-        mod_note_kind: "note",
-        excerpt: topic.custom_fields["mod_topic_private_note"],
-        url: note_url,
-        message: "discourse_mod_categories.note_notification",
-        title: "discourse_mod_categories.note_notification_title",
-      }.to_json,
+  it "12. captures a reply notification scrolling into a 15-post thread with bottom mod note" do
+    # 15 real posts so the mod-note panel sits well below the initial
+    # viewport — clicking the reply notification has to actually scroll,
+    # not just land on a single-post topic.
+    reply_id = "long-thread-reply-001"
+    topic =
+      seed_topic_with_note(
+        title: "Long thread reply anchor demo",
+        note: "Top-level moderator note pinned to the bottom of the long thread.",
+        filler_posts: 14,
+        replies: [
+          {
+            "id" => reply_id,
+            "user_id" => moderator.id,
+            "raw" =>
+              "The reply this notification points to — should be the focus on click.",
+            "created_at" => 5.minutes.ago.iso8601,
+          },
+        ],
+      )
+    fab_mod_note_notification(
+      user: admin,
+      topic: topic,
+      kind: "reply",
+      reply_id: reply_id,
+      excerpt: "The reply this notification points to.",
     )
 
     sign_in(admin)
@@ -239,9 +262,129 @@ RSpec.describe "Feature screenshots" do
     expect(page).to have_css(".notification.custom", wait: 10)
     find(".notification.custom a", match: :first).click
 
-    expect(page).to have_css(".mod-private-note", wait: 15)
-    # Give the deferred scrollIntoView (~250ms) time to land before capture.
-    sleep 0.8
-    shot("08_mod_note_notification_lands_on_note")
+    expect(page).to have_css("#mod-private-note-reply-#{reply_id}", wait: 15)
+    # Give the deferred scrollIntoView (~250ms) plus rendering settle time.
+    sleep 1.0
+    shot("12_reply_notification_scroll_in_long_thread")
+  end
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Audience-aware whisper bumping on /latest. Two paired scenarios that
+  # prove the same topic appears in different positions depending on
+  # whether the viewer is in the whisper's audience.
+  # ──────────────────────────────────────────────────────────────────────
+
+  def seed_audience_aware_bump_scenario
+    # Two topics seeded with a clear baseline ordering:
+    #   public_topic   bumped 30 min ago (older)
+    #   whisper_topic  bumped 5 min ago (newer) — by a whisper visible to audience_user only
+    # The whisper-bump fix should:
+    #   * Keep whisper_topic at top for audience_user (and staff).
+    #   * Demote whisper_topic below public_topic for stranger.
+    public_topic = Fabricate(:topic, category: category, title: "Public conversation")
+    Fabricate(:post, topic: public_topic, user: author, raw: "Newest *public* post in the list.")
+    ::Topic.where(id: public_topic.id).update_all(
+      bumped_at: 30.minutes.ago,
+      last_posted_at: 30.minutes.ago,
+    )
+
+    whisper_topic =
+      Fabricate(:topic, category: category, title: "Topic with whisper at bottom")
+    Fabricate(:post, topic: whisper_topic, user: author, raw: "Public OP for whisper topic.")
+    Fabricate(:post, topic: whisper_topic, user: author, raw: "Public reply on whisper topic.")
+    whisper =
+      Fabricate(
+        :post,
+        topic: whisper_topic,
+        user: moderator,
+        raw: "Staff-only whisper most recent.",
+      )
+    whisper.custom_fields[targets_field] = [audience_user.id]
+    whisper.save_custom_fields(true)
+    whisper_topic.custom_fields[participants_field] = [audience_user.id]
+    # Stamp the non-whisper bump time, matching what on(:post_created) writes.
+    last_public_post_time = whisper_topic.posts.where.not(id: whisper.id).maximum(:created_at)
+    whisper_topic.custom_fields[nwba_field] = last_public_post_time.iso8601
+    whisper_topic.save_custom_fields(true)
+
+    # Roll back highest_post_number (mirrors on(:post_created)) so the
+    # unread-badge math is also audience-aware for this scenario.
+    non_whisper_max =
+      whisper_topic
+        .posts
+        .where.not(id: whisper.id)
+        .where(deleted_at: nil)
+        .maximum(:post_number)
+    ::Topic.where(id: whisper_topic.id).update_all(
+      bumped_at: 5.minutes.ago,
+      last_posted_at: 5.minutes.ago,
+      highest_post_number: non_whisper_max,
+    )
+
+    [whisper_topic, public_topic]
+  end
+
+  it "13. captures /latest for an AUDIENCE member — whispered topic at the top" do
+    whisper_topic, _public_topic = seed_audience_aware_bump_scenario
+
+    sign_in(audience_user)
+    visit("/latest")
+    expect(page).to have_css(".topic-list-item", minimum: 2, wait: 15)
+    # The whispered topic should be the first item — proves the audience
+    # member still sees the whisper-bump.
+    expect(page).to have_css(
+      ".topic-list-item:first-of-type a.title[href*='#{whisper_topic.slug}']",
+      wait: 5,
+    )
+    shot("13_latest_audience_user_sees_whisper_at_top")
+  end
+
+  it "14. captures /latest for a NON-AUDIENCE viewer — whispered topic demoted" do
+    whisper_topic, public_topic = seed_audience_aware_bump_scenario
+
+    sign_in(stranger)
+    visit("/latest")
+    expect(page).to have_css(".topic-list-item", minimum: 2, wait: 15)
+    # The public_topic should now appear above the whisper_topic — proves
+    # the non-audience viewer doesn't see ghost activity from the whisper.
+    expect(page).to have_css(
+      ".topic-list-item:first-of-type a.title[href*='#{public_topic.slug}']",
+      wait: 5,
+    )
+    shot("14_latest_non_audience_user_sees_public_topic_first")
+  end
+
+  # ──────────────────────────────────────────────────────────────────────
+  # CSS sanity check: confirm whisper.scss is still loading and styling
+  # the whisper banner on a posted whisper. If this shot ever lands
+  # unstyled, the same SCSS-pipeline regression that bit us last round
+  # is back and any new styles added to whisper.scss are at risk.
+  # ──────────────────────────────────────────────────────────────────────
+
+  it "15. captures the whisper banner styling on a posted whisper (CSS sanity)" do
+    topic = Fabricate(:topic, category: category, title: "Whisper banner CSS check")
+    Fabricate(:post, topic: topic, user: author, raw: "OP body for the visual capture.")
+    Fabricate(:post, topic: topic, user: author, raw: "Public reply visible to everyone.")
+    whisper =
+      Fabricate(:post, topic: topic, user: moderator, raw: "Mod-only whisper body.")
+    whisper.custom_fields[targets_field] = [audience_user.id]
+    whisper.save_custom_fields(true)
+    topic.custom_fields[participants_field] = [audience_user.id]
+    topic.save_custom_fields(true)
+
+    non_whisper_max =
+      Post
+        .where(topic_id: topic.id, deleted_at: nil)
+        .where.not(id: PostCustomField.where(name: targets_field).select(:post_id))
+        .maximum(:post_number)
+    Topic.where(id: topic.id).update_all(highest_post_number: non_whisper_max) if non_whisper_max
+
+    sign_in(audience_user)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".mod-whisper-banner", wait: 15)
+    # If the banner exists but is invisible / unstyled, the screenshot
+    # will surface it; the visual sanity check is the whole point.
+    sleep 0.3
+    shot("15_whisper_banner_css_sanity")
   end
 end
