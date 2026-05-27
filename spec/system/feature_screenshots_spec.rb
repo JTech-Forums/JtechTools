@@ -152,9 +152,14 @@ RSpec.describe "Feature screenshots" do
   end
 
   it "9. captures the user-menu shield tab listing notes from multiple topics" do
+    # Titles must be >= min_topic_title_length (15 by default) or
+    # Fabricate(:topic, ...) raises ActiveRecord::RecordInvalid before
+    # the test ever hits the browser — the blank-page failure shot in
+    # the previous CI run was Capybara capturing about:blank because no
+    # `visit` had happened yet.
     3.times do |i|
       seed_topic_with_note(
-        title: "Triage topic #{i + 1}",
+        title: "Triage topic #{i + 1} needs follow-up",
         note: "Triage note #{i + 1} — needs follow-up.",
       )
     end
@@ -163,17 +168,11 @@ RSpec.describe "Feature screenshots" do
     visit("/")
     expect(page).to have_css(".d-header", wait: 15)
     find(".header-dropdown-toggle.current-user button", match: :first).click
-    # Wait for the user menu's tab strip to render before clicking the
-    # shield tab — the previous run of this scenario failed because the
-    # find() fired before the menu's tabs were in the DOM.
-    expect(page).to have_css(
-      "[data-tab-id='discourse-mod-notes'], .user-menu-buttons .btn:has(.d-icon-shield-halved)",
-      wait: 15,
-    )
-    find(
-      "[data-tab-id='discourse-mod-notes'], .user-menu-buttons .btn:has(.d-icon-shield-halved)",
-      match: :first,
-    ).click
+    # Discourse core renders `id="user-menu-button-<tab.id>"` on every
+    # registered user-menu tab button — matches the proven pattern from
+    # moderator_messages_spec.rb and gallery_expansion_spec.rb.
+    expect(page).to have_css("#user-menu-button-discourse-mod-notes", wait: 15)
+    find("#user-menu-button-discourse-mod-notes").click
     expect(page).to have_css(".mod-notes-panel .mod-notes-item", minimum: 3, wait: 15)
     sleep 0.3
     shot("09_shield_tab_with_multiple_notes")
@@ -302,7 +301,17 @@ RSpec.describe "Feature screenshots" do
     whisper.custom_fields[targets_field] = [audience_user.id]
     whisper.save_custom_fields(true)
     whisper_topic.custom_fields[participants_field] = [audience_user.id]
-    # Stamp the non-whisper bump time, matching what on(:post_created) writes.
+
+    # Backdate the public posts BEFORE reading their max(created_at) for the
+    # non-whisper-bumped-at stamp. Without this, the public posts have
+    # created_at ≈ now, the NWBA stamp becomes "now", and the modifier's
+    # demotion still puts whisper_topic above public_topic (whose bumped_at
+    # is 30 min ago) — defeating the test premise. Mirrors the request
+    # spec's update_columns(created_at: 1.hour.ago) pattern.
+    whisper_topic
+      .posts
+      .where.not(id: whisper.id)
+      .update_all(created_at: 1.hour.ago)
     last_public_post_time = whisper_topic.posts.where.not(id: whisper.id).maximum(:created_at)
     whisper_topic.custom_fields[nwba_field] = last_public_post_time.iso8601
     whisper_topic.save_custom_fields(true)
