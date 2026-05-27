@@ -3,15 +3,14 @@
   "include": [
     "admin/assets/javascripts/**/*",
     "assets/javascripts/**/*",
-    "test/javascripts/**/*",
     "node_modules/discourse/declarations/**/*"
   ],
   "compilerOptions": {
     "paths": {
-      "discourse/plugins/JtechTools/*": [
+      "discourse/plugins/jtech-tools/*": [
         "./assets/javascripts/*"
       ],
-      "discourse/plugins/JtechTools/admin/*": [
+      "discourse/plugins/jtech-tools/admin/*": [
         "./admin/assets/javascripts/admin/*"
       ],
       "admin/*": ["./node_modules/discourse/declarations/admin/*"],

@@ -1,29 +1,36 @@
 # Jtech — combined plugin settings.
+#
 # Each top-level key (jtech, jtech_dislike, jtech_smtp, jtech_mini_mod,
-# jtech_mod, jtech_dumbcourse) is rendered as its own admin-UI tab.
-# Setting names are unchanged from the original sub-plugins; only the
-# category grouping is new. trust_level_4 is the Discourse core category.
+# jtech_mod, jtech_dumbcourse) becomes its own admin-UI settings tab.
+# Within each tab, settings are ordered: master enable first, then feature
+# toggles, then config options for those features. trust_level_4 is the
+# Discourse core category.
 
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech (master)
+# ───────────────────────────────────────────────────────────────────────────
 jtech:
   jtech_enabled:
     default: true
     client: true
 
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Dislike (phantom reactions in restricted categories)
+# ───────────────────────────────────────────────────────────────────────────
 jtech_dislike:
+  # Master switch.
   discourse_no_likes_enabled:
     default: true
     client: false
+
+  # Scope — which categories trigger phantom-reaction behavior.
   no_reactions_category_ids:
     default: ''
     client: false
     type: category_list
+
+  # Audience — who can react inside restricted categories.
   dislike_hide_like_button:
-    default: false
-    client: false
-  dislike_count_in_leaderboard:
-    default: false
-    client: false
-  dislike_show_in_history:
     default: false
     client: false
   dislike_allowed_like_groups:
@@ -31,18 +38,34 @@ jtech_dislike:
     client: false
     type: group_list
     allow_any: true
+
+  # What "phantom" actually means — pick any combination.
+  dislike_show_in_history:
+    default: false
+    client: false
+  dislike_count_in_leaderboard:
+    default: false
+    client: false
+  dislike_record_audit_trail:
+    default: true
+    client: false
+
+  # Maintenance — toggle on to retroactively clear; auto-resets after run.
   purge_phantom_likes_now:
     default: false
     client: false
     type: bool
 
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Alternate SMTP
+# ───────────────────────────────────────────────────────────────────────────
 jtech_smtp:
+  # Master switch.
   discourse_another_email_enabled:
     default: false
     client: false
-  discourse_another_email_smtp_authentication_mode:
-    default: plain
-    client: false
+
+  # SMTP credentials & endpoint.
   discourse_another_email_smtp_address:
     default: 172.17.0.1
     client: false
@@ -51,6 +74,9 @@ jtech_smtp:
     client: false
     min: 0
     max: 65537
+  discourse_another_email_smtp_authentication_mode:
+    default: plain
+    client: false
   discourse_another_email_smtp_username:
     default: username@example.com
     client: false
@@ -58,20 +84,25 @@ jtech_smtp:
     default: password
     client: false
     secret: true
+
+  # From-address rewriting (optional).
   discourse_another_email_force_from_domain:
     default: ''
     client: false
-    description: Force all from addresses to use this domain (e.g., example.com).
-      Leave empty to disable.
   discourse_another_email_force_smtp_username_to_sender:
     default: false
     client: false
-    description: Force SMTP username to match the sender address
 
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Mini-mod (category group moderators get category-create rights)
+# ───────────────────────────────────────────────────────────────────────────
 jtech_mini_mod:
+  # Master switch.
   mini_mod_enabled:
     default: false
     client: true
+
+  # What category group moderators are allowed to do.
   mini_mod_manage_all_categories:
     default: false
     client: true
@@ -85,6 +116,10 @@ jtech_mini_mod:
     default: false
     client: false
 
+# ───────────────────────────────────────────────────────────────────────────
+# Trust Level 4 (Discourse core category — kept here because mini-mod adds
+# settings to it.)
+# ───────────────────────────────────────────────────────────────────────────
 trust_level_4:
   tl4_can_post_in_closed_topics:
     default: false
@@ -93,10 +128,16 @@ trust_level_4:
     default: false
     client: false
 
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Mod (moderator topic tools: pre-checks, whispers, footers, etc.)
+# ───────────────────────────────────────────────────────────────────────────
 jtech_mod:
+  # Master switch.
   mod_categories_enabled:
     default: false
     client: true
+
+  # Per-feature toggles.
   precheck_new_topic_enabled:
     default: true
     client: true
@@ -110,9 +151,18 @@ jtech_mod:
     default: true
     client: true
 
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Dumbcourse (lightweight SPA at /dumb with push notifications)
+# ───────────────────────────────────────────────────────────────────────────
 jtech_dumbcourse:
+  # Master switch.
   dumbcourse_enabled:
     default: true
+    client: true
+
+  # Where the SPA mounts and how it looks by default.
+  dumbcourse_base_path:
+    default: dumb
     client: true
   dumbcourse_default_theme:
     default: dark
@@ -133,9 +183,8 @@ jtech_dumbcourse:
     - hot
     - my
     - categories
-  dumbcourse_base_path:
-    default: dumb
-    client: true
+
+  # Display options.
   dumbcourse_sidebar_link_enabled:
     default: true
     client: true
@@ -154,9 +203,8 @@ jtech_dumbcourse:
   dumbcourse_online_glow_enabled:
     default: true
     client: true
-  dumbcourse_push_enabled:
-    default: false
-    client: false
+
+  # Topic-list pagination.
   dumbcourse_pagination_enabled:
     default: false
     client: true
@@ -165,6 +213,13 @@ jtech_dumbcourse:
     min: 10
     max: 100
     client: true
+
+  # Push notifications (web push + ntfy SSE).
+  dumbcourse_push_enabled:
+    default: false
+    client: false
+
+  # LanguageTool integration (composer Refine button).
   dumbcourse_languagetool_enabled:
     default: false
     client: false

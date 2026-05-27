@@ -7,14 +7,14 @@
 // the DOM signal; :has() does the rest.
 .composer-fields:has(.mod-whisper-armed-pill),
 .d-editor-container:has(.mod-whisper-armed-pill) {
-  background-color: rgb(99, 102, 241, 0.08);
+  background-color: rgba(99, 102, 241, 0.08);
 }
 
 .composer-fields:has(.mod-whisper-armed-pill)
   .d-editor-button-bar
   button.mod-whisper-target {
   color: var(--tertiary);
-  background-color: rgb(99, 102, 241, 0.18);
+  background-color: rgba(99, 102, 241, 0.18);
 }
 
 .mod-whisper-armed-pill {
@@ -25,8 +25,8 @@
   padding: 3px 6px 3px 12px;
   font-size: var(--font-down-1);
   color: var(--tertiary);
-  background: rgb(99, 102, 241, 0.12);
-  border: 1px solid rgb(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.3);
   border-radius: 999px;
   width: fit-content;
   max-width: 100%;
@@ -52,7 +52,7 @@
     background: transparent;
 
     &:hover {
-      background: rgb(99, 102, 241, 0.25);
+      background: rgba(99, 102, 241, 0.25);
     }
 
     .d-icon {
@@ -96,13 +96,13 @@
 }
 
 .cooked.mod-whisper--staff {
-  background: rgb(99, 102, 241, 0.05);
-  border-left: 3px solid rgb(99, 102, 241, 0.55);
+  background: rgba(99, 102, 241, 0.05);
+  border-left: 3px solid rgba(99, 102, 241, 0.55);
 
   .mod-whisper-banner {
     color: var(--tertiary);
-    background: rgb(99, 102, 241, 0.1);
-    border: 1px solid rgb(99, 102, 241, 0.25);
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.25);
   }
 
   .mod-whisper-banner__user,
@@ -112,13 +112,13 @@
 }
 
 .cooked.mod-whisper--user {
-  background: rgb(217, 119, 6, 0.05);
-  border-left: 3px solid rgb(217, 119, 6, 0.55);
+  background: rgba(217, 119, 6, 0.05);
+  border-left: 3px solid rgba(217, 119, 6, 0.55);
 
   .mod-whisper-banner {
     color: #b45309;
-    background: rgb(217, 119, 6, 0.1);
-    border: 1px solid rgb(217, 119, 6, 0.25);
+    background: rgba(217, 119, 6, 0.1);
+    border: 1px solid rgba(217, 119, 6, 0.25);
   }
 }
 

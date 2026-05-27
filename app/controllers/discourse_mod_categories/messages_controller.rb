@@ -5,7 +5,7 @@ module ::DiscourseModCategories
   # Guardian-gated so only moderators and admins can write; regular users
   # get a 403.
   class MessagesController < ::ApplicationController
-    requires_plugin "JtechTools"
+    requires_plugin "jtech-tools"
     requires_login
 
     TOPIC_FOOTER_FIELD = DiscourseModCategories::TOPIC_FOOTER_FIELD

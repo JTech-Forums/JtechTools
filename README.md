@@ -11,6 +11,7 @@ One combined Discourse plugin. Bundles five previously-separate plugins under a 
 | Mini-mod | `DiscourseMiniMod` | `mini_mod_*`, `tl4_*` | `mini_mod_enabled` |
 | Mod-categories | `DiscourseModCategories` | `mod_*`, `precheck_*`, `topic_footer_*`, `topic_reply_prompt_*` | `mod_categories_enabled` |
 | Dumbcourse | `DiscourseDumbcourse` | `dumbcourse_*` | `dumbcourse_enabled` |
+| Translator-tweaks | *(patches `DiscourseTranslator`)* | *(none — gated by translator's own settings)* | `translator_enabled` (upstream) |
 
 The bundle is gated by `jtech_enabled`; each sub-plugin is independently gated by its own setting above.
 
@@ -25,6 +26,13 @@ sub_plugins/
   mini_mod.rb          body of original discourse-mini-mod/plugin.rb
   mod_categories.rb    body of original discourse-mod/plugin.rb
   dumbcourse.rb        body of original dumbcourse/plugin.rb
+  translator_tweaks.rb runtime patches for upstream discourse/discourse-translator
+                       (alltechdev's two-commit fork ported as in-process tweaks
+                       so we can track upstream and apply our overrides on top)
+scripts/
+  translator_backfill_foreign_detection.rb
+                       one-shot rails runner; enqueues the upstream translator's
+                       detect job for legacy foreign-script posts
 config/
   settings.yml         all five settings.yml files merged into six jtech_* admin tabs
   locales/
@@ -56,7 +64,7 @@ Discourse plugins can only register a single `enabled_site_setting` at load time
 
 ```bash
 cd /var/discourse/plugins
-git clone https://github.com/JTech-Forums/JtechTools.git
+git clone https://github.com/JTech-Forums/JtechTools.git jtech-tools
 cd /var/discourse
 ./launcher rebuild app
 ```

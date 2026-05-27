@@ -7,84 +7,201 @@ en:
       jtech_mini_mod: Jtech — Mini-mod
       jtech_mod: Jtech — Mod
       jtech_dumbcourse: Jtech — Dumbcourse
-    jtech_enabled: Master gate for the Jtech plugin bundle. Each sub-plugin keeps
-      its own enable setting below for fine-grained control.
-    discourse_no_likes_enabled: Enable discourse-no-likes
-    no_reactions_category_ids: Categories where reactions are phantom (shown but not
-      counted in stats)
-    dislike_hide_like_button: Hide the like/reaction button entirely in restricted
-      categories
-    dislike_count_in_leaderboard: Count phantom likes in user stats (likes_given /
-      likes_received) for leaderboards
-    dislike_show_in_history: Show phantom likes in user activity history feeds
-    dislike_allowed_like_groups: Only these groups can like in restricted categories
-      (empty = everyone)
-    purge_phantom_likes_now: Retroactively clear phantom likes — recalculates stats
-      for all affected users (resets automatically after running)
-    mini_mod_enabled: Allow category group moderators to create and edit categories
-      they moderate.
-    mini_mod_manage_all_categories: Allow category group moderators to manage all
-      categories, not just the ones they moderate.
-    mini_mod_manage_tags: Allow category group moderators to create, edit, and delete
-      tags.
-    mini_mod_can_post_in_closed_topics: Allow category group moderators to reply on
-      closed topics in categories they moderate. Disabled by default; site staff are
-      unaffected.
-    mini_mod_can_reopen_topics: Allow category group moderators to reopen closed topics
-      in categories they moderate. Disabled by default; site staff are unaffected.
-    tl4_can_post_in_closed_topics: Allow trust level 4 users to reply on closed topics.
-      Disabled by default; site staff are unaffected.
-    tl4_can_reopen_topics: Allow trust level 4 users to reopen closed topics. Disabled
-      by default; site staff are unaffected.
-    mod_categories_enabled: Allow moderators to create, edit, and delete categories.
-    precheck_new_topic_enabled: Enable the per-category 'before you post a new topic'
-      confirmation prompt. Moderators set the message on each category.
-    topic_footer_message_enabled: Enable the per-topic pinned footer message. Moderators
-      set the message on each topic.
-    topic_reply_prompt_enabled: Enable the per-topic 'before you post a reply' confirmation
-      prompt. Moderators set the message on each topic.
-    mod_whisper_enabled: Enable moderator whisper posts — in-topic replies visible
-      only to staff, the post author, the topic's whisper participants, and any users
-      staff explicitly target.
+
+    # ── Jtech (master) ─────────────────────────────────────────────────────
+    jtech_enabled: Enable the Jtech plugin bundle
+    jtech_enabled_description: Master gate. Every sub-plugin still has its own
+      enable setting below for fine-grained control.
+
+    # ── Jtech — Dislike ────────────────────────────────────────────────────
+    discourse_no_likes_enabled: Enable Dislike (phantom reactions)
+    discourse_no_likes_enabled_description: Master switch for the Dislike
+      sub-plugin. When off, like behavior is unchanged anywhere on the forum.
+
+    no_reactions_category_ids: Phantom-reaction categories
+    no_reactions_category_ids_description: Categories where likes/reactions
+      are treated as phantom — visible in UI but excluded from stats.
+
+    dislike_hide_like_button: Hide the like button entirely
+    dislike_hide_like_button_description: When on, the like/reaction button
+      does not render at all in restricted categories, and the backend
+      rejects any like API call there.
+
+    dislike_allowed_like_groups: Restrict liking to these groups
+    dislike_allowed_like_groups_description: Only members of these groups can
+      like in restricted categories. Leave empty to allow everyone.
+
+    dislike_show_in_history: Show phantom likes in user history
+    dislike_show_in_history_description: When on, phantom likes appear in
+      the user's activity feed even though they don't count in stats.
+
+    dislike_count_in_leaderboard: Count phantom likes in user stats
+    dislike_count_in_leaderboard_description: When on, phantom likes
+      increment likes_given / likes_received counters used by leaderboards.
+
+    dislike_record_audit_trail: Record audit trail of phantom likes
+    dislike_record_audit_trail_description: When on, every phantom like is
+      recorded in the discourse_no_likes_phantoms table for retroactive
+      reporting. Turn off if you don't need the audit trail and want to
+      avoid the extra row writes.
+
+    purge_phantom_likes_now: Run a retroactive phantom-like purge
+    purge_phantom_likes_now_description: Toggle on to clear phantom likes
+      across the forum and recalculate stats for affected users. Resets
+      itself off when the job finishes.
+
+    # ── Jtech — Alternate SMTP ─────────────────────────────────────────────
+    discourse_another_email_enabled: Enable alternate SMTP
+    discourse_another_email_enabled_description: When on, outgoing emails
+      are routed through the alternate SMTP server configured below
+      instead of Discourse's default.
+
+    discourse_another_email_smtp_address: SMTP server address
+    discourse_another_email_smtp_port: SMTP server port
+    discourse_another_email_smtp_authentication_mode: SMTP authentication mode
+    discourse_another_email_smtp_username: SMTP username
+    discourse_another_email_smtp_password: SMTP password
+
+    discourse_another_email_force_from_domain: Force From-address domain
+    discourse_another_email_force_from_domain_description: Rewrites the
+      domain of every outgoing From address to this value (e.g.
+      `example.com`). Leave empty to disable rewriting.
+
+    discourse_another_email_force_smtp_username_to_sender: Force SMTP
+      username to match sender
+    discourse_another_email_force_smtp_username_to_sender_description: When
+      on, the SMTP AUTH username is rewritten per-message to match the
+      sender's local-part + From-address domain. Plus-addressing is
+      stripped. Useful for SMTP relays that require AUTH user to match
+      envelope-from.
+
+    # ── Jtech — Mini-mod ───────────────────────────────────────────────────
+    mini_mod_enabled: Enable Mini-mod
+    mini_mod_enabled_description: Lets category group moderators create
+      and edit categories they moderate, plus optional extras below.
+
+    mini_mod_manage_all_categories: Manage all categories
+    mini_mod_manage_all_categories_description: When on, category group
+      moderators can manage every category, not just the ones they
+      moderate.
+
+    mini_mod_manage_tags: Manage tags
+    mini_mod_manage_tags_description: When on, category group moderators
+      can create, edit, and delete tags.
+
+    mini_mod_can_post_in_closed_topics: Post in closed topics
+    mini_mod_can_post_in_closed_topics_description: When on, category
+      group moderators can reply on closed topics in categories they
+      moderate. Site staff are unaffected.
+
+    mini_mod_can_reopen_topics: Reopen closed topics
+    mini_mod_can_reopen_topics_description: When on, category group
+      moderators can reopen closed topics in categories they moderate.
+      Site staff are unaffected.
+
+    # ── Trust Level 4 (Discourse core) ─────────────────────────────────────
+    tl4_can_post_in_closed_topics: TL4 — post in closed topics
+    tl4_can_post_in_closed_topics_description: When on, trust level 4
+      users can reply on closed topics. Site staff are unaffected.
+
+    tl4_can_reopen_topics: TL4 — reopen closed topics
+    tl4_can_reopen_topics_description: When on, trust level 4 users
+      can reopen closed topics. Site staff are unaffected.
+
+    # ── Jtech — Mod ────────────────────────────────────────────────────────
+    mod_categories_enabled: Enable Mod (moderator topic tools)
+    mod_categories_enabled_description: Master switch for the moderator
+      topic-tools sub-plugin (pre-checks, footers, reply prompts, whispers,
+      moderator notes, checklists). Each feature has its own toggle below.
+
+    precheck_new_topic_enabled: Per-category new-topic confirmation
+    precheck_new_topic_enabled_description: When on, users see a 'before
+      you post a new topic' prompt configurable per category.
+
+    topic_footer_message_enabled: Per-topic footer message
+    topic_footer_message_enabled_description: When on, moderators can pin
+      a footer message on a topic that appears below all replies.
+
+    topic_reply_prompt_enabled: Per-topic reply confirmation
+    topic_reply_prompt_enabled_description: When on, users see a 'before
+      you post a reply' prompt configurable per topic.
+
+    mod_whisper_enabled: Moderator whispers
+    mod_whisper_enabled_description: When on, staff can post in-topic
+      whispers visible only to staff, the post author, the topic's whisper
+      participants, and any users staff explicitly target.
+
+    # ── Jtech — Dumbcourse ─────────────────────────────────────────────────
     dumbcourse_enabled: Enable Dumbcourse
-    dumbcourse_default_theme: Default Dumbcourse theme
-    dumbcourse_default_view: Default Dumbcourse view
-    dumbcourse_base_path: 'Base path for Dumbcourse (default: dumb)'
-    dumbcourse_sidebar_link_enabled: Show Dumbcourse link in sidebar
-    dumbcourse_show_category_names: Show category names
-    dumbcourse_topic_posters_visibility: Show latest user profiles on topic list
-    dumbcourse_online_glow_enabled: Show online glow on topic user profiles
+    dumbcourse_enabled_description: Serves the Dumbcourse SPA under the
+      configured base path. Other Dumbcourse features below still respect
+      their own toggles when this is on.
+
+    dumbcourse_base_path: Base path
+    dumbcourse_base_path_description: URL prefix the SPA mounts at
+      (default `dumb` → serves at /dumb).
+
+    dumbcourse_default_theme: Default theme
+    dumbcourse_default_view: Default view
+
+    dumbcourse_sidebar_link_enabled: Show in sidebar
+    dumbcourse_sidebar_link_enabled_description: When on, a "Dumbcourse"
+      link appears in the main Discourse sidebar.
+
+    dumbcourse_show_category_names: Show category names on topic list
+    dumbcourse_topic_posters_visibility: Latest poster avatars on topic list
+    dumbcourse_online_glow_enabled: Online glow on user avatars
+
     dumbcourse_topic_posters_visibility_choices:
       all: All devices
       desktop: Desktop only
       mobile: Mobile only
       none: 'Off'
-    dumbcourse_push_enabled: Enable push notifications for Dumbcourse app (SSE disabled
-      — Redis publish only)
-    dumbcourse_pagination_enabled: Use page-based pagination instead of infinite scroll
-      on Dumbcourse topic lists
-    dumbcourse_topics_per_page: Topics shown per page when pagination is enabled
-    dumbcourse_languagetool_enabled: Enable LanguageTool refine button
-    dumbcourse_languagetool_enabled_description: Adds a Refine (spell/grammar) button
-      in the composer.
+
+    dumbcourse_pagination_enabled: Use pagination
+    dumbcourse_pagination_enabled_description: When on, topic lists use
+      page-based navigation instead of infinite scroll.
+
+    dumbcourse_topics_per_page: Topics per page
+    dumbcourse_topics_per_page_description: How many topics appear on each
+      page when pagination is enabled.
+
+    dumbcourse_push_enabled: Enable push notifications
+    dumbcourse_push_enabled_description: When on, the SPA can register
+      service workers for web push. Server-sent events are disabled; push
+      is delivered via Redis publish.
+
+    dumbcourse_languagetool_enabled: Enable LanguageTool Refine button
+    dumbcourse_languagetool_enabled_description: When on, the composer
+      gains a Refine (spell/grammar) button backed by LanguageTool.
+
     dumbcourse_languagetool_mode: LanguageTool mode
-    dumbcourse_languagetool_mode_description: Choose self-hosted or the official LanguageTool
-      API.
+    dumbcourse_languagetool_mode_description: Choose between a self-hosted
+      LanguageTool server and the official LanguageTool cloud API.
+
     dumbcourse_languagetool_mode_choices:
       self_hosted: Self-hosted
       official_api: Official API
-    dumbcourse_languagetool_url: LanguageTool server URL
-    dumbcourse_languagetool_url_description: Base URL for your self-hosted server
-      (no /v2/check).
-    dumbcourse_languagetool_secret: LanguageTool server secret (optional)
-    dumbcourse_languagetool_secret_description: Optional bearer token sent as Authorization
-      header.
-    dumbcourse_languagetool_api_url: LanguageTool official API URL
-    dumbcourse_languagetool_api_url_description: 'Official endpoint. Default: https://api.languagetool.org/v2/check'
-    dumbcourse_languagetool_api_username: LanguageTool API username (optional)
-    dumbcourse_languagetool_api_username_description: Only required for official API
-      plans that use username + API key.
-    dumbcourse_languagetool_api_key: LanguageTool API key (optional)
-    dumbcourse_languagetool_api_key_description: Required when a username is set.
+
+    dumbcourse_languagetool_url: Self-hosted server URL
+    dumbcourse_languagetool_url_description: Base URL of your self-hosted
+      LanguageTool server (do NOT include /v2/check).
+
+    dumbcourse_languagetool_secret: Self-hosted server secret
+    dumbcourse_languagetool_secret_description: Optional bearer token sent
+      as the Authorization header to the self-hosted server.
+
+    dumbcourse_languagetool_api_url: Official API endpoint
+    dumbcourse_languagetool_api_url_description: 'Official LanguageTool
+      endpoint. Default: https://api.languagetool.org/v2/check.'
+
+    dumbcourse_languagetool_api_username: Official API username
+    dumbcourse_languagetool_api_username_description: Only required for
+      official API plans that use username + API key authentication.
+
+    dumbcourse_languagetool_api_key: Official API key
+    dumbcourse_languagetool_api_key_description: Required when a username
+      is set.
+
   discourse_mod_categories:
     note_notification_alert: '%{username} added a moderator note on "%{topic}"'

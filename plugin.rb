@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-# name: JtechTools
-# about: Jtech — combined Discourse plugin (dislike, another-smtp, mini-mod, mod-categories, dumbcourse)
-# version: 0.1.0
+# name: jtech-tools
+# about: Jtech — combined Discourse plugin (dislike, another-smtp, mini-mod, mod-categories, dumbcourse, translator-tweaks)
+# version: 0.1.1
 # authors: TripleU, Shalom_Karr, Ars18
 # url: https://github.com/JTech-Forums/JtechTools
 # required_version: 3.0.0
@@ -22,7 +22,7 @@ enabled_site_setting :jtech_enabled
 # (magic-header comments and the top-level enabled_site_setting call stripped).
 # Settings, locales, lib/, app/, db/migrate, and assets/ from every sub-plugin
 # have been merged into this plugin's standard Discourse layout.
-%w[dislike another_smtp mini_mod mod_categories dumbcourse].each do |sub|
+%w[dislike another_smtp mini_mod mod_categories dumbcourse translator_tweaks].each do |sub|
   path = File.expand_path("sub_plugins/#{sub}.rb", __dir__)
   instance_eval(File.read(path), path, 1)
 end

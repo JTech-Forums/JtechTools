@@ -6,7 +6,7 @@ require "uri"
 
 module DiscourseDumbcourse
   class LanguagetoolController < ::ApplicationController
-    requires_plugin "JtechTools"
+    requires_plugin "jtech-tools"
     requires_login
     skip_before_action :verify_authenticity_token
 

@@ -208,6 +208,10 @@ en:
     admin:
       site_settings:
         categories:
-          discourse_mini_mod: Discourse Mini Mod
+          jtech: Jtech
+          jtech_dislike: Jtech — Dislike
+          jtech_smtp: Jtech — Alternate SMTP
+          jtech_mini_mod: Jtech — Mini-mod
+          jtech_mod: Jtech — Mod
+          jtech_dumbcourse: Jtech — Dumbcourse
           trust_level_4: Trust Level 4
-          discourse_mod_categories: Moderator Category Management
