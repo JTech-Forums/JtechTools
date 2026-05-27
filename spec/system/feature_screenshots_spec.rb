@@ -33,7 +33,7 @@ RSpec.describe "Feature screenshots" do
 
     BadgeGranter.grant(badge, badge_holder)
 
-    FileUtils.mkdir_p("tmp/capybara/feature_screenshots")
+    FileUtils.mkdir_p(File.join(Rails.root, "tmp/capybara/feature_screenshots"))
   end
 
   def shot(name)
@@ -44,7 +44,12 @@ RSpec.describe "Feature screenshots" do
     rescue Timeout::Error
       # Capture anyway rather than failing on a slow image.
     end
-    page.save_screenshot("tmp/capybara/feature_screenshots/#{name}.png")
+    # Absolute path so the file lands where the workflow expects, regardless
+    # of Capybara.save_path. Relative paths are interpreted relative to
+    # Capybara.save_path (`tmp/capybara/`), which would produce
+    # `tmp/capybara/tmp/capybara/feature_screenshots/...`.
+    path = File.join(Rails.root, "tmp/capybara/feature_screenshots/#{name}.png")
+    page.save_screenshot(path)
   end
 
   def topic_with_whisper(audience_ids: [audience_user.id])
