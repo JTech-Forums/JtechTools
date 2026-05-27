@@ -607,7 +607,7 @@ RSpec.describe "Moderator messages" do
       topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
       topic.save_custom_fields(true)
 
-      note_url = "#{topic.relative_url}/#{topic.reload.highest_post_number}"
+      note_url = "#{topic.relative_url}/#{topic.reload.highest_post_number}#mod-private-note"
       Notification.create!(
         notification_type: Notification.types[:custom],
         user_id: other_moderator.id,

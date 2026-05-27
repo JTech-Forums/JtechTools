@@ -133,5 +133,94 @@ RSpec.describe "Whisper unread badge" do
       topic.reload
       expect(topic.highest_post_number).to eq(regular_reply.post_number)
     end
+
+    it "stamps non_whisper_bumped_at into a topic custom field on whisper creation" do
+      # Backdate BOTH non-whisper posts so the max(:created_at) is
+      # deterministically regular_reply (15 min ago) — op was fabricated
+      # at ~now, so without the older backdate it would win the max() and
+      # the stamp wouldn't match what the assertion expects.
+      op.update_columns(created_at: 30.minutes.ago)
+      regular_reply.update_columns(created_at: 15.minutes.ago)
+
+      sign_in(moderator)
+      post "/posts.json",
+           params: {
+             :topic_id => topic.id,
+             :raw => "Whisper body long enough to satisfy min_post_length.",
+             DiscourseModCategories::POST_WHISPER_ARMED_PARAM => true,
+             DiscourseModCategories::POST_WHISPER_TARGETS_FIELD => [target.id],
+           }
+      expect(response.status).to eq(200)
+
+      stamped =
+        topic.reload.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD].to_s
+      expect(stamped).not_to be_empty
+      expect(Time.zone.parse(stamped)).to be_within(1.second).of(regular_reply.reload.created_at)
+    end
+  end
+
+  describe "audience-aware /latest ordering" do
+    fab!(:public_topic, :topic)
+    fab!(:public_topic_op) { Fabricate(:post, topic: public_topic, user: author) }
+
+    before do
+      # Pin a clear ordering: the whispered topic was bumped at the whisper
+      # time (30 min ago via fabrication), the public topic is more recent.
+      # An audience member should see the whispered topic at the top — the
+      # whisper IS the latest activity for them. A non-audience viewer
+      # should see the public topic first because, for them, the whispered
+      # topic's effective bump is the older regular_reply.
+      regular_reply.update_columns(created_at: 1.hour.ago)
+      ::Topic.where(id: topic.id).update_all(
+        bumped_at: 5.minutes.ago,
+        last_posted_at: 5.minutes.ago,
+      )
+      ::Topic.where(id: public_topic.id).update_all(
+        bumped_at: 30.minutes.ago,
+        last_posted_at: 30.minutes.ago,
+      )
+      # Simulate the on(:post_created) stamp.
+      topic.custom_fields[
+        DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD
+      ] = regular_reply.created_at.iso8601
+      topic.save_custom_fields(true)
+    end
+
+    def latest_topic_ids(as_user)
+      sign_in(as_user)
+      get "/latest.json"
+      expect(response.status).to eq(200)
+      response.parsed_body["topic_list"]["topics"].map { |t| t["id"] }
+    end
+
+    it "keeps the whispered topic at the top of /latest for staff" do
+      ids = latest_topic_ids(admin)
+      expect(ids.index(topic.id)).to be < ids.index(public_topic.id)
+    end
+
+    it "keeps the whispered topic at the top of /latest for a whisper participant" do
+      # Participant is in TOPIC_WHISPER_PARTICIPANTS_FIELD per the outer before.
+      ids = latest_topic_ids(participant)
+      expect(ids.index(topic.id)).to be < ids.index(public_topic.id)
+    end
+
+    it "demotes the whispered topic below the public topic for a non-audience viewer" do
+      ids = latest_topic_ids(stranger)
+      expect(ids.index(public_topic.id)).to be < ids.index(topic.id)
+    end
+
+    it "skips the timestamp cast when the non_whisper_bumped_at value is malformed" do
+      # The custom field is normally written by on(:post_created) as an
+      # iso8601 string, but a corrupted, hand-edited, or legacy value
+      # shouldn't blow up /latest. The modifier's regex guard
+      # `~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'` makes the CASE branch fall
+      # through to topics.bumped_at instead of attempting the cast.
+      topic.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD] = "not-a-time"
+      topic.save_custom_fields(true)
+
+      sign_in(stranger)
+      get "/latest.json"
+      expect(response.status).to eq(200)
+    end
   end
 end

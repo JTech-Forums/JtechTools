@@ -15,8 +15,17 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
       return !!this.notification.data?.mod_note;
     }
 
-    // Link straight to the moderator note on the topic — the same target
-    // the notes feed uses (`topic.relative_url/highest_post_number`).
+    // "note" (default) vs "reply" — every reply in the note thread gets
+    // its own notification row, so the renderer keys off this to label
+    // and describe each one distinctly. Pre-`mod_note_kind` rows (set
+    // before this field existed) are treated as the original note.
+    get modNoteKind() {
+      return this.notification.data?.mod_note_kind || "note";
+    }
+
+    // Link straight to the moderator note (or the specific reply) on the
+    // topic — anchored with a `#mod-private-note[-reply-<id>]` hash that
+    // the note component scrolls into view on insert.
     get linkHref() {
       if (this.isModNote && this.notification.data?.url) {
         return this.notification.data.url;
@@ -26,7 +35,9 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
 
     get linkTitle() {
       if (this.isModNote) {
-        return i18n("discourse_mod_categories.note_notification_title");
+        return this.modNoteKind === "reply"
+          ? i18n("discourse_mod_categories.note_reply_notification_title")
+          : i18n("discourse_mod_categories.note_notification_title");
       }
       // Core `custom.js` behavior.
       if (this.notification.data?.title) {
@@ -45,20 +56,28 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
       return `notification.${this.notification.data?.message}`;
     }
 
-    // Accurate, self-describing label naming the acting moderator.
+    // Accurate, self-describing label naming the acting moderator —
+    // "added a moderator note" vs "replied to a moderator note".
     get label() {
       if (this.isModNote) {
-        return i18n("discourse_mod_categories.note_notification", {
-          username: this.username,
-        });
+        return this.modNoteKind === "reply"
+          ? i18n("discourse_mod_categories.note_reply_notification", {
+              username: this.username,
+            })
+          : i18n("discourse_mod_categories.note_notification", {
+              username: this.username,
+            });
       }
       return super.label;
     }
 
-    // Second line: the topic the note is on.
+    // Second line: the reply excerpt (so stacked reply notifications are
+    // self-describing) when available, falling back to the topic title.
     get description() {
       if (this.isModNote) {
-        return this.notification.data?.topic_title;
+        return (
+          this.notification.data?.excerpt || this.notification.data?.topic_title
+        );
       }
       return super.description;
     }

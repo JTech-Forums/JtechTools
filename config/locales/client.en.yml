@@ -81,6 +81,8 @@ en:
         empty: No moderator notes yet.
       note_notification: '%{username} added a moderator note'
       note_notification_title: Moderator note
+      note_reply_notification: '%{username} replied to a moderator note'
+      note_reply_notification_title: Moderator note reply
       audience:
         label: Show this prompt to
         all: Everyone
