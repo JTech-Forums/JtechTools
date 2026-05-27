@@ -58,7 +58,10 @@ RSpec.describe "Whisper badge targeting" do
 
   describe "WhisperQueryFilter" do
     def filter(user)
-      DiscourseModCategories::WhisperQueryFilter.apply(Post.where(id: whisper_post.id), user).exists?
+      DiscourseModCategories::WhisperQueryFilter.apply(
+        Post.where(id: whisper_post.id),
+        user,
+      ).exists?
     end
 
     it "shows the whisper to a badge holder" do

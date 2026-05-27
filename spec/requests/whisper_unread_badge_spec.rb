@@ -44,36 +44,36 @@ RSpec.describe "Whisper unread badge" do
 
   describe "DiscourseModCategories.whisper_audience_max_post_number" do
     it "returns the whisper's post_number for an explicit user target" do
-      expect(
-        DiscourseModCategories.whisper_audience_max_post_number(topic, target),
-      ).to eq(whisper_post.post_number)
+      expect(DiscourseModCategories.whisper_audience_max_post_number(topic, target)).to eq(
+        whisper_post.post_number,
+      )
     end
 
     it "returns the whisper's post_number for a cumulative topic participant" do
-      expect(
-        DiscourseModCategories.whisper_audience_max_post_number(topic, participant),
-      ).to eq(whisper_post.post_number)
+      expect(DiscourseModCategories.whisper_audience_max_post_number(topic, participant)).to eq(
+        whisper_post.post_number,
+      )
     end
 
     it "returns the whisper's post_number for staff" do
-      expect(
-        DiscourseModCategories.whisper_audience_max_post_number(topic, admin),
-      ).to eq(whisper_post.post_number)
-      expect(
-        DiscourseModCategories.whisper_audience_max_post_number(topic, moderator),
-      ).to eq(whisper_post.post_number)
+      expect(DiscourseModCategories.whisper_audience_max_post_number(topic, admin)).to eq(
+        whisper_post.post_number,
+      )
+      expect(DiscourseModCategories.whisper_audience_max_post_number(topic, moderator)).to eq(
+        whisper_post.post_number,
+      )
     end
 
     it "returns the highest non-whisper post_number for a non-audience user" do
-      expect(
-        DiscourseModCategories.whisper_audience_max_post_number(topic, stranger),
-      ).to eq(regular_reply.post_number)
+      expect(DiscourseModCategories.whisper_audience_max_post_number(topic, stranger)).to eq(
+        regular_reply.post_number,
+      )
     end
 
     it "returns the highest non-whisper post_number for anonymous viewers" do
-      expect(
-        DiscourseModCategories.whisper_audience_max_post_number(topic, nil),
-      ).to eq(regular_reply.post_number)
+      expect(DiscourseModCategories.whisper_audience_max_post_number(topic, nil)).to eq(
+        regular_reply.post_number,
+      )
     end
 
     it "honors group-target audience" do
@@ -82,9 +82,9 @@ RSpec.describe "Whisper unread badge" do
       whisper_post.custom_fields[groups_field] = [whisper_group.id]
       whisper_post.save_custom_fields(true)
 
-      expect(
-        DiscourseModCategories.whisper_audience_max_post_number(topic, group_member),
-      ).to eq(whisper_post.post_number)
+      expect(DiscourseModCategories.whisper_audience_max_post_number(topic, group_member)).to eq(
+        whisper_post.post_number,
+      )
     end
   end
 
@@ -123,8 +123,8 @@ RSpec.describe "Whisper unread badge" do
       # rollback runs.
       post "/posts.json",
            params: {
-             topic_id: topic.id,
-             raw: "Yet another whisper body long enough to be valid.",
+             :topic_id => topic.id,
+             :raw => "Yet another whisper body long enough to be valid.",
              DiscourseModCategories::POST_WHISPER_ARMED_PARAM => true,
              DiscourseModCategories::POST_WHISPER_TARGETS_FIELD => [target.id],
            }

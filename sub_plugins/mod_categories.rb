@@ -441,11 +441,7 @@ after_initialize do
     next 0 unless object.staff?
 
     ::Notification
-      .where(
-        user_id: object.id,
-        notification_type: ::Notification.types[:custom],
-        read: false,
-      )
+      .where(user_id: object.id, notification_type: ::Notification.types[:custom], read: false)
       .where("data LIKE ?", "%\"mod_note\":true%")
       .count
   end
@@ -619,9 +615,13 @@ after_initialize do
     target_ids =
       Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
     target_group_ids =
-      Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).map(&:to_i)
+      Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).map(
+        &:to_i
+      )
     target_badge_ids =
-      Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(&:to_i)
+      Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(
+        &:to_i
+      )
 
     topic = post.topic
 
@@ -650,8 +650,10 @@ after_initialize do
     recipient_ids =
       if user&.staff?
         ids = target_ids.dup
-        ids += ::GroupUser.where(group_id: target_group_ids).pluck(:user_id) if target_group_ids.any?
-        ids += ::UserBadge.where(badge_id: target_badge_ids).pluck(:user_id) if target_badge_ids.any?
+        ids +=
+          ::GroupUser.where(group_id: target_group_ids).pluck(:user_id) if target_group_ids.any?
+        ids +=
+          ::UserBadge.where(badge_id: target_badge_ids).pluck(:user_id) if target_badge_ids.any?
         ids
       else
         ::User.where(admin: true).or(::User.where(moderator: true)).pluck(:id)
@@ -713,7 +715,9 @@ after_initialize do
   end
 
   add_to_serializer(:post, :mod_whisper_target_badge_ids) do
-    Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(&:to_i)
+    Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(
+      &:to_i
+    )
   end
   add_to_serializer(:post, :include_mod_whisper_target_badge_ids?) do
     SiteSetting.mod_whisper_enabled &&
@@ -748,7 +752,9 @@ after_initialize do
   # targets is a staff-only whisper-back.
   add_to_serializer(:post, :mod_whisper_is_staff_only) do
     Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).empty? &&
-      Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).empty? &&
+      Array(
+        object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD],
+      ).empty? &&
       Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).empty?
   end
   add_to_serializer(:post, :include_mod_whisper_is_staff_only?) do

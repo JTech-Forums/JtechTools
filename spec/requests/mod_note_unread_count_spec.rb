@@ -78,9 +78,10 @@ RSpec.describe "Mod-note unread count merge" do
 
   it "drops to 0 once all mod-note notifications are read" do
     create_mod_note_notification(moderator)
-    ::Notification
-      .where(user_id: moderator.id, notification_type: ::Notification.types[:custom])
-      .update_all(read: true)
+    ::Notification.where(
+      user_id: moderator.id,
+      notification_type: ::Notification.types[:custom],
+    ).update_all(read: true)
 
     expect(current_user_payload(moderator)["mod_note_unread_count"]).to eq(0)
   end

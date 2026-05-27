@@ -299,13 +299,7 @@ module ::DiscourseModCategories
           .distinct
           .pluck(:username)
 
-      render json: {
-               usernames: usernames,
-               badge: {
-                 id: badge.id,
-                 name: badge.display_name,
-               },
-             }
+      render json: { usernames: usernames, badge: { id: badge.id, name: badge.display_name } }
     end
 
     # Adds a user to a topic's cumulative whisper conversation. From then on
