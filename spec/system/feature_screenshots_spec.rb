@@ -39,9 +39,7 @@ RSpec.describe "Feature screenshots", type: :system do
   def shot(name)
     begin
       Timeout.timeout(8) do
-        sleep 0.1 until page.evaluate_script(
-                          "Array.from(document.images).every((i) => i.complete)",
-                        )
+        sleep 0.1 until page.evaluate_script("Array.from(document.images).every((i) => i.complete)")
       end
     rescue Timeout::Error
       # Capture anyway rather than failing on a slow image.
@@ -63,9 +61,7 @@ RSpec.describe "Feature screenshots", type: :system do
     non_whisper_max =
       Post
         .where(topic_id: topic.id, deleted_at: nil)
-        .where.not(
-          id: PostCustomField.where(name: targets_field).select(:post_id),
-        )
+        .where.not(id: PostCustomField.where(name: targets_field).select(:post_id))
         .maximum(:post_number)
     Topic.where(id: topic.id).update_all(highest_post_number: non_whisper_max) if non_whisper_max
     topic.reload
@@ -107,7 +103,11 @@ RSpec.describe "Feature screenshots", type: :system do
     expect(page).to have_css(".d-header", wait: 15)
     shot("03_bell_header_no_separate_pip")
 
-    find(".header-dropdown-toggle.current-user button", match: :first).click rescue nil
+    begin
+      find(".header-dropdown-toggle.current-user button", match: :first).click
+    rescue StandardError
+      nil
+    end
     sleep 0.5
     shot("04_user_menu_with_mod_note_in_bell")
   end
