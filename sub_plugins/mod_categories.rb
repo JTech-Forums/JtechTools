@@ -241,6 +241,11 @@ module ::DiscourseModCategories
   # as group targets.
   POST_WHISPER_TARGET_BADGES_FIELD = "mod_whisper_target_badge_ids"
   TOPIC_WHISPER_PARTICIPANTS_FIELD = "mod_whisper_participant_ids"
+  # ISO8601 timestamp of the latest NON-whisper post in the topic. Written
+  # alongside the highest_post_number rollback so the topic-list query
+  # modifier can sort non-audience users by this value instead of the live
+  # Topic#bumped_at, while audience members keep the actual bump time.
+  TOPIC_NON_WHISPER_BUMPED_AT_FIELD = "mod_non_whisper_bumped_at"
   MAX_WHISPER_TARGETS = 10
   # Explicit boolean armed flag sent by the composer. A boolean survives
   # form-encoding even when the target id array is empty, so it — not the
@@ -309,6 +314,10 @@ after_initialize do
   register_topic_custom_field_type(DiscourseModCategories::TOPIC_PRIVATE_NOTE_REPLIES_FIELD, :json)
   register_topic_custom_field_type(
     DiscourseModCategories::TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD,
+    :string,
+  )
+  register_topic_custom_field_type(
+    DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD,
     :string,
   )
   register_user_custom_field_type(DiscourseModCategories::USER_NOTES_SEEN_FIELD, :string)
@@ -630,8 +639,15 @@ after_initialize do
     # :listable_topic serializer override adds the bump back for audience
     # members on serialization, so they still see the badge. Runs for EVERY
     # whisper (including staff-only whisper-backs with no recipients).
+    #
+    # Also stamp the latest non-whisper post's created_at into a topic custom
+    # field, which the :topic_query_create_list_topics modifier below uses
+    # to sort the /latest list audience-aware: audience members see the
+    # topic bumped to the whisper time (Topic#bumped_at), non-audience
+    # users see it at the non-whisper time. Topic#bumped_at itself is left
+    # alone so the DB column keeps reflecting the actual latest activity.
     if topic
-      non_whisper_max =
+      non_whisper_scope =
         ::Post
           .where(topic_id: topic.id, deleted_at: nil)
           .where.not(
@@ -640,10 +656,18 @@ after_initialize do
                 name: DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
               ).select(:post_id),
           )
-          .maximum(:post_number) || 0
+      non_whisper_max = non_whisper_scope.maximum(:post_number) || 0
+      non_whisper_created_at = non_whisper_scope.maximum(:created_at)
 
       if non_whisper_max > 0 && non_whisper_max < topic.highest_post_number
         ::Topic.where(id: topic.id).update_all(highest_post_number: non_whisper_max)
+      end
+
+      if non_whisper_created_at
+        topic.custom_fields[
+          DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD
+        ] = non_whisper_created_at.iso8601
+        topic.save_custom_fields(true)
       end
     end
 
@@ -676,6 +700,85 @@ after_initialize do
         post_number: post.post_number,
         data: data,
       )
+    end
+  end
+
+  # Audience-aware ordering on the topic list. The DB column Topic#bumped_at
+  # is left at the actual latest-activity time (including whispers), and the
+  # `on(:post_created)` hook above writes the latest non-whisper post's
+  # created_at into a topic custom field. This modifier patches the
+  # `/latest` (and friends) topic-list query to use that custom field as
+  # the effective sort key for users who are NOT in the topic's whisper
+  # audience, while audience members keep the live `bumped_at`.
+  #
+  # Audience criterion in this modifier: staff OR the user_id appears in
+  # the topic's `mod_whisper_participant_ids` custom field (the cumulative
+  # whisper-conversation participants of the topic). Explicit per-whisper
+  # user/group/badge targets are folded into the participants list by the
+  # composer flow (see TOPIC_WHISPER_PARTICIPANTS_FIELD writes elsewhere
+  # in this file), so this single check covers all four audience kinds.
+  #
+  # The modifier is wrapped in `rescue StandardError` so any breakage from
+  # a future Discourse upgrade (renamed hook, query shape change, schema
+  # change) falls back to the unmodified scope instead of breaking
+  # /latest entirely. The fallback is Option B — whispers bump for
+  # everyone — which is annoying but recoverable. CI exercises the path
+  # via specs in whisper_unread_badge_spec.rb so we'd see breakage early.
+  register_modifier(:topic_query_create_list_topics) do |scope, _options, topic_query|
+    begin
+      user = topic_query.user
+
+      # Staff are in the audience for every whisper — sort by live bumped_at.
+      next scope if user&.staff?
+
+      user_id = user&.id
+      nwba_field = DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD
+      participants_field = DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
+
+      connection = ::ActiveRecord::Base.connection
+      nwba_field_quoted = connection.quote(nwba_field)
+      participants_field_quoted = connection.quote(participants_field)
+
+      scope =
+        scope.joins(
+          "LEFT OUTER JOIN topic_custom_fields nwba " \
+            "ON nwba.topic_id = topics.id AND nwba.name = #{nwba_field_quoted}",
+        ).joins(
+          "LEFT OUTER JOIN topic_custom_fields part " \
+            "ON part.topic_id = topics.id AND part.name = #{participants_field_quoted}",
+        )
+
+      is_audience_sql =
+        if user_id
+          # The participants field is registered as :json, so its `value`
+          # column holds a JSON-serialized array of integer user_ids.
+          # `value::jsonb @> '<id>'::jsonb` is the safe containment check:
+          # `[5,7]::jsonb @> 5::jsonb` is true, no false positives from
+          # substring overlap (e.g., 15 doesn't match 5). The LIKE guard
+          # skips obviously-malformed legacy rows so the ::jsonb cast
+          # cannot raise mid-query.
+          "(part.value IS NOT NULL AND part.value <> '' " \
+            "AND part.value LIKE '[%]' " \
+            "AND part.value::jsonb @> '#{user_id.to_i}'::jsonb)"
+        else
+          "FALSE"
+        end
+
+      effective_bumped_at = <<~SQL.squish
+        CASE
+          WHEN #{is_audience_sql} THEN topics.bumped_at
+          WHEN nwba.value IS NOT NULL AND nwba.value <> ''
+            THEN nwba.value::timestamp
+          ELSE topics.bumped_at
+        END
+      SQL
+
+      scope.reorder(::Arel.sql("(#{effective_bumped_at}) DESC, topics.id DESC"))
+    rescue StandardError => e
+      ::Rails.logger.warn(
+        "[jtech-tools] topic_query audience-aware sort fell back: #{e.class}: #{e.message}",
+      )
+      scope
     end
   end
 
