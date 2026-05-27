@@ -241,6 +241,81 @@
     gap: 0.4em;
     margin-top: 0.4em;
   }
+
+  .mod-private-note-viewers {
+    position: relative;
+    margin-top: 0.75em;
+    padding-top: 0.5em;
+    border-top: 1px solid var(--primary-low);
+  }
+
+  .mod-private-note-viewers-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    padding: 0.2em 0.6em;
+    background: transparent;
+    border: 1px solid var(--primary-low);
+    border-radius: 999px;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--primary-very-low);
+      color: var(--primary);
+    }
+
+    .d-icon {
+      flex: none;
+    }
+  }
+
+  .mod-private-note-viewers-list {
+    position: absolute;
+    z-index: 5;
+    bottom: calc(100% + 4px);
+    left: 0;
+    margin: 0;
+    padding: 0.4em 0;
+    list-style: none;
+    background: var(--secondary);
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius, 0.25em);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-height: 14em;
+    overflow-y: auto;
+    min-width: 14em;
+  }
+
+  .mod-private-note-viewers-list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.3em 0.75em;
+    font-size: var(--font-down-1);
+    color: var(--primary);
+  }
+
+  .mod-private-note-viewers-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .mod-private-note-viewers-name {
+    flex: 1;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mod-private-note-viewers-time {
+    color: var(--primary-medium);
+    font-size: var(--font-down-2);
+  }
 }
 
 .mod-private-note-control {

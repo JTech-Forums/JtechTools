@@ -36,6 +36,7 @@ Discourse::Application.routes.append do
     get "/notes-feed" => "messages#notes_feed"
     post "/notes-feed/seen" => "messages#notes_feed_seen"
     post "/topic/:topic_id/notifications/seen" => "messages#mark_topic_notifications_seen"
+    post "/topic/:topic_id/note-view" => "messages#record_note_view"
     get "/checklist" => "checklist#show"
     get "/checklist/owed" => "checklist#owed"
     put "/checklist" => "checklist#update"

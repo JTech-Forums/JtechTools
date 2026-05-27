@@ -14,6 +14,7 @@ register_svg_icon "user-plus"
 register_svg_icon "pencil"
 register_svg_icon "trash-can"
 register_svg_icon "certificate"
+register_svg_icon "eye"
 
 module ::DiscourseModCategories
   # Custom-field keys for the moderator-set messages.
@@ -246,6 +247,11 @@ module ::DiscourseModCategories
   # modifier can sort non-audience users by this value instead of the live
   # Topic#bumped_at, while audience members keep the actual bump time.
   TOPIC_NON_WHISPER_BUMPED_AT_FIELD = "mod_non_whisper_bumped_at"
+  # JSON array of `{user_id, username, name, avatar_template, viewed_at}`
+  # entries — staff who have rendered the mod-note panel on the topic.
+  # Used by the "👁 Viewed by N" pill at the bottom of the panel. Re-view
+  # updates the entry's `viewed_at` in place (one row per user).
+  TOPIC_NOTE_VIEWERS_FIELD = "mod_topic_note_viewers"
   MAX_WHISPER_TARGETS = 10
   # Explicit boolean armed flag sent by the composer. A boolean survives
   # form-encoding even when the target id array is empty, so it — not the
@@ -320,6 +326,7 @@ after_initialize do
     DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD,
     :string,
   )
+  register_topic_custom_field_type(DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD, :json)
   register_user_custom_field_type(DiscourseModCategories::USER_NOTES_SEEN_FIELD, :string)
   register_user_custom_field_type(DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD, :integer)
   register_user_custom_field_type(DiscourseModCategories::USER_TARGETED_CHECKLIST_FIELD, :json)
@@ -438,6 +445,26 @@ after_initialize do
               name: author.name,
               avatar_template: author.avatar_template,
             },
+      }
+    end
+  end
+
+  # Staff who have rendered the mod-note panel on this topic — used by the
+  # "👁 Viewed by N" pill at the bottom of the panel. Newest viewer last,
+  # so the UI can show the most recent at the top when reversed.
+  add_to_serializer(
+    :topic_view,
+    :mod_topic_note_viewers,
+    include_condition: -> { scope.is_staff? },
+  ) do
+    raw = object.topic.custom_fields[DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD]
+    Array(raw).map do |entry|
+      {
+        user_id: entry["user_id"],
+        username: entry["username"],
+        name: entry["name"],
+        avatar_template: entry["avatar_template"],
+        viewed_at: entry["viewed_at"],
       }
     end
   end

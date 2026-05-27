@@ -206,6 +206,50 @@ module ::DiscourseModCategories
       render json: note_thread_json(topic)
     end
 
+    # Records the current staff user as a viewer of the mod-note panel on
+    # the given topic. Idempotent — re-viewing updates `viewed_at` on the
+    # existing entry rather than appending a duplicate row. The returned
+    # `viewers` array drives the "👁 Viewed by N" pill at the bottom of
+    # the panel, refreshed inline without a topic reload.
+    def record_note_view
+      topic = Topic.find_by(id: params[:topic_id])
+      raise Discourse::NotFound unless topic
+
+      guardian.ensure_can_manage_mod_messages!
+
+      # No-op if there's no note to view — keeps stray refresh-on-mount
+      # pings from creating viewer rows on topics that never had a note.
+      note = topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].to_s
+      raise Discourse::NotFound if note.strip.empty?
+
+      now = Time.zone.now.iso8601
+      raw = topic.custom_fields[DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD]
+      viewers = raw.is_a?(Array) ? raw.deep_dup : []
+
+      existing = viewers.find { |v| v["user_id"].to_i == current_user.id }
+      if existing
+        existing["viewed_at"] = now
+        # Refresh denormalized identity fields in case the user renamed /
+        # changed their avatar since their last view.
+        existing["username"] = current_user.username
+        existing["name"] = current_user.name
+        existing["avatar_template"] = current_user.avatar_template
+      else
+        viewers << {
+          "user_id" => current_user.id,
+          "username" => current_user.username,
+          "name" => current_user.name,
+          "avatar_template" => current_user.avatar_template,
+          "viewed_at" => now,
+        }
+      end
+
+      topic.custom_fields[DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD] = viewers
+      topic.save_custom_fields(true)
+
+      render json: { viewers: serialized_note_viewers(viewers) }
+    end
+
     # Marks the current user's custom mod-note + whisper notifications for
     # the given topic as read. Called by the frontend whenever the user
     # navigates to a topic page — Discourse's built-in auto-mark-read only
@@ -587,6 +631,21 @@ module ::DiscourseModCategories
                 name: author.name,
                 avatar_template: author.avatar_template,
               },
+        }
+      end
+    end
+
+    # Shape returned by record_note_view — mirrors the :topic_view
+    # serializer's `mod_topic_note_viewers` so the frontend can swap the
+    # one for the other without a topic reload.
+    def serialized_note_viewers(viewers)
+      Array(viewers).map do |entry|
+        {
+          user_id: entry["user_id"],
+          username: entry["username"],
+          name: entry["name"],
+          avatar_template: entry["avatar_template"],
+          viewed_at: entry["viewed_at"],
         }
       end
     end
