@@ -75,8 +75,7 @@ RSpec.describe "Feature screenshots" do
   # Builds a single mod-note bell notification of either kind ("note" or
   # "reply"), pointing at the topic's note section or a specific reply.
   def fab_mod_note_notification(user:, topic:, kind: "note", reply_id: nil, excerpt: nil)
-    anchor =
-      kind == "reply" ? "#mod-private-note-reply-#{reply_id}" : "#mod-private-note"
+    anchor = kind == "reply" ? "#mod-private-note-reply-#{reply_id}" : "#mod-private-note"
     Notification.create!(
       notification_type: Notification.types[:custom],
       user_id: user.id,
@@ -92,9 +91,21 @@ RSpec.describe "Feature screenshots" do
         excerpt: excerpt || topic.custom_fields["mod_topic_private_note"].to_s,
         url: "#{topic.relative_url}/#{topic.highest_post_number}#{anchor}",
         message:
-          kind == "reply" ? "discourse_mod_categories.note_reply_notification" : "discourse_mod_categories.note_notification",
+          (
+            if kind == "reply"
+              "discourse_mod_categories.note_reply_notification"
+            else
+              "discourse_mod_categories.note_notification"
+            end
+          ),
         title:
-          kind == "reply" ? "discourse_mod_categories.note_reply_notification_title" : "discourse_mod_categories.note_notification_title",
+          (
+            if kind == "reply"
+              "discourse_mod_categories.note_reply_notification_title"
+            else
+              "discourse_mod_categories.note_notification_title"
+            end
+          ),
       }.to_json,
     )
   end
@@ -204,8 +215,7 @@ RSpec.describe "Feature screenshots" do
   # ──────────────────────────────────────────────────────────────────────
 
   it "11. captures stacked per-reply mod-note notifications in the bell" do
-    topic =
-      seed_topic_with_note(title: "Stacked replies demo", note: "Please review this thread.")
+    topic = seed_topic_with_note(title: "Stacked replies demo", note: "Please review this thread.")
 
     %w[r-aaaa r-bbbb r-cccc].each_with_index do |reply_id, index|
       fab_mod_note_notification(
@@ -240,8 +250,7 @@ RSpec.describe "Feature screenshots" do
           {
             "id" => reply_id,
             "user_id" => moderator.id,
-            "raw" =>
-              "The reply this notification points to — should be the focus on click.",
+            "raw" => "The reply this notification points to — should be the focus on click.",
             "created_at" => 5.minutes.ago.iso8601,
           },
         ],
@@ -287,8 +296,7 @@ RSpec.describe "Feature screenshots" do
       last_posted_at: 30.minutes.ago,
     )
 
-    whisper_topic =
-      Fabricate(:topic, category: category, title: "Topic with whisper at bottom")
+    whisper_topic = Fabricate(:topic, category: category, title: "Topic with whisper at bottom")
     Fabricate(:post, topic: whisper_topic, user: author, raw: "Public OP for whisper topic.")
     Fabricate(:post, topic: whisper_topic, user: author, raw: "Public reply on whisper topic.")
     whisper =
@@ -308,10 +316,7 @@ RSpec.describe "Feature screenshots" do
     # demotion still puts whisper_topic above public_topic (whose bumped_at
     # is 30 min ago) — defeating the test premise. Mirrors the request
     # spec's update_columns(created_at: 1.hour.ago) pattern.
-    whisper_topic
-      .posts
-      .where.not(id: whisper.id)
-      .update_all(created_at: 1.hour.ago)
+    whisper_topic.posts.where.not(id: whisper.id).update_all(created_at: 1.hour.ago)
     last_public_post_time = whisper_topic.posts.where.not(id: whisper.id).maximum(:created_at)
     whisper_topic.custom_fields[nwba_field] = last_public_post_time.iso8601
     whisper_topic.save_custom_fields(true)
@@ -319,11 +324,7 @@ RSpec.describe "Feature screenshots" do
     # Roll back highest_post_number (mirrors on(:post_created)) so the
     # unread-badge math is also audience-aware for this scenario.
     non_whisper_max =
-      whisper_topic
-        .posts
-        .where.not(id: whisper.id)
-        .where(deleted_at: nil)
-        .maximum(:post_number)
+      whisper_topic.posts.where.not(id: whisper.id).where(deleted_at: nil).maximum(:post_number)
     ::Topic.where(id: whisper_topic.id).update_all(
       bumped_at: 5.minutes.ago,
       last_posted_at: 5.minutes.ago,
@@ -374,8 +375,7 @@ RSpec.describe "Feature screenshots" do
     topic = Fabricate(:topic, category: category, title: "Whisper banner CSS check")
     Fabricate(:post, topic: topic, user: author, raw: "OP body for the visual capture.")
     Fabricate(:post, topic: topic, user: author, raw: "Public reply visible to everyone.")
-    whisper =
-      Fabricate(:post, topic: topic, user: moderator, raw: "Mod-only whisper body.")
+    whisper = Fabricate(:post, topic: topic, user: moderator, raw: "Mod-only whisper body.")
     whisper.custom_fields[targets_field] = [audience_user.id]
     whisper.save_custom_fields(true)
     topic.custom_fields[participants_field] = [audience_user.id]

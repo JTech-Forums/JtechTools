@@ -423,7 +423,8 @@ module ::DiscourseModCategories
     def notify_staff_of_reply(topic, reply)
       reply_id = reply["id"].to_s
       reply_raw = reply["raw"].to_s
-      reply_url = "#{topic.relative_url}/#{topic.highest_post_number}#mod-private-note-reply-#{reply_id}"
+      reply_url =
+        "#{topic.relative_url}/#{topic.highest_post_number}#mod-private-note-reply-#{reply_id}"
 
       User
         .where(admin: true)

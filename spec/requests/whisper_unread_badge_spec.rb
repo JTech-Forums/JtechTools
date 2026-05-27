@@ -153,9 +153,7 @@ RSpec.describe "Whisper unread badge" do
       expect(response.status).to eq(200)
 
       stamped =
-        topic.reload.custom_fields[
-          DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD
-        ].to_s
+        topic.reload.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD].to_s
       expect(stamped).not_to be_empty
       expect(Time.zone.parse(stamped)).to be_within(1.second).of(regular_reply.reload.created_at)
     end
@@ -182,8 +180,9 @@ RSpec.describe "Whisper unread badge" do
         last_posted_at: 30.minutes.ago,
       )
       # Simulate the on(:post_created) stamp.
-      topic.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD] =
-        regular_reply.created_at.iso8601
+      topic.custom_fields[
+        DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD
+      ] = regular_reply.created_at.iso8601
       topic.save_custom_fields(true)
     end
 
