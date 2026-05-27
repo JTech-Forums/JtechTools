@@ -396,4 +396,61 @@ RSpec.describe "Feature screenshots" do
     sleep 0.3
     shot("15_whisper_banner_css_sanity")
   end
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Post-PR-#12 additions: "Viewed by N" avatar pill at the bottom of
+  # the mod-note panel + the click-to-open popover with full viewer
+  # details (avatar, name, relative-time).
+  # ──────────────────────────────────────────────────────────────────────
+
+  # Seeds a panel with prior viewers (other than the signed-in user) so
+  # the pill renders multiple avatars on first paint, before the current
+  # user's own POST-on-mount lands.
+  def seed_panel_with_viewers(topic, viewers)
+    topic.custom_fields[DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD] = viewers.map do |user|
+      {
+        "user_id" => user.id,
+        "username" => user.username,
+        "name" => user.name || user.username,
+        "avatar_template" => user.avatar_template,
+        "viewed_at" => rand(1..40).minutes.ago.iso8601,
+      }
+    end
+    topic.save_custom_fields(true)
+  end
+
+  it "16. captures the mod-note panel with the 'Viewed by' avatar pill" do
+    topic =
+      seed_topic_with_note(
+        title: "Mod note viewers pill demo",
+        note: "Pinned at the bottom — staff who view this panel are stacked below.",
+      )
+    seed_panel_with_viewers(topic, [moderator, other_moderator, author])
+
+    sign_in(admin)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".mod-private-note-viewers-pill", wait: 15)
+    # Each prior viewer's avatar + the current user's after the
+    # record-on-mount POST resolves.
+    expect(page).to have_css(".mod-private-note-viewers-pill-avatar", minimum: 3, wait: 10)
+    sleep 0.3
+    shot("16_mod_note_viewers_pill_closed")
+  end
+
+  it "17. captures the mod-note viewers popover open with the full list" do
+    topic =
+      seed_topic_with_note(
+        title: "Mod note viewers popover demo",
+        note: "Pinned at the bottom — click the avatar stack to see who viewed.",
+      )
+    seed_panel_with_viewers(topic, [moderator, other_moderator, author, audience_user])
+
+    sign_in(admin)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".mod-private-note-viewers-pill", wait: 15)
+    find(".mod-private-note-viewers-pill").click
+    expect(page).to have_css(".mod-private-note-viewers-list-item", minimum: 4, wait: 5)
+    sleep 0.3
+    shot("17_mod_note_viewers_popover_open")
+  end
 end
