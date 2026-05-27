@@ -688,6 +688,10 @@ after_initialize do
     data = {
       topic_title: topic&.title,
       display_username: user&.username,
+      # Stable marker so MessagesController#mark_topic_notifications_seen
+      # can scope its read-flip to OUR notifications without touching
+      # other plugins' custom notifications attached to the same topic.
+      mod_whisper: true,
       original_post_id: post.id,
       original_post_type: post.post_type,
     }.to_json
@@ -699,6 +703,24 @@ after_initialize do
         topic_id: topic&.id,
         post_number: post.post_number,
         data: data,
+      )
+    end
+
+    # Dedupe: PostAlerter runs asynchronously and creates standard
+    # :replied / :posted / :quoted / :mentioned notifications for the
+    # topic author, watchers, and mentioned users. If any of those users
+    # are also in our whisper audience, they see TWO bell rows for the
+    # same post — one custom whisper from us, one core reply from
+    # PostAlerter. We schedule a 5-second delayed cleanup that removes
+    # the core duplicates only for users who got our custom whisper.
+    # Done as a delayed job because PostAlerter runs in its own Sidekiq
+    # job after :post_created, so we'd race it if we cleaned up inline.
+    if topic && post.persisted?
+      ::Jobs.enqueue_in(
+        5.seconds,
+        :dedupe_mod_whisper_notifications,
+        post_id: post.id,
+        recipient_ids: recipient_ids,
       )
     end
   end

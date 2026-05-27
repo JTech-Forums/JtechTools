@@ -206,6 +206,41 @@ module ::DiscourseModCategories
       render json: note_thread_json(topic)
     end
 
+    # Marks the current user's custom mod-note + whisper notifications for
+    # the given topic as read. Called by the frontend whenever the user
+    # navigates to a topic page — Discourse's built-in auto-mark-read only
+    # covers a hardcoded list of notification types and skips
+    # `Notification.types[:custom]`, so plugin notifications about a topic
+    # would sit unread in the bell forever even after the user opened the
+    # topic. The data-column LIKE filter pins this to our notifications
+    # only (mod_note, mod_whisper, and the legacy whisper_notification
+    # message key) so unrelated custom notifications another plugin might
+    # attach to the same topic are left alone.
+    def mark_topic_notifications_seen
+      topic = Topic.find_by(id: params[:topic_id])
+      raise Discourse::NotFound unless topic
+
+      marked =
+        ::Notification
+          .where(
+            user_id: current_user.id,
+            topic_id: topic.id,
+            notification_type: ::Notification.types[:custom],
+            read: false,
+          )
+          .where(
+            "data LIKE ? OR data LIKE ? OR data LIKE ?",
+            '%"mod_note":true%',
+            '%"mod_whisper":true%',
+            '%"discourse_mod_categories.whisper.whisper_notification"%',
+          )
+          .update_all(read: true)
+
+      current_user.publish_notifications_state if marked > 0
+
+      render json: { marked: marked }
+    end
+
     # Lists recent moderator notes across topics, for the staff user-menu
     # tab, newest first.
     def notes_feed
