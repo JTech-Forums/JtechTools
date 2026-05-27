@@ -950,4 +950,34 @@ after_initialize do
     visible_max = DiscourseModCategories.whisper_audience_max_post_number(object, scope&.user)
     visible_max || raw
   end
+
+  # Audience-aware bumped_at for the topic list's "Activity" column. The
+  # topic-list query modifier already SORTS non-audience viewers by the
+  # non-whisper bump time, but the displayed Activity column read the raw
+  # `topics.bumped_at` and showed e.g. "5m" for a whisper they can't see.
+  # Mirror the same audience check here so the displayed time matches the
+  # sort position: audience members (staff + topic participants) see the
+  # actual bump time; non-audience viewers see the non-whisper bump time
+  # stored in the custom field. Falls through to raw on missing/malformed
+  # field values so an upgrade to a topic without the stamp still works.
+  add_to_serializer(:listable_topic, :bumped_at) do
+    raw = object.bumped_at
+    next raw unless SiteSetting.mod_whisper_enabled
+
+    user = scope&.user
+    next raw if user&.staff?
+
+    participants = object.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]
+    next raw if user && participants.is_a?(Array) && participants.map(&:to_i).include?(user.id)
+
+    nwba = object.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD]
+    next raw if nwba.blank?
+
+    begin
+      parsed = ::Time.zone.parse(nwba.to_s)
+      parsed || raw
+    rescue StandardError
+      raw
+    end
+  end
 end

@@ -437,20 +437,81 @@ RSpec.describe "Feature screenshots" do
     shot("16_mod_note_viewers_pill_closed")
   end
 
-  it "17. captures the mod-note viewers popover open with the full list" do
+  it "17. captures the mod-note panel with both replies AND viewer avatars (realistic)" do
+    # The realistic case — a thread with multiple staff replies AND a
+    # row of viewer avatars at the bottom. This is what the production
+    # forum looks like once a mod note has been triaged: 2-3 replies in
+    # the conversation, several staff who have laid eyes on it.
     topic =
       seed_topic_with_note(
-        title: "Mod note viewers popover demo",
-        note: "Pinned at the bottom — click the avatar stack to see who viewed.",
+        title: "Mod note replies + viewers demo",
+        note: "Triage on this reported user.",
+        replies: [
+          {
+            "id" => "viewers-rep-001",
+            "user_id" => moderator.id,
+            "raw" => "DM'd them, asking for context on the original post.",
+            "created_at" => 90.minutes.ago.iso8601,
+          },
+          {
+            "id" => "viewers-rep-002",
+            "user_id" => other_moderator.id,
+            "raw" => "Thanks. I'll watch the next reply they make.",
+            "created_at" => 60.minutes.ago.iso8601,
+          },
+          {
+            "id" => "viewers-rep-003",
+            "user_id" => admin.id,
+            "raw" => "Looks resolved on my end — closing the loop.",
+            "created_at" => 25.minutes.ago.iso8601,
+          },
+        ],
       )
     seed_panel_with_viewers(topic, [moderator, other_moderator, author, audience_user])
 
     sign_in(admin)
     visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".mod-private-note-reply", count: 3, wait: 15)
+    expect(page).to have_css(".mod-private-note-viewers-pill-avatar", minimum: 4, wait: 10)
+    sleep 0.3
+    shot("17_mod_note_replies_and_viewers_closed")
+  end
+
+  it "18. captures the same panel with replies AND the viewers popover open" do
+    topic =
+      seed_topic_with_note(
+        title: "Mod note replies + viewers popover demo",
+        note: "Triage on this reported user.",
+        replies: [
+          {
+            "id" => "viewers-rep-a01",
+            "user_id" => moderator.id,
+            "raw" => "DM'd them, asking for context on the original post.",
+            "created_at" => 90.minutes.ago.iso8601,
+          },
+          {
+            "id" => "viewers-rep-a02",
+            "user_id" => other_moderator.id,
+            "raw" => "Thanks. I'll watch the next reply they make.",
+            "created_at" => 60.minutes.ago.iso8601,
+          },
+          {
+            "id" => "viewers-rep-a03",
+            "user_id" => admin.id,
+            "raw" => "Looks resolved on my end — closing the loop.",
+            "created_at" => 25.minutes.ago.iso8601,
+          },
+        ],
+      )
+    seed_panel_with_viewers(topic, [moderator, other_moderator, author, audience_user, stranger])
+
+    sign_in(admin)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".mod-private-note-reply", count: 3, wait: 15)
     expect(page).to have_css(".mod-private-note-viewers-pill", wait: 15)
     find(".mod-private-note-viewers-pill").click
-    expect(page).to have_css(".mod-private-note-viewers-list-item", minimum: 4, wait: 5)
+    expect(page).to have_css(".mod-private-note-viewers-list-item", minimum: 5, wait: 5)
     sleep 0.3
-    shot("17_mod_note_viewers_popover_open")
+    shot("18_mod_note_replies_and_viewers_popover_open")
   end
 end
