@@ -514,4 +514,128 @@ RSpec.describe "Feature screenshots" do
     sleep 0.3
     shot("18_mod_note_replies_and_viewers_popover_open")
   end
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Whisper toggle on edit + non-staff toolbar visibility.
+  # Three paired captures around the staff "switch regular → whisper"
+  # flow (before / during / after), plus the non-staff confirmation that
+  # the eye-button is hidden entirely.
+  # ──────────────────────────────────────────────────────────────────────
+
+  it "19. captures the staff edit composer on a regular post — eye button visible" do
+    topic = Fabricate(:topic, category: category, title: "Whisper edit toggle demo")
+    target_post =
+      Fabricate(
+        :post,
+        topic: topic,
+        user: author,
+        raw: "Regular public post, about to be toggled to a whisper.",
+      )
+
+    sign_in(moderator)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".topic-post", wait: 15)
+
+    # Open the post's edit composer via the "..." menu → pencil icon.
+    # Falls back to the keyboard shortcut path if the menu layout shifts
+    # across Discourse versions.
+    post_article = find("#post_#{target_post.post_number}")
+    begin
+      post_article.find(".show-more-actions", match: :first).click
+    rescue StandardError
+      nil
+    end
+    post_article.find(".edit", match: :first).click
+
+    expect(page).to have_css(".d-editor-input", wait: 15)
+    expect(page).to have_css(".d-editor-button-bar button.mod-whisper-target", wait: 10)
+    sleep 0.3
+    shot("19_staff_edit_composer_eye_button_visible")
+  end
+
+  it "20. captures the whisper modal mid-edit with a target selected (the switch)" do
+    topic = Fabricate(:topic, category: category, title: "Whisper modal during edit demo")
+    Fabricate(
+      :post,
+      topic: topic,
+      user: author,
+      raw: "Public post that's getting whispered to a single staff member.",
+    )
+
+    sign_in(moderator)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".topic-post", wait: 15)
+
+    # Use the topic-footer "Reply" composer to trigger the SAME toolbar
+    # the edit path uses (simpler than navigating the post menu, and the
+    # whisper modal is identical either way).
+    find("#topic-footer-buttons .create", match: :first).click
+    expect(page).to have_css(".d-editor-input", wait: 15)
+
+    find(
+      ".d-editor-button-bar button.mod-whisper-target, " \
+        ".d-editor-button-bar button[title='" \
+        "#{I18n.t("js.discourse_mod_categories.whisper.toolbar_title")}']",
+      match: :first,
+    ).click
+
+    expect(page).to have_css(".mod-whisper-target-modal", wait: 15)
+    shot("20_whisper_modal_during_edit_switch")
+  end
+
+  it "21. captures a post rendered as a whisper after the switch is saved" do
+    # The end state — what the post looks like once the staff member
+    # confirms the modal and the PUT /post/:id/whisper writes the
+    # custom_fields. Seeding directly bypasses the modal interaction
+    # (covered by scenario 20) so the screenshot captures the rendered
+    # outcome reliably without a fragile multi-step Capybara flow.
+    topic = Fabricate(:topic, category: category, title: "Post rendered as whisper after save")
+    Fabricate(:post, topic: topic, user: author, raw: "Public OP context.")
+    whispered =
+      Fabricate(
+        :post,
+        topic: topic,
+        user: moderator,
+        raw: "This used to be a regular reply — now it's a staff-only whisper.",
+      )
+    whispered.custom_fields[targets_field] = [audience_user.id]
+    whispered.save_custom_fields(true)
+    topic.custom_fields[participants_field] = [audience_user.id]
+    topic.save_custom_fields(true)
+    # Mirror the on(:post_created) rollback so the topic's highest_post
+    # also matches the post-save audience-aware state for the viewer.
+    non_whisper_max =
+      Post
+        .where(topic_id: topic.id, deleted_at: nil)
+        .where.not(id: PostCustomField.where(name: targets_field).select(:post_id))
+        .maximum(:post_number)
+    Topic.where(id: topic.id).update_all(highest_post_number: non_whisper_max) if non_whisper_max
+
+    sign_in(audience_user)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".mod-whisper-banner", wait: 15)
+    sleep 0.3
+    shot("21_post_rendered_as_whisper_after_save")
+  end
+
+  it "22. captures the non-staff composer with NO whisper eye button" do
+    topic = Fabricate(:topic, category: category, title: "Non-staff has no whisper button")
+    Fabricate(
+      :post,
+      topic: topic,
+      user: author,
+      raw: "Public reply chain — non-staff users shouldn't see the whisper toggle.",
+    )
+
+    sign_in(stranger)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".topic-post", wait: 15)
+    find("#topic-footer-buttons .create", match: :first).click
+    expect(page).to have_css(".d-editor-input", wait: 15)
+    # The button is registered conditionally on staff in
+    # mod-whisper.js — non-staff toolbars never get the row.
+    expect(page).to have_no_css(".d-editor-button-bar button.mod-whisper-target")
+    sleep 0.3
+    shot("22_non_staff_composer_no_whisper_button")
+  end
 end

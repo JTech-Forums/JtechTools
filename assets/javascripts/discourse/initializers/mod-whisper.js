@@ -9,11 +9,6 @@ import { computeReplyAudience } from "../lib/mod-whisper-reply-audience";
 const EYE_PATH =
   "M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 11a4 4 0 110-8 4 4 0 010 8z";
 
-function whisperParticipantIds(topic) {
-  const ids = topic?.mod_whisper_participant_ids;
-  return Array.isArray(ids) ? ids : [];
-}
-
 export default {
   name: "discourse-mod-whisper",
 
@@ -90,6 +85,16 @@ export default {
       });
 
       api.onToolbarCreate((toolbar) => {
+        // Whisper-arming is staff-only. Non-staff users replying to an
+        // existing whisper post still get their reply auto-armed as a
+        // staff-only whisper by the `composer:opened` handler below, so
+        // they don't lose the ability to whisper-back — they just don't
+        // get a manual UI toggle. Hiding the toolbar button entirely
+        // avoids the confusing "eye button that does nothing for me"
+        // state that non-staff non-participants used to see.
+        if (!currentUser?.staff) {
+          return;
+        }
         toolbar.addButton({
           id: "mod-whisper-target",
           className: "mod-whisper-target",
@@ -99,33 +104,13 @@ export default {
           perform: () => {
             const composerService = api.container.lookup("service:composer");
             const model = composerService?.model;
-            if (!model || !currentUser) {
+            if (!model) {
               return;
             }
-
-            if (currentUser.staff) {
-              const modal = api.container.lookup("service:modal");
-              modal?.show(ModWhisperTargetModal, {
-                model: { composer: model },
-              });
-              return;
-            }
-
-            // Non-staff: only an existing topic whisper participant may
-            // whisper, and only ever staff-only. Arm it directly.
-            const participantIds = whisperParticipantIds(model.topic);
-            if (participantIds.includes(currentUser.id)) {
-              model.set("modWhisperArmed", true);
-              model.set("modWhisperTargetUserIds", []);
-              model.set("modWhisperTargetUsernames", []);
-              model.set("modWhisperTargets", []);
-              model.set("modWhisperTargetGroupIds", []);
-              model.set("modWhisperTargetGroupNames", []);
-              model.set("modWhisperTargetGroups", []);
-              model.set("modWhisperTargetBadgeIds", []);
-              model.set("modWhisperTargetBadges", []);
-            }
-            // Non-participant: no-op.
+            const modal = api.container.lookup("service:modal");
+            modal?.show(ModWhisperTargetModal, {
+              model: { composer: model },
+            });
           },
         });
       });
