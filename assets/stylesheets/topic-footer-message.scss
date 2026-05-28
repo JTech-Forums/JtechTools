@@ -270,9 +270,11 @@
   .mod-private-note-viewers-pill-avatars {
     display: inline-flex;
     align-items: center;
+
     // Negative left margin on each avatar past the first stacks them
     // with a slight overlap — the classic "presence avatars" pattern.
-    > .mod-private-note-viewers-pill-avatar + .mod-private-note-viewers-pill-avatar {
+    > .mod-private-note-viewers-pill-avatar
+      + .mod-private-note-viewers-pill-avatar {
       margin-left: -0.45em;
     }
   }
@@ -281,6 +283,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
+
     // Ring outline so overlapping avatars are visually separated against
     // both the panel background and each other.
     box-shadow: 0 0 0 1.5px var(--primary-very-low);
