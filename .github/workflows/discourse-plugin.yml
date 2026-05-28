@@ -5,6 +5,12 @@ on:
     branches:
       - main
   pull_request:
+  # Manual trigger so we can run the full Discourse plugin matrix
+  # (linting, backend_tests, system_tests, annotations_tests) against
+  # an arbitrary branch on this fork without needing an upstream PR
+  # (which is gated on a manual workflow approval for fork
+  # contributors). `gh workflow run "Discourse Plugin" --ref <branch>`.
+  workflow_dispatch:
 
 jobs:
   ci:
