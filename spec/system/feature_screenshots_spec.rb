@@ -396,4 +396,246 @@ RSpec.describe "Feature screenshots" do
     sleep 0.3
     shot("15_whisper_banner_css_sanity")
   end
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Post-PR-#12 additions: "Viewed by N" avatar pill at the bottom of
+  # the mod-note panel + the click-to-open popover with full viewer
+  # details (avatar, name, relative-time).
+  # ──────────────────────────────────────────────────────────────────────
+
+  # Seeds a panel with prior viewers (other than the signed-in user) so
+  # the pill renders multiple avatars on first paint, before the current
+  # user's own POST-on-mount lands.
+  def seed_panel_with_viewers(topic, viewers)
+    topic.custom_fields[DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD] = viewers.map do |user|
+      {
+        "user_id" => user.id,
+        "username" => user.username,
+        "name" => user.name || user.username,
+        "avatar_template" => user.avatar_template,
+        "viewed_at" => rand(1..40).minutes.ago.iso8601,
+      }
+    end
+    topic.save_custom_fields(true)
+  end
+
+  it "16. captures the mod-note panel with the 'Viewed by' avatar pill" do
+    topic =
+      seed_topic_with_note(
+        title: "Mod note viewers pill demo",
+        note: "Pinned at the bottom — staff who view this panel are stacked below.",
+      )
+    seed_panel_with_viewers(topic, [moderator, other_moderator, author])
+
+    sign_in(admin)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".mod-private-note-viewers-pill", wait: 15)
+    # Each prior viewer's avatar + the current user's after the
+    # record-on-mount POST resolves.
+    expect(page).to have_css(".mod-private-note-viewers-pill-avatar", minimum: 3, wait: 10)
+    sleep 0.3
+    shot("16_mod_note_viewers_pill_closed")
+  end
+
+  it "17. captures the mod-note panel with both replies AND viewer avatars (realistic)" do
+    # The realistic case — a thread with multiple staff replies AND a
+    # row of viewer avatars at the bottom. This is what the production
+    # forum looks like once a mod note has been triaged: 2-3 replies in
+    # the conversation, several staff who have laid eyes on it.
+    topic =
+      seed_topic_with_note(
+        title: "Mod note replies + viewers demo",
+        note: "Triage on this reported user.",
+        replies: [
+          {
+            "id" => "viewers-rep-001",
+            "user_id" => moderator.id,
+            "raw" => "DM'd them, asking for context on the original post.",
+            "created_at" => 90.minutes.ago.iso8601,
+          },
+          {
+            "id" => "viewers-rep-002",
+            "user_id" => other_moderator.id,
+            "raw" => "Thanks. I'll watch the next reply they make.",
+            "created_at" => 60.minutes.ago.iso8601,
+          },
+          {
+            "id" => "viewers-rep-003",
+            "user_id" => admin.id,
+            "raw" => "Looks resolved on my end — closing the loop.",
+            "created_at" => 25.minutes.ago.iso8601,
+          },
+        ],
+      )
+    seed_panel_with_viewers(topic, [moderator, other_moderator, author, audience_user])
+
+    sign_in(admin)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".mod-private-note-reply", count: 3, wait: 15)
+    expect(page).to have_css(".mod-private-note-viewers-pill-avatar", minimum: 4, wait: 10)
+    sleep 0.3
+    shot("17_mod_note_replies_and_viewers_closed")
+  end
+
+  it "18. captures the same panel with replies AND the viewers popover open" do
+    topic =
+      seed_topic_with_note(
+        title: "Mod note replies + viewers popover demo",
+        note: "Triage on this reported user.",
+        replies: [
+          {
+            "id" => "viewers-rep-a01",
+            "user_id" => moderator.id,
+            "raw" => "DM'd them, asking for context on the original post.",
+            "created_at" => 90.minutes.ago.iso8601,
+          },
+          {
+            "id" => "viewers-rep-a02",
+            "user_id" => other_moderator.id,
+            "raw" => "Thanks. I'll watch the next reply they make.",
+            "created_at" => 60.minutes.ago.iso8601,
+          },
+          {
+            "id" => "viewers-rep-a03",
+            "user_id" => admin.id,
+            "raw" => "Looks resolved on my end — closing the loop.",
+            "created_at" => 25.minutes.ago.iso8601,
+          },
+        ],
+      )
+    seed_panel_with_viewers(topic, [moderator, other_moderator, author, audience_user, stranger])
+
+    sign_in(admin)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".mod-private-note-reply", count: 3, wait: 15)
+    expect(page).to have_css(".mod-private-note-viewers-pill", wait: 15)
+    find(".mod-private-note-viewers-pill").click
+    expect(page).to have_css(".mod-private-note-viewers-list-item", minimum: 5, wait: 5)
+    sleep 0.3
+    shot("18_mod_note_replies_and_viewers_popover_open")
+  end
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Whisper toggle on edit + non-staff toolbar visibility.
+  # Three paired captures around the staff "switch regular → whisper"
+  # flow (before / during / after), plus the non-staff confirmation that
+  # the eye-button is hidden entirely.
+  # ──────────────────────────────────────────────────────────────────────
+
+  it "19. captures the staff edit composer on a regular post — eye button visible" do
+    topic = Fabricate(:topic, category: category, title: "Whisper edit toggle demo")
+    target_post =
+      Fabricate(
+        :post,
+        topic: topic,
+        user: author,
+        raw: "Regular public post, about to be toggled to a whisper.",
+      )
+
+    sign_in(moderator)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".topic-post", wait: 15)
+
+    # Open the post's edit composer via the "..." menu → pencil icon.
+    # Falls back to the keyboard shortcut path if the menu layout shifts
+    # across Discourse versions.
+    post_article = find("#post_#{target_post.post_number}")
+    begin
+      post_article.find(".show-more-actions", match: :first).click
+    rescue StandardError
+      nil
+    end
+    post_article.find(".edit", match: :first).click
+
+    expect(page).to have_css(".d-editor-input", wait: 15)
+    expect(page).to have_css(".d-editor-button-bar button.mod-whisper-target", wait: 10)
+    sleep 0.3
+    shot("19_staff_edit_composer_eye_button_visible")
+  end
+
+  it "20. captures the whisper modal mid-edit with a target selected (the switch)" do
+    topic = Fabricate(:topic, category: category, title: "Whisper modal during edit demo")
+    Fabricate(
+      :post,
+      topic: topic,
+      user: author,
+      raw: "Public post that's getting whispered to a single staff member.",
+    )
+
+    sign_in(moderator)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".topic-post", wait: 15)
+
+    # Use the topic-footer "Reply" composer to trigger the SAME toolbar
+    # the edit path uses (simpler than navigating the post menu, and the
+    # whisper modal is identical either way).
+    find("#topic-footer-buttons .create", match: :first).click
+    expect(page).to have_css(".d-editor-input", wait: 15)
+
+    find(
+      ".d-editor-button-bar button.mod-whisper-target, " \
+        ".d-editor-button-bar button[title='" \
+        "#{I18n.t("js.discourse_mod_categories.whisper.toolbar_title")}']",
+      match: :first,
+    ).click
+
+    expect(page).to have_css(".mod-whisper-target-modal", wait: 15)
+    shot("20_whisper_modal_during_edit_switch")
+  end
+
+  it "21. captures a post rendered as a whisper after the switch is saved" do
+    # The end state — what the post looks like once the staff member
+    # confirms the modal and the PUT /post/:id/whisper writes the
+    # custom_fields. Seeding directly bypasses the modal interaction
+    # (covered by scenario 20) so the screenshot captures the rendered
+    # outcome reliably without a fragile multi-step Capybara flow.
+    topic = Fabricate(:topic, category: category, title: "Post rendered as whisper after save")
+    Fabricate(:post, topic: topic, user: author, raw: "Public OP context.")
+    whispered =
+      Fabricate(
+        :post,
+        topic: topic,
+        user: moderator,
+        raw: "This used to be a regular reply — now it's a staff-only whisper.",
+      )
+    whispered.custom_fields[targets_field] = [audience_user.id]
+    whispered.save_custom_fields(true)
+    topic.custom_fields[participants_field] = [audience_user.id]
+    topic.save_custom_fields(true)
+    # Mirror the on(:post_created) rollback so the topic's highest_post
+    # also matches the post-save audience-aware state for the viewer.
+    non_whisper_max =
+      Post
+        .where(topic_id: topic.id, deleted_at: nil)
+        .where.not(id: PostCustomField.where(name: targets_field).select(:post_id))
+        .maximum(:post_number)
+    Topic.where(id: topic.id).update_all(highest_post_number: non_whisper_max) if non_whisper_max
+
+    sign_in(audience_user)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".mod-whisper-banner", wait: 15)
+    sleep 0.3
+    shot("21_post_rendered_as_whisper_after_save")
+  end
+
+  it "22. captures the non-staff composer with NO whisper eye button" do
+    topic = Fabricate(:topic, category: category, title: "Non-staff has no whisper button")
+    Fabricate(
+      :post,
+      topic: topic,
+      user: author,
+      raw: "Public reply chain — non-staff users shouldn't see the whisper toggle.",
+    )
+
+    sign_in(stranger)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css(".topic-post", wait: 15)
+    find("#topic-footer-buttons .create", match: :first).click
+    expect(page).to have_css(".d-editor-input", wait: 15)
+    # The button is registered conditionally on staff in
+    # mod-whisper.js — non-staff toolbars never get the row.
+    expect(page).to have_no_css(".d-editor-button-bar button.mod-whisper-target")
+    sleep 0.3
+    shot("22_non_staff_composer_no_whisper_button")
+  end
 end

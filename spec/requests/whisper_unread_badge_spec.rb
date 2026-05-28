@@ -209,6 +209,23 @@ RSpec.describe "Whisper unread badge" do
       expect(ids.index(public_topic.id)).to be < ids.index(topic.id)
     end
 
+    it "serializes audience-aware bumped_at on /latest (audience sees actual, stranger sees non-whisper)" do
+      sign_in(stranger)
+      get "/latest.json"
+      stranger_view = response.parsed_body["topic_list"]["topics"].find { |t| t["id"] == topic.id }
+      expect(Time.zone.parse(stranger_view["bumped_at"])).to be_within(2.seconds).of(
+        regular_reply.reload.created_at,
+      )
+
+      sign_in(target)
+      get "/latest.json"
+      audience_view = response.parsed_body["topic_list"]["topics"].find { |t| t["id"] == topic.id }
+      # Audience members still see the live bump (5 min ago via the outer before).
+      expect(Time.zone.parse(audience_view["bumped_at"])).to be_within(2.seconds).of(
+        topic.reload.bumped_at,
+      )
+    end
+
     it "skips the timestamp cast when the non_whisper_bumped_at value is malformed" do
       # The custom field is normally written by on(:post_created) as an
       # iso8601 string, but a corrupted, hand-edited, or legacy value

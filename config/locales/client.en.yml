@@ -75,6 +75,9 @@ en:
         edit_note: Edit note
         delete_note: Delete note
         delete_note_confirm: Delete this moderator note and all its replies?
+        viewed_by:
+          one: Viewed by %{count} staff
+          other: Viewed by %{count} staff
       notes_tab:
         title: Moderator notes
         loading: Loading…

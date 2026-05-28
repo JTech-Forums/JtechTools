@@ -77,6 +77,12 @@ export default class ModPrivateNote extends Component {
   // The id of the reply currently being edited inline, or null.
   @tracked editingReplyId = null;
   @tracked editText = "";
+  // Staff who have viewed this mod-note panel (each is
+  // `{user_id, username, name, avatar_template, viewed_at}`).
+  @tracked viewers = this.args.topic?.mod_topic_note_viewers || [];
+  // Whether the "👁 Viewed by N" popover is open. Single popover at a
+  // time per panel — clicking the pill toggles it.
+  @tracked viewersPopoverOpen = false;
 
   constructor() {
     super(...arguments);
@@ -130,9 +136,12 @@ export default class ModPrivateNote extends Component {
 
   // Re-read all per-topic state from the current topic. Called on initial
   // insert and whenever the connector is reused for a different topic.
+  // Also records the current staff user as a viewer of this panel so
+  // the "👁 Viewed by N" pill reflects them on the next paint.
   @action
   refreshOnNavigation() {
     this.readTopicState(this.args.topic);
+    this.recordNoteView();
   }
 
   readTopicState(topic) {
@@ -141,11 +150,71 @@ export default class ModPrivateNote extends Component {
     this.author = topic?.mod_topic_private_note_author || null;
     this.createdAt = topic?.mod_topic_private_note_created_at || null;
     this.replies = topic?.mod_topic_private_note_replies || [];
+    this.viewers = topic?.mod_topic_note_viewers || [];
+    this.viewersPopoverOpen = false;
     this.replying = false;
     this.replyText = "";
     this.editingReplyId = null;
     this.editText = "";
     this.cookContent();
+  }
+
+  // Pings the server to record the current user as a viewer of this
+  // mod-note panel. Idempotent — re-views update `viewed_at` on the
+  // existing entry. Fires once per topic navigation via the same
+  // `didInsert` modifier the scroll-on-hash uses.
+  @action
+  async recordNoteView() {
+    if (!this.visible) {
+      return;
+    }
+    try {
+      const result = await ajax(
+        `/discourse-mod-categories/topic/${this.args.topic.id}/note-view`,
+        { type: "POST" }
+      );
+      this.viewers = result?.viewers || [];
+      this.args.topic.set("mod_topic_note_viewers", this.viewers);
+    } catch {
+      // Best-effort — failing to record a view shouldn't block the
+      // panel from rendering. The pill just won't update to include
+      // the current user; the next render will pick it up.
+    }
+  }
+
+  @action
+  toggleViewersPopover() {
+    this.viewersPopoverOpen = !this.viewersPopoverOpen;
+  }
+
+  get sortedViewers() {
+    // Most recent first.
+    return [...(this.viewers || [])].sort((a, b) => {
+      const aTime = a?.viewed_at ? Date.parse(a.viewed_at) : 0;
+      const bTime = b?.viewed_at ? Date.parse(b.viewed_at) : 0;
+      return bTime - aTime;
+    });
+  }
+
+  get decoratedViewers() {
+    return this.sortedViewers.map((v) => ({
+      userId: v.user_id,
+      username: v.username,
+      name: v.name || v.username,
+      avatarUrl: avatarUrl(v),
+      agoLabel: timeAgo(v.viewed_at),
+    }));
+  }
+
+  // Up to MAX_PILL_AVATARS small avatars rendered inline in the pill.
+  // The rest go into the "+N" overflow indicator and remain accessible
+  // via the popover.
+  get pillViewers() {
+    return this.decoratedViewers.slice(0, 5);
+  }
+
+  get overflowCount() {
+    return Math.max(0, this.decoratedViewers.length - 5);
   }
 
   // Cooks the raw note markdown and each reply body asynchronously. The
@@ -534,6 +603,66 @@ export default class ModPrivateNote extends Component {
               @label="discourse_mod_categories.private_note.reply"
               class="btn-flat btn-small mod-private-note-reply-button"
             />
+          {{/if}}
+
+          {{#if this.decoratedViewers.length}}
+            <div class="mod-private-note-viewers">
+              <button
+                type="button"
+                class="mod-private-note-viewers-pill"
+                aria-expanded={{if this.viewersPopoverOpen "true" "false"}}
+                aria-label={{i18n
+                  "discourse_mod_categories.private_note.viewed_by"
+                  count=this.decoratedViewers.length
+                }}
+                {{on "click" this.toggleViewersPopover}}
+              >
+                <span class="mod-private-note-viewers-pill-avatars">
+                  {{#each this.pillViewers as |viewer|}}
+                    {{#if viewer.avatarUrl}}
+                      <img
+                        class="mod-private-note-viewers-pill-avatar"
+                        src={{viewer.avatarUrl}}
+                        width="20"
+                        height="20"
+                        alt={{viewer.name}}
+                        title={{viewer.name}}
+                      />
+                    {{/if}}
+                  {{/each}}
+                </span>
+                {{#if this.overflowCount}}
+                  <span class="mod-private-note-viewers-pill-more">
+                    +{{this.overflowCount}}
+                  </span>
+                {{/if}}
+              </button>
+              {{#if this.viewersPopoverOpen}}
+                <ul class="mod-private-note-viewers-list" role="list">
+                  {{#each this.decoratedViewers as |viewer|}}
+                    <li class="mod-private-note-viewers-list-item">
+                      {{#if viewer.avatarUrl}}
+                        <img
+                          class="mod-private-note-viewers-avatar"
+                          src={{viewer.avatarUrl}}
+                          width="24"
+                          height="24"
+                          alt=""
+                        />
+                      {{/if}}
+                      <span class="mod-private-note-viewers-name">
+                        {{viewer.name}}
+                      </span>
+                      {{#if viewer.agoLabel}}
+                        <span class="mod-private-note-viewers-time">
+                          {{viewer.agoLabel}}
+                        </span>
+                      {{/if}}
+                    </li>
+                  {{/each}}
+                </ul>
+              {{/if}}
+            </div>
           {{/if}}
         </div>
       {{/if}}
