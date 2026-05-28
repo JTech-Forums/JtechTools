@@ -206,6 +206,76 @@ module ::DiscourseModCategories
       render json: note_thread_json(topic)
     end
 
+    # Toggles or updates a post's whisper state (and audience) after the
+    # post already exists. Discourse's PostsController#update path drops
+    # whisper params (`add_permitted_post_create_param` is create-only and
+    # there's no `serializeOnUpdate` for these fields), so editing a post
+    # in the composer and saving doesn't propagate whisper toggles.
+    # The frontend calls this endpoint as a follow-up to any staff edit
+    # where the whisper state was changed.
+    #
+    # Staff-only: non-staff users get 403, including the post's own
+    # author. A user who didn't have permission to arm a whisper on
+    # create shouldn't be able to add or remove one on edit.
+    def update_post_whisper
+      raise Discourse::NotFound unless SiteSetting.mod_whisper_enabled
+
+      post = ::Post.find_by(id: params[:id])
+      raise Discourse::NotFound unless post
+      raise Discourse::InvalidAccess.new("staff_only") unless current_user.staff?
+      raise Discourse::InvalidAccess.new("cannot_edit") unless guardian.can_edit?(post)
+
+      armed = ActiveModel::Type::Boolean.new.cast(params[:mod_whisper])
+
+      targets_field = DiscourseModCategories::POST_WHISPER_TARGETS_FIELD
+      groups_field = DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
+      badges_field = DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD
+      participants_field = DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
+
+      if armed
+        user_ids = sanitize_ids(params[:mod_whisper_target_user_ids])
+        group_ids = sanitize_ids(params[:mod_whisper_target_group_ids])
+        badge_ids = sanitize_ids(params[:mod_whisper_target_badge_ids])
+
+        # Validate IDs against the DB so a typo / stale ID doesn't end up
+        # in the custom_fields. on(:post_created) does the same shape.
+        user_ids = ::User.where(id: user_ids).pluck(:id) if user_ids.any?
+        group_ids = ::Group.where(id: group_ids).pluck(:id) if group_ids.any?
+        badge_ids = ::Badge.where(id: badge_ids, enabled: true).pluck(:id) if badge_ids.any?
+
+        post.custom_fields[targets_field] = user_ids
+        post.custom_fields[groups_field] = group_ids
+        post.custom_fields[badges_field] = badge_ids
+        post.save_custom_fields(true)
+
+        # Cumulative topic-participants update — mirrors what
+        # on(:post_created) does so a freshly-targeted user starts seeing
+        # ALL whispers in the topic, not just future ones.
+        if post.topic
+          existing = Array(post.topic.custom_fields[participants_field]).map(&:to_i)
+          additions = user_ids.dup
+          additions += ::GroupUser.where(group_id: group_ids).pluck(:user_id) if group_ids.any?
+          additions += ::UserBadge.where(badge_id: badge_ids).pluck(:user_id) if badge_ids.any?
+          merged = (existing + additions).uniq
+          if merged.sort != existing.sort
+            post.topic.custom_fields[participants_field] = merged
+            post.topic.save_custom_fields(true)
+          end
+        end
+      else
+        # Disarming: the `mod_is_whisper` serializer keys off
+        # `custom_fields.key?(targets_field)`, so an empty array is NOT
+        # enough — the rows have to be physically removed.
+        ::PostCustomField.where(
+          post_id: post.id,
+          name: [targets_field, groups_field, badges_field],
+        ).destroy_all
+        post.reload
+      end
+
+      render json: serialized_post_whisper_state(post.reload)
+    end
+
     # Records the current staff user as a viewer of the mod-note panel on
     # the given topic. Idempotent — re-viewing updates `viewed_at` on the
     # existing entry rather than appending a duplicate row. The returned
@@ -633,6 +703,34 @@ module ::DiscourseModCategories
               },
         }
       end
+    end
+
+    # Strips/dedupes ID arrays sent by the composer for whisper target
+    # update. Casts to ints, drops zero/nil, dedupes. Both endpoints
+    # (update_post_whisper) and the on(:post_created) hook share this
+    # shape so they normalize identically.
+    def sanitize_ids(raw)
+      Array(raw).map(&:to_i).reject(&:zero?).uniq
+    end
+
+    # Mirrors the post serializer's whisper fields so the frontend can
+    # swap the response in for the post's local state without a topic
+    # reload. The four ids* fields match the existing :post serializer
+    # overrides in sub_plugins/mod_categories.rb.
+    def serialized_post_whisper_state(post)
+      targets_field = DiscourseModCategories::POST_WHISPER_TARGETS_FIELD
+      {
+        mod_is_whisper: post.custom_fields.key?(targets_field),
+        mod_whisper_target_user_ids: Array(post.custom_fields[targets_field]).map(&:to_i),
+        mod_whisper_target_group_ids:
+          Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).map(
+            &:to_i
+          ),
+        mod_whisper_target_badge_ids:
+          Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(
+            &:to_i
+          ),
+      }
     end
 
     # Shape returned by record_note_view — mirrors the :topic_view
