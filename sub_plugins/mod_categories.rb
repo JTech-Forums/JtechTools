@@ -327,6 +327,15 @@ after_initialize do
     :string,
   )
   register_topic_custom_field_type(DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD, :json)
+
+  # Preload the two custom fields the audience-aware bumped_at serializer
+  # below reads. Without these, Discourse's HasCustomFields::PreloadedProxy
+  # raises NotPreloadedError when the serializer touches the fields on a
+  # topic-list row (the guard exists to prevent N+1 queries — preloading
+  # is the documented way to declare you intend to use the field for
+  # every topic on the list).
+  add_preloaded_topic_list_custom_field(DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD)
+  add_preloaded_topic_list_custom_field(DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD)
   register_user_custom_field_type(DiscourseModCategories::USER_NOTES_SEEN_FIELD, :string)
   register_user_custom_field_type(DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD, :integer)
   register_user_custom_field_type(DiscourseModCategories::USER_TARGETED_CHECKLIST_FIELD, :json)
@@ -967,13 +976,20 @@ after_initialize do
     user = scope&.user
     next raw if user&.staff?
 
-    participants = object.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]
-    next raw if user && participants.is_a?(Array) && participants.map(&:to_i).include?(user.id)
-
-    nwba = object.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD]
-    next raw if nwba.blank?
-
+    # All custom-field access wrapped together: HasCustomFields::PreloadedProxy
+    # raises NotPreloadedError if `add_preloaded_topic_list_custom_field`
+    # registrations above haven't taken effect (e.g. early in boot, or
+    # after a Discourse release reshapes the preloader). Falling through
+    # to `raw` keeps /latest responsive in that case — the worst outcome
+    # is the pre-fix "stranger sees the whisper time" display, which is
+    # recoverable on the next request.
     begin
+      participants = object.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]
+      next raw if user && participants.is_a?(Array) && participants.map(&:to_i).include?(user.id)
+
+      nwba = object.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD]
+      next raw if nwba.blank?
+
       parsed = ::Time.zone.parse(nwba.to_s)
       parsed || raw
     rescue StandardError
