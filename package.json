@@ -2,7 +2,7 @@
   "private": true,
   "devDependencies": {
     "@discourse/lint-configs": "2.37.2",
-    "@glint/ember-tsc": "1.7.5",
+    "@glint/ember-tsc": "1.8.0",
     "concurrently": "^9.2.1",
     "discourse": "npm:@discourse/types@2026.1.0-2709d36",
     "ember-template-lint": "7.9.3",
