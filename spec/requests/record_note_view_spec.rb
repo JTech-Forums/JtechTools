@@ -35,14 +35,19 @@ RSpec.describe "Record mod-note view" do
   end
 
   it "updates viewed_at on re-view without duplicating the entry" do
+    # `travel` (ActiveSupport::Testing::TimeHelpers) isn't auto-included
+    # by Discourse's rails_helper, so we use freeze_time which IS
+    # available there. Two POSTs at deterministically-different times
+    # let us assert both the no-duplicate semantic AND the timestamp
+    # progression.
     sign_in(admin)
 
-    post "/discourse-mod-categories/topic/#{topic.id}/note-view.json"
-    first_time = viewers.first["viewed_at"]
-
-    travel 5.seconds do
+    freeze_time(30.minutes.ago) do
       post "/discourse-mod-categories/topic/#{topic.id}/note-view.json"
     end
+    first_time = viewers.first["viewed_at"]
+
+    freeze_time(Time.zone.now) { post "/discourse-mod-categories/topic/#{topic.id}/note-view.json" }
 
     expect(viewers.size).to eq(1)
     expect(viewers.first["user_id"]).to eq(admin.id)

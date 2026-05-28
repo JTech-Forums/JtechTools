@@ -15,3 +15,13 @@ on:
 jobs:
   ci:
     uses: discourse/.github/.github/workflows/discourse-plugin.yml@v1
+    # Force lowercase plugin directory. Discourse derives the compiled
+    # stylesheet bundle slug from the on-disk dir, and the route that
+    # serves /stylesheets/<slug>_<hash>.css is constrained to
+    # `[-a-z0-9_]+`. The default (`github.event.repository.name`)
+    # evaluates to "JtechTools" (uppercase) which broke every CSS
+    # request → "Refused to apply style" → unstyled plugin everywhere.
+    # Same fix b284c8d applied for local dev; missing here is why the
+    # SCSS bug came back in this PR's system_tests.
+    with:
+      name: jtech-tools

@@ -83,7 +83,11 @@ RSpec.describe "Whisper edit toggle (frontend save chain)" do
 
     # Save the edit. The composer's `save()` resolves, then the
     # patched override chains the PUT to update_post_whisper.
-    find(".save-edits", match: :first).click
+    # Discourse's edit composer uses the same `.create.btn-primary` as the
+    # reply composer with a different label; the legacy `.save-edits`
+    # class may or may not be present depending on Discourse version, so
+    # match either to stay version-tolerant.
+    find(".save-edits, #reply-control .create.btn-primary", match: :first).click
     expect(page).to have_no_css(".d-editor-input", wait: 15)
 
     # Wait for the chained PUT to land. The composer's save promise
@@ -121,7 +125,11 @@ RSpec.describe "Whisper edit toggle (frontend save chain)" do
     end
     expect(page).to have_no_css(".mod-whisper-target-modal", wait: 5)
 
-    find(".save-edits", match: :first).click
+    # Discourse's edit composer uses the same `.create.btn-primary` as the
+    # reply composer with a different label; the legacy `.save-edits`
+    # class may or may not be present depending on Discourse version, so
+    # match either to stay version-tolerant.
+    find(".save-edits, #reply-control .create.btn-primary", match: :first).click
     expect(page).to have_no_css(".d-editor-input", wait: 15)
     sleep 2
 
@@ -154,7 +162,11 @@ RSpec.describe "Whisper edit toggle (frontend save chain)" do
       }
     JS
 
-    find(".save-edits", match: :first).click
+    # Discourse's edit composer uses the same `.create.btn-primary` as the
+    # reply composer with a different label; the legacy `.save-edits`
+    # class may or may not be present depending on Discourse version, so
+    # match either to stay version-tolerant.
+    find(".save-edits, #reply-control .create.btn-primary", match: :first).click
     expect(page).to have_no_css(".d-editor-input", wait: 15)
     sleep 2
 

@@ -13,12 +13,15 @@ RSpec.describe Jobs::DedupeModWhisperNotifications do
   fab!(:audience_user, :user)
   fab!(:other_user, :user)
 
-  def make_notification(type:, user:, topic: topic, post_number: post_record.post_number)
+  def make_notification(type:, user:, post_number: nil)
+    # The outer `topic` let is in scope inside this method via RSpec's
+    # method-dispatch — no circular keyword-arg default needed (and
+    # `topic: topic` is a Ruby 3.3 syntax error besides).
     Notification.create!(
       notification_type: Notification.types[type],
       user_id: user.id,
       topic_id: topic.id,
-      post_number: post_number,
+      post_number: post_number || post_record.post_number,
       data: { topic_title: topic.title }.to_json,
     )
   end
