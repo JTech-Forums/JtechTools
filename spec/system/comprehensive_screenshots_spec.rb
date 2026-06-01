@@ -70,6 +70,18 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
       "instead of a single sentence — Discourse's defaults truncate at ~300 chars."
   end
 
+  def empty_excerpt
+    ""
+  end
+
+  def onechar_excerpt
+    "."
+  end
+
+  def unicode_excerpt
+    "Note 🚨 + 漢字 + ñoñó for unicode coverage 🎯"
+  end
+
   # Builds one mod_note-flagged Notification for `user` with the given kind
   # + payload. Returns the row.
   def fab_event_notification(
@@ -127,26 +139,45 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
   # ─────────────────────────────────────────────────────────────────────
 
   KINDS = %w[note reply post_deleted post_approved post_rejected user_note flag_note].freeze
-  LENGTHS = { short: :short_excerpt, medium: :medium_excerpt, long: :long_excerpt }.freeze
+  LENGTHS = {
+    short: :short_excerpt,
+    medium: :medium_excerpt,
+    long: :long_excerpt,
+    empty: :empty_excerpt,
+    onechar: :onechar_excerpt,
+  }.freeze
+  # Each shot is per (kind × length × read × viewer-role). Anonymous and
+  # regular users can't see staff notifications, so only the two staff
+  # roles iterate here. Roll-counter `a_count` produces sequential A1xx
+  # names without manually counting.
+  VIEWER_ROLES = %i[admin moderator].freeze
 
-  KINDS.each_with_index do |kind, k_idx|
-    LENGTHS.each_with_index do |(length_name, excerpt_method), l_idx|
-      [false, true].each_with_index do |read, r_idx|
-        n = format("A1%02d", k_idx * (LENGTHS.size * 2) + l_idx * 2 + r_idx + 1)
-        it "#{n} — bell row: kind=#{kind} length=#{length_name} read=#{read}" do
-          topic = seed_topic_with_post
-          fab_event_notification(
-            user: admin,
-            kind: kind,
-            topic: topic,
-            excerpt: send(excerpt_method),
-            target_username: %w[user_note flag_note].include?(kind) ? author.username : nil,
-            read: read,
-          )
-          sign_in(admin)
-          open_user_menu
-          expect(page).to have_css(".notification.custom", wait: 15)
-          shot("#{n}_#{kind}_#{length_name}_#{read ? "read" : "unread"}")
+  a_count = 0
+  KINDS.each do |kind|
+    LENGTHS.each_key do |length_name|
+      [false, true].each do |read|
+        VIEWER_ROLES.each do |role|
+          a_count += 1
+          n = format("A1%03d", a_count)
+          excerpt_method = LENGTHS[length_name]
+          shot_name = "#{n}_#{kind}_#{length_name}_#{read ? "read" : "unread"}_#{role}"
+
+          it "#{n} — bell row: kind=#{kind} length=#{length_name} read=#{read} role=#{role}" do
+            viewer = role == :admin ? admin : moderator
+            topic = seed_topic_with_post
+            fab_event_notification(
+              user: viewer,
+              kind: kind,
+              topic: topic,
+              excerpt: send(excerpt_method),
+              target_username: %w[user_note flag_note].include?(kind) ? author.username : nil,
+              read: read,
+            )
+            sign_in(viewer)
+            open_user_menu
+            expect(page).to have_css(".notification.custom", wait: 15)
+            shot(shot_name)
+          end
         end
       end
     end
@@ -248,74 +279,89 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
   # C. Mod-note panel on topic page (placement × replies × viewers)
   # ─────────────────────────────────────────────────────────────────────
 
-  %w[top bottom].each_with_index do |position, p_idx|
-    %i[short medium long].each_with_index do |length_name, l_idx|
-      n = format("C3%02d", p_idx * 3 + l_idx + 1)
-      it "#{n} — mod-note panel: position=#{position} length=#{length_name}" do
-        topic = Fabricate(:topic, category: category, title: "Panel #{position} #{length_name}")
-        Fabricate(:post, topic: topic, user: author, raw: "OP body for panel test.")
-        topic.custom_fields["mod_topic_private_note"] = send("#{length_name}_excerpt")
-        topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-        topic.custom_fields["mod_topic_private_note_position"] = position
-        topic.custom_fields["mod_topic_private_note_created_at"] = 30.minutes.ago.iso8601
-        topic.save_custom_fields(true)
-        sign_in(moderator)
-        visit("/t/#{topic.slug}/#{topic.id}")
-        expect(page).to have_css(".mod-private-note", wait: 15)
-        shot("#{n}_panel_#{position}_#{length_name}")
+  c_count = 0
+  %w[top bottom].each do |position|
+    %i[short medium long].each do |length_name|
+      VIEWER_ROLES.each do |role|
+        c_count += 1
+        n = format("C3%03d", c_count)
+        it "#{n} — mod-note panel: position=#{position} length=#{length_name} role=#{role}" do
+          viewer = role == :admin ? admin : moderator
+          topic = Fabricate(:topic, category: category, title: "Panel #{position} #{length_name}")
+          Fabricate(:post, topic: topic, user: author, raw: "OP body for panel test.")
+          topic.custom_fields["mod_topic_private_note"] = send("#{length_name}_excerpt")
+          topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
+          topic.custom_fields["mod_topic_private_note_position"] = position
+          topic.custom_fields["mod_topic_private_note_created_at"] = 30.minutes.ago.iso8601
+          topic.save_custom_fields(true)
+          sign_in(viewer)
+          visit("/t/#{topic.slug}/#{topic.id}")
+          expect(page).to have_css(".mod-private-note", wait: 15)
+          shot("#{n}_panel_#{position}_#{length_name}_#{role}")
+        end
       end
     end
   end
 
-  [0, 1, 3, 10].each_with_index do |reply_count, r_idx|
-    n = format("C3%02d", 7 + r_idx)
-    it "#{n} — mod-note panel: #{reply_count} replies" do
-      topic = Fabricate(:topic, category: category, title: "Panel with #{reply_count} replies")
-      Fabricate(:post, topic: topic, user: author, raw: "OP body for replies test.")
-      replies =
-        Array.new(reply_count) do |i|
-          {
-            "id" => format("rep-%04d", i + 1),
-            "user_id" => i.odd? ? other_moderator.id : moderator.id,
-            "raw" => "Reply #{i + 1} body for visual review.",
-            "created_at" => (reply_count - i).hours.ago.iso8601,
-          }
-        end
-      topic.custom_fields["mod_topic_private_note"] = "Note with #{reply_count} replies."
-      topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-      topic.custom_fields["mod_topic_private_note_replies"] = replies
-      topic.save_custom_fields(true)
-      sign_in(moderator)
-      visit("/t/#{topic.slug}/#{topic.id}")
-      expect(page).to have_css(".mod-private-note", wait: 15)
-      shot("#{n}_panel_replies_#{reply_count}")
+  REPLY_COUNTS = [0, 1, 2, 3, 5, 7, 10].freeze
+  REPLY_COUNTS.each do |reply_count|
+    VIEWER_ROLES.each do |role|
+      c_count += 1
+      n = format("C3%03d", c_count)
+      it "#{n} — mod-note panel: #{reply_count} replies role=#{role}" do
+        viewer = role == :admin ? admin : moderator
+        topic = Fabricate(:topic, category: category, title: "Panel with #{reply_count} replies")
+        Fabricate(:post, topic: topic, user: author, raw: "OP body for replies test.")
+        replies =
+          Array.new(reply_count) do |i|
+            {
+              "id" => format("rep-%04d", i + 1),
+              "user_id" => i.odd? ? other_moderator.id : moderator.id,
+              "raw" => "Reply #{i + 1} body for visual review.",
+              "created_at" => (reply_count - i).hours.ago.iso8601,
+            }
+          end
+        topic.custom_fields["mod_topic_private_note"] = "Note with #{reply_count} replies."
+        topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
+        topic.custom_fields["mod_topic_private_note_replies"] = replies
+        topic.save_custom_fields(true)
+        sign_in(viewer)
+        visit("/t/#{topic.slug}/#{topic.id}")
+        expect(page).to have_css(".mod-private-note", wait: 15)
+        shot("#{n}_panel_replies_#{reply_count}_#{role}")
+      end
     end
   end
 
-  [0, 1, 3, 10].each_with_index do |viewer_count, v_idx|
-    n = format("C3%02d", 11 + v_idx)
-    it "#{n} — mod-note panel: #{viewer_count} viewers in pill" do
-      topic = Fabricate(:topic, category: category, title: "Panel with #{viewer_count} viewers")
-      Fabricate(:post, topic: topic, user: author, raw: "OP for viewers test.")
-      viewers =
-        Array.new(viewer_count) do |i|
-          u = Fabricate(:user, username: "viewer_#{viewer_count}_#{i}")
-          {
-            "user_id" => u.id,
-            "username" => u.username,
-            "name" => u.name,
-            "avatar_template" => u.avatar_template,
-            "viewed_at" => (viewer_count - i).minutes.ago.iso8601,
-          }
-        end
-      topic.custom_fields["mod_topic_private_note"] = "Note with #{viewer_count} viewers."
-      topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
-      topic.custom_fields["mod_topic_note_viewers"] = viewers
-      topic.save_custom_fields(true)
-      sign_in(moderator)
-      visit("/t/#{topic.slug}/#{topic.id}")
-      expect(page).to have_css(".mod-private-note", wait: 15)
-      shot("#{n}_panel_viewers_#{viewer_count}")
+  VIEWER_COUNTS = [0, 1, 2, 3, 5, 8, 12].freeze
+  VIEWER_COUNTS.each do |viewer_count|
+    VIEWER_ROLES.each do |role|
+      c_count += 1
+      n = format("C3%03d", c_count)
+      it "#{n} — mod-note panel: #{viewer_count} viewers role=#{role}" do
+        viewer = role == :admin ? admin : moderator
+        topic = Fabricate(:topic, category: category, title: "Panel with #{viewer_count} viewers")
+        Fabricate(:post, topic: topic, user: author, raw: "OP for viewers test.")
+        viewers =
+          Array.new(viewer_count) do |i|
+            u = Fabricate(:user, username: "viewer_#{viewer_count}_#{i}_#{role}")
+            {
+              "user_id" => u.id,
+              "username" => u.username,
+              "name" => u.name,
+              "avatar_template" => u.avatar_template,
+              "viewed_at" => (viewer_count - i).minutes.ago.iso8601,
+            }
+          end
+        topic.custom_fields["mod_topic_private_note"] = "Note with #{viewer_count} viewers."
+        topic.custom_fields["mod_topic_private_note_user_id"] = moderator.id
+        topic.custom_fields["mod_topic_note_viewers"] = viewers
+        topic.save_custom_fields(true)
+        sign_in(viewer)
+        visit("/t/#{topic.slug}/#{topic.id}")
+        expect(page).to have_css(".mod-private-note", wait: 15)
+        shot("#{n}_panel_viewers_#{viewer_count}_#{role}")
+      end
     end
   end
 
@@ -362,6 +408,26 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
   # ─────────────────────────────────────────────────────────────────────
   # E. Smart search dropdown / results
   # ─────────────────────────────────────────────────────────────────────
+
+  # Indexed smart search demos: enable SearchIndexer + reindex so synonym
+  # expansion produces actual results instead of "No results found".
+  SMART_SEARCH_TERMS = %w[kid behavior tantrum aba reinforcement noncompliance autism].freeze
+
+  SMART_SEARCH_TERMS.each_with_index do |term, idx|
+    n = format("E5%02d", 10 + idx)
+    it "#{n} — smart search results page with index for '#{term}'" do
+      SearchIndexer.enable
+      t = Fabricate(:topic, category: category, title: "Helping my child with morning routines")
+      p = Fabricate(:post, topic: t, user: author, raw: "Tips on child behavior and conduct.")
+      SearchIndexer.index(p, force: true)
+      SearchIndexer.index(t, force: true)
+      sign_in(admin)
+      visit("/search?q=#{term}")
+      expect(page).to have_css(".search-results, .search-container, .no-results", wait: 15)
+      shot("#{n}_smart_search_indexed_#{term}")
+      SearchIndexer.disable
+    end
+  end
 
   it "E501 — smart search: dropdown with synonym match (kid → child)" do
     t1 = Fabricate(:topic, category: category, title: "Helping my child with morning routines")
