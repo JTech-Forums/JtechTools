@@ -101,7 +101,18 @@ module ::DiscourseSmartSearch
       def wordnet_synonyms_for(key)
         return [] unless wordnet_available?
 
-        synonyms = Set.new([key])
+        # IMPORTANT: do NOT sort alphabetically. WordNet returns
+        # synsets in approximate frequency-of-use order — the FIRST
+        # synset for "bug" is the insect sense, but the third/fourth
+        # synsets contain the "defect/glitch/fault" senses that a
+        # tech-forum user actually wants. Alphabetical sort would put
+        # "badger" first (an annoy-verb peer of "bug"), which is
+        # nonsense as a search expansion. Preserve insertion order so
+        # the variant generator picks a synonym from a sense WordNet
+        # thinks is common. Words a user really cares about should
+        # also be hand-overridden in the YAML overlay anyway.
+        synonyms = [key]
+        seen = Set.new([key])
         # rwordnet API: `Lemma.find_all(word)` returns one Lemma per
         # part of speech the word appears as (noun, verb, adj, adv).
         # Each Lemma has `synsets` (senses); each Synset has `words`
@@ -111,17 +122,18 @@ module ::DiscourseSmartSearch
           .each do |lemma|
             lemma.synsets.each do |synset|
               synset.words.each do |w|
-                # rwordnet stores multi-word lemmas with underscores;
-                # also some entries are mixed-case proper nouns.
                 normalized = w.to_s.gsub("_", " ").downcase.strip
-                synonyms << normalized if normalized.length >= 2 && normalized.length <= 60
+                next unless normalized.length.between?(2, 60)
+                next if seen.include?(normalized)
+                seen << normalized
+                synonyms << normalized
                 break if synonyms.size >= MAX_SYNONYMS_PER_WORD
               end
               break if synonyms.size >= MAX_SYNONYMS_PER_WORD
             end
             break if synonyms.size >= MAX_SYNONYMS_PER_WORD
           end
-        synonyms.to_a.sort.freeze
+        synonyms.freeze
       rescue StandardError => e
         ::Rails.logger.warn(
           "[smart-search] WordNet lookup failed for #{key.inspect}: " \

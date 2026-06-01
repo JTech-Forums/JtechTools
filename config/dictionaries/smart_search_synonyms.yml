@@ -90,6 +90,18 @@
 - [vps, vm, virtualmachine]
 - [ap, accesspoint]
 
+# --- Device management / enterprise IT ---
+- [mdm, "mobile-device-management", "device-management"]
+- [emm, "enterprise-mobility-management"]
+- [byod, "bring-your-own-device"]
+- [rmm, "remote-monitoring-management"]
+- [siem, "security-information-event-management"]
+- [edr, endpoint-detection, "endpoint-protection"]
+- [sso, singlesignon, federated]
+- [ad, "active-directory"]
+- [ldap, directory]
+- [gpo, "group-policy"]
+
 # --- OSes / distros ---
 - [macos, osx]
 - [winnt, windows]
@@ -126,6 +138,21 @@
 - [jsonl, ndjson]
 - [tarball, tar]
 - [tsv, csv]
+
+# --- Tech-meaning overrides for ambiguous common English words ---
+# WordNet returns these words' synonyms across ALL senses including
+# unrelated ones (bug→badger, issue→consequence, setup→apparatus).
+# Override here with the senses a tech-forum user actually means.
+- [bug, defect, error, glitch, fault, "issue"]
+- [error, "issue", problem, fault, "exception"]
+- [crash, "error", failure, "exception"]
+- [fix, resolve, repair, patch]
+- [setup, configuration, installation, install, "configure"]
+- [config, configuration, settings, conf]
+- [problem, "issue", error, trouble]
+- [slow, sluggish, laggy]
+- [fast, "quick", responsive]
+- [broken, "broken", failed, failing]
 
 # --- Forum-specific shorthand ---
 - [op, originalpost]
