@@ -77,9 +77,12 @@ RSpec.describe ::DiscourseSmartSearch::Synonyms do
       after { described_class.instance_variable_set(:@wordnet_available, nil) }
 
       it "returns [word] for a general English word the overlay doesn't cover" do
-        # "bug" is NOT in the overlay (WordNet covers it). With WordNet
-        # marked unavailable, the lookup falls through to [key].
-        expect(described_class.for("bug")).to eq(["bug"])
+        # "happy" is NOT in the overlay (WordNet covers it). With
+        # WordNet marked unavailable, the lookup falls through to
+        # `[key]`. Earlier the test used "bug" but the overlay later
+        # gained a tech-meaning override for that word, so it now hits
+        # the overlay path first.
+        expect(described_class.for("happy")).to eq(["happy"])
       end
 
       it "still resolves overlay entries (tech jargon)" do
