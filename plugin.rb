@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # name: jtech-tools
-# about: Jtech — combined Discourse plugin (dislike, another-smtp, mini-mod, mod-categories, dumbcourse, translator-tweaks)
+# about: Jtech — combined Discourse plugin (dislike, another-smtp, mini-mod, mod-categories, dumbcourse, translator-tweaks, smart-search)
 # version: 0.1.1
 # authors: TripleU, Shalom_Karr, Ars18
 # url: https://github.com/JTech-Forums/JtechTools
@@ -9,7 +9,8 @@
 
 # Master gate. Each sub-plugin keeps its own enable setting (e.g.
 # discourse_no_likes_enabled, mini_mod_enabled, mod_categories_enabled,
-# dumbcourse_enabled, discourse_another_email_enabled) for fine-grained control.
+# dumbcourse_enabled, discourse_another_email_enabled, smart_search_enabled)
+# for fine-grained control.
 enabled_site_setting :jtech_enabled
 
 # Load each sub-plugin's body in the Plugin::Instance context so that all
