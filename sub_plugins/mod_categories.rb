@@ -1029,18 +1029,23 @@ after_initialize do
     next if system_user && user.id == system_user.id
 
     topic = post.topic
-    DiscourseModCategories::StaffNotifier.fan_out(
-      acting_user: user,
-      kind: DiscourseModCategories::StaffNotifier::KIND_POST_DELETED,
-      message_key: "discourse_mod_categories.post_deleted_notification",
-      title_key: "discourse_mod_categories.post_deleted_notification_title",
-      alert_key: "discourse_mod_categories.post_deleted_notification_alert",
-      url: topic ? "#{topic.relative_url}/#{post.post_number}" : "/",
-      excerpt: post.raw.to_s,
-      topic_id: topic&.id,
-      post_number: post.post_number,
-      topic_title: topic&.title,
-    )
+    begin
+      DiscourseModCategories::StaffNotifier.fan_out(
+        acting_user: user,
+        kind: DiscourseModCategories::StaffNotifier::KIND_POST_DELETED,
+        message_key: "discourse_mod_categories.post_deleted_notification",
+        title_key: "discourse_mod_categories.post_deleted_notification_title",
+        alert_key: "discourse_mod_categories.post_deleted_notification_alert",
+        url: topic ? "#{topic.relative_url}/#{post.post_number}" : "/",
+        excerpt: post.raw.to_s,
+        topic_id: topic&.id,
+        post_number: post.post_number,
+        topic_title: topic&.title,
+      )
+    rescue StandardError => e
+      # The notify side effect must never block the underlying delete.
+      ::Rails.logger.warn("[jtech-tools] post_destroyed notify failed: #{e.class}: #{e.message}")
+    end
   end
 
   # 1b. Queued post approved out of the review queue. `reviewed_by` is
@@ -1062,18 +1067,22 @@ after_initialize do
         "/review/#{reviewable.id}"
       end
 
-    DiscourseModCategories::StaffNotifier.fan_out(
-      acting_user: acting_user,
-      kind: DiscourseModCategories::StaffNotifier::KIND_POST_APPROVED,
-      message_key: "discourse_mod_categories.post_approved_notification",
-      title_key: "discourse_mod_categories.post_approved_notification_title",
-      alert_key: "discourse_mod_categories.post_approved_notification_alert",
-      url: url,
-      excerpt: created_post&.raw.to_s,
-      topic_id: topic&.id,
-      post_number: created_post&.post_number,
-      topic_title: topic&.title,
-    )
+    begin
+      DiscourseModCategories::StaffNotifier.fan_out(
+        acting_user: acting_user,
+        kind: DiscourseModCategories::StaffNotifier::KIND_POST_APPROVED,
+        message_key: "discourse_mod_categories.post_approved_notification",
+        title_key: "discourse_mod_categories.post_approved_notification_title",
+        alert_key: "discourse_mod_categories.post_approved_notification_alert",
+        url: url,
+        excerpt: created_post&.raw.to_s,
+        topic_id: topic&.id,
+        post_number: created_post&.post_number,
+        topic_title: topic&.title,
+      )
+    rescue StandardError => e
+      ::Rails.logger.warn("[jtech-tools] approved_post notify failed: #{e.class}: #{e.message}")
+    end
   end
 
   # 1c. Queued post rejected from the review queue. Same `reviewed_by`
@@ -1091,15 +1100,19 @@ after_initialize do
     # text for the excerpt.
     excerpt = reviewable.payload.is_a?(Hash) ? reviewable.payload["raw"].to_s : ""
 
-    DiscourseModCategories::StaffNotifier.fan_out(
-      acting_user: acting_user,
-      kind: DiscourseModCategories::StaffNotifier::KIND_POST_REJECTED,
-      message_key: "discourse_mod_categories.post_rejected_notification",
-      title_key: "discourse_mod_categories.post_rejected_notification_title",
-      alert_key: "discourse_mod_categories.post_rejected_notification_alert",
-      url: "/review/#{reviewable.id}",
-      excerpt: excerpt,
-    )
+    begin
+      DiscourseModCategories::StaffNotifier.fan_out(
+        acting_user: acting_user,
+        kind: DiscourseModCategories::StaffNotifier::KIND_POST_REJECTED,
+        message_key: "discourse_mod_categories.post_rejected_notification",
+        title_key: "discourse_mod_categories.post_rejected_notification_title",
+        alert_key: "discourse_mod_categories.post_rejected_notification_alert",
+        url: "/review/#{reviewable.id}",
+        excerpt: excerpt,
+      )
+    rescue StandardError => e
+      ::Rails.logger.warn("[jtech-tools] rejected_post notify failed: #{e.class}: #{e.message}")
+    end
   end
 
   # 2. User note added on a user's profile via the bundled
@@ -1181,16 +1194,22 @@ after_initialize do
         target_label =
           target_user&.username || reviewable.type.to_s.sub(/^Reviewable/, "")
 
-        DiscourseModCategories::StaffNotifier.fan_out(
-          acting_user: author,
-          kind: DiscourseModCategories::StaffNotifier::KIND_FLAG_NOTE,
-          message_key: "discourse_mod_categories.flag_note_notification",
-          title_key: "discourse_mod_categories.flag_note_notification_title",
-          alert_key: "discourse_mod_categories.flag_note_notification_alert",
-          url: "/review/#{reviewable.id}",
-          excerpt: content.to_s,
-          target_username: target_label,
-        )
+        begin
+          DiscourseModCategories::StaffNotifier.fan_out(
+            acting_user: author,
+            kind: DiscourseModCategories::StaffNotifier::KIND_FLAG_NOTE,
+            message_key: "discourse_mod_categories.flag_note_notification",
+            title_key: "discourse_mod_categories.flag_note_notification_title",
+            alert_key: "discourse_mod_categories.flag_note_notification_alert",
+            url: "/review/#{reviewable.id}",
+            excerpt: content.to_s,
+            target_username: target_label,
+          )
+        rescue StandardError => e
+          ::Rails.logger.warn(
+            "[jtech-tools] flag_note notify failed: #{e.class}: #{e.message}",
+          )
+        end
       end
     end
   end

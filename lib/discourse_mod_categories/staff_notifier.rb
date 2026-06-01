@@ -22,6 +22,17 @@ module ::DiscourseModCategories
 
     # `acting_user` is excluded from recipients so the moderator who
     # performed the action does not get their own notification.
+    #
+    # The entire method body is wrapped in `rescue StandardError` so the
+    # underlying moderator action (the post delete, the queued-post
+    # approve, the ReviewableNote insert, the user-note save) NEVER 500s
+    # because the staff fan-out had a problem. Notifications are
+    # best-effort by design; the user's action must succeed regardless.
+    # The rescue is intentionally swallowing — a broken notifier should
+    # log and let the request return 2xx, not bubble out to the
+    # controller. Specs in spec/requests/staff_event_integration_spec.rb
+    # exercise this contract by injecting `fan_out` raises and asserting
+    # the user's endpoint still returns success.
     def self.fan_out(
       acting_user:,
       kind:,
@@ -79,6 +90,11 @@ module ::DiscourseModCategories
           )
           staff_user.publish_notifications_state
         end
+    rescue StandardError => e
+      ::Rails.logger.warn(
+        "[jtech-tools] staff_notifier fan_out (#{kind}) failed: #{e.class}: #{e.message}",
+      )
+      nil
     end
 
     def self.publish_alert(
