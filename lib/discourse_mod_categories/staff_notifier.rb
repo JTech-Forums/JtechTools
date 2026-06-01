@@ -66,13 +66,15 @@ module ::DiscourseModCategories
           # the legitimate "moderator added two real notes in a row"
           # case, which still creates distinct rows because the second
           # is anchored on a different reply_id / different note row.
-          next if recent_duplicate?(
-                    staff_user: staff_user,
-                    kind: kind,
-                    topic_id: topic_id,
-                    post_number: post_number,
-                    url: url,
-                  )
+          if recent_duplicate?(
+               staff_user: staff_user,
+               kind: kind,
+               topic_id: topic_id,
+               post_number: post_number,
+               url: url,
+             )
+            next
+          end
 
           data = {
             display_username: acting_username,
