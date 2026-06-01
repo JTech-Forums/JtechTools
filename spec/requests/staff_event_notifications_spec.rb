@@ -173,6 +173,47 @@ RSpec.describe "Staff event notifications" do
     end
   end
 
+  describe "reviewable transitions (queued post approve / reject)" do
+    fab!(:reviewable_queued, :reviewable_queued_post)
+
+    it "fans out a post_approved notification on :reviewable_transitioned_to(:approved)" do
+      reviewable_queued.update_columns(reviewed_by_id: moderator.id)
+      DiscourseEvent.trigger(:reviewable_transitioned_to, :approved, reviewable_queued.reload)
+
+      expect(staff_notifications(admin, kind: "post_approved").count).to eq(1)
+      expect(staff_notifications(other_moderator, kind: "post_approved").count).to eq(1)
+      expect(staff_notifications(moderator, kind: "post_approved").count).to eq(0)
+    end
+
+    it "fans out a post_rejected notification on :reviewable_transitioned_to(:rejected)" do
+      reviewable_queued.update_columns(reviewed_by_id: moderator.id)
+      DiscourseEvent.trigger(:reviewable_transitioned_to, :rejected, reviewable_queued.reload)
+
+      data = JSON.parse(staff_notifications(admin, kind: "post_rejected").first.data)
+      expect(data["url"]).to eq("/review/#{reviewable_queued.id}")
+      expect(data["display_username"]).to eq(moderator.username)
+    end
+
+    it "skips for non-queued reviewable types", if: defined?(ReviewableFlaggedPost) do
+      flag = Fabricate(:reviewable_flagged_post)
+      flag.update_columns(reviewed_by_id: moderator.id)
+      DiscourseEvent.trigger(:reviewable_transitioned_to, :approved, flag.reload)
+
+      # Flag reviewables have their own notification chain; this hook
+      # is gated to ReviewableQueuedPost only.
+      expect(staff_notifications(admin, kind: "post_approved").count).to eq(0)
+    end
+
+    it "skips when mod_notify_staff_on_post_actions is off" do
+      SiteSetting.mod_notify_staff_on_post_actions = false
+      reviewable_queued.update_columns(reviewed_by_id: moderator.id)
+
+      DiscourseEvent.trigger(:reviewable_transitioned_to, :approved, reviewable_queued.reload)
+
+      expect(staff_notifications(admin, kind: "post_approved").count).to eq(0)
+    end
+  end
+
   describe "user notes", if: defined?(::DiscourseUserNotes) do
     it "notifies every other staff member when DiscourseUserNotes.add_note runs" do
       ::DiscourseUserNotes.add_note(user, "Heads up about this user.", moderator.id)
