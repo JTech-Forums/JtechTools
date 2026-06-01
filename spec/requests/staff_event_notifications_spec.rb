@@ -36,6 +36,94 @@ RSpec.describe "Staff event notifications" do
     scope.where("data LIKE ?", "%\"mod_note\":true%")
   end
 
+  describe "deduplication" do
+    it "does not create a second row when the same event fires twice within 30s" do
+      PostDestroyer.new(moderator, post).destroy
+
+      # Second :post_destroyed for the same post within the dedup window —
+      # simulated by re-triggering the event payload directly.
+      DiscourseEvent.trigger(:post_destroyed, post, {}, moderator)
+
+      expect(staff_notifications(admin, kind: "post_deleted").count).to eq(1)
+    end
+
+    it "creates a fresh row when the second event fires past the dedup window" do
+      PostDestroyer.new(moderator, post).destroy
+      first = staff_notifications(admin, kind: "post_deleted").first
+      # Backdate the existing row outside the 30s window.
+      Notification.where(id: first.id).update_all(created_at: 5.minutes.ago)
+
+      DiscourseEvent.trigger(:post_destroyed, post, {}, moderator)
+
+      expect(staff_notifications(admin, kind: "post_deleted").count).to eq(2)
+    end
+
+    it "still creates distinct rows for two real deletions on different posts" do
+      other_post = Fabricate(:post, topic: topic, user: user)
+      PostDestroyer.new(moderator, post).destroy
+      PostDestroyer.new(moderator, other_post).destroy
+
+      expect(staff_notifications(admin, kind: "post_deleted").count).to eq(2)
+    end
+
+    it "treats two flag notes on the same reviewable as distinct events", if: defined?(ReviewableNote) do
+      reviewable = Fabricate(:reviewable_flagged_post)
+
+      ReviewableNote.create!(reviewable: reviewable, user: moderator, content: "First note.")
+      ReviewableNote.create!(reviewable: reviewable, user: moderator, content: "Second note.")
+
+      # Both notes share the same URL (/review/:id), so the URL-based
+      # dedup window would collapse them. That's the documented trade-
+      # off — back-to-back notes on the same reviewable get one bell row.
+      expect(staff_notifications(admin, kind: "flag_note").count).to eq(1)
+    end
+  end
+
+  describe "click → mark-as-read" do
+    it "marks a topic-anchored mod_note notification read when the topic is opened" do
+      acting = Fabricate(:moderator)
+      sign_in(acting)
+      put "/discourse-mod-categories/topic/#{topic.id}.json", params: { private_note: "x" }
+      sign_out
+
+      sign_in(moderator)
+      expect(staff_notifications(moderator, kind: "note").where(read: false).count).to eq(1)
+
+      post "/discourse-mod-categories/topic/#{topic.id}/notifications-seen.json"
+
+      expect(response.status).to be_between(200, 299)
+      expect(staff_notifications(moderator, kind: "note").where(read: false).count).to eq(0)
+    end
+
+    it "marks non-topic mod_note rows read when the shield tab is opened" do
+      # post_rejected URL is /review/:id — no topic open path catches it,
+      # so the shield-tab open is the canonical mark-read for non-topic
+      # kinds. Drive a notification of that kind then hit notes_feed_seen.
+      Notification.create!(
+        notification_type: Notification.types[:custom],
+        user_id: moderator.id,
+        high_priority: true,
+        data: {
+          mod_note: true,
+          mod_note_kind: "post_rejected",
+          display_username: "someone",
+          url: "/review/123",
+          message: "discourse_mod_categories.post_rejected_notification",
+        }.to_json,
+      )
+
+      sign_in(moderator)
+      post "/discourse-mod-categories/notes-feed/seen.json"
+
+      expect(response.status).to be_between(200, 299)
+      expect(
+        Notification.where(user_id: moderator.id, read: false)
+          .where("data LIKE ?", "%\"mod_note_kind\":\"post_rejected\"%")
+          .count,
+      ).to eq(0)
+    end
+  end
+
   describe "post actions" do
     it "notifies every other staff member when a moderator deletes a post" do
       PostDestroyer.new(moderator, post).destroy

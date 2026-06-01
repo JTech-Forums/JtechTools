@@ -87,6 +87,17 @@ RSpec.describe "Smart search" do
       expect(result.posts.map(&:id)).not_to include(child_post.id)
     end
 
+    it "still returns vanilla results when Synonyms.for raises" do
+      allow(::DiscourseSmartSearch::Synonyms).to receive(:for).and_raise("boom")
+      kid_topic = Fabricate(:topic, category: category, title: "kid")
+      kid_post = Fabricate(:post, topic: kid_topic, user: user, raw: "kid kid kid kid")
+      reindex(kid_post)
+
+      result = ::Search.execute("kid")
+      # Vanilla search result must still be returned untouched.
+      expect(result.posts.map(&:id)).to include(kid_post.id)
+    end
+
     it "still returns vanilla results when QueryExpander raises" do
       allow(::DiscourseSmartSearch::QueryExpander).to receive(:variants).and_raise("boom")
       kid_topic = Fabricate(:topic, category: category, title: "Asking a kid")

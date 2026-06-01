@@ -6,11 +6,21 @@ module ::DiscourseSmartSearch
   # posts — runs each synonym-expanded variant and merges the new posts
   # into the base result set.
   #
-  # The entire expansion path is wrapped in `rescue StandardError` so a
-  # malformed dictionary, a Postgres-level error on a variant query, or
-  # any future Discourse refactor of `Search#execute` cannot break the
-  # user's search. On any failure we log and return the original result
-  # unchanged — search degrades to vanilla, never to broken.
+  # FALLBACK CONTRACT:
+  # The vanilla `super` runs FIRST and its result is captured in `base`
+  # before any smart-search code runs. From that point on, every smart-
+  # search code path — dictionary lookup, variant generation, inner
+  # variant search, merge — is wrapped in `rescue StandardError` and on
+  # any failure we return `base` (the vanilla result) unchanged. A
+  # broken dictionary, a Postgres error on a variant query, a future
+  # Discourse refactor of `Search#execute`, an exception in Synonyms.for,
+  # a SiteSetting read failure — none of these can cause `Search.execute`
+  # to raise. Search degrades to vanilla, never to broken.
+  #
+  # The only path that can still raise is the original `super` itself —
+  # i.e. if vanilla Discourse search is broken, we cannot rescue that.
+  # That's correct: smart-search isn't a circuit breaker for core
+  # Discourse, only for its own expansion code.
   #
   # Recursion is prevented by setting `@opts[:smart_search_disable]`
   # when constructing the inner Search instances; the prepend rechecks

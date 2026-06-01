@@ -56,6 +56,24 @@ module ::DiscourseModCategories
         .or(::User.where(moderator: true))
         .where.not(id: acting_user.id)
         .find_each do |staff_user|
+          # Idempotency check: skip when this staff member already has a
+          # mod-note notification of the same kind anchored on the same
+          # target (topic+post for topic-anchored kinds, URL for review/
+          # user-notes kinds) created in the last 30 seconds. Protects
+          # against the event hook firing twice in quick succession
+          # (event-bus retry, a future Discourse refactor calling the
+          # event twice, race with another plugin) without suppressing
+          # the legitimate "moderator added two real notes in a row"
+          # case, which still creates distinct rows because the second
+          # is anchored on a different reply_id / different note row.
+          next if recent_duplicate?(
+                    staff_user: staff_user,
+                    kind: kind,
+                    topic_id: topic_id,
+                    post_number: post_number,
+                    url: url,
+                  )
+
           data = {
             display_username: acting_username,
             mod_note: true,
@@ -131,6 +149,37 @@ module ::DiscourseModCategories
         payload,
         user_ids: [staff_user.id],
       )
+    end
+
+    # True when an identical-target mod_note notification was already
+    # created for this staff user in the last 30 seconds. The data-
+    # column LIKE filter is stable enough because the JSON keys are
+    # written in a fixed order by `to_json` on a literal hash. Failure
+    # to find a match falls through to creating a fresh row — dedup
+    # MUST be conservative so legitimate distinct events still surface.
+    def self.recent_duplicate?(staff_user:, kind:, topic_id:, post_number:, url:)
+      scope =
+        ::Notification
+          .where(user_id: staff_user.id, notification_type: ::Notification.types[:custom])
+          .where("created_at > ?", 30.seconds.ago)
+          .where("data LIKE ?", "%\"mod_note_kind\":\"#{kind}\"%")
+
+      if topic_id
+        scope = scope.where(topic_id: topic_id)
+        scope = scope.where(post_number: post_number) if post_number
+      elsif url.present?
+        # Escape `%` and `_` in the URL so a target id like "1_2" can't
+        # match an unrelated URL with the wildcard semantics of LIKE.
+        safe_url = url.to_s.gsub("\\", "\\\\\\\\").gsub("%", '\\%').gsub("_", '\\_')
+        scope = scope.where("data LIKE ?", "%\"url\":\"#{safe_url}\"%")
+      end
+
+      scope.exists?
+    rescue StandardError => e
+      ::Rails.logger.warn(
+        "[jtech-tools] staff_notifier recent_duplicate? check failed: #{e.class}: #{e.message}",
+      )
+      false
     end
   end
 end
