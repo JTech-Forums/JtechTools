@@ -89,7 +89,7 @@ RSpec.describe "Staff event notifications" do
       sign_in(moderator)
       expect(staff_notifications(moderator, kind: "note").where(read: false).count).to eq(1)
 
-      post "/discourse-mod-categories/topic/#{topic.id}/notifications-seen.json"
+      post "/discourse-mod-categories/topic/#{topic.id}/notifications/seen.json"
 
       expect(response.status).to be_between(200, 299)
       expect(staff_notifications(moderator, kind: "note").where(read: false).count).to eq(0)

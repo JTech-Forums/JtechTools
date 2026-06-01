@@ -1067,72 +1067,73 @@ after_initialize do
   # `reviewed_by_id`, and find the acting user via `reviewed_by_id`
   # with a `ReviewableHistory` fallback so it works on Discourse
   # versions where the column is absent or unset.
-  reloadable_patch do
-    if defined?(::Reviewable)
-      # `after_update` (not `after_update_commit`) so the callback fires
-      # inside the request's transaction and is observable from request
-      # specs with transactional fixtures. The downside — firing when
-      # the outer transaction later rolls back — is acceptable because
-      # the controller commits the row before returning a successful
-      # response. Same pattern as the ReviewableNote `after_create`
-      # callback below.
-      ::Reviewable.after_update do
-        next unless SiteSetting.mod_categories_enabled
-        next unless SiteSetting.mod_notify_staff_on_post_actions
-        next unless saved_change_to_status?
-        # Only queued-post reviewables — flag/user reviewables have
-        # their own notification chain.
-        next unless type == "ReviewableQueuedPost"
+  # `:reviewable_transitioned_to` fires AFTER Reviewable#perform has
+  # set status + reviewed_by_id and saved the record, with the status
+  # passed as a symbol (`:approved`, `:rejected`, …). This is the right
+  # hook — the previous attempts (`:approved_post`/`:rejected_post`
+  # events + `reviewable.reviewed_by`, then `Reviewable.after_update`)
+  # both failed because the inner events fire before reviewed_by_id is
+  # set, and the queued-post status update path in this Discourse
+  # version doesn't reliably invoke after_update callbacks.
+  on(:reviewable_transitioned_to) do |status, reviewable|
+    next unless SiteSetting.mod_categories_enabled
+    next unless SiteSetting.mod_notify_staff_on_post_actions
+    next if reviewable.blank?
+    # Only queued-post reviewables — flag/user reviewables transition
+    # through this event too but have their own notification chain.
+    next unless reviewable.type == "ReviewableQueuedPost"
 
-        kind, message_key, title_key, alert_key =
-          if status == ::Reviewable.statuses[:approved]
-            [
-              ::DiscourseModCategories::StaffNotifier::KIND_POST_APPROVED,
-              "discourse_mod_categories.post_approved_notification",
-              "discourse_mod_categories.post_approved_notification_title",
-              "discourse_mod_categories.post_approved_notification_alert",
-            ]
-          elsif status == ::Reviewable.statuses[:rejected]
-            [
-              ::DiscourseModCategories::StaffNotifier::KIND_POST_REJECTED,
-              "discourse_mod_categories.post_rejected_notification",
-              "discourse_mod_categories.post_rejected_notification_title",
-              "discourse_mod_categories.post_rejected_notification_alert",
-            ]
-          end
-        next if kind.blank?
-
-        # reviewed_by_id is set by Reviewable#perform after the inner
-        # perform_* method returns. Fall back to the latest history
-        # entry's created_by when the column is unset, so we still find
-        # the acting moderator on Discourse versions that don't write
-        # reviewed_by_id directly.
-        acting_user_id =
-          (respond_to?(:reviewed_by_id) && reviewed_by_id) ||
-            ::ReviewableHistory.where(reviewable_id: id).order(:created_at).last&.created_by_id
-        next if acting_user_id.blank?
-
-        acting_user = ::User.find_by(id: acting_user_id)
-        next if acting_user.blank?
-
-        excerpt = payload.is_a?(::Hash) ? payload["raw"].to_s : ""
-
-        begin
-          ::DiscourseModCategories::StaffNotifier.fan_out(
-            acting_user: acting_user,
-            kind: kind,
-            message_key: message_key,
-            title_key: title_key,
-            alert_key: alert_key,
-            url: "/review/#{id}",
-            excerpt: excerpt,
-          )
-        rescue StandardError => e
-          ::Rails.logger.warn(
-            "[jtech-tools] reviewable transition notify (#{kind}) failed: #{e.class}: #{e.message}",
-          )
-        end
+    kind, message_key, title_key, alert_key =
+      case status
+      when :approved
+        [
+          DiscourseModCategories::StaffNotifier::KIND_POST_APPROVED,
+          "discourse_mod_categories.post_approved_notification",
+          "discourse_mod_categories.post_approved_notification_title",
+          "discourse_mod_categories.post_approved_notification_alert",
+        ]
+      when :rejected
+        [
+          DiscourseModCategories::StaffNotifier::KIND_POST_REJECTED,
+          "discourse_mod_categories.post_rejected_notification",
+          "discourse_mod_categories.post_rejected_notification_title",
+          "discourse_mod_categories.post_rejected_notification_alert",
+        ]
       end
+    next if kind.blank?
+
+    # Acting user lookup: prefer the reviewed_by_id column (set by
+    # Reviewable#perform just before save), fall back to the latest
+    # history's created_by for Discourse versions where the column is
+    # absent or unset.
+    acting_user_id =
+      (reviewable.respond_to?(:reviewed_by_id) && reviewable.reviewed_by_id) ||
+        ::ReviewableHistory
+          .where(reviewable_id: reviewable.id)
+          .order(:created_at)
+          .last
+          &.created_by_id
+    next if acting_user_id.blank?
+
+    acting_user = ::User.find_by(id: acting_user_id)
+    next if acting_user.blank?
+
+    excerpt = reviewable.payload.is_a?(Hash) ? reviewable.payload["raw"].to_s : ""
+
+    begin
+      DiscourseModCategories::StaffNotifier.fan_out(
+        acting_user: acting_user,
+        kind: kind,
+        message_key: message_key,
+        title_key: title_key,
+        alert_key: alert_key,
+        url: "/review/#{reviewable.id}",
+        excerpt: excerpt,
+      )
+    rescue StandardError => e
+      ::Rails.logger.warn(
+        "[jtech-tools] reviewable transition notify (#{kind}) failed: #{e.class}: #{e.message}",
+      )
     end
   end
 
