@@ -1,0 +1,135 @@
+name: Comprehensive Screenshots
+
+# Broad-coverage screenshot suite for visual review. Parameterizes
+# scenarios across kinds × lengths × roles × panel states, producing
+# ~77 PNGs uploaded as a single artifact. The spec is gated by
+# JTECH_COMPREHENSIVE_SHOTS=1 so it does NOT run in ordinary CI; this
+# workflow is the one entry point.
+#
+# Runtime: ~12-15 min. Trigger via:
+#   gh workflow run "Comprehensive Screenshots" --ref <branch> --repo Shalom-Karr/JtechTools
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    name: comprehensive_screenshots
+    runs-on: ubuntu-latest
+    container: discourse/discourse_test:slim-browsers
+    timeout-minutes: 40
+
+    env:
+      RUBY_GLOBAL_METHOD_CACHE_SIZE: 131072
+      RAILS_ENV: test
+      PGUSER: discourse
+      PGPASSWORD: discourse
+      PLUGIN_NAME: jtech-tools
+      CHEAP_SOURCE_MAPS: "1"
+      MINIO_RUNNER_LOG_LEVEL: DEBUG
+      MINIO_RUNNER_INSTALL_DIR: /home/discourse/.minio_runner
+      USES_PARALLEL_DATABASES: "false"
+      PARALLEL_TEST_PROCESSORS: 1
+      LOAD_PLUGINS: 1
+      CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
+      JTECH_COMPREHENSIVE_SHOTS: "1"
+
+    steps:
+      - name: Set working directory owner
+        run: chown root:root .
+
+      - name: Checkout Discourse
+        uses: actions/checkout@v6
+        with:
+          repository: discourse/discourse
+          fetch-depth: 1
+          ref: latest
+
+      - name: Install plugin
+        uses: actions/checkout@v6
+        with:
+          path: plugins/${{ env.PLUGIN_NAME }}
+          fetch-depth: 1
+
+      - name: Setup Git
+        run: |
+          git config --global user.email "ci@ci.invalid"
+          git config --global user.name "Discourse CI"
+
+      - name: Start redis
+        run: redis-server /etc/redis/redis.conf &
+
+      - name: Start Postgres
+        run: |
+          chown -R postgres /var/run/postgresql
+          sudo -E -u postgres script/start_test_db.rb
+          sudo -u postgres psql -c "CREATE ROLE $PGUSER LOGIN SUPERUSER PASSWORD '$PGPASSWORD';"
+
+      - name: Container envs
+        id: container-envs
+        run: |
+          echo "ruby_version=$RUBY_VERSION" >> $GITHUB_OUTPUT
+          echo "debian_release=$DEBIAN_RELEASE" >> $GITHUB_OUTPUT
+
+      - name: Bundler cache
+        uses: actions/cache@v5
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-${{ steps.container-envs.outputs.ruby_version }}-${{ steps.container-envs.outputs.debian_release }}-gem-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ steps.container-envs.outputs.ruby_version }}-${{ steps.container-envs.outputs.debian_release }}-gem-
+
+      - name: Setup gems
+        run: |
+          bundle config --local path vendor/bundle
+          bundle config --local deployment true
+          bundle config --local without development
+          bundle install --jobs 4
+          bundle clean
+
+      - name: Install JS Dependencies
+        run: if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else pnpm install --frozen-lockfile; fi
+
+      - name: Install playwright
+        run: |
+          if pnpm playwright -V; then
+            pnpm playwright install --with-deps --no-shell chromium
+          fi
+
+      - name: Create and migrate database
+        run: |
+          bin/rake db:create
+          bin/rake db:migrate
+
+      - name: Ember Build
+        env:
+          EMBER_ENV: development
+        run: |
+          if [ -f script/assemble_ember_build.rb ]; then
+            export DISCOURSE_DOWNLOAD_PRE_BUILT_ASSETS=$(bin/rails runner 'puts(Discourse.has_needed_version?(Discourse::VERSION::STRING, "2026.3.0-latest") ? 1 : 0)')
+            script/assemble_ember_build.rb
+          else
+            bin/ember-cli --build
+          fi
+
+      - name: Add hosts to /etc/hosts (Chrome can reach minio)
+        run: |
+          echo "127.0.0.1 minio.local" | sudo tee -a /etc/hosts
+          echo "127.0.0.1 discoursetest.minio.local" | sudo tee -a /etc/hosts
+
+      - name: Run comprehensive-screenshots spec
+        run: |
+          bundle exec rspec \
+            --format documentation \
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/comprehensive_screenshots_spec.rb
+        continue-on-error: true
+
+      - name: Upload comprehensive screenshots (always)
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: comprehensive-screenshots
+          path: |
+            tmp/capybara/comprehensive_screenshots/*.png
+            tmp/capybara/*.png
+          if-no-files-found: warn
