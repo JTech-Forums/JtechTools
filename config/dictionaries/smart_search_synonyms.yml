@@ -1,74 +1,140 @@
-# Built-in synonym dictionary for the smart_search sub-plugin.
+# Smart-search tech-jargon overlay.
 #
-# Each row is a SYMMETRIC group — every word in the group is considered a
-# synonym of every other word in the group. The first word per row is
-# also the canonical "lookup head", but the smart_search lookup is order-
-# independent at runtime.
+# Only entries WordNet DOESN'T know go here — abbreviations, brand names,
+# protocol initialisms, and other shop-floor vocabulary. General English
+# (bug ↔ defect ↔ glitch, fast ↔ quick ↔ rapid, …) is handled by the
+# WordNet backend automatically; adding those words here would only
+# create maintenance debt without improving recall.
 #
 # Editing notes:
-#   * All entries MUST be lowercase ASCII. The expander downcases at
-#     lookup time, so adding "Kid" here would be dead weight.
-#   * Avoid groups longer than ~6 words — every extra word increases the
-#     odds of an irrelevant match without proportionally improving recall.
-#   * Don't group words that share spelling but not meaning ("bark" the
-#     tree vs the dog) — that introduces false positives the user can't
-#     turn off without disabling the whole plugin.
-#   * The ABA-domain block is the highest-value section for this forum;
-#     general English groups are kept short to avoid noise.
+#   * All entries MUST be lowercase ASCII. Lookup downcases at query
+#     time.
+#   * Symmetric: every word in a row is a synonym of every other word
+#     in that row.
+#   * Avoid groups longer than ~6 words — extras dilute precision.
+#   * Don't group words that share spelling but not meaning.
+#   * Verify with `DiscourseSmartSearch::Synonyms.for("your-word")` in
+#     a Rails console after restart.
 
-# --- General English ---
-- [kid, child, youth, minor, juvenile]
-- [parent, caregiver, guardian, mom, dad]
-- [listen, comply, obey, follow]
-- [behavior, behaviour, conduct, action]
-- [tantrum, meltdown, outburst, fit]
-- [angry, mad, upset, frustrated]
-- [happy, glad, pleased, content]
-- [problem, issue, concern, trouble]
-- [help, assist, support, aid]
-- [teach, train, instruct, educate]
-- [reward, reinforcer, incentive]
-- [punishment, consequence, penalty]
-- [strategy, approach, method, technique]
-- [goal, objective, target, aim]
-- [progress, improvement, gain, growth]
-- [school, classroom, academy]
-- [home, house, household, residence]
+# --- Languages (abbreviations ↔ full names) ---
+- [js, javascript, node, nodejs]
+- [ts, typescript]
+- [py, python, python3]
+- [rb, ruby]
+- [cpp, cplusplus, c++]
+- [csharp, "c#", dotnet]
+- [go, golang]
+- [rs, rust]
+- [kt, kotlin]
+- [sh, bash, shell]
+- [pwsh, powershell]
 
-# --- ABA / behavior analysis jargon ---
-- [aba, applied behavior analysis]
-- [sib, self-injury, self-injurious behavior]
-- [mo, motivating operation, establishing operation, eo]
-- [abc, antecedent behavior consequence]
-- [rbt, technician, behavior technician]
-- [bcba, analyst, behavior analyst, supervisor]
-- [bip, behavior intervention plan, behavior plan]
-- [fba, functional behavior assessment, functional assessment]
-- [dtt, discrete trial training, discrete trial]
-- [net, natural environment teaching, natural environment training]
-- [vb, verbal behavior]
-- [pecs, picture exchange communication system]
-- [aac, augmentative alternative communication]
-- [iep, individualized education program, individualized education plan]
-- [ifsp, individualized family service plan]
-- [prompt, cue, hint]
-- [prompting, cueing, fading]
-- [reinforcement, reward, positive reinforcement]
-- [extinction, ignore, planned ignoring]
-- [redirect, redirection, divert]
-- [escape, avoidance, escape behavior]
-- [attention, attention-seeking, attention seeking]
-- [stim, stimming, stereotypy, self-stimulation]
-- [elopement, eloping, running away, wandering]
-- [aggression, aggressive behavior, hitting, biting]
-- [noncompliance, non-compliance, refusal, defiance]
-- [transition, transitioning, changeover]
-- [generalization, generalisation, transfer]
-- [maintenance, retention, durability]
-- [data, datasheet, data collection, tracking]
-- [graph, chart, visualization, visualisation]
-- [baseline, pre-intervention, pre-treatment]
-- [autism, asd, autistic, autism spectrum disorder]
-- [therapy, therapeutic, treatment, intervention]
-- [session, appointment, visit]
-- [client, learner, student, kiddo]
+# --- Frameworks / runtimes ---
+- [reactjs, react]
+- [vuejs, vue]
+- [nextjs, next]
+- [angularjs, angular]
+- [sveltekit, svelte]
+- [expressjs, express]
+- [rails, ror, rubyonrails]
+- [springboot, spring]
+- [discoursecore, discourse]
+
+# --- DevOps / cloud / containers ---
+- [k8s, kubernetes, kube]
+- [tf, terraform, opentofu]
+- [oci, dockerfile]
+- [gha, githubactions]
+- [gh, github]
+- [glab, gitlab]
+- [cicd, ci, continuous-integration]
+- [iac, infrastructureascode]
+- [faas, serverless, lambda]
+- [k3s, k0s, microk8s]
+
+# --- Cloud providers ---
+- [aws, amazonws]
+- [gcp, googlecloud]
+- [az, azure]
+- [do, digitalocean]
+
+# --- Databases ---
+- [pg, postgres, postgresql, psql]
+- [mariadb, mysql]
+- [nosql, mongodb, mongo]
+- [es, elasticsearch, elastic, opensearch]
+- [redis, valkey]
+- [sqlite, sqlite3]
+
+# --- Networking / protocols ---
+- [dns, nameserver]
+- [tls, ssl]
+- [http, hypertext]
+- [https, http-secure]
+- [ws, websocket]
+- [grpc, http2-rpc]
+- [rest, restful]
+- [gql, graphql]
+- [cdn, edge]
+- [vpc, virtualprivatecloud]
+- [vpn, wireguard]
+- [ipv4, ipv6]
+
+# --- Hardware abbreviations ---
+- [pc, desktop, rig]
+- [cpu, processor]
+- [gpu, videocard]
+- [ram, memory]
+- [ssd, solidstatedrive]
+- [hdd, harddrive, harddisk]
+- [vps, vm, virtualmachine]
+- [ap, accesspoint]
+
+# --- OSes / distros ---
+- [macos, osx]
+- [winnt, windows]
+- [ubuntu, debian]
+- [rhel, redhat, centos]
+- [arch, archlinux, manjaro]
+- [iphoneos, ios]
+
+# --- Editors / IDEs ---
+- [vsc, vscode]
+- [nvim, neovim]
+- [idea, intellij, jetbrains]
+
+# --- Package managers ---
+- [npm, pnpm]
+- [pip, pipenv, poetry]
+- [gem, bundler]
+- [apt, dpkg]
+- [dnf, yum]
+- [brew, homebrew]
+
+# --- Auth / security ---
+- [2fa, mfa, twofactor, otp]
+- [sso, singlesignon]
+- [oauth, oauth2, oidc]
+- [csrf, xsrf]
+- [xss, "cross-site-scripting"]
+- [sqli, "sql-injection"]
+- [cve, vulnerability, vuln]
+
+# --- File formats ---
+- [md, markdown]
+- [yml, yaml]
+- [jsonl, ndjson]
+- [tarball, tar]
+- [tsv, csv]
+
+# --- Forum-specific shorthand ---
+- [op, originalpost]
+- [pm, dm, directmessage, privatemessage]
+- [tl0, newuser]
+- [tl1, basicuser]
+- [tl2, member]
+- [tl3, regular]
+- [tl4, leader]
+- [foss, opensource, libre]
+- [ooo, "out-of-office"]
+- [tldr, "too-long-didnt-read", summary]

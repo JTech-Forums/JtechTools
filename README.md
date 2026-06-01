@@ -34,15 +34,15 @@ The shield-tab `/discourse-mod-categories/notes-feed` returns a UNION of topic-a
 
 ### Smart search
 
-Synonym query expansion via a built-in dictionary (general English + ABA-domain jargon, ~80 entries in `config/dictionaries/smart_search_synonyms.yml`). When `smart_search_enabled` is on:
+Synonym query expansion using **WordNet** (~117K-word English lexical DB, bundled via the `wordnet` + `wordnet-defaultdb` gems) for general English, with a small **tech-jargon YAML overlay** (~70 entries in `config/dictionaries/smart_search_synonyms.yml`) for the abbreviations and brand names WordNet doesn't know (`js ↔ javascript`, `k8s ↔ kubernetes`, `pg ↔ postgres`, etc.). When `smart_search_enabled` is on:
 
 1. The user's original search runs first via Discourse's vanilla `Search#execute`.
 2. If the original returns fewer than `smart_search_minimum_results` posts (default 5), up to `smart_search_variant_limit` (default 2, max 5) synonym-substituted variant searches run and their results are merged in.
 3. Every smart-search path (dictionary load, variant generation, inner variant search, merge) is wrapped in `rescue StandardError` → log and return the vanilla result. The fallback contract is documented at the top of `lib/discourse_smart_search/search_extension.rb`.
 
-No external services, no API keys, no embedding models — all synonym work is in-process Ruby. This is deliberate: the previous semantic-search attempt (Discourse AI embeddings) was disabled after every query started returning 500 when the embedding backend went down. Smart search's failure mode is "results identical to vanilla," never "search broken."
+No external services, no API keys, no embedding models — both backends (WordNet via SQLite DB shipped in-gem, plus the YAML overlay) run in-process. This is deliberate: the previous semantic-search attempt (Discourse AI embeddings) was disabled after every query started returning 500 when the embedding backend went down. Smart search's failure mode is "results identical to vanilla," never "search broken."
 
-Editing the dictionary: lowercase ASCII rows in `config/dictionaries/smart_search_synonyms.yml`, each row is a symmetric synonym group. Reloaded at boot (or via `DiscourseSmartSearch::Synonyms.reload!` in a test).
+Editing the overlay: only ADD entries WordNet doesn't already cover — abbreviations, brand names, protocol initialisms. Don't curate general English (WordNet handles it for free). Lowercase ASCII rows, each row is a symmetric synonym group. Reloaded at boot (or via `DiscourseSmartSearch::Synonyms.reload!` in a Rails console). See `docs/smart_search.md` for the full architecture: two-backend lookup order, request-flow diagram, fallback contract, performance notes, and a console-recipe for diagnostics.
 
 ## Layout
 
