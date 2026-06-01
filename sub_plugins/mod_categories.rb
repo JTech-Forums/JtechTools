@@ -14,6 +14,7 @@ register_svg_icon "user-plus"
 register_svg_icon "pencil"
 register_svg_icon "trash-can"
 register_svg_icon "certificate"
+register_svg_icon "eye"
 
 module ::DiscourseModCategories
   # Custom-field keys for the moderator-set messages.
@@ -246,6 +247,11 @@ module ::DiscourseModCategories
   # modifier can sort non-audience users by this value instead of the live
   # Topic#bumped_at, while audience members keep the actual bump time.
   TOPIC_NON_WHISPER_BUMPED_AT_FIELD = "mod_non_whisper_bumped_at"
+  # JSON array of `{user_id, username, name, avatar_template, viewed_at}`
+  # entries — staff who have rendered the mod-note panel on the topic.
+  # Used by the "👁 Viewed by N" pill at the bottom of the panel. Re-view
+  # updates the entry's `viewed_at` in place (one row per user).
+  TOPIC_NOTE_VIEWERS_FIELD = "mod_topic_note_viewers"
   MAX_WHISPER_TARGETS = 10
   # Explicit boolean armed flag sent by the composer. A boolean survives
   # form-encoding even when the target id array is empty, so it — not the
@@ -320,6 +326,16 @@ after_initialize do
     DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD,
     :string,
   )
+  register_topic_custom_field_type(DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD, :json)
+
+  # Preload the two custom fields the audience-aware bumped_at serializer
+  # below reads. Without these, Discourse's HasCustomFields::PreloadedProxy
+  # raises NotPreloadedError when the serializer touches the fields on a
+  # topic-list row (the guard exists to prevent N+1 queries — preloading
+  # is the documented way to declare you intend to use the field for
+  # every topic on the list).
+  add_preloaded_topic_list_custom_field(DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD)
+  add_preloaded_topic_list_custom_field(DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD)
   register_user_custom_field_type(DiscourseModCategories::USER_NOTES_SEEN_FIELD, :string)
   register_user_custom_field_type(DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD, :integer)
   register_user_custom_field_type(DiscourseModCategories::USER_TARGETED_CHECKLIST_FIELD, :json)
@@ -438,6 +454,26 @@ after_initialize do
               name: author.name,
               avatar_template: author.avatar_template,
             },
+      }
+    end
+  end
+
+  # Staff who have rendered the mod-note panel on this topic — used by the
+  # "👁 Viewed by N" pill at the bottom of the panel. Newest viewer last,
+  # so the UI can show the most recent at the top when reversed.
+  add_to_serializer(
+    :topic_view,
+    :mod_topic_note_viewers,
+    include_condition: -> { scope.is_staff? },
+  ) do
+    raw = object.topic.custom_fields[DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD]
+    Array(raw).map do |entry|
+      {
+        user_id: entry["user_id"],
+        username: entry["username"],
+        name: entry["name"],
+        avatar_template: entry["avatar_template"],
+        viewed_at: entry["viewed_at"],
       }
     end
   end
@@ -688,6 +724,10 @@ after_initialize do
     data = {
       topic_title: topic&.title,
       display_username: user&.username,
+      # Stable marker so MessagesController#mark_topic_notifications_seen
+      # can scope its read-flip to OUR notifications without touching
+      # other plugins' custom notifications attached to the same topic.
+      mod_whisper: true,
       original_post_id: post.id,
       original_post_type: post.post_type,
     }.to_json
@@ -699,6 +739,24 @@ after_initialize do
         topic_id: topic&.id,
         post_number: post.post_number,
         data: data,
+      )
+    end
+
+    # Dedupe: PostAlerter runs asynchronously and creates standard
+    # :replied / :posted / :quoted / :mentioned notifications for the
+    # topic author, watchers, and mentioned users. If any of those users
+    # are also in our whisper audience, they see TWO bell rows for the
+    # same post — one custom whisper from us, one core reply from
+    # PostAlerter. We schedule a 5-second delayed cleanup that removes
+    # the core duplicates only for users who got our custom whisper.
+    # Done as a delayed job because PostAlerter runs in its own Sidekiq
+    # job after :post_created, so we'd race it if we cleaned up inline.
+    if topic && post.persisted?
+      ::Jobs.enqueue_in(
+        5.seconds,
+        :dedupe_mod_whisper_notifications,
+        post_id: post.id,
+        recipient_ids: recipient_ids,
       )
     end
   end
@@ -900,5 +958,42 @@ after_initialize do
 
     visible_max = DiscourseModCategories.whisper_audience_max_post_number(object, scope&.user)
     visible_max || raw
+  end
+
+  # Audience-aware bumped_at for the topic list's "Activity" column. The
+  # topic-list query modifier already SORTS non-audience viewers by the
+  # non-whisper bump time, but the displayed Activity column read the raw
+  # `topics.bumped_at` and showed e.g. "5m" for a whisper they can't see.
+  # Mirror the same audience check here so the displayed time matches the
+  # sort position: audience members (staff + topic participants) see the
+  # actual bump time; non-audience viewers see the non-whisper bump time
+  # stored in the custom field. Falls through to raw on missing/malformed
+  # field values so an upgrade to a topic without the stamp still works.
+  add_to_serializer(:listable_topic, :bumped_at) do
+    raw = object.bumped_at
+    next raw unless SiteSetting.mod_whisper_enabled
+
+    user = scope&.user
+    next raw if user&.staff?
+
+    # All custom-field access wrapped together: HasCustomFields::PreloadedProxy
+    # raises NotPreloadedError if `add_preloaded_topic_list_custom_field`
+    # registrations above haven't taken effect (e.g. early in boot, or
+    # after a Discourse release reshapes the preloader). Falling through
+    # to `raw` keeps /latest responsive in that case — the worst outcome
+    # is the pre-fix "stranger sees the whisper time" display, which is
+    # recoverable on the next request.
+    begin
+      participants = object.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]
+      next raw if user && participants.is_a?(Array) && participants.map(&:to_i).include?(user.id)
+
+      nwba = object.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD]
+      next raw if nwba.blank?
+
+      parsed = ::Time.zone.parse(nwba.to_s)
+      parsed || raw
+    rescue StandardError
+      raw
+    end
   end
 end
