@@ -36,6 +36,7 @@ Discourse::Application.routes.append do
     get "/notes-feed" => "messages#notes_feed"
     post "/notes-feed/seen" => "messages#notes_feed_seen"
     post "/topic/:topic_id/notifications/seen" => "messages#mark_topic_notifications_seen"
+    post "/review/notifications/seen" => "messages#mark_review_notifications_seen"
     post "/topic/:topic_id/note-view" => "messages#record_note_view"
     put "/post/:id/whisper" => "messages#update_post_whisper"
     get "/checklist" => "checklist#show"

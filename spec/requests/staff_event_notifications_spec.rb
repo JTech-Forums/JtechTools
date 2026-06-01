@@ -108,6 +108,62 @@ RSpec.describe "Staff event notifications" do
       expect(staff_notifications(moderator, kind: "note").where(read: false).count).to eq(0)
     end
 
+    it "marks /review-targeted mod_note rows read when the review page is opened" do
+      # post_rejected URL is /review/:id; flag_note URL is /review/:id;
+      # the new mark_review_notifications_seen endpoint covers them.
+      Notification.create!(
+        notification_type: Notification.types[:custom],
+        user_id: moderator.id,
+        high_priority: true,
+        data: {
+          mod_note: true,
+          mod_note_kind: "flag_note",
+          display_username: "someone",
+          url: "/review/42",
+          message: "discourse_mod_categories.flag_note_notification",
+        }.to_json,
+      )
+      # Plus a non-review notification that MUST remain unread.
+      Notification.create!(
+        notification_type: Notification.types[:custom],
+        user_id: moderator.id,
+        high_priority: true,
+        data: {
+          mod_note: true,
+          mod_note_kind: "user_note",
+          display_username: "someone",
+          url: "/u/alice/notes",
+          message: "discourse_mod_categories.user_note_notification",
+        }.to_json,
+      )
+
+      sign_in(moderator)
+      post "/discourse-mod-categories/review/notifications/seen.json"
+
+      expect(response.status).to be_between(200, 299)
+      expect(response.parsed_body["marked"]).to eq(1)
+
+      expect(
+        Notification
+          .where(user_id: moderator.id, read: false)
+          .where("data LIKE ?", "%\"mod_note_kind\":\"flag_note\"%")
+          .count,
+      ).to eq(0)
+      # user_note (not /review URL) untouched
+      expect(
+        Notification
+          .where(user_id: moderator.id, read: false)
+          .where("data LIKE ?", "%\"mod_note_kind\":\"user_note\"%")
+          .count,
+      ).to eq(1)
+    end
+
+    it "forbids the review notifications-seen endpoint for regular users" do
+      sign_in(user)
+      post "/discourse-mod-categories/review/notifications/seen.json"
+      expect(response.status).to eq(403)
+    end
+
     it "marks non-topic mod_note rows read when the shield tab is opened" do
       # post_rejected URL is /review/:id — no topic open path catches it,
       # so the shield-tab open is the canonical mark-read for non-topic
