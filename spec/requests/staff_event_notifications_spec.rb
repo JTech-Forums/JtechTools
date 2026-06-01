@@ -207,7 +207,7 @@ RSpec.describe "Staff event notifications" do
   end
 
   describe "flag / reviewable notes", if: defined?(ReviewableNote) do
-    fab!(:reviewable) { Fabricate(:reviewable_flagged_post) }
+    fab!(:reviewable, :reviewable_flagged_post)
 
     it "notifies every other staff member when a ReviewableNote is added" do
       ReviewableNote.create!(

@@ -21,10 +21,15 @@ const KIND_KEYS = {
 };
 
 function labelFor(note) {
+  // Legacy topic-attached entries (returned from the topic-custom-field
+  // path of notes_feed) carry no `username` — fall back to the topic
+  // title alone so the row reads cleanly instead of as " added a
+  // moderator note" with a leading space.
+  if (!note.username) {
+    return note.topic_title || "";
+  }
   const key = KIND_KEYS[note.kind] || KIND_KEYS.note;
-  return i18n(`discourse_mod_categories.${key}`, {
-    username: note.username || "",
-  });
+  return i18n(`discourse_mod_categories.${key}`, { username: note.username });
 }
 
 // Context line under the label — topic title for topic-anchored kinds,

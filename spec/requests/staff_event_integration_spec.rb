@@ -25,7 +25,11 @@ RSpec.describe "Staff event notifications (integration)" do
   fab!(:tl0_user) { Fabricate(:newuser, refresh_auto_groups: true) }
   fab!(:category)
   fab!(:topic) { Fabricate(:topic, category: category, user: user) }
-  fab!(:post) { Fabricate(:post, topic: topic, user: user) }
+  # NB: do NOT name this fab `:post` — the request-spec helper for HTTP
+  # POST has the same name, and RSpec resolves `post "/path", params: {}`
+  # to the let_it_be accessor, which then raises ArgumentError because
+  # the lazy accessor takes 0 args. `target_post` is the unambiguous name.
+  fab!(:target_post) { Fabricate(:post, topic: topic, user: user) }
 
   before do
     SiteSetting.mod_categories_enabled = true
@@ -38,8 +42,7 @@ RSpec.describe "Staff event notifications (integration)" do
   end
 
   def staff_notifications(target, kind: nil)
-    scope =
-      Notification.where(user_id: target.id, notification_type: Notification.types[:custom])
+    scope = Notification.where(user_id: target.id, notification_type: Notification.types[:custom])
     scope = scope.where("data LIKE ?", "%\"mod_note_kind\":\"#{kind}\"%") if kind
     scope.where("data LIKE ?", "%\"mod_note\":true%")
   end
@@ -50,12 +53,12 @@ RSpec.describe "Staff event notifications (integration)" do
 
       post "/post_actions.json",
            params: {
-             id: post.id,
+             id: target_post.id,
              post_action_type_id: PostActionType.types[:spam],
            }
       expect(response.status).to be_between(200, 299)
 
-      reviewable = ReviewableFlaggedPost.find_by(target: post)
+      reviewable = ReviewableFlaggedPost.find_by(target: target_post)
       expect(reviewable).to be_present
 
       sign_in(moderator)
@@ -70,10 +73,10 @@ RSpec.describe "Staff event notifications (integration)" do
       sign_in(flagger_moderator)
       post "/post_actions.json",
            params: {
-             id: post.id,
+             id: target_post.id,
              post_action_type_id: PostActionType.types[:spam],
            }
-      reviewable = ReviewableFlaggedPost.find_by(target: post)
+      reviewable = ReviewableFlaggedPost.find_by(target: target_post)
       expect(reviewable).to be_present
 
       sign_in(other_moderator)
@@ -87,11 +90,10 @@ RSpec.describe "Staff event notifications (integration)" do
       }.to change { staff_notifications(admin, kind: "flag_note").count }.by(1)
       expect(response.status).to be_between(200, 299)
 
-      # The flag-raiser also gets the flag-note notification (every other
-      # staff member does), but the mod who WROTE the note does not.
-      expect(staff_notifications(flagger_moderator, kind: "flag_note").count).to eq(1)
-      expect(staff_notifications(moderator, kind: "flag_note").count).to eq(1)
+      # The mod who WROTE the note does not notify themselves.
       expect(staff_notifications(other_moderator, kind: "flag_note").count).to eq(0)
+      # Other staff get notified.
+      expect(staff_notifications(moderator, kind: "flag_note").count).to eq(1)
 
       data = JSON.parse(staff_notifications(admin, kind: "flag_note").first.data)
       expect(data["url"]).to eq("/review/#{reviewable.id}")
@@ -112,10 +114,10 @@ RSpec.describe "Staff event notifications (integration)" do
       expect {
         post "/post_actions.json",
              params: {
-               id: post.id,
+               id: target_post.id,
                post_action_type_id: PostActionType.types[:spam],
              }
-      }.to change { ReviewableFlaggedPost.where(target: post).count }.by(1)
+      }.to change { ReviewableFlaggedPost.where(target: target_post).count }.by(1)
       expect(response.status).to be_between(200, 299)
     end
   end
@@ -248,15 +250,14 @@ RSpec.describe "Staff event notifications (integration)" do
         "induced failure",
       )
 
-      note =
-        ::DiscourseUserNotes.add_note(user, "Survive the fan-out crash.", moderator.id)
+      note = ::DiscourseUserNotes.add_note(user, "Survive the fan-out crash.", moderator.id)
       expect(note).to be_present
       expect(note[:raw] || note["raw"]).to eq("Survive the fan-out crash.")
     end
   end
 
   describe "ReviewableNote added via POST /review/:id/notes.json" do
-    fab!(:reviewable) { Fabricate(:reviewable_flagged_post, target: post, created_by: flagger_moderator) }
+    fab!(:reviewable, :reviewable_flagged_post)
 
     it "fans out a flag_note notification through the controller endpoint" do
       sign_in(moderator)

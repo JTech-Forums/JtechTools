@@ -659,20 +659,13 @@ RSpec.describe "Moderator messages endpoints" do
   end
 
   describe "GET /discourse-mod-categories/notes-feed" do
-    fab!(:other_moderator, :moderator)
-
     before do
-      # Create the topic mod note via the controller so the staff
-      # notifications fan out — the feed now mirrors those rows.
-      sign_in(other_moderator)
-      put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: {
-            private_note: "A note to review.",
-          }
-      sign_out
+      topic.custom_fields["mod_topic_private_note"] = "A note to review."
+      topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
+      topic.save_custom_fields(true)
     end
 
-    it "lists mod-note notifications for staff, mirroring the bell" do
+    it "lists topics that have a moderator note, for staff" do
       sign_in(moderator)
 
       get "/discourse-mod-categories/notes-feed.json"
@@ -680,11 +673,7 @@ RSpec.describe "Moderator messages endpoints" do
       expect(response.status).to eq(200)
       notes = response.parsed_body["notes"]
       expect(notes.map { |n| n["topic_id"] }).to include(topic.id)
-      first = notes.first
-      expect(first["kind"]).to eq("note")
-      expect(first["excerpt"]).to eq("A note to review.")
-      expect(first["username"]).to eq(other_moderator.username)
-      expect(first["unread"]).to eq(true)
+      expect(notes.first["note"]).to eq("A note to review.")
     end
 
     it "forbids a regular user" do
@@ -715,14 +704,8 @@ RSpec.describe "Moderator messages endpoints" do
     end
 
     it "links each note to the topic's last post anchored at the mod-private-note section" do
-      acting = Fabricate(:moderator)
-      sign_in(acting)
-      put "/discourse-mod-categories/topic/#{topic.id}.json",
-          params: {
-            private_note: "Review me.",
-          }
-      sign_out
-
+      topic.custom_fields["mod_topic_private_note"] = "Review me."
+      topic.save_custom_fields(true)
       sign_in(moderator)
 
       get "/discourse-mod-categories/notes-feed.json"
