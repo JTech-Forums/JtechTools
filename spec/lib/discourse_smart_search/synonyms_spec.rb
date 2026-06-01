@@ -35,12 +35,7 @@ RSpec.describe ::DiscourseSmartSearch::Synonyms do
     end
 
     it "merges synonyms when a word appears in multiple groups" do
-      described_class.reload!(
-        extras: [
-          %w[behavior conduct],
-          %w[behavior pattern habit],
-        ],
-      )
+      described_class.reload!(extras: [%w[behavior conduct], %w[behavior pattern habit]])
       set = described_class.for("behavior")
       expect(set).to include("conduct")
       expect(set).to include("pattern")

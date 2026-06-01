@@ -30,11 +30,7 @@ RSpec.describe "Staff event notifications" do
   end
 
   def staff_notifications(target, kind: nil)
-    scope =
-      Notification.where(
-        user_id: target.id,
-        notification_type: Notification.types[:custom],
-      )
+    scope = Notification.where(user_id: target.id, notification_type: Notification.types[:custom])
     scope = scope.where("data LIKE ?", "%\"mod_note_kind\":\"#{kind}\"%") if kind
     scope.where("data LIKE ?", "%\"mod_note\":true%")
   end
@@ -69,7 +65,8 @@ RSpec.describe "Staff event notifications" do
       expect(staff_notifications(admin, kind: "post_deleted").count).to eq(2)
     end
 
-    it "treats two flag notes on the same reviewable as distinct events", if: defined?(ReviewableNote) do
+    it "treats two flag notes on the same reviewable as distinct events",
+       if: defined?(ReviewableNote) do
       reviewable = Fabricate(:reviewable_flagged_post)
 
       ReviewableNote.create!(reviewable: reviewable, user: moderator, content: "First note.")
@@ -120,7 +117,8 @@ RSpec.describe "Staff event notifications" do
 
       expect(response.status).to be_between(200, 299)
       expect(
-        Notification.where(user_id: moderator.id, read: false)
+        Notification
+          .where(user_id: moderator.id, read: false)
           .where("data LIKE ?", "%\"mod_note_kind\":\"post_rejected\"%")
           .count,
       ).to eq(0)
@@ -213,11 +211,7 @@ RSpec.describe "Staff event notifications" do
     fab!(:reviewable, :reviewable_flagged_post)
 
     it "notifies every other staff member when a ReviewableNote is added" do
-      ReviewableNote.create!(
-        reviewable: reviewable,
-        user: moderator,
-        content: "Heads up, staff.",
-      )
+      ReviewableNote.create!(reviewable: reviewable, user: moderator, content: "Heads up, staff.")
 
       expect(staff_notifications(admin, kind: "flag_note").count).to eq(1)
       expect(staff_notifications(other_moderator, kind: "flag_note").count).to eq(1)

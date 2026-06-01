@@ -128,9 +128,9 @@ RSpec.describe "Staff event notifications (integration)" do
     it "fans out a post_deleted notification with the correct excerpt and url" do
       sign_in(moderator)
 
-      expect {
-        delete "/posts/#{second_post.id}.json"
-      }.to change { staff_notifications(admin, kind: "post_deleted").count }.by(1)
+      expect { delete "/posts/#{second_post.id}.json" }.to change {
+        staff_notifications(admin, kind: "post_deleted").count
+      }.by(1)
       expect(response.status).to be_between(200, 299)
 
       notification = staff_notifications(admin, kind: "post_deleted").last

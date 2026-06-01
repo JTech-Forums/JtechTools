@@ -10,11 +10,7 @@ RSpec.describe "Smart search" do
   fab!(:category)
   fab!(:user)
   fab!(:child_topic) do
-    Fabricate(
-      :topic,
-      category: category,
-      title: "Helping my child with morning routines",
-    )
+    Fabricate(:topic, category: category, title: "Helping my child with morning routines")
   end
   fab!(:child_post) do
     Fabricate(
@@ -59,19 +55,9 @@ RSpec.describe "Smart search" do
     end
 
     it "does not duplicate posts that match both the original and a variant" do
-      kid_topic =
-        Fabricate(
-          :topic,
-          category: category,
-          title: "Asking a kid about their day",
-        )
+      kid_topic = Fabricate(:topic, category: category, title: "Asking a kid about their day")
       kid_post =
-        Fabricate(
-          :post,
-          topic: kid_topic,
-          user: user,
-          raw: "What helps a kid open up at dinner?",
-        )
+        Fabricate(:post, topic: kid_topic, user: user, raw: "What helps a kid open up at dinner?")
       reindex(kid_post)
 
       result = ::Search.execute("kid")

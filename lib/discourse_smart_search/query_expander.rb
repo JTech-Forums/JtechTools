@@ -14,11 +14,91 @@ module ::DiscourseSmartSearch
     # Common stop-words that shouldn't trigger a synonym variant.
     # Substituting "the" or "and" would produce nonsense variants.
     STOP_WORDS = %w[
-      a an the and or but if then else when while of in on at to from by for with
-      i you he she it we they me him her us them my your his hers its our their
-      is are was were be been being am do does did doing have has had having
-      not no yes so very just only also can could should would will shall may might
-      this that these those there here what which who whom whose how why where
+      a
+      an
+      the
+      and
+      or
+      but
+      if
+      then
+      else
+      when
+      while
+      of
+      in
+      on
+      at
+      to
+      from
+      by
+      for
+      with
+      i
+      you
+      he
+      she
+      it
+      we
+      they
+      me
+      him
+      her
+      us
+      them
+      my
+      your
+      his
+      hers
+      its
+      our
+      their
+      is
+      are
+      was
+      were
+      be
+      been
+      being
+      am
+      do
+      does
+      did
+      doing
+      have
+      has
+      had
+      having
+      not
+      no
+      yes
+      so
+      very
+      just
+      only
+      also
+      can
+      could
+      should
+      would
+      will
+      shall
+      may
+      might
+      this
+      that
+      these
+      those
+      there
+      here
+      what
+      which
+      who
+      whom
+      whose
+      how
+      why
+      where
     ].freeze
 
     # A token is "expandable" if it's all letters/digits/hyphens — i.e.
@@ -38,12 +118,15 @@ module ::DiscourseSmartSearch
         # For each token position, collect the synonyms (excluding the
         # original word). Tokens with no synonyms contribute nothing.
         substitutions =
-          tokens.each_with_index.map do |tok, idx|
-            next nil unless expandable?(tok)
-            syns = ::DiscourseSmartSearch::Synonyms.for(tok.downcase) - [tok.downcase]
-            next nil if syns.empty?
-            [idx, syns]
-          end.compact
+          tokens
+            .each_with_index
+            .map do |tok, idx|
+              next nil unless expandable?(tok)
+              syns = ::DiscourseSmartSearch::Synonyms.for(tok.downcase) - [tok.downcase]
+              next nil if syns.empty?
+              [idx, syns]
+            end
+            .compact
 
         return [] if substitutions.empty?
 

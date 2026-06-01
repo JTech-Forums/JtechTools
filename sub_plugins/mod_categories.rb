@@ -1025,7 +1025,14 @@ after_initialize do
     next if post.blank? || user.blank?
     next if post.user_id == user.id
     next unless user.staff?
-    system_user = (Discourse.system_user rescue nil)
+    system_user =
+      (
+        begin
+          Discourse.system_user
+        rescue StandardError
+          nil
+        end
+      )
     next if system_user && user.id == system_user.id
 
     topic = post.topic
@@ -1151,8 +1158,7 @@ after_initialize do
             note = add_note_without_mod_categories_notify(*args, **kwargs)
 
             begin
-              if SiteSetting.mod_categories_enabled &&
-                   SiteSetting.mod_notify_staff_on_user_notes
+              if SiteSetting.mod_categories_enabled && SiteSetting.mod_notify_staff_on_user_notes
                 user = args[0]
                 raw = args[1]
                 created_by_id = args[2]
@@ -1205,8 +1211,7 @@ after_initialize do
         next if author.blank? || reviewable.blank?
 
         target_user = reviewable.target_created_by
-        target_label =
-          target_user&.username || reviewable.type.to_s.sub(/^Reviewable/, "")
+        target_label = target_user&.username || reviewable.type.to_s.sub(/^Reviewable/, "")
 
         begin
           DiscourseModCategories::StaffNotifier.fan_out(
@@ -1220,9 +1225,7 @@ after_initialize do
             target_username: target_label,
           )
         rescue StandardError => e
-          ::Rails.logger.warn(
-            "[jtech-tools] flag_note notify failed: #{e.class}: #{e.message}",
-          )
+          ::Rails.logger.warn("[jtech-tools] flag_note notify failed: #{e.class}: #{e.message}")
         end
       end
     end
