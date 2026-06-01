@@ -88,7 +88,7 @@ return base   ← 3 posts, including the "javascript" match vanilla missed
 - [pg, postgres, postgresql, psql]
 ```
 
-**2. WordNet** — via the `wordnet` + `wordnet-defaultdb` gems. Bundled English lexical DB with ~117K word forms. Handles everything the overlay doesn't: `bug ↔ defect ↔ glitch ↔ fault`, `fast ↔ quick ↔ rapid ↔ speedy`, `problem ↔ issue ↔ trouble`, etc.
+**2. WordNet** — via the `rwordnet` gem. Bundled English lexical DB with ~117K word forms. Handles everything the overlay doesn't: `bug ↔ defect ↔ glitch ↔ fault`, `fast ↔ quick ↔ rapid ↔ speedy`, `problem ↔ issue ↔ trouble`, etc.
 
 If neither backend finds the word, the lookup returns `[word]` (just the input). Search behaves like vanilla in that case.
 

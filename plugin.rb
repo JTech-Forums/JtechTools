@@ -7,13 +7,10 @@
 # url: https://github.com/JTech-Forums/JtechTools
 # required_version: 3.0.0
 
-# Smart-search synonym backend — WordNet provides the lexical DB (~117K
-# English words) so we don't have to hand-curate general English. The
-# `wordnet-defaultdb` gem ships the actual SQLite DB in-process. Both
-# gems are pure-local; smart_search never makes a network call.
-gem "sequel", "5.95.0", require: false
-gem "wordnet", "0.10.0", require: false
-gem "wordnet-defaultdb", "1.1.0", require: false
+# Smart-search synonym backend — rwordnet ships the WordNet lexical DB
+# (~117K English words, ~8MB) inside the gem. Pure-Ruby, no external
+# C extensions, no network calls.
+gem "rwordnet", "2.0.0", require: false
 
 # Master gate. Each sub-plugin keeps its own enable setting (e.g.
 # discourse_no_likes_enabled, mini_mod_enabled, mod_categories_enabled,

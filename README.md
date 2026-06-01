@@ -34,7 +34,7 @@ The shield-tab `/discourse-mod-categories/notes-feed` returns a UNION of topic-a
 
 ### Smart search
 
-Synonym query expansion using **WordNet** (~117K-word English lexical DB, bundled via the `wordnet` + `wordnet-defaultdb` gems) for general English, with a small **tech-jargon YAML overlay** (~70 entries in `config/dictionaries/smart_search_synonyms.yml`) for the abbreviations and brand names WordNet doesn't know (`js ↔ javascript`, `k8s ↔ kubernetes`, `pg ↔ postgres`, etc.). When `smart_search_enabled` is on:
+Synonym query expansion using **WordNet** (~117K-word English lexical DB, bundled via the `rwordnet` gem) for general English, with a small **tech-jargon YAML overlay** (~70 entries in `config/dictionaries/smart_search_synonyms.yml`) for the abbreviations and brand names WordNet doesn't know (`js ↔ javascript`, `k8s ↔ kubernetes`, `pg ↔ postgres`, etc.). When `smart_search_enabled` is on:
 
 1. The user's original search runs first via Discourse's vanilla `Search#execute`.
 2. If the original returns fewer than `smart_search_minimum_results` posts (default 5), up to `smart_search_variant_limit` (default 2, max 5) synonym-substituted variant searches run and their results are merged in.

@@ -8,10 +8,10 @@ module ::DiscourseSmartSearch
   #      domain-specific terms WordNet doesn't know (js, k8s, postgres,
   #      docker, etc.). ~30 entries, lowercase ASCII, symmetric groups.
   #
-  #   2. WordNet via the `wordnet` + `wordnet-defaultdb` gems — bundled
-  #      English lexical DB with ~117K word forms. Covers general
-  #      English (bug ↔ defect ↔ glitch, fast ↔ quick ↔ rapid, …) so
-  #      we don't have to hand-curate it.
+  #   2. WordNet via the `rwordnet` gem — pure-Ruby interface that
+  #      ships the WordNet lexical DB (~117K English words, ~8MB)
+  #      bundled inside the gem. Covers general English (bug ↔ defect
+  #      ↔ glitch, fast ↔ quick ↔ rapid, …) so we don't hand-curate it.
   #
   # Either backend's failure is non-fatal: a missing gem, a missing/
   # malformed YAML, or a WordNet lookup raise all degrade silently to
@@ -64,18 +64,16 @@ module ::DiscourseSmartSearch
         @overlay_index ||= build_index(load_groups(DEFAULT_PATH))
       end
 
-      # True when the WordNet backend is available + lexicon loaded.
+      # True when the rwordnet backend is available + DB loaded.
       # Memoized after the first call.
       def wordnet_available?
         return @wordnet_available unless @wordnet_available.nil?
         @wordnet_available =
           begin
-            require "wordnet"
-            require "wordnet-defaultdb"
-            @lexicon = ::WordNet::Lexicon.new
+            require "rwordnet"
             # Touch the DB once to surface any startup failure here
             # rather than on the first user search.
-            @lexicon.find_words("test")
+            ::WordNet::Lemma.find_all("test")
             true
           rescue StandardError, ::LoadError => e
             ::Rails.logger.warn(
@@ -104,13 +102,19 @@ module ::DiscourseSmartSearch
         return [] unless wordnet_available?
 
         synonyms = Set.new([key])
-        @lexicon
-          .find_words(key)
-          .each do |word_rec|
-            word_rec.synsets.each do |synset|
-              synset.words.each do |sw|
-                lemma = sw.lemma.to_s.gsub("_", " ").downcase.strip
-                synonyms << lemma if lemma.length >= 2 && lemma.length <= 60
+        # rwordnet API: `Lemma.find_all(word)` returns one Lemma per
+        # part of speech the word appears as (noun, verb, adj, adv).
+        # Each Lemma has `synsets` (senses); each Synset has `words`
+        # (the canonical synonym list for that sense).
+        ::WordNet::Lemma
+          .find_all(key)
+          .each do |lemma|
+            lemma.synsets.each do |synset|
+              synset.words.each do |w|
+                # rwordnet stores multi-word lemmas with underscores;
+                # also some entries are mixed-case proper nouns.
+                normalized = w.to_s.gsub("_", " ").downcase.strip
+                synonyms << normalized if normalized.length >= 2 && normalized.length <= 60
                 break if synonyms.size >= MAX_SYNONYMS_PER_WORD
               end
               break if synonyms.size >= MAX_SYNONYMS_PER_WORD
