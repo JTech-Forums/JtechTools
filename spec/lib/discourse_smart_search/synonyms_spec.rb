@@ -62,11 +62,23 @@ RSpec.describe ::DiscourseSmartSearch::Synonyms do
     end
 
     context "fallback when WordNet is unavailable" do
-      before { allow(described_class).to receive(:wordnet_available?).and_return(false) }
+      # Set the memoized @wordnet_available directly rather than stubbing
+      # via `allow(...).to receive(:wordnet_available?)`. RSpec's stub on
+      # a public class method doesn't reliably intercept the internal
+      # `self.wordnet_available?` call inside `wordnet_synonyms_for`
+      # — private same-module call resolution can bypass the mock.
+      # Setting the memoized variable triggers the early-return path
+      # inside `wordnet_available?` and works regardless of call site.
+      before do
+        described_class.reload!
+        described_class.instance_variable_set(:@wordnet_available, false)
+      end
+
+      after { described_class.instance_variable_set(:@wordnet_available, nil) }
 
       it "returns [word] for a general English word the overlay doesn't cover" do
         # "bug" is NOT in the overlay (WordNet covers it). With WordNet
-        # stubbed unavailable, the lookup falls through to [key].
+        # marked unavailable, the lookup falls through to [key].
         expect(described_class.for("bug")).to eq(["bug"])
       end
 
