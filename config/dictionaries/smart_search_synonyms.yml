@@ -1,0 +1,74 @@
+# Built-in synonym dictionary for the smart_search sub-plugin.
+#
+# Each row is a SYMMETRIC group — every word in the group is considered a
+# synonym of every other word in the group. The first word per row is
+# also the canonical "lookup head", but the smart_search lookup is order-
+# independent at runtime.
+#
+# Editing notes:
+#   * All entries MUST be lowercase ASCII. The expander downcases at
+#     lookup time, so adding "Kid" here would be dead weight.
+#   * Avoid groups longer than ~6 words — every extra word increases the
+#     odds of an irrelevant match without proportionally improving recall.
+#   * Don't group words that share spelling but not meaning ("bark" the
+#     tree vs the dog) — that introduces false positives the user can't
+#     turn off without disabling the whole plugin.
+#   * The ABA-domain block is the highest-value section for this forum;
+#     general English groups are kept short to avoid noise.
+
+# --- General English ---
+- [kid, child, youth, minor, juvenile]
+- [parent, caregiver, guardian, mom, dad]
+- [listen, comply, obey, follow]
+- [behavior, behaviour, conduct, action]
+- [tantrum, meltdown, outburst, fit]
+- [angry, mad, upset, frustrated]
+- [happy, glad, pleased, content]
+- [problem, issue, concern, trouble]
+- [help, assist, support, aid]
+- [teach, train, instruct, educate]
+- [reward, reinforcer, incentive]
+- [punishment, consequence, penalty]
+- [strategy, approach, method, technique]
+- [goal, objective, target, aim]
+- [progress, improvement, gain, growth]
+- [school, classroom, academy]
+- [home, house, household, residence]
+
+# --- ABA / behavior analysis jargon ---
+- [aba, applied behavior analysis]
+- [sib, self-injury, self-injurious behavior]
+- [mo, motivating operation, establishing operation, eo]
+- [abc, antecedent behavior consequence]
+- [rbt, technician, behavior technician]
+- [bcba, analyst, behavior analyst, supervisor]
+- [bip, behavior intervention plan, behavior plan]
+- [fba, functional behavior assessment, functional assessment]
+- [dtt, discrete trial training, discrete trial]
+- [net, natural environment teaching, natural environment training]
+- [vb, verbal behavior]
+- [pecs, picture exchange communication system]
+- [aac, augmentative alternative communication]
+- [iep, individualized education program, individualized education plan]
+- [ifsp, individualized family service plan]
+- [prompt, cue, hint]
+- [prompting, cueing, fading]
+- [reinforcement, reward, positive reinforcement]
+- [extinction, ignore, planned ignoring]
+- [redirect, redirection, divert]
+- [escape, avoidance, escape behavior]
+- [attention, attention-seeking, attention seeking]
+- [stim, stimming, stereotypy, self-stimulation]
+- [elopement, eloping, running away, wandering]
+- [aggression, aggressive behavior, hitting, biting]
+- [noncompliance, non-compliance, refusal, defiance]
+- [transition, transitioning, changeover]
+- [generalization, generalisation, transfer]
+- [maintenance, retention, durability]
+- [data, datasheet, data collection, tracking]
+- [graph, chart, visualization, visualisation]
+- [baseline, pre-intervention, pre-treatment]
+- [autism, asd, autistic, autism spectrum disorder]
+- [therapy, therapeutic, treatment, intervention]
+- [session, appointment, visit]
+- [client, learner, student, kiddo]

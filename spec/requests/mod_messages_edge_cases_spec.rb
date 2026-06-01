@@ -121,15 +121,26 @@ RSpec.describe "Moderator messages endpoints — edge cases" do
     fab!(:newer_topic) do
       Fabricate(:topic, category: category, title: "A newer thread waiting on a moderator review")
     end
+    fab!(:acting_moderator, :moderator)
 
     before do
-      older_topic.custom_fields["mod_topic_private_note"] = "Older note."
-      older_topic.custom_fields["mod_topic_private_note_activity_at"] = 3.days.ago.iso8601
-      older_topic.save_custom_fields(true)
+      # Drive notes through the controller so Notification rows are
+      # created — the feed now reads from those rows, not topic custom
+      # fields. Older row is back-dated to test ordering by created_at.
+      sign_in(acting_moderator)
+      put "/discourse-mod-categories/topic/#{older_topic.id}.json",
+          params: {
+            private_note: "Older note.",
+          }
+      ::Notification
+        .where(user_id: moderator.id, topic_id: older_topic.id)
+        .update_all(created_at: 3.days.ago)
 
-      newer_topic.custom_fields["mod_topic_private_note"] = "Newer note."
-      newer_topic.custom_fields["mod_topic_private_note_activity_at"] = Time.zone.now.iso8601
-      newer_topic.save_custom_fields(true)
+      put "/discourse-mod-categories/topic/#{newer_topic.id}.json",
+          params: {
+            private_note: "Newer note.",
+          }
+      sign_out
     end
 
     it "orders notes with the most recent activity first" do
@@ -145,7 +156,7 @@ RSpec.describe "Moderator messages endpoints — edge cases" do
       expect(newer_idx).to be < older_idx
     end
 
-    it "excludes topics that have no private note" do
+    it "excludes topics that have no moderator-note notification" do
       sign_in(moderator)
 
       get "/discourse-mod-categories/notes-feed.json"

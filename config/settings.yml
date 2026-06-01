@@ -151,6 +151,34 @@ jtech_mod:
     default: true
     client: true
 
+  mod_notify_staff_on_post_actions:
+    default: true
+    client: false
+  mod_notify_staff_on_user_notes:
+    default: true
+    client: false
+  mod_notify_staff_on_flag_notes:
+    default: true
+    client: false
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Smart search (synonym query expansion)
+# ───────────────────────────────────────────────────────────────────────────
+jtech_smart_search:
+  smart_search_enabled:
+    default: false
+    client: false
+  smart_search_minimum_results:
+    default: 5
+    client: false
+    min: 0
+    max: 50
+  smart_search_variant_limit:
+    default: 2
+    client: false
+    min: 1
+    max: 5
+
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech — Dumbcourse (lightweight SPA at /dumb with push notifications)
 # ───────────────────────────────────────────────────────────────────────────

@@ -22,7 +22,7 @@ enabled_site_setting :jtech_enabled
 # (magic-header comments and the top-level enabled_site_setting call stripped).
 # Settings, locales, lib/, app/, db/migrate, and assets/ from every sub-plugin
 # have been merged into this plugin's standard Discourse layout.
-%w[dislike another_smtp mini_mod mod_categories dumbcourse translator_tweaks].each do |sub|
+%w[dislike another_smtp mini_mod mod_categories dumbcourse translator_tweaks smart_search].each do |sub|
   path = File.expand_path("sub_plugins/#{sub}.rb", __dir__)
   instance_eval(File.read(path), path, 1)
 end

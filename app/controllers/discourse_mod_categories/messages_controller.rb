@@ -355,42 +355,44 @@ module ::DiscourseModCategories
       render json: { marked: marked }
     end
 
-    # Lists recent moderator notes across topics, for the staff user-menu
-    # tab, newest first.
+    # Lists this staff member's moderator-note notifications, newest first.
+    # The shield-tab panel mirrors the bell's mod-note rows exactly — so a
+    # staff member who only opens the shield tab still sees every
+    # mod-note event (topic notes + replies + post actions + user notes +
+    # flag notes) the bell carries. The data column's `mod_note: true`
+    # marker is what scopes the query to our notifications only.
     def notes_feed
       guardian.ensure_can_manage_mod_messages!
 
-      topic_ids =
-        TopicCustomField
-          .where(name: TOPIC_PRIVATE_NOTE_FIELD)
-          .where.not(value: [nil, ""])
-          .order(updated_at: :desc)
+      rows =
+        ::Notification
+          .where(user_id: current_user.id, notification_type: ::Notification.types[:custom])
+          .where("data LIKE ?", "%\"mod_note\":true%")
+          .order(created_at: :desc)
           .limit(50)
-          .pluck(:topic_id)
-
-      seen_at = current_user.custom_fields[USER_NOTES_SEEN_FIELD].presence || "1970-01-01T00:00:00Z"
 
       notes =
-        Topic
-          .where(id: topic_ids)
-          .map do |topic|
-            note = topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].to_s
-            next if note.blank?
-            replies = topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD]
-            activity_at = topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD].to_s
-            {
-              topic_id: topic.id,
-              topic_title: topic.title,
-              url: "#{topic.relative_url}/#{topic.highest_post_number}#mod-private-note",
-              note: note,
-              reply_count: replies.is_a?(Array) ? replies.size : 0,
-              activity_at: activity_at,
-              unread: activity_at > seen_at,
-            }
-          end
-          .compact
-          .sort_by { |n| n[:activity_at] }
-          .reverse
+        rows.map do |n|
+          data =
+            begin
+              JSON.parse(n.data.to_s)
+            rescue StandardError
+              {}
+            end
+
+          {
+            id: n.id,
+            kind: data["mod_note_kind"].presence || "note",
+            username: data["display_username"],
+            topic_id: n.topic_id,
+            topic_title: data["topic_title"],
+            target_username: data["target_username"],
+            excerpt: data["excerpt"].to_s,
+            url: data["url"],
+            created_at: n.created_at.iso8601,
+            unread: !n.read,
+          }
+        end
 
       render json: { notes: notes }
     end
