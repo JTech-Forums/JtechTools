@@ -355,10 +355,47 @@ module ::DiscourseModCategories
       render json: { marked: marked }
     end
 
-    # Lists recent moderator notes across topics, for the staff user-menu
-    # tab, newest first.
+    # Marks the current user's mod_note notifications whose `url` points
+    # at /review/... as read. Called by the frontend whenever the user
+    # navigates to /review or /review/:id — so flag_note / post_rejected
+    # notifications (which link to /review/:id rather than to a topic
+    # page) get marked read on direct navigation, not only via the bell-
+    # click or shield-tab-open paths. The data-column LIKE pins the
+    # update to mod_note rows whose URL starts with /review so we don't
+    # touch unrelated notifications.
+    def mark_review_notifications_seen
+      guardian.ensure_can_manage_mod_messages!
+
+      marked =
+        ::Notification
+          .where(
+            user_id: current_user.id,
+            notification_type: ::Notification.types[:custom],
+            read: false,
+          )
+          .where("data LIKE ?", "%\"mod_note\":true%")
+          .where("data LIKE ?", "%\"url\":\"/review%")
+          .update_all(read: true)
+
+      current_user.publish_notifications_state if marked > 0
+
+      render json: { marked: marked }
+    end
+
+    # Lists moderator notes for the staff user-menu tab. Returns a UNION:
+    # (1) every topic that has a private moderator note set, regardless of
+    # whether a Notification fan-out happened — this preserves the
+    # original "topics with notes" feed and lets existing system tests
+    # that set custom_fields directly still surface; (2) every non-topic
+    # event-stream notification (post_deleted / post_approved /
+    # post_rejected / user_note / flag_note) the staff user has — these
+    # don't have a topic-anchored representation, so they only show via
+    # the Notification stream. Newest first within each section, topic
+    # section first.
     def notes_feed
       guardian.ensure_can_manage_mod_messages!
+
+      seen_at = current_user.custom_fields[USER_NOTES_SEEN_FIELD].presence || "1970-01-01T00:00:00Z"
 
       topic_ids =
         TopicCustomField
@@ -368,9 +405,7 @@ module ::DiscourseModCategories
           .limit(50)
           .pluck(:topic_id)
 
-      seen_at = current_user.custom_fields[USER_NOTES_SEEN_FIELD].presence || "1970-01-01T00:00:00Z"
-
-      notes =
+      topic_notes =
         Topic
           .where(id: topic_ids)
           .map do |topic|
@@ -379,20 +414,62 @@ module ::DiscourseModCategories
             replies = topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD]
             activity_at = topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD].to_s
             {
+              kind: "note",
               topic_id: topic.id,
               topic_title: topic.title,
               url: "#{topic.relative_url}/#{topic.highest_post_number}#mod-private-note",
               note: note,
+              excerpt: note,
               reply_count: replies.is_a?(Array) ? replies.size : 0,
               activity_at: activity_at,
+              created_at: activity_at,
               unread: activity_at > seen_at,
             }
           end
           .compact
-          .sort_by { |n| n[:activity_at] }
+          .sort_by { |n| n[:activity_at].to_s }
           .reverse
 
-      render json: { notes: notes }
+      # Non-topic-anchored event notifications: rows whose mod_note_kind
+      # is NOT "note" or "reply" (those are already covered by the
+      # topic-attached feed above, derived from the topic custom field).
+      event_rows =
+        ::Notification
+          .where(user_id: current_user.id, notification_type: ::Notification.types[:custom])
+          .where("data LIKE ?", "%\"mod_note\":true%")
+          .where(
+            "data NOT LIKE ? AND data NOT LIKE ?",
+            "%\"mod_note_kind\":\"note\"%",
+            "%\"mod_note_kind\":\"reply\"%",
+          )
+          .order(created_at: :desc)
+          .limit(50)
+
+      events =
+        event_rows.map do |n|
+          data =
+            begin
+              JSON.parse(n.data.to_s)
+            rescue StandardError
+              {}
+            end
+
+          {
+            id: n.id,
+            kind: data["mod_note_kind"].presence || "note",
+            username: data["display_username"],
+            topic_id: n.topic_id,
+            topic_title: data["topic_title"],
+            target_username: data["target_username"],
+            excerpt: data["excerpt"].to_s,
+            note: data["excerpt"].to_s,
+            url: data["url"],
+            created_at: n.created_at.iso8601,
+            unread: !n.read,
+          }
+        end
+
+      render json: { notes: topic_notes + events }
     end
 
     # Marks the staff user's moderator-note feed as read.

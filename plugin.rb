@@ -1,15 +1,21 @@
 # frozen_string_literal: true
 
 # name: jtech-tools
-# about: Jtech — combined Discourse plugin (dislike, another-smtp, mini-mod, mod-categories, dumbcourse, translator-tweaks)
+# about: Jtech — combined Discourse plugin (dislike, another-smtp, mini-mod, mod-categories, dumbcourse, translator-tweaks, smart-search)
 # version: 0.1.1
 # authors: TripleU, Shalom_Karr, Ars18
 # url: https://github.com/JTech-Forums/JtechTools
 # required_version: 3.0.0
 
+# Smart-search synonym backend — rwordnet ships the WordNet lexical DB
+# (~117K English words, ~8MB) inside the gem. Pure-Ruby, no external
+# C extensions, no network calls.
+gem "rwordnet", "2.0.0", require: false
+
 # Master gate. Each sub-plugin keeps its own enable setting (e.g.
 # discourse_no_likes_enabled, mini_mod_enabled, mod_categories_enabled,
-# dumbcourse_enabled, discourse_another_email_enabled) for fine-grained control.
+# dumbcourse_enabled, discourse_another_email_enabled, smart_search_enabled)
+# for fine-grained control.
 enabled_site_setting :jtech_enabled
 
 # Load each sub-plugin's body in the Plugin::Instance context so that all
@@ -22,7 +28,15 @@ enabled_site_setting :jtech_enabled
 # (magic-header comments and the top-level enabled_site_setting call stripped).
 # Settings, locales, lib/, app/, db/migrate, and assets/ from every sub-plugin
 # have been merged into this plugin's standard Discourse layout.
-%w[dislike another_smtp mini_mod mod_categories dumbcourse translator_tweaks].each do |sub|
+%w[
+  dislike
+  another_smtp
+  mini_mod
+  mod_categories
+  dumbcourse
+  translator_tweaks
+  smart_search
+].each do |sub|
   path = File.expand_path("sub_plugins/#{sub}.rb", __dir__)
   instance_eval(File.read(path), path, 1)
 end

@@ -1,37 +1,29 @@
-name: Feature Screenshots
+name: Comprehensive Screenshots
+
+# Broad-coverage screenshot suite for visual review. Parameterizes
+# scenarios across kinds × lengths × roles × panel states, producing
+# ~77 PNGs uploaded as a single artifact. The spec is gated by
+# JTECH_COMPREHENSIVE_SHOTS=1 so it does NOT run in ordinary CI; this
+# workflow is the one entry point.
+#
+# Runtime: ~12-15 min. Trigger via:
+#   gh workflow run "Comprehensive Screenshots" --ref <branch> --repo Shalom-Karr/JtechTools
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
   workflow_dispatch:
-
-# This workflow is a focused mirror of the `system_tests` job from
-# `discourse/.github/.github/workflows/discourse-plugin.yml` (the reusable
-# workflow used by `discourse-plugin.yml`), trimmed to run only the visual
-# feature-screenshot spec and to ALWAYS upload `tmp/capybara/feature_screenshots/*.png`
-# as a build artifact (not just on failure, the way the reusable workflow does it).
 
 jobs:
   screenshots:
-    name: feature_screenshots
+    name: comprehensive_screenshots
     runs-on: ubuntu-latest
     container: discourse/discourse_test:slim-browsers
-    timeout-minutes: 30
+    timeout-minutes: 120
 
     env:
       RUBY_GLOBAL_METHOD_CACHE_SIZE: 131072
       RAILS_ENV: test
       PGUSER: discourse
       PGPASSWORD: discourse
-      # MUST be lowercase. Discourse derives the compiled stylesheet bundle
-      # slug from the on-disk plugin directory name, and the route that
-      # serves `/stylesheets/<slug>_<hash>.css` is constrained to
-      # `[-a-z0-9_]+`. Checking out into `plugins/JtechTools/` (the
-      # repo's casing) made every plugin CSS request 404 → text/html →
-      # "Refused to apply style" in the browser. Commit b284c8d fixed
-      # this for local dev; the CI workflow was missed.
       PLUGIN_NAME: jtech-tools
       CHEAP_SOURCE_MAPS: "1"
       MINIO_RUNNER_LOG_LEVEL: DEBUG
@@ -40,6 +32,7 @@ jobs:
       PARALLEL_TEST_PROCESSORS: 1
       LOAD_PLUGINS: 1
       CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
+      JTECH_COMPREHENSIVE_SHOTS: "1"
 
     steps:
       - name: Set working directory owner
@@ -124,20 +117,22 @@ jobs:
           echo "127.0.0.1 minio.local" | sudo tee -a /etc/hosts
           echo "127.0.0.1 discoursetest.minio.local" | sudo tee -a /etc/hosts
 
-      - name: Run feature-screenshot specs
+      - name: Run comprehensive-screenshots specs (part 1 + 2 + 3 + 4)
         run: |
           bundle exec rspec \
             --format documentation \
-            plugins/${{ env.PLUGIN_NAME }}/spec/system/feature_screenshots_spec.rb \
-            plugins/${{ env.PLUGIN_NAME }}/spec/system/review_queue_click_through_spec.rb
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/comprehensive_screenshots_spec.rb \
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/comprehensive_screenshots_part2_spec.rb \
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/comprehensive_screenshots_part3_spec.rb \
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/comprehensive_screenshots_part4_spec.rb
         continue-on-error: true
 
-      - name: Upload feature screenshots (always)
+      - name: Upload comprehensive screenshots (always)
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: feature-screenshots
+          name: comprehensive-screenshots
           path: |
-            tmp/capybara/feature_screenshots/*.png
+            tmp/capybara/comprehensive_screenshots/*.png
             tmp/capybara/*.png
           if-no-files-found: warn

@@ -5,6 +5,7 @@
 
 require_relative "../lib/discourse_mod_categories/guardian_extensions"
 require_relative "../lib/discourse_mod_categories/whisper_query_filter"
+require_relative "../lib/discourse_mod_categories/staff_notifier"
 
 register_asset "stylesheets/topic-footer-message.scss"
 register_asset "stylesheets/whisper.scss"
@@ -994,6 +995,240 @@ after_initialize do
       parsed || raw
     rescue StandardError
       raw
+    end
+  end
+
+  # ---------------------------------------------------------------------
+  # Staff event notifications
+  #
+  # Three event streams that fan out high-priority custom Notifications +
+  # live MessageBus alerts to every other staff member, reusing the same
+  # `mod_note: true` data marker the topic-note flow uses so the client
+  # renderer (assets/javascripts/discourse/lib/mod-note-notification.js)
+  # and the shield-tab unread counter pick them up alongside topic notes:
+  #
+  #   1. Post action (delete / approve queued / reject queued)
+  #   2. User note added (discourse-user-notes)
+  #   3. Mod note added to a flag / reviewable (ReviewableNote)
+  #
+  # Each is gated behind its own SiteSetting so individual streams can
+  # be turned off without disabling the whole mod-categories sub-plugin.
+  # ---------------------------------------------------------------------
+
+  # 1a. Post deleted by staff. Skip self-deletes — the post author
+  # destroying their own post is not a moderator action — and skip the
+  # system user so automated cleanups (spam, expiry, plugin sweeps)
+  # don't spam every staff member's bell.
+  on(:post_destroyed) do |post, opts, user|
+    next unless SiteSetting.mod_categories_enabled
+    next unless SiteSetting.mod_notify_staff_on_post_actions
+    next if post.blank? || user.blank?
+    next if post.user_id == user.id
+    next unless user.staff?
+    system_user =
+      (
+        begin
+          Discourse.system_user
+        rescue StandardError
+          nil
+        end
+      )
+    next if system_user && user.id == system_user.id
+
+    topic = post.topic
+    begin
+      DiscourseModCategories::StaffNotifier.fan_out(
+        acting_user: user,
+        kind: DiscourseModCategories::StaffNotifier::KIND_POST_DELETED,
+        message_key: "discourse_mod_categories.post_deleted_notification",
+        title_key: "discourse_mod_categories.post_deleted_notification_title",
+        alert_key: "discourse_mod_categories.post_deleted_notification_alert",
+        url: topic ? "#{topic.relative_url}/#{post.post_number}" : "/",
+        excerpt: post.raw.to_s,
+        topic_id: topic&.id,
+        post_number: post.post_number,
+        topic_title: topic&.title,
+      )
+    rescue StandardError => e
+      # The notify side effect must never block the underlying delete.
+      ::Rails.logger.warn("[jtech-tools] post_destroyed notify failed: #{e.class}: #{e.message}")
+    end
+  end
+
+  # 1b/c. Queued post approved or rejected out of the review queue.
+  #
+  # Original implementation used `on(:approved_post)` / `on(:rejected_post)`
+  # and called `reviewable.reviewed_by` to find the acting staff member,
+  # but that fired BEFORE the outer Reviewable#perform set
+  # reviewed_by_id, and the `reviewed_by` association is also not
+  # defined on every Discourse version's ReviewableQueuedPost — calling
+  # it 500'd the request. We now hook `after_update_commit` instead,
+  # which fires AFTER the outer perform has set both `status` and
+  # `reviewed_by_id`, and find the acting user via `reviewed_by_id`
+  # with a `ReviewableHistory` fallback so it works on Discourse
+  # versions where the column is absent or unset.
+  # `:reviewable_transitioned_to` fires AFTER Reviewable#perform has
+  # set status + reviewed_by_id and saved the record, with the status
+  # passed as a symbol (`:approved`, `:rejected`, …). This is the right
+  # hook — the previous attempts (`:approved_post`/`:rejected_post`
+  # events + `reviewable.reviewed_by`, then `Reviewable.after_update`)
+  # both failed because the inner events fire before reviewed_by_id is
+  # set, and the queued-post status update path in this Discourse
+  # version doesn't reliably invoke after_update callbacks.
+  on(:reviewable_transitioned_to) do |status, reviewable|
+    next unless SiteSetting.mod_categories_enabled
+    next unless SiteSetting.mod_notify_staff_on_post_actions
+    next if reviewable.blank?
+    # Only queued-post reviewables — flag/user reviewables transition
+    # through this event too but have their own notification chain.
+    next unless reviewable.type == "ReviewableQueuedPost"
+
+    kind, message_key, title_key, alert_key =
+      case status
+      when :approved
+        [
+          DiscourseModCategories::StaffNotifier::KIND_POST_APPROVED,
+          "discourse_mod_categories.post_approved_notification",
+          "discourse_mod_categories.post_approved_notification_title",
+          "discourse_mod_categories.post_approved_notification_alert",
+        ]
+      when :rejected
+        [
+          DiscourseModCategories::StaffNotifier::KIND_POST_REJECTED,
+          "discourse_mod_categories.post_rejected_notification",
+          "discourse_mod_categories.post_rejected_notification_title",
+          "discourse_mod_categories.post_rejected_notification_alert",
+        ]
+      end
+    next if kind.blank?
+
+    # Acting user lookup: prefer the reviewed_by_id column (set by
+    # Reviewable#perform just before save), fall back to the latest
+    # history's created_by for Discourse versions where the column is
+    # absent or unset.
+    acting_user_id =
+      (reviewable.respond_to?(:reviewed_by_id) && reviewable.reviewed_by_id) ||
+        ::ReviewableHistory
+          .where(reviewable_id: reviewable.id)
+          .order(:created_at)
+          .last
+          &.created_by_id
+    next if acting_user_id.blank?
+
+    acting_user = ::User.find_by(id: acting_user_id)
+    next if acting_user.blank?
+
+    excerpt = reviewable.payload.is_a?(Hash) ? reviewable.payload["raw"].to_s : ""
+
+    begin
+      DiscourseModCategories::StaffNotifier.fan_out(
+        acting_user: acting_user,
+        kind: kind,
+        message_key: message_key,
+        title_key: title_key,
+        alert_key: alert_key,
+        url: "/review/#{reviewable.id}",
+        excerpt: excerpt,
+      )
+    rescue StandardError => e
+      ::Rails.logger.warn(
+        "[jtech-tools] reviewable transition notify (#{kind}) failed: #{e.class}: #{e.message}",
+      )
+    end
+  end
+
+  # 2. User note added on a user's profile via the bundled
+  # discourse-user-notes plugin. That plugin's `::DiscourseUserNotes
+  # .add_note(user, raw, created_by_id, opts)` writes a Hash into the
+  # PluginStore and does NOT fire any DiscourseEvent, so wrap it with
+  # an alias and fan out from the wrapper. Skipped when the bundled
+  # plugin isn't loaded (e.g. disabled in development).
+  reloadable_patch do
+    if defined?(::DiscourseUserNotes) && ::DiscourseUserNotes.respond_to?(:add_note)
+      ::DiscourseUserNotes.singleton_class.class_eval do
+        unless method_defined?(:add_note_without_mod_categories_notify) ||
+                 private_method_defined?(:add_note_without_mod_categories_notify)
+          alias_method :add_note_without_mod_categories_notify, :add_note
+
+          # Pass-through signature (positional + keyword) so a future
+          # Discourse refactor of add_note's arity doesn't break the
+          # wrapper — the notifier path is purely additive and wrapped
+          # in rescue StandardError, so a malformed call still saves
+          # the note via the original method.
+          define_method(:add_note) do |*args, **kwargs|
+            note = add_note_without_mod_categories_notify(*args, **kwargs)
+
+            begin
+              if SiteSetting.mod_categories_enabled && SiteSetting.mod_notify_staff_on_user_notes
+                user = args[0]
+                raw = args[1]
+                created_by_id = args[2]
+                acting_user = ::User.find_by(id: created_by_id)
+                if acting_user && user.respond_to?(:username)
+                  ::DiscourseModCategories::StaffNotifier.fan_out(
+                    acting_user: acting_user,
+                    kind: ::DiscourseModCategories::StaffNotifier::KIND_USER_NOTE,
+                    message_key: "discourse_mod_categories.user_note_notification",
+                    title_key: "discourse_mod_categories.user_note_notification_title",
+                    alert_key: "discourse_mod_categories.user_note_notification_alert",
+                    url: "/u/#{user.username}/notes",
+                    excerpt: raw.to_s,
+                    target_username: user.username,
+                  )
+                end
+              end
+            rescue StandardError => e
+              ::Rails.logger.warn(
+                "[jtech-tools] user_note staff notify failed: #{e.class}: #{e.message}",
+              )
+            end
+
+            note
+          end
+        end
+      end
+    end
+  end
+
+  # 3. Moderator note added to a flag / reviewable in the review queue.
+  # ReviewableNote is the AR model that backs the "Add a note" textarea
+  # on a reviewable's detail panel — created via the core
+  # Reviewables::NotesController. It has no DiscourseEvent, so hook
+  # after_create directly. Using after_create (not _commit) so the
+  # callback fires inside the request's transaction and is observable
+  # from request specs with transactional fixtures. The downside —
+  # firing the notification when a creating transaction is later
+  # rolled back — is acceptable because the controller commits the row
+  # before returning a successful response. Reloadable so dev-mode
+  # code reloads don't pile up duplicate callbacks.
+  reloadable_patch do
+    if defined?(::ReviewableNote)
+      ::ReviewableNote.after_create do
+        next unless SiteSetting.mod_categories_enabled
+        next unless SiteSetting.mod_notify_staff_on_flag_notes
+
+        author = ::User.find_by(id: user_id)
+        reviewable = ::Reviewable.find_by(id: reviewable_id)
+        next if author.blank? || reviewable.blank?
+
+        target_user = reviewable.target_created_by
+        target_label = target_user&.username || reviewable.type.to_s.sub(/^Reviewable/, "")
+
+        begin
+          DiscourseModCategories::StaffNotifier.fan_out(
+            acting_user: author,
+            kind: DiscourseModCategories::StaffNotifier::KIND_FLAG_NOTE,
+            message_key: "discourse_mod_categories.flag_note_notification",
+            title_key: "discourse_mod_categories.flag_note_notification_title",
+            alert_key: "discourse_mod_categories.flag_note_notification_alert",
+            url: "/review/#{reviewable.id}",
+            excerpt: content.to_s,
+            target_username: target_label,
+          )
+        rescue StandardError => e
+          ::Rails.logger.warn("[jtech-tools] flag_note notify failed: #{e.class}: #{e.message}")
+        end
+      end
     end
   end
 end
