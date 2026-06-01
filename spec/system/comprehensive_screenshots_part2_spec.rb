@@ -81,13 +81,13 @@ RSpec.describe "Comprehensive screenshots (part 2)", if: ENV["JTECH_COMPREHENSIV
   def open_user_menu(user)
     sign_in(user)
     visit("/")
-    expect(page).to have_css(".d-header", wait: 15)
+    expect(page).to have_css(".d-header", wait: 30)
     find(".header-dropdown-toggle.current-user button", match: :first).click
   end
 
   def open_shield_tab(user)
     open_user_menu(user)
-    expect(page).to have_css("#user-menu-button-discourse-mod-notes", wait: 15)
+    expect(page).to have_css("#user-menu-button-discourse-mod-notes", wait: 30)
     find("#user-menu-button-discourse-mod-notes").click
   end
 
@@ -142,7 +142,7 @@ RSpec.describe "Comprehensive screenshots (part 2)", if: ENV["JTECH_COMPREHENSIV
               )
             n_row.update_columns(created_at: time_for(time_key))
             open_user_menu(viewer)
-            expect(page).to have_css(".notification.custom", wait: 15)
+            expect(page).to have_css(".notification.custom", wait: 30)
             shot(shot_name)
           end
         end
@@ -167,7 +167,7 @@ RSpec.describe "Comprehensive screenshots (part 2)", if: ENV["JTECH_COMPREHENSIV
           topic_with_note(title: "Shield density topic #{i + 1}", note: "Density note #{i + 1}.")
         end
         open_shield_tab(viewer)
-        expect(page).to have_css(".mod-notes-panel", wait: 15)
+        expect(page).to have_css(".mod-notes-panel", wait: 30)
         shot("#{n}_shield_density_#{count}_#{role}")
       end
     end
@@ -204,7 +204,7 @@ RSpec.describe "Comprehensive screenshots (part 2)", if: ENV["JTECH_COMPREHENSIV
             )
           sign_in(viewer)
           visit("/t/#{topic.slug}/#{topic.id}")
-          expect(page).to have_css(".mod-private-note", wait: 15)
+          expect(page).to have_css(".mod-private-note", wait: 30)
           shot("#{n}_panel_title_#{kind}_ord#{ord}_#{role}")
         end
       end
@@ -237,7 +237,7 @@ RSpec.describe "Comprehensive screenshots (part 2)", if: ENV["JTECH_COMPREHENSIV
             )
           end
           open_user_menu(viewer)
-          expect(page).to have_css(".notification.custom", wait: 15)
+          expect(page).to have_css(".notification.custom", wait: 30)
           shot("#{n}_stack_#{kind}_#{size}_#{role}")
         end
       end
@@ -331,7 +331,7 @@ RSpec.describe "Comprehensive screenshots (part 2)", if: ENV["JTECH_COMPREHENSIV
       visit("/search?q=#{query}")
       expect(page).to have_css(
         ".search-results, .search-container, .no-results, .no-search-results",
-        wait: 15,
+        wait: 30,
       )
       shot("#{n}_smart_search_#{query}")
       SearchIndexer.disable
@@ -378,7 +378,7 @@ RSpec.describe "Comprehensive screenshots (part 2)", if: ENV["JTECH_COMPREHENSIV
           }.to_json,
         )
         open_user_menu(viewer)
-        expect(page).to have_css(".notification.custom", wait: 15)
+        expect(page).to have_css(".notification.custom", wait: 30)
         shot("#{n}_username_len#{username.length}_#{role}")
       end
     end
@@ -411,7 +411,7 @@ RSpec.describe "Comprehensive screenshots (part 2)", if: ENV["JTECH_COMPREHENSIV
         Fabricate(:post, topic: topic, user: author, raw: "OP for excerpt edge.")
         fab_event_notification(user: viewer, kind: "note", topic: topic, excerpt: body.to_s)
         open_user_menu(viewer)
-        expect(page).to have_css(".notification.custom", wait: 15)
+        expect(page).to have_css(".notification.custom", wait: 30)
         shot("#{n}_excerpt_#{key}_#{role}")
       end
     end

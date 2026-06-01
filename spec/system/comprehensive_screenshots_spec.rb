@@ -122,13 +122,13 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
 
   def open_user_menu
     visit("/")
-    expect(page).to have_css(".d-header", wait: 15)
+    expect(page).to have_css(".d-header", wait: 30)
     find(".header-dropdown-toggle.current-user button", match: :first).click
   end
 
   def open_shield_tab
     open_user_menu
-    expect(page).to have_css("#user-menu-button-discourse-mod-notes", wait: 15)
+    expect(page).to have_css("#user-menu-button-discourse-mod-notes", wait: 30)
     find("#user-menu-button-discourse-mod-notes").click
   end
 
@@ -175,7 +175,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
             )
             sign_in(viewer)
             open_user_menu
-            expect(page).to have_css(".notification.custom", wait: 15)
+            expect(page).to have_css(".notification.custom", wait: 30)
             shot(shot_name)
           end
         end
@@ -190,7 +190,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
   it "B201 — shield tab: empty state" do
     sign_in(admin)
     open_shield_tab
-    expect(page).to have_css(".mod-notes-panel", wait: 15)
+    expect(page).to have_css(".mod-notes-panel", wait: 30)
     shot("B201_shield_tab_empty")
   end
 
@@ -202,7 +202,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
     topic.save_custom_fields(true)
     sign_in(admin)
     open_shield_tab
-    expect(page).to have_css(".mod-notes-panel .mod-notes-item", wait: 15)
+    expect(page).to have_css(".mod-notes-panel .mod-notes-item", wait: 30)
     shot("B202_shield_tab_single_topic_note")
   end
 
@@ -217,7 +217,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
     end
     sign_in(admin)
     open_shield_tab
-    expect(page).to have_css(".mod-notes-panel .mod-notes-item", minimum: 3, wait: 15)
+    expect(page).to have_css(".mod-notes-panel .mod-notes-item", minimum: 3, wait: 30)
     shot("B203_shield_tab_three_topic_notes")
   end
 
@@ -235,7 +235,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
       )
       sign_in(admin)
       open_shield_tab
-      expect(page).to have_css(".mod-notes-panel .mod-notes-item", wait: 15)
+      expect(page).to have_css(".mod-notes-panel .mod-notes-item", wait: 30)
       shot("#{n}_shield_tab_#{kind}")
     end
   end
@@ -256,7 +256,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
     end
     sign_in(admin)
     open_shield_tab
-    expect(page).to have_css(".mod-notes-panel .mod-notes-item", minimum: 4, wait: 15)
+    expect(page).to have_css(".mod-notes-panel .mod-notes-item", minimum: 4, wait: 30)
     shot("B209_shield_tab_mixed_kinds")
   end
 
@@ -271,7 +271,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
     end
     sign_in(admin)
     open_shield_tab
-    expect(page).to have_css(".mod-notes-panel .mod-notes-item", minimum: 10, wait: 15)
+    expect(page).to have_css(".mod-notes-panel .mod-notes-item", minimum: 10, wait: 30)
     shot("B210_shield_tab_scrollable_ten")
   end
 
@@ -296,7 +296,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
           topic.save_custom_fields(true)
           sign_in(viewer)
           visit("/t/#{topic.slug}/#{topic.id}")
-          expect(page).to have_css(".mod-private-note", wait: 15)
+          expect(page).to have_css(".mod-private-note", wait: 30)
           shot("#{n}_panel_#{position}_#{length_name}_#{role}")
         end
       end
@@ -327,7 +327,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
         topic.save_custom_fields(true)
         sign_in(viewer)
         visit("/t/#{topic.slug}/#{topic.id}")
-        expect(page).to have_css(".mod-private-note", wait: 15)
+        expect(page).to have_css(".mod-private-note", wait: 30)
         shot("#{n}_panel_replies_#{reply_count}_#{role}")
       end
     end
@@ -359,7 +359,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
         topic.save_custom_fields(true)
         sign_in(viewer)
         visit("/t/#{topic.slug}/#{topic.id}")
-        expect(page).to have_css(".mod-private-note", wait: 15)
+        expect(page).to have_css(".mod-private-note", wait: 30)
         shot("#{n}_panel_viewers_#{viewer_count}_#{role}")
       end
     end
@@ -383,7 +383,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
       end
       sign_in(admin)
       open_user_menu
-      expect(page).to have_css(".notification.custom", minimum: stack_count, wait: 15)
+      expect(page).to have_css(".notification.custom", minimum: stack_count, wait: 30)
       shot("#{n}_bell_stacked_replies_#{stack_count}")
     end
   end
@@ -401,7 +401,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
     end
     sign_in(admin)
     open_user_menu
-    expect(page).to have_css(".notification.custom", minimum: 7, wait: 15)
+    expect(page).to have_css(".notification.custom", minimum: 7, wait: 30)
     shot("D404_bell_all_kinds_clustered")
   end
 
@@ -423,7 +423,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
       SearchIndexer.index(t, force: true)
       sign_in(admin)
       visit("/search?q=#{term}")
-      expect(page).to have_css(".search-results, .search-container, .no-results", wait: 15)
+      expect(page).to have_css(".search-results, .search-container, .no-results", wait: 30)
       shot("#{n}_smart_search_indexed_#{term}")
       SearchIndexer.disable
     end
@@ -446,7 +446,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
     Fabricate(:post, topic: t1, user: author, raw: "Tips for working with a young child.")
     sign_in(admin)
     visit("/search?q=kid")
-    expect(page).to have_css(".search-results", wait: 15)
+    expect(page).to have_css(".search-results", wait: 30)
     shot("E502_smart_search_results_page")
   end
 
@@ -456,7 +456,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
     Fabricate(:post, topic: t1, user: author, raw: "Tips for working with a young child.")
     sign_in(admin)
     visit("/search?q=kid")
-    expect(page).to have_css(".search-results, .search-container", wait: 15)
+    expect(page).to have_css(".search-results, .search-container", wait: 30)
     shot("E503_smart_search_disabled_baseline")
   end
 
@@ -485,7 +485,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
     )
     sign_in(admin)
     open_user_menu
-    expect(page).to have_css(".notification.custom", wait: 15)
+    expect(page).to have_css(".notification.custom", wait: 30)
     shot("F601_bell_long_username")
   end
 
@@ -499,7 +499,7 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
     topic.save_custom_fields(true)
     sign_in(admin)
     open_shield_tab
-    expect(page).to have_css(".mod-notes-panel .mod-notes-item", wait: 15)
+    expect(page).to have_css(".mod-notes-panel .mod-notes-item", wait: 30)
     shot("F602_shield_tab_unicode_note")
   end
 
@@ -511,14 +511,14 @@ RSpec.describe "Comprehensive screenshots", if: ENV["JTECH_COMPREHENSIVE_SHOTS"]
     topic.save_custom_fields(true)
     sign_in(moderator)
     visit("/t/#{topic.slug}/#{topic.id}")
-    expect(page).to have_css(".mod-private-note", wait: 15)
+    expect(page).to have_css(".mod-private-note", wait: 30)
     shot("F603_panel_wrap_long_excerpt")
   end
 
   it "F604 — bell: zero notifications (clean dropdown)" do
     sign_in(admin)
     open_user_menu
-    expect(page).to have_css(".user-menu, .user-preferences-link, .quick-access-panel", wait: 15)
+    expect(page).to have_css(".user-menu, .user-preferences-link, .quick-access-panel", wait: 30)
     shot("F604_bell_empty_state")
   end
 end

@@ -117,12 +117,13 @@ jobs:
           echo "127.0.0.1 minio.local" | sudo tee -a /etc/hosts
           echo "127.0.0.1 discoursetest.minio.local" | sudo tee -a /etc/hosts
 
-      - name: Run comprehensive-screenshots specs (part 1 + part 2)
+      - name: Run comprehensive-screenshots specs (part 1 + 2 + 3)
         run: |
           bundle exec rspec \
             --format documentation \
             plugins/${{ env.PLUGIN_NAME }}/spec/system/comprehensive_screenshots_spec.rb \
-            plugins/${{ env.PLUGIN_NAME }}/spec/system/comprehensive_screenshots_part2_spec.rb
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/comprehensive_screenshots_part2_spec.rb \
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/comprehensive_screenshots_part3_spec.rb
         continue-on-error: true
 
       - name: Upload comprehensive screenshots (always)
