@@ -78,6 +78,12 @@ export default class ModWhisperTargetModal extends Component {
       return;
     }
 
+    // Mark the whisper state as dirty so model:composer#save knows to
+    // chain the update_post_whisper endpoint after an edit-save resolves
+    // (Discourse's PostsController#update drops whisper params, so an
+    // edit-only path would otherwise silently fail to toggle state).
+    composer.set("modWhisperDirty", true);
+
     const badgeIds = this.selectedBadgeIds.slice();
     const badges = this.badgeChoices.filter((b) => badgeIds.includes(b.id));
 
@@ -190,6 +196,9 @@ export default class ModWhisperTargetModal extends Component {
   clear() {
     const composer = this.args.model?.composer;
     if (composer) {
+      // Disarm is also a whisper-state change — mark dirty so an edit
+      // save propagates the "remove whisper" intent to the server.
+      composer.set("modWhisperDirty", true);
       composer.set("modWhisperArmed", false);
       composer.set("modWhisperTargetUserIds", null);
       composer.set("modWhisperTargetUsernames", null);

@@ -7,6 +7,7 @@ en:
       jtech_mini_mod: Jtech — Mini-mod
       jtech_mod: Jtech — Mod
       jtech_dumbcourse: Jtech — Dumbcourse
+      jtech_smart_search: Jtech — Smart search
 
     # ── Jtech (master) ─────────────────────────────────────────────────────
     jtech_enabled: Enable the Jtech plugin bundle
@@ -131,6 +132,38 @@ en:
       whispers visible only to staff, the post author, the topic's whisper
       participants, and any users staff explicitly target.
 
+    mod_notify_staff_on_post_actions: Notify staff on post actions
+    mod_notify_staff_on_post_actions_description: When on, every other
+      staff member gets a bell notification + live alert when a moderator
+      deletes a post, approves a queued post, or rejects a queued post.
+    mod_notify_staff_on_user_notes: Notify staff on user notes
+    mod_notify_staff_on_user_notes_description: When on, every other staff
+      member gets a bell notification + live alert when a moderator adds
+      a note to a user's profile (discourse-user-notes).
+    mod_notify_staff_on_flag_notes: Notify staff on flag notes
+    mod_notify_staff_on_flag_notes_description: When on, every other staff
+      member gets a bell notification + live alert when a moderator adds
+      a note to a flag/reviewable in the review queue.
+
+    # ── Jtech — Smart search ─────────────────────────────────────────────
+    smart_search_enabled: Enable smart search (synonym expansion)
+    smart_search_enabled_description: When on, searches are expanded with
+      synonyms from a built-in dictionary so that, e.g., "kid" also finds
+      posts about "child" or "youth". The original query runs first; only
+      when it returns fewer than the result threshold below do synonym
+      variants run and get merged in. All synonym work is in-process —
+      no external services, no embedding models, no API keys. On any
+      error the request silently falls back to vanilla Discourse search.
+    smart_search_minimum_results: Smart search — minimum result threshold
+    smart_search_minimum_results_description: Synonym-expanded variants
+      only run when the original query returns fewer than this many
+      posts. Set to 0 to always run variants (more thorough, more SQL).
+    smart_search_variant_limit: Smart search — variant query cap
+    smart_search_variant_limit_description: Hard cap on the number of
+      synonym-expanded variants run per search. Each variant is one
+      extra SQL query; raising this gives broader matches but slower
+      search. Range 1–5.
+
     # ── Jtech — Dumbcourse ─────────────────────────────────────────────────
     dumbcourse_enabled: Enable Dumbcourse
     dumbcourse_enabled_description: Serves the Dumbcourse SPA under the
@@ -205,3 +238,9 @@ en:
 
   discourse_mod_categories:
     note_notification_alert: '%{username} added a moderator note on "%{topic}"'
+    note_reply_notification_alert: '%{username} replied to a moderator note on "%{topic}"'
+    post_deleted_notification_alert: '%{username} deleted a post in "%{topic}"'
+    post_approved_notification_alert: '%{username} approved a queued post in "%{topic}"'
+    post_rejected_notification_alert: '%{username} rejected a queued post'
+    user_note_notification_alert: '%{username} added a note on %{target}'
+    flag_note_notification_alert: '%{username} added a note on a flag for %{target}'

@@ -5,6 +5,7 @@
 
 require_relative "../lib/discourse_mod_categories/guardian_extensions"
 require_relative "../lib/discourse_mod_categories/whisper_query_filter"
+require_relative "../lib/discourse_mod_categories/staff_notifier"
 
 register_asset "stylesheets/topic-footer-message.scss"
 register_asset "stylesheets/whisper.scss"
@@ -14,6 +15,7 @@ register_svg_icon "user-plus"
 register_svg_icon "pencil"
 register_svg_icon "trash-can"
 register_svg_icon "certificate"
+register_svg_icon "eye"
 
 module ::DiscourseModCategories
   # Custom-field keys for the moderator-set messages.
@@ -241,6 +243,16 @@ module ::DiscourseModCategories
   # as group targets.
   POST_WHISPER_TARGET_BADGES_FIELD = "mod_whisper_target_badge_ids"
   TOPIC_WHISPER_PARTICIPANTS_FIELD = "mod_whisper_participant_ids"
+  # ISO8601 timestamp of the latest NON-whisper post in the topic. Written
+  # alongside the highest_post_number rollback so the topic-list query
+  # modifier can sort non-audience users by this value instead of the live
+  # Topic#bumped_at, while audience members keep the actual bump time.
+  TOPIC_NON_WHISPER_BUMPED_AT_FIELD = "mod_non_whisper_bumped_at"
+  # JSON array of `{user_id, username, name, avatar_template, viewed_at}`
+  # entries — staff who have rendered the mod-note panel on the topic.
+  # Used by the "👁 Viewed by N" pill at the bottom of the panel. Re-view
+  # updates the entry's `viewed_at` in place (one row per user).
+  TOPIC_NOTE_VIEWERS_FIELD = "mod_topic_note_viewers"
   MAX_WHISPER_TARGETS = 10
   # Explicit boolean armed flag sent by the composer. A boolean survives
   # form-encoding even when the target id array is empty, so it — not the
@@ -311,6 +323,20 @@ after_initialize do
     DiscourseModCategories::TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD,
     :string,
   )
+  register_topic_custom_field_type(
+    DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD,
+    :string,
+  )
+  register_topic_custom_field_type(DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD, :json)
+
+  # Preload the two custom fields the audience-aware bumped_at serializer
+  # below reads. Without these, Discourse's HasCustomFields::PreloadedProxy
+  # raises NotPreloadedError when the serializer touches the fields on a
+  # topic-list row (the guard exists to prevent N+1 queries — preloading
+  # is the documented way to declare you intend to use the field for
+  # every topic on the list).
+  add_preloaded_topic_list_custom_field(DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD)
+  add_preloaded_topic_list_custom_field(DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD)
   register_user_custom_field_type(DiscourseModCategories::USER_NOTES_SEEN_FIELD, :string)
   register_user_custom_field_type(DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD, :integer)
   register_user_custom_field_type(DiscourseModCategories::USER_TARGETED_CHECKLIST_FIELD, :json)
@@ -429,6 +455,26 @@ after_initialize do
               name: author.name,
               avatar_template: author.avatar_template,
             },
+      }
+    end
+  end
+
+  # Staff who have rendered the mod-note panel on this topic — used by the
+  # "👁 Viewed by N" pill at the bottom of the panel. Newest viewer last,
+  # so the UI can show the most recent at the top when reversed.
+  add_to_serializer(
+    :topic_view,
+    :mod_topic_note_viewers,
+    include_condition: -> { scope.is_staff? },
+  ) do
+    raw = object.topic.custom_fields[DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD]
+    Array(raw).map do |entry|
+      {
+        user_id: entry["user_id"],
+        username: entry["username"],
+        name: entry["name"],
+        avatar_template: entry["avatar_template"],
+        viewed_at: entry["viewed_at"],
       }
     end
   end
@@ -630,8 +676,15 @@ after_initialize do
     # :listable_topic serializer override adds the bump back for audience
     # members on serialization, so they still see the badge. Runs for EVERY
     # whisper (including staff-only whisper-backs with no recipients).
+    #
+    # Also stamp the latest non-whisper post's created_at into a topic custom
+    # field, which the :topic_query_create_list_topics modifier below uses
+    # to sort the /latest list audience-aware: audience members see the
+    # topic bumped to the whisper time (Topic#bumped_at), non-audience
+    # users see it at the non-whisper time. Topic#bumped_at itself is left
+    # alone so the DB column keeps reflecting the actual latest activity.
     if topic
-      non_whisper_max =
+      non_whisper_scope =
         ::Post
           .where(topic_id: topic.id, deleted_at: nil)
           .where.not(
@@ -640,10 +693,18 @@ after_initialize do
                 name: DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
               ).select(:post_id),
           )
-          .maximum(:post_number) || 0
+      non_whisper_max = non_whisper_scope.maximum(:post_number) || 0
+      non_whisper_created_at = non_whisper_scope.maximum(:created_at)
 
       if non_whisper_max > 0 && non_whisper_max < topic.highest_post_number
         ::Topic.where(id: topic.id).update_all(highest_post_number: non_whisper_max)
+      end
+
+      if non_whisper_created_at
+        topic.custom_fields[
+          DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD
+        ] = non_whisper_created_at.iso8601
+        topic.save_custom_fields(true)
       end
     end
 
@@ -664,6 +725,10 @@ after_initialize do
     data = {
       topic_title: topic&.title,
       display_username: user&.username,
+      # Stable marker so MessagesController#mark_topic_notifications_seen
+      # can scope its read-flip to OUR notifications without touching
+      # other plugins' custom notifications attached to the same topic.
+      mod_whisper: true,
       original_post_id: post.id,
       original_post_type: post.post_type,
     }.to_json
@@ -676,6 +741,116 @@ after_initialize do
         post_number: post.post_number,
         data: data,
       )
+    end
+
+    # Dedupe: PostAlerter runs asynchronously and creates standard
+    # :replied / :posted / :quoted / :mentioned notifications for the
+    # topic author, watchers, and mentioned users. If any of those users
+    # are also in our whisper audience, they see TWO bell rows for the
+    # same post — one custom whisper from us, one core reply from
+    # PostAlerter. We schedule a 5-second delayed cleanup that removes
+    # the core duplicates only for users who got our custom whisper.
+    # Done as a delayed job because PostAlerter runs in its own Sidekiq
+    # job after :post_created, so we'd race it if we cleaned up inline.
+    if topic && post.persisted?
+      ::Jobs.enqueue_in(
+        5.seconds,
+        :dedupe_mod_whisper_notifications,
+        post_id: post.id,
+        recipient_ids: recipient_ids,
+      )
+    end
+  end
+
+  # Audience-aware ordering on the topic list. The DB column Topic#bumped_at
+  # is left at the actual latest-activity time (including whispers), and the
+  # `on(:post_created)` hook above writes the latest non-whisper post's
+  # created_at into a topic custom field. This modifier patches the
+  # `/latest` (and friends) topic-list query to use that custom field as
+  # the effective sort key for users who are NOT in the topic's whisper
+  # audience, while audience members keep the live `bumped_at`.
+  #
+  # Audience criterion in this modifier: staff OR the user_id appears in
+  # the topic's `mod_whisper_participant_ids` custom field (the cumulative
+  # whisper-conversation participants of the topic). Explicit per-whisper
+  # user/group/badge targets are folded into the participants list by the
+  # composer flow (see TOPIC_WHISPER_PARTICIPANTS_FIELD writes elsewhere
+  # in this file), so this single check covers all four audience kinds.
+  #
+  # The modifier is wrapped in `rescue StandardError` so any breakage from
+  # a future Discourse upgrade (renamed hook, query shape change, schema
+  # change) falls back to the unmodified scope instead of breaking
+  # /latest entirely. The fallback is Option B — whispers bump for
+  # everyone — which is annoying but recoverable. CI exercises the path
+  # via specs in whisper_unread_badge_spec.rb so we'd see breakage early.
+  register_modifier(:topic_query_create_list_topics) do |scope, _options, topic_query|
+    begin
+      user = topic_query.user
+
+      # Staff are in the audience for every whisper — sort by live bumped_at.
+      next scope if user&.staff?
+
+      user_id = user&.id
+      nwba_field = DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD
+      participants_field = DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
+
+      connection = ::ActiveRecord::Base.connection
+      nwba_field_quoted = connection.quote(nwba_field)
+      participants_field_quoted = connection.quote(participants_field)
+
+      scope =
+        scope.joins(
+          "LEFT OUTER JOIN topic_custom_fields nwba " \
+            "ON nwba.topic_id = topics.id AND nwba.name = #{nwba_field_quoted}",
+        ).joins(
+          "LEFT OUTER JOIN topic_custom_fields part " \
+            "ON part.topic_id = topics.id AND part.name = #{participants_field_quoted}",
+        )
+
+      is_audience_sql =
+        if user_id
+          # The participants field is registered as :json, so its `value`
+          # column holds a JSON-serialized array of integer user_ids.
+          # `value::jsonb @> '<id>'::jsonb` is the safe containment check:
+          # `[5,7]::jsonb @> 5::jsonb` is true, no false positives from
+          # substring overlap (e.g., 15 doesn't match 5). The LIKE guard
+          # skips obviously-malformed legacy rows so the ::jsonb cast
+          # cannot raise mid-query.
+          "(part.value IS NOT NULL AND part.value <> '' " \
+            "AND part.value LIKE '[%]' " \
+            "AND part.value::jsonb @> '#{user_id.to_i}'::jsonb)"
+        else
+          "FALSE"
+        end
+
+      # The regex guard `~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'` ensures the
+      # ::timestamp cast only runs on values that LOOK like ISO8601 dates,
+      # so a corrupted or human-edited custom-field value (e.g. legacy
+      # data, a typo, the literal string "not-a-time") falls through to
+      # topics.bumped_at instead of blowing up the entire /latest query.
+      # The outer `rescue StandardError` below is a last-resort net for
+      # Ruby-level errors raised while BUILDING the modifier scope (e.g.
+      # a future Discourse refactor changing AR method signatures); it
+      # cannot catch SQL execution errors because the reorder is lazy
+      # and runs after the modifier returns. The regex guard is the
+      # primary defense against bad data.
+      effective_bumped_at = <<~SQL.squish
+        CASE
+          WHEN #{is_audience_sql} THEN topics.bumped_at
+          WHEN nwba.value IS NOT NULL
+               AND nwba.value <> ''
+               AND nwba.value ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+            THEN nwba.value::timestamp
+          ELSE topics.bumped_at
+        END
+      SQL
+
+      scope.reorder(::Arel.sql("(#{effective_bumped_at}) DESC, topics.id DESC"))
+    rescue StandardError => e
+      ::Rails.logger.warn(
+        "[jtech-tools] topic_query audience-aware sort fell back: #{e.class}: #{e.message}",
+      )
+      scope
     end
   end
 
@@ -784,5 +959,276 @@ after_initialize do
 
     visible_max = DiscourseModCategories.whisper_audience_max_post_number(object, scope&.user)
     visible_max || raw
+  end
+
+  # Audience-aware bumped_at for the topic list's "Activity" column. The
+  # topic-list query modifier already SORTS non-audience viewers by the
+  # non-whisper bump time, but the displayed Activity column read the raw
+  # `topics.bumped_at` and showed e.g. "5m" for a whisper they can't see.
+  # Mirror the same audience check here so the displayed time matches the
+  # sort position: audience members (staff + topic participants) see the
+  # actual bump time; non-audience viewers see the non-whisper bump time
+  # stored in the custom field. Falls through to raw on missing/malformed
+  # field values so an upgrade to a topic without the stamp still works.
+  add_to_serializer(:listable_topic, :bumped_at) do
+    raw = object.bumped_at
+    next raw unless SiteSetting.mod_whisper_enabled
+
+    user = scope&.user
+    next raw if user&.staff?
+
+    # All custom-field access wrapped together: HasCustomFields::PreloadedProxy
+    # raises NotPreloadedError if `add_preloaded_topic_list_custom_field`
+    # registrations above haven't taken effect (e.g. early in boot, or
+    # after a Discourse release reshapes the preloader). Falling through
+    # to `raw` keeps /latest responsive in that case — the worst outcome
+    # is the pre-fix "stranger sees the whisper time" display, which is
+    # recoverable on the next request.
+    begin
+      participants = object.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]
+      next raw if user && participants.is_a?(Array) && participants.map(&:to_i).include?(user.id)
+
+      nwba = object.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD]
+      next raw if nwba.blank?
+
+      parsed = ::Time.zone.parse(nwba.to_s)
+      parsed || raw
+    rescue StandardError
+      raw
+    end
+  end
+
+  # ---------------------------------------------------------------------
+  # Staff event notifications
+  #
+  # Three event streams that fan out high-priority custom Notifications +
+  # live MessageBus alerts to every other staff member, reusing the same
+  # `mod_note: true` data marker the topic-note flow uses so the client
+  # renderer (assets/javascripts/discourse/lib/mod-note-notification.js)
+  # and the shield-tab unread counter pick them up alongside topic notes:
+  #
+  #   1. Post action (delete / approve queued / reject queued)
+  #   2. User note added (discourse-user-notes)
+  #   3. Mod note added to a flag / reviewable (ReviewableNote)
+  #
+  # Each is gated behind its own SiteSetting so individual streams can
+  # be turned off without disabling the whole mod-categories sub-plugin.
+  # ---------------------------------------------------------------------
+
+  # 1a. Post deleted by staff. Skip self-deletes — the post author
+  # destroying their own post is not a moderator action — and skip the
+  # system user so automated cleanups (spam, expiry, plugin sweeps)
+  # don't spam every staff member's bell.
+  on(:post_destroyed) do |post, opts, user|
+    next unless SiteSetting.mod_categories_enabled
+    next unless SiteSetting.mod_notify_staff_on_post_actions
+    next if post.blank? || user.blank?
+    next if post.user_id == user.id
+    next unless user.staff?
+    system_user =
+      (
+        begin
+          Discourse.system_user
+        rescue StandardError
+          nil
+        end
+      )
+    next if system_user && user.id == system_user.id
+
+    topic = post.topic
+    begin
+      DiscourseModCategories::StaffNotifier.fan_out(
+        acting_user: user,
+        kind: DiscourseModCategories::StaffNotifier::KIND_POST_DELETED,
+        message_key: "discourse_mod_categories.post_deleted_notification",
+        title_key: "discourse_mod_categories.post_deleted_notification_title",
+        alert_key: "discourse_mod_categories.post_deleted_notification_alert",
+        url: topic ? "#{topic.relative_url}/#{post.post_number}" : "/",
+        excerpt: post.raw.to_s,
+        topic_id: topic&.id,
+        post_number: post.post_number,
+        topic_title: topic&.title,
+      )
+    rescue StandardError => e
+      # The notify side effect must never block the underlying delete.
+      ::Rails.logger.warn("[jtech-tools] post_destroyed notify failed: #{e.class}: #{e.message}")
+    end
+  end
+
+  # 1b/c. Queued post approved or rejected out of the review queue.
+  #
+  # Original implementation used `on(:approved_post)` / `on(:rejected_post)`
+  # and called `reviewable.reviewed_by` to find the acting staff member,
+  # but that fired BEFORE the outer Reviewable#perform set
+  # reviewed_by_id, and the `reviewed_by` association is also not
+  # defined on every Discourse version's ReviewableQueuedPost — calling
+  # it 500'd the request. We now hook `after_update_commit` instead,
+  # which fires AFTER the outer perform has set both `status` and
+  # `reviewed_by_id`, and find the acting user via `reviewed_by_id`
+  # with a `ReviewableHistory` fallback so it works on Discourse
+  # versions where the column is absent or unset.
+  # `:reviewable_transitioned_to` fires AFTER Reviewable#perform has
+  # set status + reviewed_by_id and saved the record, with the status
+  # passed as a symbol (`:approved`, `:rejected`, …). This is the right
+  # hook — the previous attempts (`:approved_post`/`:rejected_post`
+  # events + `reviewable.reviewed_by`, then `Reviewable.after_update`)
+  # both failed because the inner events fire before reviewed_by_id is
+  # set, and the queued-post status update path in this Discourse
+  # version doesn't reliably invoke after_update callbacks.
+  on(:reviewable_transitioned_to) do |status, reviewable|
+    next unless SiteSetting.mod_categories_enabled
+    next unless SiteSetting.mod_notify_staff_on_post_actions
+    next if reviewable.blank?
+    # Only queued-post reviewables — flag/user reviewables transition
+    # through this event too but have their own notification chain.
+    next unless reviewable.type == "ReviewableQueuedPost"
+
+    kind, message_key, title_key, alert_key =
+      case status
+      when :approved
+        [
+          DiscourseModCategories::StaffNotifier::KIND_POST_APPROVED,
+          "discourse_mod_categories.post_approved_notification",
+          "discourse_mod_categories.post_approved_notification_title",
+          "discourse_mod_categories.post_approved_notification_alert",
+        ]
+      when :rejected
+        [
+          DiscourseModCategories::StaffNotifier::KIND_POST_REJECTED,
+          "discourse_mod_categories.post_rejected_notification",
+          "discourse_mod_categories.post_rejected_notification_title",
+          "discourse_mod_categories.post_rejected_notification_alert",
+        ]
+      end
+    next if kind.blank?
+
+    # Acting user lookup: prefer the reviewed_by_id column (set by
+    # Reviewable#perform just before save), fall back to the latest
+    # history's created_by for Discourse versions where the column is
+    # absent or unset.
+    acting_user_id =
+      (reviewable.respond_to?(:reviewed_by_id) && reviewable.reviewed_by_id) ||
+        ::ReviewableHistory
+          .where(reviewable_id: reviewable.id)
+          .order(:created_at)
+          .last
+          &.created_by_id
+    next if acting_user_id.blank?
+
+    acting_user = ::User.find_by(id: acting_user_id)
+    next if acting_user.blank?
+
+    excerpt = reviewable.payload.is_a?(Hash) ? reviewable.payload["raw"].to_s : ""
+
+    begin
+      DiscourseModCategories::StaffNotifier.fan_out(
+        acting_user: acting_user,
+        kind: kind,
+        message_key: message_key,
+        title_key: title_key,
+        alert_key: alert_key,
+        url: "/review/#{reviewable.id}",
+        excerpt: excerpt,
+      )
+    rescue StandardError => e
+      ::Rails.logger.warn(
+        "[jtech-tools] reviewable transition notify (#{kind}) failed: #{e.class}: #{e.message}",
+      )
+    end
+  end
+
+  # 2. User note added on a user's profile via the bundled
+  # discourse-user-notes plugin. That plugin's `::DiscourseUserNotes
+  # .add_note(user, raw, created_by_id, opts)` writes a Hash into the
+  # PluginStore and does NOT fire any DiscourseEvent, so wrap it with
+  # an alias and fan out from the wrapper. Skipped when the bundled
+  # plugin isn't loaded (e.g. disabled in development).
+  reloadable_patch do
+    if defined?(::DiscourseUserNotes) && ::DiscourseUserNotes.respond_to?(:add_note)
+      ::DiscourseUserNotes.singleton_class.class_eval do
+        unless method_defined?(:add_note_without_mod_categories_notify) ||
+                 private_method_defined?(:add_note_without_mod_categories_notify)
+          alias_method :add_note_without_mod_categories_notify, :add_note
+
+          # Pass-through signature (positional + keyword) so a future
+          # Discourse refactor of add_note's arity doesn't break the
+          # wrapper — the notifier path is purely additive and wrapped
+          # in rescue StandardError, so a malformed call still saves
+          # the note via the original method.
+          define_method(:add_note) do |*args, **kwargs|
+            note = add_note_without_mod_categories_notify(*args, **kwargs)
+
+            begin
+              if SiteSetting.mod_categories_enabled && SiteSetting.mod_notify_staff_on_user_notes
+                user = args[0]
+                raw = args[1]
+                created_by_id = args[2]
+                acting_user = ::User.find_by(id: created_by_id)
+                if acting_user && user.respond_to?(:username)
+                  ::DiscourseModCategories::StaffNotifier.fan_out(
+                    acting_user: acting_user,
+                    kind: ::DiscourseModCategories::StaffNotifier::KIND_USER_NOTE,
+                    message_key: "discourse_mod_categories.user_note_notification",
+                    title_key: "discourse_mod_categories.user_note_notification_title",
+                    alert_key: "discourse_mod_categories.user_note_notification_alert",
+                    url: "/u/#{user.username}/notes",
+                    excerpt: raw.to_s,
+                    target_username: user.username,
+                  )
+                end
+              end
+            rescue StandardError => e
+              ::Rails.logger.warn(
+                "[jtech-tools] user_note staff notify failed: #{e.class}: #{e.message}",
+              )
+            end
+
+            note
+          end
+        end
+      end
+    end
+  end
+
+  # 3. Moderator note added to a flag / reviewable in the review queue.
+  # ReviewableNote is the AR model that backs the "Add a note" textarea
+  # on a reviewable's detail panel — created via the core
+  # Reviewables::NotesController. It has no DiscourseEvent, so hook
+  # after_create directly. Using after_create (not _commit) so the
+  # callback fires inside the request's transaction and is observable
+  # from request specs with transactional fixtures. The downside —
+  # firing the notification when a creating transaction is later
+  # rolled back — is acceptable because the controller commits the row
+  # before returning a successful response. Reloadable so dev-mode
+  # code reloads don't pile up duplicate callbacks.
+  reloadable_patch do
+    if defined?(::ReviewableNote)
+      ::ReviewableNote.after_create do
+        next unless SiteSetting.mod_categories_enabled
+        next unless SiteSetting.mod_notify_staff_on_flag_notes
+
+        author = ::User.find_by(id: user_id)
+        reviewable = ::Reviewable.find_by(id: reviewable_id)
+        next if author.blank? || reviewable.blank?
+
+        target_user = reviewable.target_created_by
+        target_label = target_user&.username || reviewable.type.to_s.sub(/^Reviewable/, "")
+
+        begin
+          DiscourseModCategories::StaffNotifier.fan_out(
+            acting_user: author,
+            kind: DiscourseModCategories::StaffNotifier::KIND_FLAG_NOTE,
+            message_key: "discourse_mod_categories.flag_note_notification",
+            title_key: "discourse_mod_categories.flag_note_notification_title",
+            alert_key: "discourse_mod_categories.flag_note_notification_alert",
+            url: "/review/#{reviewable.id}",
+            excerpt: content.to_s,
+            target_username: target_label,
+          )
+        rescue StandardError => e
+          ::Rails.logger.warn("[jtech-tools] flag_note notify failed: #{e.class}: #{e.message}")
+        end
+      end
+    end
   end
 end

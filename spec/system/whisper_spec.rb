@@ -259,48 +259,37 @@ RSpec.describe "Moderator whisper" do
   context "a topic participant whispers back" do
     before { make_whisper_post([recipient.id]) }
 
-    it "arms a staff-only whisper-back from the toolbar" do
+    it "does NOT show the whisper toolbar button to a non-staff participant" do
+      # Previously the participant could click the eye button to arm a
+      # staff-only whisper-back from the topic-level reply composer.
+      # That UI was removed: whisper-arming is staff-only at the toolbar
+      # level. Non-staff who hit Reply directly on a whisper POST still
+      # get their reply auto-armed by the `composer:opened` handler in
+      # mod-whisper.js — they just don't get a manual toggle from the
+      # topic-level reply composer.
       sign_in(recipient)
       visit("/t/#{topic.slug}/#{topic.id}")
       expect(page).to have_css(".mod-whisper-banner", wait: 15)
 
       open_reply_composer
-      whisper_toolbar_button.click
-
-      expect(page).to have_css(".mod-whisper-armed-pill", wait: 10)
-      expect(page).to have_css(
-        ".mod-whisper-armed-pill__label",
-        text: I18n.t("js.discourse_mod_categories.whisper.armed_pill_staff_only"),
-      )
-      shot("70_participant_whisper_back_armed")
-
-      find(".d-editor-input").fill_in(with: "Thanks staff, replying back.")
-      find(".save-or-cancel .create").click
-
-      expect(page).to have_css(
-        ".cooked.mod-whisper.mod-whisper--user .mod-whisper-banner",
-        wait: 15,
-      )
-      shot("71_whisper_back_banner")
-
-      whisper_back = topic.reload.posts.last
-      expect(whisper_back.custom_fields[targets_field]).to eq([])
+      expect(page).to have_css(".d-editor-input", wait: 10)
+      expect(page).to have_no_css(".d-editor-button-bar button.mod-whisper-target")
+      shot("70_participant_no_whisper_button")
     end
   end
 
   context "a non-participant user" do
     before { make_whisper_post([recipient.id]) }
 
-    it "the eye button is a no-op for a non-participant" do
+    it "does NOT show the whisper toolbar button to a non-participant" do
       sign_in(stranger)
       visit("/t/#{topic.slug}/#{topic.id}")
       expect(page).to have_css("#topic-title", wait: 10)
 
       open_reply_composer
-      whisper_toolbar_button.click
-      # No whisper armed — the pill never appears.
-      expect(page).to have_no_css(".mod-whisper-armed-pill")
-      shot("72_non_participant_no_op")
+      expect(page).to have_css(".d-editor-input", wait: 10)
+      expect(page).to have_no_css(".d-editor-button-bar button.mod-whisper-target")
+      shot("72_non_participant_no_whisper_button")
     end
   end
 

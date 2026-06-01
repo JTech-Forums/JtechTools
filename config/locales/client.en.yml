@@ -75,12 +75,28 @@ en:
         edit_note: Edit note
         delete_note: Delete note
         delete_note_confirm: Delete this moderator note and all its replies?
+        viewed_by:
+          one: Viewed by %{count} staff
+          other: Viewed by %{count} staff
       notes_tab:
         title: Moderator notes
         loading: Loading…
         empty: No moderator notes yet.
+        on_target: 'on %{target}'
       note_notification: '%{username} added a moderator note'
       note_notification_title: Moderator note
+      note_reply_notification: '%{username} replied to a moderator note'
+      note_reply_notification_title: Moderator note reply
+      post_deleted_notification: '%{username} deleted a post'
+      post_deleted_notification_title: Post deleted by moderator
+      post_approved_notification: '%{username} approved a queued post'
+      post_approved_notification_title: Queued post approved
+      post_rejected_notification: '%{username} rejected a queued post'
+      post_rejected_notification_title: Queued post rejected
+      user_note_notification: '%{username} added a note on a user'
+      user_note_notification_title: User note added
+      flag_note_notification: '%{username} added a note on a flag'
+      flag_note_notification_title: Flag note added
       audience:
         label: Show this prompt to
         all: Everyone
