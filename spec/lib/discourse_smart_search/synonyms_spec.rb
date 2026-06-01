@@ -3,6 +3,12 @@
 require "rails_helper"
 
 RSpec.describe ::DiscourseSmartSearch::Synonyms do
+  # Clear the LRU cache between examples so a prior test's stubbed
+  # `wordnet_available?` return value doesn't leak into another test
+  # via a cache hit.
+  before { described_class.reload! }
+  before { described_class.instance_variable_set(:@wordnet_available, nil) }
+
   describe ".for" do
     context "tech overlay (YAML) — always available" do
       it "returns the symmetric synonym set including the word itself" do

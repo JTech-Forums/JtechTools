@@ -9,15 +9,15 @@ require "rails_helper"
 RSpec.describe "Smart search" do
   fab!(:category)
   fab!(:user)
-  fab!(:child_topic) do
-    Fabricate(:topic, category: category, title: "Helping my child with morning routines")
+  fab!(:javascript_topic) do
+    Fabricate(:topic, category: category, title: "Helping with javascript async patterns")
   end
-  fab!(:child_post) do
+  fab!(:javascript_post) do
     Fabricate(
       :post,
-      topic: child_topic,
+      topic: javascript_topic,
       user: user,
-      raw: "Tips for working with a young child who refuses transitions.",
+      raw: "Tips for writing javascript that handles async errors cleanly.",
     )
   end
 
@@ -29,16 +29,19 @@ RSpec.describe "Smart search" do
     SearchIndexer.index(post.topic, force: true)
   end
 
-  before { reindex(child_post) }
+  before { reindex(javascript_post) }
+  # Clear the Synonyms LRU cache between examples so a prior test's
+  # WordNet lookup doesn't leak into this one's expectations.
+  before { ::DiscourseSmartSearch::Synonyms.reload! }
 
   describe "with smart_search disabled" do
     before { SiteSetting.smart_search_enabled = false }
 
     it "behaves exactly like vanilla Discourse search" do
-      result = ::Search.execute("kid")
-      # Vanilla search does not match "child" content for the query
-      # "kid", so the post is NOT expected to be in the result set.
-      expect(result.posts.map(&:id)).not_to include(child_post.id)
+      result = ::Search.execute("js")
+      # Vanilla search does not match "javascript" content for the
+      # query "js", so the post is NOT expected to be in the result set.
+      expect(result.posts.map(&:id)).not_to include(javascript_post.id)
     end
   end
 
@@ -50,27 +53,27 @@ RSpec.describe "Smart search" do
     end
 
     it "finds posts that match only via a synonym" do
-      result = ::Search.execute("kid")
-      expect(result.posts.map(&:id)).to include(child_post.id)
+      result = ::Search.execute("js")
+      expect(result.posts.map(&:id)).to include(javascript_post.id)
     end
 
     it "does not duplicate posts that match both the original and a variant" do
-      kid_topic = Fabricate(:topic, category: category, title: "Asking a kid about their day")
-      kid_post =
-        Fabricate(:post, topic: kid_topic, user: user, raw: "What helps a kid open up at dinner?")
-      reindex(kid_post)
+      js_topic = Fabricate(:topic, category: category, title: "Asking about js memory leaks")
+      js_post =
+        Fabricate(:post, topic: js_topic, user: user, raw: "What causes js heap to grow slowly?")
+      reindex(js_post)
 
-      result = ::Search.execute("kid")
+      result = ::Search.execute("js")
       ids = result.posts.map(&:id)
-      expect(ids.count(kid_post.id)).to eq(1)
+      expect(ids.count(js_post.id)).to eq(1)
     end
 
     it "skips variant expansion when the original returns enough results" do
       # Threshold of 0 means "never bother running variants" because
       # the original always returns >= 0 results.
       SiteSetting.smart_search_minimum_results = 0
-      result = ::Search.execute("kid")
-      expect(result.posts.map(&:id)).not_to include(child_post.id)
+      result = ::Search.execute("js")
+      expect(result.posts.map(&:id)).not_to include(javascript_post.id)
     end
 
     it "does not raise when Synonyms.for raises" do
@@ -78,12 +81,12 @@ RSpec.describe "Smart search" do
       # The vanilla pass must complete and return a result object; the
       # synonym-lookup failure inside the variant expansion is caught
       # by the rescue and the original result is returned untouched.
-      expect { ::Search.execute("kid") }.not_to raise_error
+      expect { ::Search.execute("js") }.not_to raise_error
     end
 
     it "does not raise when QueryExpander raises" do
       allow(::DiscourseSmartSearch::QueryExpander).to receive(:variants).and_raise("boom")
-      expect { ::Search.execute("kid") }.not_to raise_error
+      expect { ::Search.execute("js") }.not_to raise_error
     end
 
     it "does not raise when an inner variant Search.new raises" do
@@ -99,7 +102,7 @@ RSpec.describe "Smart search" do
         original_new.call(term, *rest)
       end
 
-      expect { ::Search.execute("kid") }.not_to raise_error
+      expect { ::Search.execute("js") }.not_to raise_error
     end
 
     it "passes the configured limit through to QueryExpander.variants" do
@@ -109,14 +112,14 @@ RSpec.describe "Smart search" do
         received_limit = opts[:limit]
         []
       end
-      ::Search.execute("kid behavior")
+      ::Search.execute("js bug")
       expect(received_limit).to eq(1)
     end
 
     it "preserves Discourse operators on the variant queries" do
       # An exact-search operator query should remain expandable but the
       # operator itself must travel through verbatim.
-      variants = ::DiscourseSmartSearch::QueryExpander.variants("kid category:general")
+      variants = ::DiscourseSmartSearch::QueryExpander.variants("js category:general")
       variants.each { |v| expect(v).to include("category:general") }
     end
   end
