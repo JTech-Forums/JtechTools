@@ -16,7 +16,10 @@ RSpec.describe "Staff event notifications" do
   fab!(:user)
   fab!(:category)
   fab!(:topic) { Fabricate(:topic, category: category) }
-  fab!(:post) { Fabricate(:post, topic: topic, user: user) }
+  # NB: do NOT name this `:post` — the RSpec request helper `post`
+  # collides with the lazy let_it_be accessor and raises ArgumentError
+  # on every HTTP POST call inside this spec.
+  fab!(:target_post) { Fabricate(:post, topic: topic, user: user) }
 
   before do
     SiteSetting.mod_categories_enabled = true
@@ -38,29 +41,29 @@ RSpec.describe "Staff event notifications" do
 
   describe "deduplication" do
     it "does not create a second row when the same event fires twice within 30s" do
-      PostDestroyer.new(moderator, post).destroy
+      PostDestroyer.new(moderator, target_post).destroy
 
       # Second :post_destroyed for the same post within the dedup window —
       # simulated by re-triggering the event payload directly.
-      DiscourseEvent.trigger(:post_destroyed, post, {}, moderator)
+      DiscourseEvent.trigger(:post_destroyed, target_post, {}, moderator)
 
       expect(staff_notifications(admin, kind: "post_deleted").count).to eq(1)
     end
 
     it "creates a fresh row when the second event fires past the dedup window" do
-      PostDestroyer.new(moderator, post).destroy
+      PostDestroyer.new(moderator, target_post).destroy
       first = staff_notifications(admin, kind: "post_deleted").first
       # Backdate the existing row outside the 30s window.
       Notification.where(id: first.id).update_all(created_at: 5.minutes.ago)
 
-      DiscourseEvent.trigger(:post_destroyed, post, {}, moderator)
+      DiscourseEvent.trigger(:post_destroyed, target_post, {}, moderator)
 
       expect(staff_notifications(admin, kind: "post_deleted").count).to eq(2)
     end
 
     it "still creates distinct rows for two real deletions on different posts" do
       other_post = Fabricate(:post, topic: topic, user: user)
-      PostDestroyer.new(moderator, post).destroy
+      PostDestroyer.new(moderator, target_post).destroy
       PostDestroyer.new(moderator, other_post).destroy
 
       expect(staff_notifications(admin, kind: "post_deleted").count).to eq(2)
@@ -126,7 +129,7 @@ RSpec.describe "Staff event notifications" do
 
   describe "post actions" do
     it "notifies every other staff member when a moderator deletes a post" do
-      PostDestroyer.new(moderator, post).destroy
+      PostDestroyer.new(moderator, target_post).destroy
 
       expect(staff_notifications(admin, kind: "post_deleted").count).to eq(1)
       expect(staff_notifications(other_moderator, kind: "post_deleted").count).to eq(1)
@@ -134,7 +137,7 @@ RSpec.describe "Staff event notifications" do
     end
 
     it "skips the notification when the post author destroys their own post" do
-      PostDestroyer.new(user, post).destroy
+      PostDestroyer.new(user, target_post).destroy
 
       expect(staff_notifications(admin, kind: "post_deleted").count).to eq(0)
     end
@@ -142,27 +145,27 @@ RSpec.describe "Staff event notifications" do
     it "skips when mod_notify_staff_on_post_actions is off" do
       SiteSetting.mod_notify_staff_on_post_actions = false
 
-      PostDestroyer.new(moderator, post).destroy
+      PostDestroyer.new(moderator, target_post).destroy
 
       expect(staff_notifications(admin, kind: "post_deleted").count).to eq(0)
     end
 
     it "marks the delete notification as high priority and anchors it to the post" do
-      PostDestroyer.new(moderator, post).destroy
+      PostDestroyer.new(moderator, target_post).destroy
 
       n = staff_notifications(admin, kind: "post_deleted").first
       expect(n.high_priority).to eq(true)
       expect(n.topic_id).to eq(topic.id)
-      expect(n.post_number).to eq(post.post_number)
+      expect(n.post_number).to eq(target_post.post_number)
       data = JSON.parse(n.data)
-      expect(data["url"]).to eq("#{topic.relative_url}/#{post.post_number}")
+      expect(data["url"]).to eq("#{topic.relative_url}/#{target_post.post_number}")
       expect(data["display_username"]).to eq(moderator.username)
     end
 
     it "publishes a live pop-up alert on a post delete" do
       messages =
         MessageBus
-          .track_publish { PostDestroyer.new(moderator, post).destroy }
+          .track_publish { PostDestroyer.new(moderator, target_post).destroy }
           .select { |m| m.channel.start_with?("/notification-alert/") }
 
       alerted = messages.map(&:channel)

@@ -1062,7 +1062,14 @@ after_initialize do
   # versions where the column is absent or unset.
   reloadable_patch do
     if defined?(::Reviewable)
-      ::Reviewable.after_update_commit do
+      # `after_update` (not `after_update_commit`) so the callback fires
+      # inside the request's transaction and is observable from request
+      # specs with transactional fixtures. The downside — firing when
+      # the outer transaction later rolls back — is acceptable because
+      # the controller commits the row before returning a successful
+      # response. Same pattern as the ReviewableNote `after_create`
+      # callback below.
+      ::Reviewable.after_update do
         next unless SiteSetting.mod_categories_enabled
         next unless SiteSetting.mod_notify_staff_on_post_actions
         next unless saved_change_to_status?

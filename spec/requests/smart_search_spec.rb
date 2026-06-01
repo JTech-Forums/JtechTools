@@ -100,15 +100,17 @@ RSpec.describe "Smart search" do
       expect { ::Search.execute("kid") }.not_to raise_error
     end
 
-    it "does not raise when an inner variant search raises" do
+    it "does not raise when an inner variant Search.new raises" do
+      # Make the variant generator return one alt term, then make any
+      # Search.new for that term blow up. The rescue around
+      # merge_variant should swallow it and return the original result.
       allow(::DiscourseSmartSearch::QueryExpander).to receive(:variants).and_return(
         ["___injected_alt___"],
       )
-      # Force the inner Search.new(...).execute(...) to blow up so we
-      # exercise the merge_variant rescue path.
-      allow_any_instance_of(::Search).to receive(:execute).and_wrap_original do |orig, *a, **kw|
-        raise "exploded" if orig.receiver.instance_variable_get(:@term) == "___injected_alt___"
-        orig.call(*a, **kw)
+      original_new = ::Search.method(:new)
+      allow(::Search).to receive(:new) do |term, *rest|
+        raise "exploded" if term == "___injected_alt___"
+        original_new.call(term, *rest)
       end
 
       expect { ::Search.execute("kid") }.not_to raise_error
@@ -116,12 +118,13 @@ RSpec.describe "Smart search" do
 
     it "passes the configured limit through to QueryExpander.variants" do
       SiteSetting.smart_search_variant_limit = 1
-      allow(::DiscourseSmartSearch::QueryExpander).to receive(:variants).and_call_original
+      received_limit = nil
+      allow(::DiscourseSmartSearch::QueryExpander).to receive(:variants) do |_term, **opts|
+        received_limit = opts[:limit]
+        []
+      end
       ::Search.execute("kid behavior")
-      expect(::DiscourseSmartSearch::QueryExpander).to have_received(:variants).with(
-        anything,
-        limit: 1,
-      )
+      expect(received_limit).to eq(1)
     end
 
     it "preserves Discourse operators on the variant queries" do
