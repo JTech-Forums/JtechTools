@@ -17,7 +17,7 @@ jobs:
     name: comprehensive_screenshots
     runs-on: ubuntu-latest
     container: discourse/discourse_test:slim-browsers
-    timeout-minutes: 40
+    timeout-minutes: 120
 
     env:
       RUBY_GLOBAL_METHOD_CACHE_SIZE: 131072
@@ -117,11 +117,12 @@ jobs:
           echo "127.0.0.1 minio.local" | sudo tee -a /etc/hosts
           echo "127.0.0.1 discoursetest.minio.local" | sudo tee -a /etc/hosts
 
-      - name: Run comprehensive-screenshots spec
+      - name: Run comprehensive-screenshots specs (part 1 + part 2)
         run: |
           bundle exec rspec \
             --format documentation \
-            plugins/${{ env.PLUGIN_NAME }}/spec/system/comprehensive_screenshots_spec.rb
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/comprehensive_screenshots_spec.rb \
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/comprehensive_screenshots_part2_spec.rb
         continue-on-error: true
 
       - name: Upload comprehensive screenshots (always)
