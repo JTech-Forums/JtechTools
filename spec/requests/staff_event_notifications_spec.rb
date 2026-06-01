@@ -35,6 +35,19 @@ RSpec.describe "Staff event notifications" do
     scope.where("data LIKE ?", "%\"mod_note\":true%")
   end
 
+  # Discourse's `Reviewable` model dropped the `reviewed_by_id` column
+  # at some point — `reviewed_by` is now derived from the LATEST
+  # `ReviewableHistory` row's `created_by`. This helper seeds that
+  # history row so the callback's lookup finds the acting moderator.
+  def seed_acting_history(reviewable, user)
+    ReviewableHistory.create!(
+      reviewable: reviewable,
+      reviewable_history_type: ReviewableHistory.types[:transitioned],
+      status: reviewable.status,
+      created_by: user,
+    )
+  end
+
   describe "deduplication" do
     it "does not create a second row when the same event fires twice within 30s" do
       PostDestroyer.new(moderator, target_post).destroy
@@ -177,7 +190,7 @@ RSpec.describe "Staff event notifications" do
     fab!(:reviewable_queued, :reviewable_queued_post)
 
     it "fans out a post_approved notification on :reviewable_transitioned_to(:approved)" do
-      reviewable_queued.update_columns(reviewed_by_id: moderator.id)
+      seed_acting_history(reviewable_queued, moderator)
       DiscourseEvent.trigger(:reviewable_transitioned_to, :approved, reviewable_queued.reload)
 
       expect(staff_notifications(admin, kind: "post_approved").count).to eq(1)
@@ -186,7 +199,7 @@ RSpec.describe "Staff event notifications" do
     end
 
     it "fans out a post_rejected notification on :reviewable_transitioned_to(:rejected)" do
-      reviewable_queued.update_columns(reviewed_by_id: moderator.id)
+      seed_acting_history(reviewable_queued, moderator)
       DiscourseEvent.trigger(:reviewable_transitioned_to, :rejected, reviewable_queued.reload)
 
       data = JSON.parse(staff_notifications(admin, kind: "post_rejected").first.data)
@@ -196,7 +209,7 @@ RSpec.describe "Staff event notifications" do
 
     it "skips for non-queued reviewable types", if: defined?(ReviewableFlaggedPost) do
       flag = Fabricate(:reviewable_flagged_post)
-      flag.update_columns(reviewed_by_id: moderator.id)
+      seed_acting_history(flag, moderator)
       DiscourseEvent.trigger(:reviewable_transitioned_to, :approved, flag.reload)
 
       # Flag reviewables have their own notification chain; this hook
@@ -206,7 +219,7 @@ RSpec.describe "Staff event notifications" do
 
     it "skips when mod_notify_staff_on_post_actions is off" do
       SiteSetting.mod_notify_staff_on_post_actions = false
-      reviewable_queued.update_columns(reviewed_by_id: moderator.id)
+      seed_acting_history(reviewable_queued, moderator)
 
       DiscourseEvent.trigger(:reviewable_transitioned_to, :approved, reviewable_queued.reload)
 
