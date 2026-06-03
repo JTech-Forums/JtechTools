@@ -13,8 +13,13 @@ export default {
 
   initialize() {
     withPluginApi("1.8.0", (api) => {
+      // Renders directly inside `<div class="user-notifications-filter">`,
+      // right after Discourse's built-in NotificationsFilter — so the two
+      // dropdowns naturally sit side-by-side without any float / position
+      // gymnastics. Outlet confirmed against
+      // discourse/discourse:frontend/discourse/app/templates/user/notifications-index.gjs.
       api.renderInOutlet(
-        "user-notifications-list-top",
+        "user-notifications-after-filter",
         NotificationsTypeFilter
       );
 
