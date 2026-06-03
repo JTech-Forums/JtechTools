@@ -2,8 +2,24 @@ import Component from "@glimmer/component";
 import { hash } from "@ember/helper";
 import { action } from "@ember/object";
 import { service } from "@ember/service";
-import { i18n } from "discourse-i18n";
+import I18n, { i18n } from "discourse-i18n";
 import ComboBox from "select-kit/components/combo-box";
+
+// Some plugin-defined notification types don't have a
+// `notifications.titles.X` translation, in which case i18n() returns the
+// bracketed placeholder "[en.notifications.titles.X]" — ugly inside a
+// dropdown. Probe the key with I18n.lookup() first; on a miss, fall back
+// to a humanized version of the type name ("chat_group_mention" → "Chat
+// group mention") so the row reads cleanly.
+function nameForType(type) {
+  const key = `notifications.titles.${type}`;
+  if (typeof I18n?.lookup === "function" && I18n.lookup(key) != null) {
+    return i18n(key);
+  }
+  return type
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 // Second filter dropdown rendered next to Discourse's built-in
 // All / Read / Unread filter on the user notifications page. Options come
@@ -31,10 +47,7 @@ export default class NotificationsTypeFilter extends Component {
     Object.keys(types)
       .sort()
       .forEach((name) => {
-        items.push({
-          id: name,
-          name: i18n(`notifications.titles.${name}`),
-        });
+        items.push({ id: name, name: nameForType(name) });
       });
 
     if (this.currentUser?.staff) {

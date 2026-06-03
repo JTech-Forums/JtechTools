@@ -1279,21 +1279,53 @@ after_initialize do
 
         private
 
+        # Mirrors the response shape of NotificationsController#index's
+        # paginated branch (see discourse/discourse:app/controllers/
+        # notifications_controller.rb) exactly — the Ember store.find
+        # adapter expects all four keys and the user-notifications page's
+        # load-more behaviour reads `load_more_notifications`. Returning
+        # only `{ notifications, total_rows_notifications }` was leaving
+        # the list empty in the JS layer.
         def render_mod_notes_index
           user = fetch_user_from_params
+          limit = 60
+          offset = params[:offset].to_i
+
           scope =
-            user
-              .notifications
+            ::Notification
+              .where(user_id: user.id)
+              .visible
               .where(notification_type: ::Notification.types[:custom])
               .where("data LIKE ?", "%\"mod_note\":true%")
+              .includes(:topic)
+              .order(created_at: :desc)
 
-          total = scope.count
-          notifications = scope.includes(:topic).order(created_at: :desc).limit(60)
+          scope = scope.where(read: true) if params[:filter] == "read"
+          scope = scope.where(read: false) if params[:filter] == "unread"
 
-          render json: {
-                   notifications: serialize_data(notifications, ::NotificationSerializer),
-                   total_rows_notifications: total,
-                 }
+          total = scope.dup.count
+          notifications = scope.offset(offset).limit(limit)
+          notifications =
+            ::Notification.filter_inaccessible_topic_notifications(
+              current_user.guardian,
+              notifications,
+            )
+          notifications = ::Notification.filter_disabled_badge_notifications(notifications)
+          notifications = ::Notification.populate_acting_user(notifications)
+
+          render_json_dump(
+            notifications: serialize_data(notifications, ::NotificationSerializer),
+            total_rows_notifications: total,
+            seen_notification_id: user.seen_notification_id,
+            load_more_notifications:
+              notifications_path(
+                username: user.username,
+                offset: offset + limit,
+                limit: limit,
+                filter: params[:filter],
+                type: "mod_notes",
+              ),
+          )
         end
       end
     end
