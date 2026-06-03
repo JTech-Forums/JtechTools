@@ -129,7 +129,6 @@ module ::DiscourseModCategories
       target_username:
     )
       return if staff_user.suspended?
-      return unless staff_user.allow_live_notifications?
 
       i18n_args = { username: username }
       i18n_args[:topic] = topic_title if topic_title.present?
@@ -146,11 +145,32 @@ module ::DiscourseModCategories
       }
       payload[:topic_title] = topic_title if topic_title.present?
 
-      ::MessageBus.publish(
-        "/notification-alert/#{staff_user.id}",
-        payload,
-        user_ids: [staff_user.id],
-      )
+      # In-tab live alert (only fires for users with a live connection).
+      if staff_user.allow_live_notifications?
+        ::MessageBus.publish(
+          "/notification-alert/#{staff_user.id}",
+          payload,
+          user_ids: [staff_user.id],
+        )
+      end
+
+      # Web Push (enqueued — fires even when the tab is closed/backgrounded,
+      # which is the whole reason a Firefox mod was missing these). Reuses
+      # core PostAlerter.push_notification so we inherit its full gate
+      # stack: do-not-disturb, plugin push_notification_filters, the
+      # subscription-existence check, the push_notification_time_window
+      # delay, and the :push_notification DiscourseEvent. Without this
+      # call the staff-event notifications only deliver in-tab via the
+      # MessageBus path above and never reach a closed browser.
+      if defined?(::PostAlerter)
+        begin
+          ::PostAlerter.push_notification(staff_user, payload)
+        rescue StandardError => e
+          ::Rails.logger.warn(
+            "[jtech-tools] staff_notifier push enqueue failed: #{e.class}: #{e.message}",
+          )
+        end
+      end
     end
 
     # True when an identical-target mod_note notification was already
