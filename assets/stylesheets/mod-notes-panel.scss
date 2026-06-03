@@ -1,0 +1,32 @@
+// Staff user-menu "Moderator notes" panel — keep the list scrollable so a
+// large backlog doesn't blow out the user-menu height, and give the
+// "View more" deep-link a sticky footer so it stays visible while the
+// list scrolls.
+
+.mod-notes-panel {
+  display: flex;
+  flex-direction: column;
+
+  .mod-notes-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    margin: 0;
+  }
+
+  .mod-notes-view-more {
+    display: block;
+    text-align: center;
+    padding: 0.65em 1em;
+    border-top: 1px solid var(--primary-low);
+    color: var(--tertiary);
+    text-decoration: none;
+    font-size: var(--font-down-1);
+    background: var(--secondary);
+
+    &:hover,
+    &:focus {
+      background: var(--primary-very-low);
+      text-decoration: underline;
+    }
+  }
+}

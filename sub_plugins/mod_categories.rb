@@ -9,6 +9,8 @@ require_relative "../lib/discourse_mod_categories/staff_notifier"
 
 register_asset "stylesheets/topic-footer-message.scss"
 register_asset "stylesheets/whisper.scss"
+register_asset "stylesheets/notifications-type-filter.scss"
+register_asset "stylesheets/mod-notes-panel.scss"
 register_svg_icon "list-check"
 register_svg_icon "shield-halved"
 register_svg_icon "user-plus"
@@ -1230,5 +1232,64 @@ after_initialize do
         end
       end
     end
+  end
+
+  # 4. Second filter dropdown on /u/{username}/notifications. The frontend
+  # initializer (assets/javascripts/discourse/initializers/notifications-type-filter.js)
+  # sends ?type=<value>. Two cases:
+  #   - "mod_notes": needs a JSON-column LIKE filter, so we render the list
+  #     ourselves. Gated to staff — non-staff silently get the unfiltered
+  #     index so the URL can't leak staff-only data.
+  #   - Any built-in Discourse notification type name: translate into the
+  #     existing filter_by_types param so Discourse's index handler does
+  #     the rest, keeping us forward-compatible with its query logic.
+  reloadable_patch do
+    module ::DiscourseModCategories
+      module NotificationsControllerTypeFilter
+        def index
+          requested_type = params[:type].to_s.strip
+          return super if requested_type.blank? || requested_type == "all"
+
+          if requested_type == "mod_notes"
+            unless guardian.is_staff?
+              params.delete(:type)
+              return super
+            end
+            return render_mod_notes_index
+          end
+
+          if ::Notification.types.key?(requested_type.to_sym)
+            params[:filter_by_types] = requested_type
+          end
+          params.delete(:type)
+          super
+        end
+
+        private
+
+        def render_mod_notes_index
+          user = fetch_user_from_params
+          scope =
+            user
+              .notifications
+              .where(notification_type: ::Notification.types[:custom])
+              .where("data LIKE ?", "%\"mod_note\":true%")
+
+          total = scope.count
+          notifications =
+            scope.includes(:topic).order(created_at: :desc).limit(60)
+
+          render json: {
+            notifications:
+              serialize_data(notifications, ::NotificationSerializer),
+            total_rows_notifications: total,
+          }
+        end
+      end
+    end
+
+    ::NotificationsController.prepend(
+      ::DiscourseModCategories::NotificationsControllerTypeFilter,
+    )
   end
 end

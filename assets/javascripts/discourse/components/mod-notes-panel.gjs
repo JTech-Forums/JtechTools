@@ -55,6 +55,17 @@ export default class ModNotesPanel extends Component {
   @tracked notes = [];
   @tracked loading = true;
 
+  // Deep-link from the panel's "View more" link to the standard
+  // notifications page with our ?type=mod_notes filter pre-applied (see
+  // notifications-type-filter.js + the NotificationsController patch).
+  get viewMoreUrl() {
+    const username = this.currentUser?.username;
+    if (!username) {
+      return null;
+    }
+    return `/u/${username}/notifications?type=mod_notes`;
+  }
+
   constructor() {
     super(...arguments);
     this.load();
@@ -114,6 +125,11 @@ export default class ModNotesPanel extends Component {
             </li>
           {{/each}}
         </ul>
+        {{#if this.viewMoreUrl}}
+          <a href={{this.viewMoreUrl}} class="mod-notes-view-more">
+            {{i18n "discourse_mod_categories.notes_tab.view_more"}}
+          </a>
+        {{/if}}
       {{else}}
         <div class="mod-notes-empty">
           {{i18n "discourse_mod_categories.notes_tab.empty"}}

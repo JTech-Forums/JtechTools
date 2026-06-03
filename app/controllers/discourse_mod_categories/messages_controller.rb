@@ -427,8 +427,6 @@ module ::DiscourseModCategories
             }
           end
           .compact
-          .sort_by { |n| n[:activity_at].to_s }
-          .reverse
 
       # Non-topic-anchored event notifications: rows whose mod_note_kind
       # is NOT "note" or "reply" (those are already covered by the
@@ -469,7 +467,21 @@ module ::DiscourseModCategories
           }
         end
 
-      render json: { notes: topic_notes + events }
+      # Merge both sources into a single recency-sorted list. Rows missing
+      # both timestamps fall to the bottom (sort tuple [1, 0]) regardless of
+      # how malformed the data is — rescue keeps a corrupt timestamp from
+      # 500-ing the feed.
+      combined =
+        (topic_notes + events).sort_by do |n|
+          ts = n[:activity_at].presence || n[:created_at].presence
+          begin
+            ts.present? ? [0, -Time.zone.parse(ts.to_s).to_i] : [1, 0]
+          rescue ArgumentError, TypeError
+            [1, 0]
+          end
+        end
+
+      render json: { notes: combined }
     end
 
     # Marks the staff user's moderator-note feed as read.

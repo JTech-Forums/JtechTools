@@ -1,0 +1,49 @@
+// Styles the second "Type" dropdown that sits next to Discourse's built-in
+// All / Read / Unread filter on /u/{username}/notifications. The dropdown
+// is rendered via the `user-notifications-list-top` plugin outlet — which
+// is structurally a sibling BELOW the .user-notifications-filter row — so
+// we lift it back up into the filter row with a negative top margin and
+// float it right so the two dropdowns visually pair.
+
+.notifications-type-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  float: right;
+  position: relative;
+  z-index: 1;
+  margin-top: -3em;
+  margin-bottom: 1em;
+
+  .filter-text {
+    color: var(--primary-medium);
+    font-weight: bold;
+    font-size: var(--font-down-1);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .notifications-type-filter-select.select-kit {
+    summary.select-kit-header {
+      border: 1px solid transparent;
+      background: transparent;
+      padding: 0.4em 0.65em;
+
+      &:hover,
+      &:focus,
+      &[aria-expanded="true"] {
+        border-color: var(--primary-low);
+        background: var(--primary-very-low);
+      }
+    }
+  }
+}
+
+// On narrow viewports, drop the floated dropdown onto its own row beneath
+// the existing filter rather than overlapping it.
+@media (max-width: 600px) {
+  .notifications-type-filter {
+    float: none;
+    margin-top: 0;
+  }
+}
