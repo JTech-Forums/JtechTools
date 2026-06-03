@@ -67,9 +67,7 @@ export default class NotificationsTypeFilter extends Component {
     if (typeof window === "undefined") {
       return ALL;
     }
-    return (
-      new URLSearchParams(window.location.search).get("type") || ALL
-    );
+    return new URLSearchParams(window.location.search).get("type") || ALL;
   }
 
   @action
