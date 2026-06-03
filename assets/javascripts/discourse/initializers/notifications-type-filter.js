@@ -25,28 +25,26 @@ export default {
 
       // The userNotifications.index route inherits both controllerName and
       // model() from its parent `user-notifications` route, so that's where
-      // queryParams and model() are actually defined — overriding the
-      // `.index` route does nothing because it has no model() of its own.
-      // See discourse/discourse: frontend/discourse/app/routes/user-notifications.js.
-      api.modifyClass("controller:user-notifications", {
-        pluginId: "discourse-mod-categories-notifications-filter",
-        queryParams: ["filter", "type"],
-        type: null,
-      });
-
-      // Mirror Discourse's stock model() body exactly (flat
-      // `{ username, filter, limit }` hash passed to store.find — NOT
-      // findFiltered, NOT a nested filter hash) and add our `type` key.
+      // model() is actually defined — overriding the `.index` route does
+      // nothing because it has no model() of its own. See discourse/
+      // discourse: frontend/discourse/app/routes/user-notifications.js.
+      //
+      // We deliberately do NOT try to declare `type` as a controller
+      // queryParam: Discourse's controller uses `queryParams = ["filter"]`,
+      // a class FIELD, and Ember's classic reopen() (which api.modifyClass
+      // uses under the hood) only patches prototype METHODS — it can't
+      // override class-field initializers, so `type` would be silently
+      // stripped from params before reaching model(). Instead we read
+      // `type` directly from window.location.search inside model(); the
+      // URL is the source of truth in either path (initial visit OR the
+      // dropdown's router.transitionTo, which updates the location).
+      //
       // The server-side NotificationsController patch in
       // sub_plugins/mod_categories.rb translates ?type=... into the
       // existing filter_by_types mechanism or, for `mod_notes`, a custom
       // scoped index.
       api.modifyClass("route:user-notifications", {
         pluginId: "discourse-mod-categories-notifications-filter",
-        queryParams: {
-          filter: { refreshModel: true },
-          type: { refreshModel: true },
-        },
 
         model(params) {
           const username = this.modelFor("user").get("username");
@@ -57,8 +55,11 @@ export default {
             return;
           }
           const args = { username, filter: params.filter, limit: 60 };
-          if (params.type && params.type !== "all") {
-            args.type = params.type;
+          const urlType = new URLSearchParams(window.location.search).get(
+            "type"
+          );
+          if (urlType && urlType !== "all") {
+            args.type = urlType;
           }
           return this.store.find("notification", args);
         },

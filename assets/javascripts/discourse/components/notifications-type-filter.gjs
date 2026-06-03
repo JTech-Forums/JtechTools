@@ -61,14 +61,31 @@ export default class NotificationsTypeFilter extends Component {
   }
 
   get selectedValue() {
-    return this.router.currentRoute?.queryParams?.type || ALL;
+    // Read straight from window.location since `type` isn't a declared
+    // controller queryParam (see the long note in the initializer about
+    // why class-field queryParams can't be extended via api.modifyClass).
+    if (typeof window === "undefined") {
+      return ALL;
+    }
+    return (
+      new URLSearchParams(window.location.search).get("type") || ALL
+    );
   }
 
   @action
   onChange(value) {
-    this.router.transitionTo({
-      queryParams: { type: value === ALL ? null : value },
-    });
+    // Same reason — transitionTo({queryParams: {type: ...}}) silently
+    // drops `type` because Ember doesn't know about it. Mutate the URL
+    // directly and let the route's refreshModel logic re-fire via the
+    // URL change. Using router.transitionTo with the path+search string
+    // keeps the transition inside Ember (no full page reload).
+    const url = new URL(window.location.href);
+    if (value === ALL) {
+      url.searchParams.delete("type");
+    } else {
+      url.searchParams.set("type", value);
+    }
+    this.router.transitionTo(url.pathname + url.search);
   }
 
   <template>
