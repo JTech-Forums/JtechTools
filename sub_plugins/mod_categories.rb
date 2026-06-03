@@ -1276,20 +1276,16 @@ after_initialize do
               .where("data LIKE ?", "%\"mod_note\":true%")
 
           total = scope.count
-          notifications =
-            scope.includes(:topic).order(created_at: :desc).limit(60)
+          notifications = scope.includes(:topic).order(created_at: :desc).limit(60)
 
           render json: {
-            notifications:
-              serialize_data(notifications, ::NotificationSerializer),
-            total_rows_notifications: total,
-          }
+                   notifications: serialize_data(notifications, ::NotificationSerializer),
+                   total_rows_notifications: total,
+                 }
         end
       end
     end
 
-    ::NotificationsController.prepend(
-      ::DiscourseModCategories::NotificationsControllerTypeFilter,
-    )
+    ::NotificationsController.prepend(::DiscourseModCategories::NotificationsControllerTypeFilter)
   end
 end
