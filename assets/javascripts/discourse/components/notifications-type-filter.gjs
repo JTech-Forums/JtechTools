@@ -13,12 +13,10 @@ import ComboBox from "select-kit/components/combo-box";
 // group mention") so the row reads cleanly.
 function nameForType(type) {
   const key = `notifications.titles.${type}`;
-  if (typeof I18n?.lookup === "function" && I18n.lookup(key) != null) {
+  if (typeof I18n?.lookup === "function" && I18n.lookup(key) !== null) {
     return i18n(key);
   }
-  return type
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 // Second filter dropdown rendered next to Discourse's built-in

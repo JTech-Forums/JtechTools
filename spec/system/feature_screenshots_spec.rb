@@ -723,11 +723,14 @@ RSpec.describe "Feature screenshots" do
     sign_in(admin)
     visit("/u/#{admin.username}/notifications?type=mod_notes")
     expect(page).to have_css(".user-notifications-filter", wait: 15)
-    # Only the mod-note custom notifications should render — the seeded
-    # "mentioned" row gets filtered out by the NotificationsController
-    # patch's data-LIKE scope.
-    expect(page).to have_css(".item.notification.custom", minimum: 3, wait: 10)
-    expect(page).to have_no_css(".item.notification.mentioned")
+    # The MenuItem `<li>` uses just the className from the notification
+    # model — `.notification.custom`, no .item prefix (verified against
+    # discourse/discourse:frontend/discourse/app/components/user-menu/
+    # menu-item.gjs). Only the mod-note custom rows should render; the
+    # seeded "mentioned" row gets filtered out by the
+    # NotificationsController patch's data-LIKE scope.
+    expect(page).to have_css(".notification.custom", minimum: 3, wait: 10)
+    expect(page).to have_no_css(".notification.mentioned")
     sleep 0.3
     shot("25_notifications_page_filtered_to_mod_notes")
   end
