@@ -154,6 +154,9 @@ jtech_mod:
   mod_notify_staff_on_post_actions:
     default: true
     client: false
+  mod_notify_staff_on_post_approved:
+    default: false
+    client: false
   mod_notify_staff_on_user_notes:
     default: true
     client: false

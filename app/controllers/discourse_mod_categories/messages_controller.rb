@@ -358,24 +358,41 @@ module ::DiscourseModCategories
     # Marks the current user's mod_note notifications whose `url` points
     # at /review/... as read. Called by the frontend whenever the user
     # navigates to /review or /review/:id — so flag_note / post_rejected
-    # notifications (which link to /review/:id rather than to a topic
-    # page) get marked read on direct navigation, not only via the bell-
-    # click or shield-tab-open paths. The data-column LIKE pins the
-    # update to mod_note rows whose URL starts with /review so we don't
-    # touch unrelated notifications.
+    # / post_approved notifications (which link to /review/:id rather
+    # than to a topic page) get marked read on direct navigation, not
+    # only via the bell-click or shield-tab-open paths.
+    #
+    # Scope rules:
+    #   - `reviewable_id` param present → mark ONLY notifications whose
+    #     data.url is exactly /review/<id> (or starts with /review/<id>/
+    #     for sub-paths). Prevents clicking one queued-post notification
+    #     from sweeping every other reviewable's notifications read.
+    #   - param absent (visiting the /review index) → mark every
+    #     /review-anchored mod_note row, matching the original behaviour
+    #     since the staff member is viewing all reviewables at once.
     def mark_review_notifications_seen
       guardian.ensure_can_manage_mod_messages!
 
-      marked =
-        ::Notification
-          .where(
-            user_id: current_user.id,
-            notification_type: ::Notification.types[:custom],
-            read: false,
+      scope =
+        ::Notification.where(
+          user_id: current_user.id,
+          notification_type: ::Notification.types[:custom],
+          read: false,
+        ).where("data LIKE ?", "%\"mod_note\":true%")
+
+      reviewable_id = params[:reviewable_id].to_s
+      if reviewable_id =~ /\A\d+\z/
+        scope =
+          scope.where(
+            "data LIKE ? OR data LIKE ?",
+            "%\"url\":\"/review/#{reviewable_id}\"%",
+            "%\"url\":\"/review/#{reviewable_id}/%",
           )
-          .where("data LIKE ?", "%\"mod_note\":true%")
-          .where("data LIKE ?", "%\"url\":\"/review%")
-          .update_all(read: true)
+      else
+        scope = scope.where("data LIKE ?", "%\"url\":\"/review%")
+      end
+
+      marked = scope.update_all(read: true)
 
       current_user.publish_notifications_state if marked > 0
 

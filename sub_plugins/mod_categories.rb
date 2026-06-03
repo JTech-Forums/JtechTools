@@ -1079,11 +1079,23 @@ after_initialize do
   # version doesn't reliably invoke after_update callbacks.
   on(:reviewable_transitioned_to) do |status, reviewable|
     next unless SiteSetting.mod_categories_enabled
-    next unless SiteSetting.mod_notify_staff_on_post_actions
     next if reviewable.blank?
     # Only queued-post reviewables — flag/user reviewables transition
     # through this event too but have their own notification chain.
     next unless reviewable.type == "ReviewableQueuedPost"
+
+    # `:approved` and `:rejected` are gated on separate settings.
+    # Approvals are routine and noisy, so they have their own opt-in
+    # toggle (default off) — see config/settings.yml. Rejections and
+    # post deletes stay grouped under mod_notify_staff_on_post_actions.
+    case status
+    when :approved
+      next unless SiteSetting.mod_notify_staff_on_post_approved
+    when :rejected
+      next unless SiteSetting.mod_notify_staff_on_post_actions
+    else
+      next
+    end
 
     kind, message_key, title_key, alert_key =
       case status
