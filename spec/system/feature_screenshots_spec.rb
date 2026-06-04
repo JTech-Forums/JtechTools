@@ -638,4 +638,126 @@ RSpec.describe "Feature screenshots" do
     sleep 0.3
     shot("22_non_staff_composer_no_whisper_button")
   end
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Notifications-page Type filter (added by initializers/
+  # notifications-type-filter.js) + the mod-notes panel's new "View more"
+  # link. Three captures: staff sees the dropdown with the "Moderator
+  # notes" option, regular user sees the dropdown WITHOUT it, and staff
+  # applying ?type=mod_notes lands on a list scoped to mod-note rows.
+  # ──────────────────────────────────────────────────────────────────────
+
+  # Seeds a couple of mod-note custom notifications on the recipient, plus
+  # one ordinary "mentioned" notification so the ?type=mod_notes capture
+  # has something to filter OUT — the screenshot is only meaningful if the
+  # unfiltered view has noise to remove.
+  def seed_notifications_for(user, mod_note_count: 2)
+    topic = Fabricate(:topic, category: category, title: "Notifications filter seed topic")
+    Fabricate(:post, topic: topic, user: author, raw: "OP for the notifications seed.")
+
+    mod_note_count.times do |i|
+      fab_mod_note_notification(
+        user: user,
+        topic: topic,
+        kind: "note",
+        excerpt: "Mod-note seed ##{i + 1}.",
+      )
+    end
+
+    Notification.create!(
+      notification_type: Notification.types[:mentioned],
+      user_id: user.id,
+      topic_id: topic.id,
+      post_number: 1,
+      high_priority: false,
+      data: {
+        topic_title: topic.title,
+        display_username: author.username,
+        original_post_id: topic.first_post.id,
+        original_post_type: 1,
+        original_username: author.username,
+        revision_number: nil,
+      }.to_json,
+    )
+  end
+
+  it "23. captures the staff notifications page with the Type filter (mod_notes visible)" do
+    seed_notifications_for(admin, mod_note_count: 2)
+
+    sign_in(admin)
+    visit("/u/#{admin.username}/notifications")
+    expect(page).to have_css(".user-notifications-filter", wait: 15)
+    expect(page).to have_css(".notifications-type-filter", wait: 10)
+    # The dropdown must contain a "Moderator notes" option for staff. We
+    # open it before screenshotting so the option list is visible.
+    find(".notifications-type-filter .select-kit-header").click
+    expect(page).to have_css(
+      ".notifications-type-filter .select-kit-row[data-value='mod_notes']",
+      wait: 5,
+    )
+    sleep 0.3
+    shot("23_notifications_page_type_filter_staff")
+  end
+
+  it "24. captures the regular-user notifications page (Type filter has NO mod_notes)" do
+    seed_notifications_for(stranger, mod_note_count: 0)
+
+    sign_in(stranger)
+    visit("/u/#{stranger.username}/notifications")
+    expect(page).to have_css(".user-notifications-filter", wait: 15)
+    expect(page).to have_css(".notifications-type-filter", wait: 10)
+    find(".notifications-type-filter .select-kit-header").click
+    # The dropdown must NOT contain the mod_notes row for a non-staff
+    # user — the staff-only option is gated on currentUser.staff.
+    expect(page).to have_no_css(
+      ".notifications-type-filter .select-kit-row[data-value='mod_notes']",
+      wait: 5,
+    )
+    sleep 0.3
+    shot("24_notifications_page_type_filter_regular_user")
+  end
+
+  it "25. captures the staff notifications page filtered to ?type=mod_notes" do
+    seed_notifications_for(admin, mod_note_count: 3)
+
+    sign_in(admin)
+    visit("/u/#{admin.username}/notifications?type=mod_notes")
+    expect(page).to have_css(".user-notifications-filter", wait: 15)
+    # The MenuItem `<li>` uses just the className from the notification
+    # model — `.notification.custom`, no .item prefix (verified against
+    # discourse/discourse:frontend/discourse/app/components/user-menu/
+    # menu-item.gjs). Only the mod-note custom rows should render; the
+    # seeded "mentioned" row gets filtered out by the
+    # NotificationsController patch's data-LIKE scope.
+    expect(page).to have_css(".notification.custom", minimum: 3, wait: 10)
+    expect(page).to have_no_css(".notification.mentioned")
+    sleep 0.3
+    shot("25_notifications_page_filtered_to_mod_notes")
+  end
+
+  it "26. captures the staff mod-notes panel with the new View more footer link" do
+    3.times do |i|
+      seed_topic_with_note(
+        title: "View-more demo triage topic #{i + 1}",
+        note: "Triage note #{i + 1} — needs follow-up.",
+      )
+    end
+
+    sign_in(admin)
+    visit("/")
+    expect(page).to have_css(".d-header", wait: 15)
+    find(".header-dropdown-toggle.current-user button", match: :first).click
+    expect(page).to have_css("#user-menu-button-discourse-mod-notes", wait: 15)
+    find("#user-menu-button-discourse-mod-notes").click
+    expect(page).to have_css(".mod-notes-panel .mod-notes-item", minimum: 3, wait: 15)
+    # The footer link is the deep-link into the notifications page with
+    # ?type=mod_notes pre-applied — wires #1 and #3 of this change set
+    # together.
+    expect(page).to have_css(
+      ".mod-notes-panel a.mod-notes-view-more[href*='type=mod_notes']",
+      wait: 5,
+    )
+    sleep 0.3
+    shot("26_mod_notes_panel_with_view_more_link")
+  end
 end

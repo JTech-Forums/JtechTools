@@ -1,0 +1,41 @@
+// The new Type dropdown renders via the `user-notifications-after-filter`
+// plugin outlet, which lives inside `.user-notifications-filter` right
+// after Discourse's built-in All/Read/Unread dropdown. So a flex layout
+// on the parent (which Discourse already has via NotificationsFilter)
+// puts the two dropdowns side-by-side — we just need spacing + label
+// styling that visually pairs with the existing filter.
+.user-notifications-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1em;
+}
+
+.notifications-type-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+
+  .filter-text {
+    color: var(--primary-medium);
+    font-weight: bold;
+    font-size: var(--font-down-1);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .notifications-type-filter-select.select-kit {
+    summary.select-kit-header {
+      border: 1px solid transparent;
+      background: transparent;
+      padding: 0.4em 0.65em;
+
+      &:hover,
+      &:focus,
+      &[aria-expanded="true"] {
+        border-color: var(--primary-low);
+        background: var(--primary-very-low);
+      }
+    }
+  }
+}

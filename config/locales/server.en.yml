@@ -135,7 +135,15 @@ en:
     mod_notify_staff_on_post_actions: Notify staff on post actions
     mod_notify_staff_on_post_actions_description: When on, every other
       staff member gets a bell notification + live alert when a moderator
-      deletes a post, approves a queued post, or rejects a queued post.
+      deletes a post or rejects a queued post. Queued-post APPROVALS have
+      their own opt-in setting below (default off) since approvals are
+      routine and noisy.
+    mod_notify_staff_on_post_approved: Notify staff on queued-post approvals
+    mod_notify_staff_on_post_approved_description: When on, every other
+      staff member gets a bell notification + live alert when a moderator
+      approves a queued post. Off by default — approvals happen often and
+      most staff don't need a notification for each one. Independent from
+      the "post actions" setting above.
     mod_notify_staff_on_user_notes: Notify staff on user notes
     mod_notify_staff_on_user_notes_description: When on, every other staff
       member gets a bell notification + live alert when a moderator adds
