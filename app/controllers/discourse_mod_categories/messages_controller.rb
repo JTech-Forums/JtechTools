@@ -422,10 +422,19 @@ module ::DiscourseModCategories
           .limit(50)
           .pluck(:topic_id)
 
+      # `Topic.where(id: topic_ids)` doesn't preserve the topic_ids order
+      # we just computed (Postgres returns rows in id order, not the order
+      # of the IN-list), so index by id and re-iterate in topic_ids order.
+      # Critical when several notes share an iso8601 second — the combined
+      # recency sort below ties on identical timestamps, and Ruby's stable
+      # sort falls back to insertion order; without this, the panel
+      # surfaces oldest-first instead of newest-first.
+      topics_by_id = Topic.where(id: topic_ids).index_by(&:id)
       topic_notes =
-        Topic
-          .where(id: topic_ids)
-          .map do |topic|
+        topic_ids
+          .map do |id|
+            topic = topics_by_id[id]
+            next unless topic
             note = topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].to_s
             next if note.blank?
             replies = topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD]
