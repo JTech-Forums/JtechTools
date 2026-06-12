@@ -69,7 +69,7 @@
 // The pinned post renders as a regular post at the bottom of the topic
 // (right after the post stream), not as a footer banner.
 .topic-footer-pinned-post {
-  margin: 0;
+  margin: 2em 0 0;
   padding: 1em 0;
   border-top: 1px solid var(--primary-low);
 
