@@ -87,6 +87,7 @@ module ::DiscourseModCategories
                reply_prompt: topic.custom_fields[TOPIC_REPLY_PROMPT_FIELD].to_s,
                reply_prompt_max_tl: topic.custom_fields[TOPIC_REPLY_PROMPT_TL_FIELD],
                pinned_post_id: topic.custom_fields[TOPIC_PINNED_POST_FIELD],
+               pinned_post: DiscourseModCategories.serialized_pinned_post(topic),
                require_reply_approval: !!topic.custom_fields[TOPIC_REQUIRE_REPLY_APPROVAL_FIELD],
                private_note: topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].to_s,
                private_note_position:

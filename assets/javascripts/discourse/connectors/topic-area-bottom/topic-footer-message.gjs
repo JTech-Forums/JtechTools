@@ -40,6 +40,7 @@ export default class TopicFooterMessage extends Component {
 
   @tracked footerMessage = topicFooterMessage(this.topic);
   @tracked pinnedPostId = this.topic?.mod_topic_pinned_post_id || null;
+  @tracked pinnedPostPayload = this.topic?.mod_topic_pinned_post || null;
   @tracked cookedFooterMessage = null;
 
   constructor() {
@@ -84,6 +85,7 @@ export default class TopicFooterMessage extends Component {
   readTopicState(topic) {
     this.footerMessage = topicFooterMessage(topic);
     this.pinnedPostId = topic?.mod_topic_pinned_post_id || null;
+    this.pinnedPostPayload = topic?.mod_topic_pinned_post || null;
     this.cookFooterMessage();
   }
 
@@ -106,9 +108,17 @@ export default class TopicFooterMessage extends Component {
     return this.cookedFooterMessage;
   }
 
+  // Prefer the topic-attached payload (serialized server-side and returned
+  // by the pin endpoint) so the bottom copy renders immediately, even when
+  // the pinned post lives outside the currently-loaded post-stream window.
+  // The `postStream.posts` lookup is the historical fallback — kept so a
+  // stale topic-view that predates the new field still renders.
   get pinnedPost() {
     if (!this.pinnedPostId) {
       return null;
+    }
+    if (this.pinnedPostPayload?.id === this.pinnedPostId) {
+      return this.pinnedPostPayload;
     }
     return (
       this.topic?.postStream?.posts?.find((p) => p.id === this.pinnedPostId) ||

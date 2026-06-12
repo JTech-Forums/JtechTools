@@ -99,6 +99,35 @@ RSpec.describe "Moderator messages endpoints" do
       expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to eq(first_post.id)
     end
 
+    it "returns the pinned post's render payload so the frontend can render without a reload" do
+      sign_in(moderator)
+
+      put "/discourse-mod-categories/topic/#{topic.id}.json",
+          params: {
+            pinned_post_id: first_post.id,
+          }
+
+      expect(response.status).to eq(200)
+      payload = response.parsed_body["pinned_post"]
+      expect(payload).to be_present
+      expect(payload["id"]).to eq(first_post.id)
+      expect(payload["post_number"]).to eq(first_post.post_number)
+      expect(payload["cooked"]).to eq(first_post.cooked)
+      expect(payload["username"]).to eq(first_post.user.username)
+      expect(payload["avatar_template"]).to eq(first_post.user.avatar_template)
+    end
+
+    it "returns a null pinned_post when unpinning" do
+      topic.custom_fields["mod_topic_pinned_post_id"] = first_post.id
+      topic.save_custom_fields(true)
+      sign_in(moderator)
+
+      put "/discourse-mod-categories/topic/#{topic.id}.json", params: { pinned_post_id: "" }
+
+      expect(response.status).to eq(200)
+      expect(response.parsed_body["pinned_post"]).to be_nil
+    end
+
     it "lets a moderator unpin by sending a blank pinned_post_id" do
       topic.custom_fields["mod_topic_pinned_post_id"] = first_post.id
       topic.save_custom_fields(true)

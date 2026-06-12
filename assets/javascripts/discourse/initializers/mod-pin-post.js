@@ -43,6 +43,7 @@ export default {
                 }
               );
               topic?.set("mod_topic_pinned_post_id", result.pinned_post_id);
+              topic?.set("mod_topic_pinned_post", result.pinned_post || null);
               if (topic) {
                 appEvents.trigger("discourse-mod:messages-updated", topic);
                 // Re-render the stream so the in-stream pin badge appears
