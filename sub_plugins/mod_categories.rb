@@ -55,6 +55,29 @@ module ::DiscourseModCategories
   TOPIC_PROMPT_CHECKLIST_FIELD = "mod_topic_prompt_checklist"
   USER_TOPIC_CHECKLIST_FIELD = "mod_topic_checklist_accepted"
 
+  # Render data for the topic's pinned-to-bottom post, or nil when the topic
+  # has no pinned post (or the pinned post has been deleted out from under
+  # the custom field). Shared by the `:mod_topic_pinned_post` serializer and
+  # the `update_topic` controller response so a freshly-pinned post renders
+  # the bottom copy live, without a page reload, even when the post isn't in
+  # the currently-loaded post-stream window.
+  def self.serialized_pinned_post(topic)
+    return nil unless topic
+    id = topic.custom_fields[TOPIC_PINNED_POST_FIELD]
+    return nil if id.blank?
+    post = topic.posts.find_by(id: id.to_i)
+    return nil unless post
+    user = post.user
+    {
+      id: post.id,
+      post_number: post.post_number,
+      cooked: post.cooked,
+      username: user&.username,
+      name: user&.name,
+      avatar_template: user&.avatar_template,
+    }
+  end
+
   # The current checklist config, or nil when none is set. Shape:
   #   { "version" => Integer, "items" => [{ "label" =>, "url" => }],
   #     "updated_at" => ISO8601 String }
@@ -367,6 +390,13 @@ after_initialize do
   end
   add_to_serializer(:topic_view, :mod_topic_pinned_post_id) do
     object.topic.custom_fields[DiscourseModCategories::TOPIC_PINNED_POST_FIELD]
+  end
+  # The pinned post's render data, attached to the topic so the bottom-copy
+  # connector renders without needing the post to be in the currently-loaded
+  # `postStream.posts` window — pinning a post far above the current scroll
+  # position would otherwise leave the footer blank until reload.
+  add_to_serializer(:topic_view, :mod_topic_pinned_post) do
+    DiscourseModCategories.serialized_pinned_post(object.topic)
   end
   add_to_serializer(:topic_view, :mod_topic_require_reply_approval) do
     !!object.topic.custom_fields[DiscourseModCategories::TOPIC_REQUIRE_REPLY_APPROVAL_FIELD]

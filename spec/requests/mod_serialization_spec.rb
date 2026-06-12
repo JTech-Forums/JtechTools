@@ -29,6 +29,29 @@ RSpec.describe "Moderator messages serialization" do
     expect(json["mod_topic_pinned_post_id"]).to eq(post.id)
   end
 
+  it "exposes the pinned post's render payload alongside the id" do
+    topic.custom_fields["mod_topic_pinned_post_id"] = post.id
+    topic.save_custom_fields(true)
+
+    get "/t/#{topic.id}.json"
+
+    expect(response.status).to eq(200)
+    payload = response.parsed_body["mod_topic_pinned_post"]
+    expect(payload).to be_present
+    expect(payload["id"]).to eq(post.id)
+    expect(payload["post_number"]).to eq(post.post_number)
+    expect(payload["cooked"]).to eq(post.cooked)
+    expect(payload["username"]).to eq(post.user.username)
+    expect(payload["avatar_template"]).to eq(post.user.avatar_template)
+  end
+
+  it "returns a null mod_topic_pinned_post when no post is pinned" do
+    get "/t/#{topic.id}.json"
+
+    expect(response.status).to eq(200)
+    expect(response.parsed_body["mod_topic_pinned_post"]).to be_nil
+  end
+
   it "leaves the topic fields nil when nothing has been set" do
     get "/t/#{topic.id}.json"
 
@@ -37,6 +60,7 @@ RSpec.describe "Moderator messages serialization" do
     expect(json["mod_topic_footer_message"]).to be_nil
     expect(json["mod_topic_reply_prompt"]).to be_nil
     expect(json["mod_topic_pinned_post_id"]).to be_nil
+    expect(json["mod_topic_pinned_post"]).to be_nil
   end
 
   it "exposes the category new-topic prompt in the categories list" do

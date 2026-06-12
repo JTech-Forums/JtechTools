@@ -428,6 +428,15 @@ RSpec.describe "Moderator messages" do
 
       find(".mod-pin-post-to-bottom").click
       expect(page).to have_css(".topic-footer-pinned-post", wait: 10)
+      # The username and avatar in the bottom copy come from the server
+      # response payload (mod_topic_pinned_post), not from the loaded
+      # post-stream. Asserting they render confirms the live-render fix
+      # for the "footer empty until reload" bug.
+      expect(page).to have_css(
+        ".topic-footer-pinned-post .pinned-post-username",
+        text: post.user.username,
+      )
+      expect(page).to have_css(".topic-footer-pinned-post .pinned-post-avatar")
       shot("26_post_pinned_to_bottom")
 
       expect(topic.reload.custom_fields["mod_topic_pinned_post_id"]).to be_present
