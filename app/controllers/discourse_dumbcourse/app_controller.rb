@@ -69,7 +69,7 @@ module DiscourseDumbcourse
       settings = {
         defaultTheme: SiteSetting.dumbcourse_default_theme,
         defaultView: SiteSetting.dumbcourse_default_view,
-        hcaptchaEnabled: SiteSetting.discourse_hcaptcha_enabled,
+        hcaptchaEnabled: SiteSetting.discourse_captcha_enabled,
         hcaptchaSiteKey: SiteSetting.hcaptcha_site_key.to_s,
         basePath: DiscourseDumbcourse.base_path_with_slash,
         paginationEnabled: SiteSetting.dumbcourse_pagination_enabled,
@@ -92,7 +92,7 @@ module DiscourseDumbcourse
     end
 
     def hcaptcha
-      raise Discourse::NotFound unless SiteSetting.discourse_hcaptcha_enabled
+      raise Discourse::NotFound unless SiteSetting.discourse_captcha_enabled
       token = params[:token].to_s
       raise Discourse::InvalidAccess.new if token.blank?
 
