@@ -46,14 +46,14 @@ jobs:
         run: chown root:root .
 
       - name: Checkout Discourse
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: discourse/discourse
           fetch-depth: 1
           ref: latest
 
       - name: Install plugin
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: plugins/${{ env.PLUGIN_NAME }}
           fetch-depth: 1
