@@ -1397,9 +1397,18 @@ after_initialize do
             return render_mod_notes_index
           end
 
-          if ::Notification.types.key?(requested_type.to_sym)
-            params[:filter_by_types] = requested_type
-          end
+          # Case-insensitive match — `Notification.types` keys are
+          # lowercase snake_case symbols, but the dropdown / a hand-
+          # typed URL may capitalize the value (`?type=Boost` rather
+          # than `?type=boost`). Falling through on a casing miss was
+          # the second half of the user-reported "filter doesn't work"
+          # bug: client URL change wasn't refreshing the route AND the
+          # server was silently dropping the param when it did get
+          # through. Pluck the canonical key so we always pass the
+          # core controller a value it recognizes.
+          canonical_type =
+            ::Notification.types.keys.find { |k| k.to_s.casecmp(requested_type).zero? }
+          params[:filter_by_types] = canonical_type.to_s if canonical_type
           params.delete(:type)
           super
         end

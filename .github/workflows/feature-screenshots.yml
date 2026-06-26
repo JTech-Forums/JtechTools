@@ -129,7 +129,8 @@ jobs:
           bundle exec rspec \
             --format documentation \
             plugins/${{ env.PLUGIN_NAME }}/spec/system/feature_screenshots_spec.rb \
-            plugins/${{ env.PLUGIN_NAME }}/spec/system/review_queue_click_through_spec.rb
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/review_queue_click_through_spec.rb \
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/notifications_type_filter_spec.rb
         continue-on-error: true
 
       - name: Upload feature screenshots (always)

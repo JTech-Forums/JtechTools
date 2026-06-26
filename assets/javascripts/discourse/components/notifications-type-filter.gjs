@@ -73,19 +73,22 @@ export default class NotificationsTypeFilter extends Component {
   }
 
   @action
-  onChange(value) {
+  async onChange(value) {
     // Same reason — transitionTo({queryParams: {type: ...}}) silently
     // drops `type` because Ember doesn't know about it. Mutate the URL
-    // directly and let the route's refreshModel logic re-fire via the
-    // URL change. Using router.transitionTo with the path+search string
-    // keeps the transition inside Ember (no full page reload).
+    // directly so the next model() invocation reads the new `type`,
+    // then force the route to refresh: a same-path same-declared-
+    // queryParams transition is a no-op to Ember, so without the
+    // explicit refresh() the model never re-runs and the visible
+    // notification list stays on whatever was rendered last.
     const url = new URL(window.location.href);
     if (value === ALL) {
       url.searchParams.delete("type");
     } else {
       url.searchParams.set("type", value);
     }
-    this.router.transitionTo(url.pathname + url.search);
+    await this.router.transitionTo(url.pathname + url.search);
+    await this.router.refresh();
   }
 
   <template>
