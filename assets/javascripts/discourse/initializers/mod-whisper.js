@@ -168,7 +168,26 @@ export default {
       api.decorateCookedElement(
         (cookedEl, helper) => {
           const post = helper?.getModel?.() || helper?.model;
+
+          // Strip prior whisper styling/banner whenever the post is no
+          // longer a whisper — covers the convert-to-public action and any
+          // future flow that disarms an already-rendered whisper. Without
+          // this, the banner + tinted border survive a re-decoration even
+          // after `mod_is_whisper` flips to false.
           if (!post?.mod_is_whisper) {
+            if (cookedEl.classList.contains("mod-whisper")) {
+              cookedEl.classList.remove(
+                "mod-whisper",
+                "mod-whisper--staff",
+                "mod-whisper--user"
+              );
+            }
+            const existingBanner = cookedEl.querySelector(
+              ":scope > .mod-whisper-banner"
+            );
+            if (existingBanner) {
+              existingBanner.remove();
+            }
             return;
           }
 

@@ -37,12 +37,18 @@ export default {
       // stripped from params before reaching model(). Instead we read
       // `type` directly from window.location.search inside model(); the
       // URL is the source of truth in either path (initial visit OR the
-      // dropdown's router.transitionTo, which updates the location).
+      // dropdown's history.pushState, which updates the location).
       //
-      // The server-side NotificationsController patch in
-      // sub_plugins/mod_categories.rb translates ?type=... into the
-      // existing filter_by_types mechanism or, for `mod_notes`, a custom
-      // scoped index.
+      // Discourse's store typically forwards unknown arg keys onto the
+      // GET URL as query params, but the previous implementation that
+      // tried to thread `type` through `store.find("notification", { type })`
+      // wasn't actually reaching the controller — passing it through
+      // `filter_by_types` directly is the more reliable shape: that key
+      // is what the core NotificationsController parses, no server-side
+      // translation needed for ordinary types. The server patch still
+      // exists for the staff-only `mod_notes` pseudo-type (the controller
+      // patch redirects that branch to a custom scoped index) — that path
+      // continues to go through `args.type`.
       api.modifyClass("route:user-notifications", {
         pluginId: "discourse-mod-categories-notifications-filter",
 
@@ -59,6 +65,14 @@ export default {
             "type"
           );
           if (urlType && urlType !== "all") {
+            // Pass the type as `?type=` rather than `?filter_by_types=` —
+            // Discourse's core NotificationsController#index only honours
+            // `filter_by_types` on the `?recent=true` path (the user-menu
+            // dropdown). The standard /u/{username}/notifications page
+            // falls into the `else` branch, which ignores type filters
+            // entirely. The plugin's controller patch (sub_plugins/
+            // mod_categories.rb) intercepts `?type=` for this exact
+            // reason and renders a type-filtered index itself.
             args.type = urlType;
           }
           return this.store.find("notification", args);

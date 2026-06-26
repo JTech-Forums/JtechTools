@@ -74,18 +74,28 @@ export default class NotificationsTypeFilter extends Component {
 
   @action
   onChange(value) {
-    // Same reason — transitionTo({queryParams: {type: ...}}) silently
-    // drops `type` because Ember doesn't know about it. Mutate the URL
-    // directly and let the route's refreshModel logic re-fire via the
-    // URL change. Using router.transitionTo with the path+search string
-    // keeps the transition inside Ember (no full page reload).
+    // `router.transitionTo(path + ?type=...)` is a NO-OP here because
+    // Ember treats the new URL as the same route — `type` isn't declared
+    // as a controller queryParam (an Ember classic-reopen limitation
+    // noted at length in the initializer), so the queryParam diff is
+    // empty and the transition silently aborts WITHOUT touching the
+    // URL. A pushState+router.refresh dance had a similar problem —
+    // the Capybara assertion saw the URL revert.
+    //
+    // Falling back to a full navigation via `window.location.assign`
+    // sidesteps the whole Ember queryParam dance. The page reloads,
+    // route model() reads the fresh `?type=` from window.location, and
+    // the filtered list renders. Slightly heavier than an in-app
+    // transition, but the alternative is reaching into Discourse's
+    // queryParam plumbing — and the filter pick happens infrequently
+    // enough that a single reload is a fine UX trade.
     const url = new URL(window.location.href);
     if (value === ALL) {
       url.searchParams.delete("type");
     } else {
       url.searchParams.set("type", value);
     }
-    this.router.transitionTo(url.pathname + url.search);
+    window.location.assign(url.pathname + url.search);
   }
 
   <template>
