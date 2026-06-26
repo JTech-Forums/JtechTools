@@ -6,6 +6,7 @@
 require_relative "../lib/discourse_mod_categories/guardian_extensions"
 require_relative "../lib/discourse_mod_categories/whisper_query_filter"
 require_relative "../lib/discourse_mod_categories/staff_notifier"
+require_relative "../lib/discourse_mod_categories/user_action_whisper_filter"
 
 register_asset "stylesheets/topic-footer-message.scss"
 register_asset "stylesheets/whisper.scss"
@@ -1273,6 +1274,104 @@ after_initialize do
           ::Rails.logger.warn("[jtech-tools] flag_note notify failed: #{e.class}: #{e.message}")
         end
       end
+    end
+  end
+
+  # ---------------------------------------------------------------------
+  # Whisper visibility — surfaces beyond the topic stream
+  # ---------------------------------------------------------------------
+
+  # 1. /u/{username}/activity feed. UserAction.stream builds the activity
+  # rows from raw SQL joined to posts/topics, so a whisper post the viewer
+  # cannot read still surfaces in another user's profile (the "replied to
+  # topic X" row stays, even though Guardian#can_see_post? would block the
+  # post itself). We wrap UserAction.stream to post-filter the result
+  # against the same audience rules WhisperQueryFilter enforces on the
+  # topic stream — non-staff non-audience viewers stop seeing the row at
+  # all. Anonymous viewers see no whispers either. Page size becomes
+  # approximate (a 30-row page may render fewer rows when some were
+  # whispers), which is acceptable; the next-page link is unchanged so
+  # navigation still works. `rescue StandardError` falls back to the
+  # unfiltered result if a future Discourse refactor reshapes the row
+  # objects, so /u/{user}/activity can't 500.
+  reloadable_patch do
+    module ::DiscourseModCategories
+      module UserActionStreamWhisperFilterPatch
+        def stream(opts = nil)
+          rows = super
+          return rows unless SiteSetting.mod_whisper_enabled
+          return rows if rows.blank?
+
+          guardian = opts.is_a?(Hash) ? opts[:guardian] : nil
+          viewer = guardian.respond_to?(:user) ? guardian.user : nil
+
+          DiscourseModCategories::UserActionWhisperFilter.apply(rows, viewer)
+        end
+      end
+    end
+
+    ::UserAction.singleton_class.prepend(
+      ::DiscourseModCategories::UserActionStreamWhisperFilterPatch,
+    )
+  end
+
+  # 2. Live sidebar / category unread counters. TopicTrackingState publishes
+  # MessageBus updates when ANY post is created, including whispers — the
+  # payload carries the post's own post_number, so every subscribed client
+  # (audience or not) bumps its in-memory unread count for the topic and
+  # the count flows into the sidebar/category badge. The DB rollback above
+  # only fixes page-refresh state; the live update needs filtering at the
+  # subscriber list. `:topic_tracking_state_publish_unread_scope` is the
+  # documented hook — Discourse passes us the TopicUser scope and the post,
+  # and we narrow it to audience-only when the post is one of OUR whispers.
+  register_modifier(:topic_tracking_state_publish_unread_scope) do |scope, post|
+    begin
+      next scope unless SiteSetting.mod_whisper_enabled
+      next scope unless post.is_a?(::Post)
+      next scope unless post.custom_fields.key?(
+        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
+      )
+
+      # Build the audience: staff (admins + moderators) + post author +
+      # explicit user targets + group target members + badge holders +
+      # topic participants.
+      audience_ids = ::User.where(admin: true).or(::User.where(moderator: true)).pluck(:id)
+      audience_ids << post.user_id if post.user_id
+
+      target_user_ids =
+        Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
+      target_group_ids =
+        Array(
+          post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD],
+        ).map(&:to_i)
+      target_badge_ids =
+        Array(
+          post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD],
+        ).map(&:to_i)
+
+      audience_ids += target_user_ids
+      audience_ids +=
+        ::GroupUser.where(group_id: target_group_ids).pluck(:user_id) if target_group_ids.any?
+      audience_ids +=
+        ::UserBadge.where(badge_id: target_badge_ids).pluck(:user_id) if target_badge_ids.any?
+
+      if post.topic
+        participants =
+          Array(
+            post.topic.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD],
+          ).map(&:to_i)
+        audience_ids += participants
+      end
+
+      audience_ids = audience_ids.compact.uniq.reject { |id| id <= 0 }
+      next scope if audience_ids.empty?
+
+      scope.where(user_id: audience_ids)
+    rescue StandardError => e
+      ::Rails.logger.warn(
+        "[jtech-tools] tracking-state whisper filter fell back: #{e.class}: #{e.message}",
+      )
+      scope
     end
   end
 

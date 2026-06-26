@@ -185,6 +185,12 @@ en:
         banner_to: Whisper to
         banner_to_staff: Whisper to staff
         whisper_notification: whispered to you
+        convert_to_public:
+          label: Convert to public post
+          title: Remove the whisper status from this post so everyone can see it
+          confirm: Convert this whisper into a normal public post? Everyone who can read the topic will be able to see it.
+          done_toast: Converted to a public post
+          failed_toast: Could not convert this post
         add_participant:
           menu_label: Add user to whisper
           modal_title: Add a user to the whisper conversation

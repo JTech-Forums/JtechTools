@@ -73,6 +73,12 @@ export default class ModWhisperArmedPill extends Component {
     if (!composer) {
       return;
     }
+    // Mark the whisper state as dirty so model:composer#save knows to chain
+    // the PUT /discourse-mod-categories/post/:id/whisper request after an
+    // edit-save resolves. Without this, clicking the pill's X on an EDIT
+    // would flip the composer state but leave the post still a whisper on
+    // the server — same disarm-on-edit gap the modal's Clear button covers.
+    composer.set("modWhisperDirty", true);
     composer.set("modWhisperArmed", false);
     composer.set("modWhisperTargetUserIds", null);
     composer.set("modWhisperTargetUsernames", null);
