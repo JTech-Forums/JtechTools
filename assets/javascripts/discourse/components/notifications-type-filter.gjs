@@ -74,20 +74,27 @@ export default class NotificationsTypeFilter extends Component {
 
   @action
   async onChange(value) {
-    // Same reason — transitionTo({queryParams: {type: ...}}) silently
-    // drops `type` because Ember doesn't know about it. Mutate the URL
-    // directly so the next model() invocation reads the new `type`,
-    // then force the route to refresh: a same-path same-declared-
-    // queryParams transition is a no-op to Ember, so without the
-    // explicit refresh() the model never re-runs and the visible
-    // notification list stays on whatever was rendered last.
+    // `router.transitionTo(path + ?type=...)` is a NO-OP here because
+    // Ember treats the new URL as the same route — `type` isn't declared
+    // as a controller queryParam (an Ember classic-reopen limitation
+    // noted at length in the initializer), so the queryParam diff is
+    // empty and the transition silently aborts WITHOUT touching the
+    // URL. Confirmed via the failing system spec: the URL stayed at the
+    // original path after picking a type from the dropdown.
+    //
+    // `window.history.pushState` bypasses Ember's router entirely and
+    // updates the address-bar URL unconditionally. `router.refresh()`
+    // then re-runs the route's model(), which reads `?type=...` straight
+    // from window.location — so the list re-fetches with the new
+    // filter. Same shape on the way back to All (the `type` key is
+    // removed first).
     const url = new URL(window.location.href);
     if (value === ALL) {
       url.searchParams.delete("type");
     } else {
       url.searchParams.set("type", value);
     }
-    await this.router.transitionTo(url.pathname + url.search);
+    window.history.pushState({}, "", url.pathname + url.search);
     await this.router.refresh();
   }
 

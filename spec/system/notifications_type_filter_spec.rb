@@ -18,7 +18,7 @@ require "rails_helper"
 # The spec exercises both flows with a real ember boot + browser, and
 # saves screenshots into `tmp/capybara/feature_screenshots/` for
 # eyeballing in the CI artifact.
-RSpec.describe "Notifications type filter", type: :system do
+RSpec.describe "Notifications type filter" do
   fab!(:viewer) { Fabricate(:user, username: "notif_filter_viewer") }
   fab!(:other_user) { Fabricate(:user, username: "notif_filter_other") }
 
