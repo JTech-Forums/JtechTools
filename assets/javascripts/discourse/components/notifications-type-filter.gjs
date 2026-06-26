@@ -73,29 +73,29 @@ export default class NotificationsTypeFilter extends Component {
   }
 
   @action
-  async onChange(value) {
+  onChange(value) {
     // `router.transitionTo(path + ?type=...)` is a NO-OP here because
     // Ember treats the new URL as the same route — `type` isn't declared
     // as a controller queryParam (an Ember classic-reopen limitation
     // noted at length in the initializer), so the queryParam diff is
     // empty and the transition silently aborts WITHOUT touching the
-    // URL. Confirmed via the failing system spec: the URL stayed at the
-    // original path after picking a type from the dropdown.
+    // URL. A pushState+router.refresh dance had a similar problem —
+    // the Capybara assertion saw the URL revert.
     //
-    // `window.history.pushState` bypasses Ember's router entirely and
-    // updates the address-bar URL unconditionally. `router.refresh()`
-    // then re-runs the route's model(), which reads `?type=...` straight
-    // from window.location — so the list re-fetches with the new
-    // filter. Same shape on the way back to All (the `type` key is
-    // removed first).
+    // Falling back to a full navigation via `window.location.assign`
+    // sidesteps the whole Ember queryParam dance. The page reloads,
+    // route model() reads the fresh `?type=` from window.location, and
+    // the filtered list renders. Slightly heavier than an in-app
+    // transition, but the alternative is reaching into Discourse's
+    // queryParam plumbing — and the filter pick happens infrequently
+    // enough that a single reload is a fine UX trade.
     const url = new URL(window.location.href);
     if (value === ALL) {
       url.searchParams.delete("type");
     } else {
       url.searchParams.set("type", value);
     }
-    window.history.pushState({}, "", url.pathname + url.search);
-    await this.router.refresh();
+    window.location.assign(url.pathname + url.search);
   }
 
   <template>

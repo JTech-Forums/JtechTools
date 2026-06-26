@@ -58,11 +58,20 @@ export default {
             this.get("currentUser.username") !== username &&
             !this.get("currentUser.admin")
           ) {
+            // eslint-disable-next-line no-console
+            console.warn("[notif-filter] early exit: not own profile or admin");
             return;
           }
           const args = { username, filter: params.filter, limit: 60 };
           const urlType = new URLSearchParams(window.location.search).get(
             "type"
+          );
+          // eslint-disable-next-line no-console
+          console.warn(
+            "[notif-filter] model() — urlType=",
+            urlType,
+            "location=",
+            window.location.href
           );
           if (urlType && urlType !== "all") {
             if (urlType === "mod_notes") {
@@ -76,6 +85,8 @@ export default {
               args.filter_by_types = urlType.toLowerCase();
             }
           }
+          // eslint-disable-next-line no-console
+          console.warn("[notif-filter] store.find args=", JSON.stringify(args));
           return this.store.find("notification", args);
         },
       });

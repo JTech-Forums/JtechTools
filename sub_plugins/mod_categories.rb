@@ -1408,6 +1408,10 @@ after_initialize do
           # core controller a value it recognizes.
           canonical_type =
             ::Notification.types.keys.find { |k| k.to_s.casecmp(requested_type).zero? }
+          ::Rails.logger.warn(
+            "[notif-filter] NotificationsController#index requested_type=#{requested_type.inspect} " \
+              "canonical=#{canonical_type.inspect} filter_by_types(before)=#{params[:filter_by_types].inspect}",
+          )
           params[:filter_by_types] = canonical_type.to_s if canonical_type
           params.delete(:type)
           super
