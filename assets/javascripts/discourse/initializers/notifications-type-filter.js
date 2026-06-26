@@ -58,35 +58,23 @@ export default {
             this.get("currentUser.username") !== username &&
             !this.get("currentUser.admin")
           ) {
-            // eslint-disable-next-line no-console
-            console.warn("[notif-filter] early exit: not own profile or admin");
             return;
           }
           const args = { username, filter: params.filter, limit: 60 };
           const urlType = new URLSearchParams(window.location.search).get(
             "type"
           );
-          // eslint-disable-next-line no-console
-          console.warn(
-            "[notif-filter] model() — urlType=",
-            urlType,
-            "location=",
-            window.location.href
-          );
           if (urlType && urlType !== "all") {
-            if (urlType === "mod_notes") {
-              // Staff-only path — server patch handles routing into a
-              // custom scoped index, so pass through `type` verbatim.
-              args.type = urlType;
-            } else {
-              // Standard Discourse filter_by_types: lowercased to tolerate
-              // a hand-typed `?type=Liked`-style URL the same way the
-              // server-side casecmp patch does.
-              args.filter_by_types = urlType.toLowerCase();
-            }
+            // Pass the type as `?type=` rather than `?filter_by_types=` —
+            // Discourse's core NotificationsController#index only honours
+            // `filter_by_types` on the `?recent=true` path (the user-menu
+            // dropdown). The standard /u/{username}/notifications page
+            // falls into the `else` branch, which ignores type filters
+            // entirely. The plugin's controller patch (sub_plugins/
+            // mod_categories.rb) intercepts `?type=` for this exact
+            // reason and renders a type-filtered index itself.
+            args.type = urlType;
           }
-          // eslint-disable-next-line no-console
-          console.warn("[notif-filter] store.find args=", JSON.stringify(args));
           return this.store.find("notification", args);
         },
       });

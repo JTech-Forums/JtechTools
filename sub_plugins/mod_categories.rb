@@ -1397,24 +1397,26 @@ after_initialize do
             return render_mod_notes_index
           end
 
+          # Standard notification types. Core Discourse's
+          # NotificationsController#index only honours `filter_by_types`
+          # on the `?recent=true` branch (the user-menu dropdown). The
+          # /u/{username}/notifications page falls into the `else`
+          # branch — which fetches `Notification.where(user_id: ...).
+          # visible` and ignores type filters entirely. So even when the
+          # client sent `?filter_by_types=replied`, Discourse returned
+          # the unfiltered list and the visible page wasn't narrowed.
+          # We have to render the filtered index ourselves, mirroring
+          # the shape `render_mod_notes_index` uses below.
+          #
           # Case-insensitive match — `Notification.types` keys are
-          # lowercase snake_case symbols, but the dropdown / a hand-
-          # typed URL may capitalize the value (`?type=Boost` rather
-          # than `?type=boost`). Falling through on a casing miss was
-          # the second half of the user-reported "filter doesn't work"
-          # bug: client URL change wasn't refreshing the route AND the
-          # server was silently dropping the param when it did get
-          # through. Pluck the canonical key so we always pass the
-          # core controller a value it recognizes.
+          # lowercase snake_case symbols, but a hand-typed URL may
+          # capitalize the value (`?type=Boost` rather than `?type=boost`).
+          # Fall through to super on a casing miss so a typo doesn't 500.
           canonical_type =
             ::Notification.types.keys.find { |k| k.to_s.casecmp(requested_type).zero? }
-          ::Rails.logger.warn(
-            "[notif-filter] NotificationsController#index requested_type=#{requested_type.inspect} " \
-              "canonical=#{canonical_type.inspect} filter_by_types(before)=#{params[:filter_by_types].inspect}",
-          )
-          params[:filter_by_types] = canonical_type.to_s if canonical_type
-          params.delete(:type)
-          super
+          return super unless canonical_type
+
+          render_type_filtered_index(canonical_type)
         end
 
         private
@@ -1426,6 +1428,52 @@ after_initialize do
         # load-more behaviour reads `load_more_notifications`. Returning
         # only `{ notifications, total_rows_notifications }` was leaving
         # the list empty in the JS layer.
+        # Per-notification-type counterpart to render_mod_notes_index. The
+        # core /u/{username}/notifications JSON endpoint silently ignores
+        # `filter_by_types` outside of the `?recent=true` branch, so the
+        # type filter needs to be applied here. Same response envelope
+        # the user-notifications template binds against.
+        def render_type_filtered_index(type_sym)
+          user = fetch_user_from_params
+          limit = 60
+          offset = params[:offset].to_i
+          type_id = ::Notification.types[type_sym]
+
+          scope =
+            ::Notification
+              .where(user_id: user.id, notification_type: type_id)
+              .visible
+              .includes(:topic)
+              .order(created_at: :desc)
+
+          scope = scope.where(read: true) if params[:filter] == "read"
+          scope = scope.where(read: false) if params[:filter] == "unread"
+
+          total = scope.dup.count
+          notifications = scope.offset(offset).limit(limit)
+          notifications =
+            ::Notification.filter_inaccessible_topic_notifications(
+              current_user.guardian,
+              notifications,
+            )
+          notifications = ::Notification.filter_disabled_badge_notifications(notifications)
+          notifications = ::Notification.populate_acting_user(notifications)
+
+          render_json_dump(
+            notifications: serialize_data(notifications, ::NotificationSerializer),
+            total_rows_notifications: total,
+            seen_notification_id: user.seen_notification_id,
+            load_more_notifications:
+              notifications_path(
+                username: user.username,
+                offset: offset + limit,
+                limit: limit,
+                filter: params[:filter],
+                type: type_sym.to_s,
+              ),
+          )
+        end
+
         def render_mod_notes_index
           user = fetch_user_from_params
           limit = 60
