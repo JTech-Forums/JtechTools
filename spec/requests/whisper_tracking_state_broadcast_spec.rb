@@ -61,12 +61,7 @@ RSpec.describe "Whisper tracking-state broadcast" do
   end
 
   it "leaves the scope alone for a non-whisper post" do
-    expect(filtered_user_ids(op)).to include(
-      stranger.id,
-      target.id,
-      participant.id,
-      admin.id,
-    )
+    expect(filtered_user_ids(op)).to include(stranger.id, target.id, participant.id, admin.id)
   end
 
   context "with a user-targeted whisper" do

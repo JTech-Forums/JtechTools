@@ -85,21 +85,21 @@ RSpec.describe "Whisper activity feed" do
   describe "UserActionWhisperFilter.apply" do
     let(:rows) do
       [
-        Struct.new(:target_post_id).new(regular_reply.id),
-        Struct.new(:target_post_id).new(whisper_post.id),
-        Struct.new(:target_post_id).new(nil),
+        Struct.new(:post_id).new(regular_reply.id),
+        Struct.new(:post_id).new(whisper_post.id),
+        Struct.new(:post_id).new(nil),
       ]
     end
 
     it "drops the whisper row for a stranger" do
       filtered = DiscourseModCategories::UserActionWhisperFilter.apply(rows, stranger)
-      ids = filtered.map(&:target_post_id)
+      ids = filtered.map(&:post_id)
       expect(ids).to contain_exactly(regular_reply.id, nil)
     end
 
     it "keeps every row for staff" do
       filtered = DiscourseModCategories::UserActionWhisperFilter.apply(rows, admin)
-      expect(filtered.map(&:target_post_id)).to eq(rows.map(&:target_post_id))
+      expect(filtered.map(&:post_id)).to eq(rows.map(&:post_id))
     end
 
     it "keeps every row when the input is empty" do
@@ -109,19 +109,19 @@ RSpec.describe "Whisper activity feed" do
     it "keeps every row when mod_whisper_enabled is off" do
       SiteSetting.mod_whisper_enabled = false
       filtered = DiscourseModCategories::UserActionWhisperFilter.apply(rows, stranger)
-      expect(filtered.map(&:target_post_id)).to eq(rows.map(&:target_post_id))
+      expect(filtered.map(&:post_id)).to eq(rows.map(&:post_id))
     end
 
     it "drops the whisper row for an anonymous viewer (nil user)" do
       filtered = DiscourseModCategories::UserActionWhisperFilter.apply(rows, nil)
-      ids = filtered.map(&:target_post_id)
+      ids = filtered.map(&:post_id)
       expect(ids).to contain_exactly(regular_reply.id, nil)
     end
 
     it "falls back to the unfiltered rows when something raises" do
       allow(::PostCustomField).to receive(:where).and_raise(StandardError.new("boom"))
       filtered = DiscourseModCategories::UserActionWhisperFilter.apply(rows, stranger)
-      expect(filtered.map(&:target_post_id)).to eq(rows.map(&:target_post_id))
+      expect(filtered.map(&:post_id)).to eq(rows.map(&:post_id))
     end
   end
 end

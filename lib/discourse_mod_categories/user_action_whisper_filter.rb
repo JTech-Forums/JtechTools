@@ -30,7 +30,7 @@ module DiscourseModCategories
     module_function
 
     # Filter `rows` (Array of UserAction-like objects, each responding to
-    # `target_post_id` and `target_topic_id`) for `viewer` (User or nil).
+    # `post_id` and `target_topic_id`) for `viewer` (User or nil).
     # Returns a new array containing only rows whose target_post is visible
     # to viewer per the whisper visibility rules above. Falls back to the
     # original array on any error so an upstream Discourse change can't
@@ -40,18 +40,14 @@ module DiscourseModCategories
       return rows if rows.blank?
       return rows if viewer&.staff?
 
-      post_ids =
-        rows
-          .map { |r| r.respond_to?(:target_post_id) ? r.target_post_id : nil }
-          .compact
-          .uniq
+      post_ids = rows.map { |r| r.respond_to?(:post_id) ? r.post_id : nil }.compact.uniq
       return rows if post_ids.empty?
 
       blocked_post_ids = blocked_whisper_post_ids(post_ids, viewer)
       return rows if blocked_post_ids.empty?
 
       rows.reject do |r|
-        pid = r.respond_to?(:target_post_id) ? r.target_post_id : nil
+        pid = r.respond_to?(:post_id) ? r.post_id : nil
         pid && blocked_post_ids.include?(pid)
       end
     rescue StandardError => e

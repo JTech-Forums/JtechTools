@@ -43,7 +43,7 @@ export default {
           action: () => {
             dialog.confirm({
               message: i18n(
-                "discourse_mod_categories.whisper.convert_to_public.confirm",
+                "discourse_mod_categories.whisper.convert_to_public.confirm"
               ),
               didConfirm: () =>
                 ajax(`/discourse-mod-categories/post/${post.id}/whisper`, {

@@ -1328,9 +1328,7 @@ after_initialize do
     begin
       next scope unless SiteSetting.mod_whisper_enabled
       next scope unless post.is_a?(::Post)
-      next scope unless post.custom_fields.key?(
-        DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-      )
+      next scope unless post.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
 
       # Build the audience: staff (admins + moderators) + post author +
       # explicit user targets + group target members + badge holders +
@@ -1341,13 +1339,13 @@ after_initialize do
       target_user_ids =
         Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
       target_group_ids =
-        Array(
-          post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD],
-        ).map(&:to_i)
+        Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).map(
+          &:to_i
+        )
       target_badge_ids =
-        Array(
-          post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD],
-        ).map(&:to_i)
+        Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(
+          &:to_i
+        )
 
       audience_ids += target_user_ids
       audience_ids +=
