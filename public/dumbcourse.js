@@ -2286,7 +2286,7 @@ var REACTION_EMOJI = {
   'ok_hand': '\uD83D\uDC4C',
   'man_shrugging': '\uD83E\uDD37\u200D\u2642\uFE0F'
 };
-function reactionGlyph(id, fallback){ var m = window.DUMBCOURSE_SETTINGS && window.DUMBCOURSE_SETTINGS.customEmojis; if (m && m[id]) { return '<img src="' + m[id] + '" class="reaction-emoji" alt="' + id + '" style="width:1em;height:1em;vertical-align:-0.15em">'; } return fallback; } var REACTION_LIST = ['+1', 'folded_hands', 'laughing', 'ok_hand', 'man_shrugging'];
+function emojiChar(name){ try { var cp = (typeof EMOJI_MAP !== 'undefined') && EMOJI_MAP[name]; if (!cp) return null; return String(cp).split('-').map(function(h){ return fromCodePoint(parseInt(h, 16)); }).join(''); } catch (e) { return null; } } function reactionGlyph(id, fallback){ var m = window.DUMBCOURSE_SETTINGS && window.DUMBCOURSE_SETTINGS.customEmojis; if (m && m[id]) { return '<img src="' + m[id] + '" class="reaction-emoji" alt="' + id + '" style="width:1em;height:1em;vertical-align:-0.15em">'; } var c = emojiChar(id); if (c) return c; return fallback; } var REACTION_LIST = (window.DUMBCOURSE_SETTINGS && window.DUMBCOURSE_SETTINGS.enabledReactions && window.DUMBCOURSE_SETTINGS.enabledReactions.length) ? window.DUMBCOURSE_SETTINGS.enabledReactions : ['+1', 'folded_hands', 'laughing', 'ok_hand', 'man_shrugging'];
 function catBadge(id) {
   var c = S.categories[id];
   if (!c) return '';

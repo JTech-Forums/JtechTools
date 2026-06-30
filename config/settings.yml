@@ -274,11 +274,3 @@ jtech_dumbcourse:
   dumbcourse_languagetool_api_key:
     default: ''
     client: false
-
-# ───────────────────────────────────────────────────────────────────────────
-# Jtech — Meh (repaint the 🤷 man_shrugging reaction/emoji with a custom glyph)
-# ───────────────────────────────────────────────────────────────────────────
-jtech_meh:
-  meh_enabled:
-    default: true
-    client: false
