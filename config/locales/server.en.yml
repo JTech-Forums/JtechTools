@@ -8,6 +8,7 @@ en:
       jtech_mod: Jtech — Mod
       jtech_dumbcourse: Jtech — Dumbcourse
       jtech_smart_search: Jtech — Smart search
+      jtech_meh: Jtech — Meh
 
     # ── Jtech (master) ─────────────────────────────────────────────────────
     jtech_enabled: Enable the Jtech plugin bundle
@@ -243,6 +244,14 @@ en:
     dumbcourse_languagetool_api_key: Official API key
     dumbcourse_languagetool_api_key_description: Required when a username
       is set.
+
+    # ── Jtech — Meh ────────────────────────────────────────────────────────
+    meh_enabled: Repaint the shrug reaction with the MEH glyph
+    meh_enabled_description: When on, the man_shrugging shrug emoji is
+      overridden with the bundled MEH image everywhere it renders — the
+      don't-know reaction and the shrug emoji in posts, plus the dumbcourse
+      SPA. Turn off to restore the normal shrug. Takes effect on the next
+      rebuild/restart.
 
   discourse_mod_categories:
     note_notification_alert: '%{username} added a moderator note on "%{topic}"'

@@ -13,6 +13,7 @@ One combined Discourse plugin. Bundles seven previously-separate plugins under a
 | Dumbcourse | `DiscourseDumbcourse` | `dumbcourse_*` | `dumbcourse_enabled` |
 | Translator-tweaks | *(patches `DiscourseTranslator`)* | *(none — gated by translator's own settings)* | `translator_enabled` (upstream) |
 | Smart search | `DiscourseSmartSearch` | `smart_search_*` | `smart_search_enabled` |
+| Meh (repaint 🤷 `man_shrugging` with a custom glyph) | — | `meh_*` | `meh_enabled` |
 
 The bundle is gated by `jtech_enabled`; each sub-plugin is independently gated by its own setting above.
 
