@@ -45,6 +45,22 @@ No external services, no API keys, no embedding models — both backends (WordNe
 
 Editing the overlay: only ADD entries WordNet doesn't already cover — abbreviations, brand names, protocol initialisms. Don't curate general English (WordNet handles it for free). Lowercase ASCII rows, each row is a symmetric synonym group. Reloaded at boot (or via `DiscourseSmartSearch::Synonyms.reload!` in a Rails console). See `docs/smart_search.md` for the full architecture: two-backend lookup order, request-flow diagram, fallback contract, performance notes, and a console-recipe for diagnostics.
 
+### Meh — replacing emoji with your own images
+
+There is **no bespoke admin page** for this on purpose — Discourse's native emoji system already does the work, and `buildEmojiUrl` checks custom emoji **before** the built-in set, so a custom emoji whose name matches a built-in **overrides** it everywhere it renders (the reaction picker, reaction pills, and `:name:` in posts).
+
+**To replace any emoji** (no plugin change, no rebuild):
+
+1. **Admin → Customize → Emoji → Add new emoji.**
+2. Upload your image and **name it exactly after the emoji you want to override** — e.g. `man_shrugging`, `+1`, `joy`, `ok_hand`.
+3. Save. It now renders in place of the original.
+
+**Image spec:** square, **transparent PNG**, **72×72 or larger** (144×144 recommended — Discourse scales it down; bigger source = crisper on hi-dpi). Non-square images get distorted.
+
+**Dumbcourse** renders reactions as native Unicode characters, so it can't pick up an emoji image on its own. The plugin bridges this: `app/controllers/discourse_dumbcourse/app_controller.rb` injects every custom-emoji override (`{name → url}`, from `Emoji.custom`) into `window.DUMBCOURSE_SETTINGS.customEmojis`, and `public/dumbcourse.js`'s `reactionGlyph()` renders an `<img>` for any reaction whose name has an override. This **auto-syncs** — whatever you upload natively shows in dumbcourse too, no code change.
+
+The bundled **`meh_enabled`** setting is just a convenience default: it ships `public/images/meh.png` and registers it as `man_shrugging` (the "don't know" shrug → MEH) so the replacement works out of the box without a manual upload. Turn it off to restore the normal shrug, or upload your own `man_shrugging` natively to override the bundled one.
+
 ## Layout
 
 ```

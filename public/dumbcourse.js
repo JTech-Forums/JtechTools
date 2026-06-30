@@ -2286,7 +2286,7 @@ var REACTION_EMOJI = {
   'ok_hand': '\uD83D\uDC4C',
   'man_shrugging': '\uD83E\uDD37\u200D\u2642\uFE0F'
 };
-var MEH_REACTION_IMG = '<img src="/plugins/jtech-tools/images/meh.png" class="reaction-emoji meh-reaction" alt="meh" style="width:1em;height:1em;vertical-align:-0.15em">'; function mehGlyph(id, fallback){ return (window.DUMBCOURSE_SETTINGS && window.DUMBCOURSE_SETTINGS.mehEnabled && id === 'man_shrugging') ? MEH_REACTION_IMG : fallback; } var REACTION_LIST = ['+1', 'folded_hands', 'laughing', 'ok_hand', 'man_shrugging'];
+function reactionGlyph(id, fallback){ var m = window.DUMBCOURSE_SETTINGS && window.DUMBCOURSE_SETTINGS.customEmojis; if (m && m[id]) { return '<img src="' + m[id] + '" class="reaction-emoji" alt="' + id + '" style="width:1em;height:1em;vertical-align:-0.15em">'; } return fallback; } var REACTION_LIST = ['+1', 'folded_hands', 'laughing', 'ok_hand', 'man_shrugging'];
 function catBadge(id) {
   var c = S.categories[id];
   if (!c) return '';
@@ -4633,7 +4633,7 @@ function showReactionPicker(postId) {
   var el = document.createElement('div');
   el.className = 'confirm-overlay';
   el.innerHTML = '<div class="confirm-box"><p>React:</p><div class="reaction-picker-grid">' + REACTION_LIST.map(function (r) {
-    return '<button class="reaction-pick" data-rid="' + r + '" tabindex="0">' + (mehGlyph(r, REACTION_EMOJI[r] || r)) + '</button>';
+    return '<button class="reaction-pick" data-rid="' + r + '" tabindex="0">' + (reactionGlyph(r, REACTION_EMOJI[r] || r)) + '</button>';
   }).join('') + '</div><button class="cancel" tabindex="0" style="background:var(--bg3);color:var(--fg);margin-top:8px;width:100%">Cancel</button></div>';
   document.body.appendChild(el);
   var picks = [].slice.call(el.querySelectorAll('.reaction-pick'));
@@ -4936,7 +4936,7 @@ function renderPost(p, topicData) {
     ${(isDeleted || isHidden) ? '' : function () {
     var rxs = p.reactions || [];
     return rxs.length ? '<div class="post-reactions">' + rxs.map(function (r) {
-      var em = mehGlyph(r.id, REACTION_EMOJI[r.id] || r.id);
+      var em = reactionGlyph(r.id, REACTION_EMOJI[r.id] || r.id);
       var isActive = curReactId ? curReactId === r.id : usedMain && r.id === '+1';
       var active = isActive ? ' reacted' : '';
       var likeActive = isActive && r.id === '+1' ? ' reacted-like' : '';
