@@ -47,9 +47,10 @@ module DiscourseModCategories
       return false unless obj.is_a?(::Post)
       return false unless obj.id
 
-      ::PostCustomField
-        .where(post_id: obj.id, name: DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
-        .exists?
+      ::PostCustomField.where(
+        post_id: obj.id,
+        name: DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
+      ).exists?
     end
   end
 end
