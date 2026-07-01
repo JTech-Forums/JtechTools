@@ -8,6 +8,7 @@ en:
       jtech_mod: Jtech — Mod
       jtech_dumbcourse: Jtech — Dumbcourse
       jtech_smart_search: Jtech — Smart search
+      jtech_popup_notifications: Jtech — Desktop pop-ups
 
     # ── Jtech (master) ─────────────────────────────────────────────────────
     jtech_enabled: Enable the Jtech plugin bundle
@@ -171,6 +172,21 @@ en:
       synonym-expanded variants run per search. Each variant is one
       extra SQL query; raising this gives broader matches but slower
       search. Range 1–5.
+
+    # ── Jtech — Desktop pop-ups ────────────────────────────────────────────
+    popup_notifications_enabled: Enable desktop pop-up notifications
+    popup_notifications_enabled_description: Master switch for the Jelly-style
+      pop-up notification card (top-right, desktop only). When off, no card
+      appears for anyone and the per-user preference is hidden. This is purely
+      additive — it never changes the bell counter, the notifications dropdown,
+      or read state.
+    popup_notifications_default_enabled: Pop-ups on by default
+    popup_notifications_default_enabled_description: The default for users who
+      have not chosen on their account page. Off by design, so enabling the
+      plugin never surprises the whole forum — each user opts in themselves.
+    popup_notifications_timeout_seconds: Pop-up auto-dismiss (seconds)
+    popup_notifications_timeout_seconds_description: How long the card stays on
+      screen before dismissing itself. Clicking anywhere else also dismisses it.
 
     # ── Jtech — Dumbcourse ─────────────────────────────────────────────────
     dumbcourse_enabled: Enable Dumbcourse

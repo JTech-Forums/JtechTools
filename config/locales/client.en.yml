@@ -1,5 +1,34 @@
 en:
   js:
+    jtech_popup_notifications:
+      someone: Someone
+      # Second half of the toast heading line, "Name — <action>".
+      action:
+        replied: Replied
+        mentioned: Mentioned you
+        quoted: Quoted you
+        edited: Edited your post
+        liked: Liked your post
+        messaged: Messaged you
+        posted: Posted
+        linked: Linked your post
+        badge: Granted you a badge
+        whispered: Sent you a whisper
+        post_deleted: Deleted a post
+        post_approved: Approved a post
+        post_rejected: Rejected a post
+        user_note: Added a note on a user
+        flag_note: Added a note on a flag
+        note: Added a moderator note
+        default: Sent you a notification
+      preference:
+        title: Desktop Pop Up Notifications
+        instructions: Show a small pop-up card in the top-right corner when you
+          receive a new notification. Desktop only — this never appears on mobile.
+        # NB: "on"/"off" MUST be quoted — YAML parses bare on/off as booleans,
+        # which would make these i18n keys unreachable.
+        "on": "On"
+        "off": "Off"
     discourse_mod_categories:
       precheck:
         title: Before you post

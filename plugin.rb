@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # name: jtech-tools
-# about: Jtech — combined Discourse plugin (dislike, another-smtp, mini-mod, mod-categories, dumbcourse, translator-tweaks, smart-search)
+# about: Jtech — combined Discourse plugin (dislike, another-smtp, mini-mod, mod-categories, dumbcourse, translator-tweaks, smart-search, popup-notifications)
 # version: 0.1.1
 # authors: TripleU, Shalom_Karr, Ars18
 # url: https://github.com/JTech-Forums/JtechTools
@@ -36,6 +36,7 @@ enabled_site_setting :jtech_enabled
   dumbcourse
   translator_tweaks
   smart_search
+  popup_notifications
 ].each do |sub|
   path = File.expand_path("sub_plugins/#{sub}.rb", __dir__)
   instance_eval(File.read(path), path, 1)
