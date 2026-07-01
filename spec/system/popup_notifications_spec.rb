@@ -93,14 +93,24 @@ RSpec.describe "Desktop pop-up notifications" do
     expect(page).to have_css("#post_1", wait: 10)
   end
 
+  # Re-publish (fresh id each time) until the toast appears, in case the
+  # browser's MessageBus poll is not yet listening when the first publish
+  # lands.
+  def publish_reply_until_toast
+    8.times do
+      publish_reply
+      return if page.has_css?(".jtech-popup-toast", wait: 1.5)
+    end
+    expect(page).to have_css(".jtech-popup-toast", wait: 5)
+  end
+
   it "pops the toast when the preference is on" do
     set_pref(true)
     sign_in(recipient)
     open_topic
 
-    publish_reply
+    publish_reply_until_toast
 
-    expect(page).to have_css(".jtech-popup-toast", wait: 10)
     expect(page).to have_css(".jtech-popup-toast__name", text: author.username)
     expect(page).to have_css(".jtech-popup-toast__action", text: "Replied")
     expect(page).to have_css(".jtech-popup-toast__title", text: topic.title)
@@ -126,8 +136,7 @@ RSpec.describe "Desktop pop-up notifications" do
     sign_in(recipient)
     open_topic
 
-    publish_reply
-    expect(page).to have_css(".jtech-popup-toast", wait: 10)
+    publish_reply_until_toast
 
     find("#post_1 .cooked").click
     expect(page).to have_no_css(".jtech-popup-toast")

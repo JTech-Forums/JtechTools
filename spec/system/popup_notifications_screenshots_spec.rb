@@ -145,11 +145,22 @@ RSpec.describe "Desktop pop-up notification screenshots" do
     expect(page).to have_css("#post_1", wait: 10)
   end
 
-  # One shot = one fresh page + one publish (the reliable pattern under turbo).
+  # After a warm page load `#post_1` can appear before the browser's
+  # MessageBus poll re-establishes its subscription, so a single publish can
+  # land before the client is listening and be missed. Re-publish (a fresh id
+  # each time) until the toast — or a specific icon within it — appears.
+  def wait_for_toast(selector = ".jtech-popup-toast")
+    8.times do
+      yield
+      return if page.has_css?(selector, wait: 1.5)
+    end
+    expect(page).to have_css(selector, wait: 5)
+  end
+
+  # One shot = one fresh page + a publish (retried until it lands).
   def enriched_toast_shot(name, type:, post: reply_post, into: topic)
     visit_topic(into)
-    push_from_post(type: type, post: post, into: into)
-    expect(page).to have_css(".jtech-popup-toast", wait: 10)
+    wait_for_toast { push_from_post(type: type, post: post, into: into) }
     shot(name)
   end
 
@@ -217,16 +228,17 @@ RSpec.describe "Desktop pop-up notification screenshots" do
 
     # No source post → the type icon renders on its own, preview from data.
     visit_topic
-    push(
-      type: :custom,
-      data: {
-        display_username: "system_sam",
-        topic_title: "Scheduled maintenance tonight",
-        excerpt: "The forum will be briefly unavailable around 2am for a database upgrade.",
-        url: "/u/#{recipient.username}/notifications",
-      },
-    )
-    expect(page).to have_css(".jtech-popup-toast .d-icon-bell", wait: 10)
+    wait_for_toast(".jtech-popup-toast .d-icon-bell") do
+      push(
+        type: :custom,
+        data: {
+          display_username: "system_sam",
+          topic_title: "Scheduled maintenance tonight",
+          excerpt: "The forum will be briefly unavailable around 2am for a database upgrade.",
+          url: "/u/#{recipient.username}/notifications",
+        },
+      )
+    end
     shot("14_toast_fallback_icon")
   end
 
@@ -245,51 +257,54 @@ RSpec.describe "Desktop pop-up notification screenshots" do
 
     # Moderator whisper — enriched from a real post, with the eye badge.
     visit_topic
-    push(
-      type: :custom,
-      topic_id: topic.id,
-      post_number: reply_post.post_number,
-      slug: topic.slug,
-      fancy_title: topic.fancy_title,
-      data: {
-        mod_whisper: true,
-        display_username: author.username,
-        topic_title: topic.title,
-        original_post_id: reply_post.id,
-      },
-    )
-    expect(page).to have_css(".jtech-popup-toast .d-icon-eye", wait: 10)
+    wait_for_toast(".jtech-popup-toast .d-icon-eye") do
+      push(
+        type: :custom,
+        topic_id: topic.id,
+        post_number: reply_post.post_number,
+        slug: topic.slug,
+        fancy_title: topic.fancy_title,
+        data: {
+          mod_whisper: true,
+          display_username: author.username,
+          topic_title: topic.title,
+          original_post_id: reply_post.id,
+        },
+      )
+    end
     shot("16_toast_whisper")
 
     # Flag note — no source post, so the flag type icon renders on its own.
     visit_topic
-    push(
-      type: :custom,
-      data: {
-        mod_note: true,
-        mod_note_kind: "flag_note",
-        display_username: "mod_mia",
-        excerpt: "Flagged as spam — please review.",
-        url: "/review",
-      },
-    )
-    expect(page).to have_css(".jtech-popup-toast .d-icon-flag", wait: 10)
+    wait_for_toast(".jtech-popup-toast .d-icon-flag") do
+      push(
+        type: :custom,
+        data: {
+          mod_note: true,
+          mod_note_kind: "flag_note",
+          display_username: "mod_mia",
+          excerpt: "Flagged as spam — please review.",
+          url: "/review",
+        },
+      )
+    end
     shot("17_toast_flag")
 
     # Queued / pending post approved by staff.
     visit_topic
-    push(
-      type: :custom,
-      data: {
-        mod_note: true,
-        mod_note_kind: "post_approved",
-        display_username: "mod_mia",
-        topic_title: topic.title,
-        excerpt: "Approved a post that was awaiting review.",
-        url: "/review",
-      },
-    )
-    expect(page).to have_css(".jtech-popup-toast .d-icon-check", wait: 10)
+    wait_for_toast(".jtech-popup-toast .d-icon-check") do
+      push(
+        type: :custom,
+        data: {
+          mod_note: true,
+          mod_note_kind: "post_approved",
+          display_username: "mod_mia",
+          topic_title: topic.title,
+          excerpt: "Approved a post that was awaiting review.",
+          url: "/review",
+        },
+      )
+    end
     shot("18_toast_pending_approved")
   end
 end
