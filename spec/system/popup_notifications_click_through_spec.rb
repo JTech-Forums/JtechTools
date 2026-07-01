@@ -32,6 +32,12 @@ RSpec.describe "Desktop pop-up notification click-through" do
   let(:user_field) { DiscoursePopupNotifications::USER_ENABLED_FIELD }
   let(:id_seq) { [800_000] }
 
+  # Gallery/behavioral spec: runs in the Feature Screenshots workflow (which
+  # sets this env). Skipped in the main parallel system_tests run so its 30
+  # browser navigations do not weigh that job down — core click-through is
+  # covered by popup_notifications_spec.rb.
+  before { skip("screenshot-gallery only") unless ENV["JTECH_SCREENSHOT_GALLERY"] }
+
   before do
     SiteSetting.popup_notifications_enabled = true
     SiteSetting.popup_notifications_timeout_seconds = 300
@@ -95,7 +101,12 @@ RSpec.describe "Desktop pop-up notification click-through" do
     %i[replied mentioned quoted liked private_message].each do |type|
       it "clicking a #{type} toast opens its topic and dismisses (batch #{batch})" do
         target =
-          Fabricate(:topic, category: category, user: recipient, title: "Target #{batch} #{type}")
+          Fabricate(
+            :topic,
+            category: category,
+            user: recipient,
+            title: "Another topic #{batch} for a #{type} notification",
+          )
         Fabricate(
           :post,
           topic: target,

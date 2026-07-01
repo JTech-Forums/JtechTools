@@ -69,6 +69,11 @@ RSpec.describe "Desktop pop-up notification stacking screenshots" do
   let(:user_field) { DiscoursePopupNotifications::USER_ENABLED_FIELD }
   let(:id_seq) { [700_000] }
 
+  # Gallery spec: generates screenshots in the Feature Screenshots workflow
+  # (which sets this env). Skipped in the main parallel system_tests run so it
+  # does not weigh that job down.
+  before { skip("screenshot-gallery only") unless ENV["JTECH_SCREENSHOT_GALLERY"] }
+
   before do
     SiteSetting.popup_notifications_enabled = true
     SiteSetting.popup_notifications_timeout_seconds = 300

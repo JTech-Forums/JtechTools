@@ -74,6 +74,12 @@ RSpec.describe "Desktop pop-up notification screenshots" do
   # notification gets a fresh id.
   let(:id_seq) { [500_000] }
 
+  # Gallery spec: generates screenshots in the Feature Screenshots workflow
+  # (which sets this env). Skipped in the main parallel system_tests run so it
+  # does not weigh that job down — core behavior is covered by
+  # popup_notifications_spec.rb.
+  before { skip("screenshot-gallery only") unless ENV["JTECH_SCREENSHOT_GALLERY"] }
+
   before do
     SiteSetting.popup_notifications_enabled = true
     SiteSetting.popup_notifications_timeout_seconds = 300 # keep the card up long enough to shoot
