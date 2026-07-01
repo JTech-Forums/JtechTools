@@ -29,8 +29,14 @@
     border-color: var(--primary-medium);
   }
 
+  // Avatar column, with a small type-icon badge pinned to its top-right
+  // corner. When there is no source post (e.g. a flag note) there is no
+  // avatar, so the type icon renders on its own at avatar size instead.
   &__avatar {
+    position: relative;
     flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
 
     img {
       display: block;
@@ -38,9 +44,40 @@
       height: 44px;
       border-radius: 50%;
     }
+  }
+
+  &__type-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--tertiary);
+    color: var(--secondary);
+    border: 2px solid var(--secondary);
 
     .d-icon {
-      font-size: 1.75em;
+      width: 0.7em;
+      height: 0.7em;
+      font-size: 0.7em;
+    }
+  }
+
+  &__type-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--tertiary-low);
+
+    .d-icon {
+      font-size: 1.5em;
       color: var(--tertiary);
     }
   }
@@ -49,11 +86,18 @@
     min-width: 0; // allow the ellipsis on the title to work inside flex
   }
 
-  // Top line: the acting user's name.
-  &__username {
-    font-weight: 700;
+  // Top line: "Name — Action" (e.g. "pat — Liked your post").
+  &__heading {
     font-size: var(--font-0);
     line-height: 1.2;
+  }
+
+  &__name {
+    font-weight: 700;
+  }
+
+  &__action {
+    color: var(--primary-medium);
   }
 
   // Middle line: topic title, bold.

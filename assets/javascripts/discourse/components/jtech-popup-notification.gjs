@@ -9,6 +9,7 @@ import { ajax } from "discourse/lib/ajax";
 import { getURLWithCDN } from "discourse/lib/get-url";
 import discourseLater from "discourse/lib/later";
 import DiscourseURL from "discourse/lib/url";
+import { i18n } from "discourse-i18n";
 
 // Desktop-only, Jelly-style pop-up "toast". Purely ADDITIVE — it renders a
 // card when a new notification is published on the current user's
@@ -17,14 +18,53 @@ import DiscourseURL from "discourse/lib/url";
 // else. Core notifications, the bell, the dropdown, and read-state are all
 // untouched; turning the feature off simply stops this card from appearing.
 //
-// Card layout (top → bottom): the acting user's name, their avatar on the
-// left, the topic title in bold, then a short preview of their message.
+// Card layout: the acting user's avatar on the left (with a small type-icon
+// badge on its corner), then a heading line "Name — Action" (e.g.
+// "pat — Liked your post"), the topic title in bold, and a short preview of
+// the message.
+//
+// Fires for every notification the user receives, including the plugin's
+// own `custom` notifications — moderator whispers, flag notes, and
+// queued/pending-post approvals/rejections — which are decoded via their
+// `data` markers below.
 //
 // Never mounts on mobile (`site.mobileView`) or for users who have not
 // opted in on their account page.
 const AVATAR_SIZE = 48;
 const EXCERPT_LENGTH = 120;
 const STALE_MS = 10000;
+const CUSTOM_TYPE = 14; // Notification.types[:custom]
+
+// notification_type (core enum, stable) → icon + action i18n key suffix.
+const CORE_TYPES = {
+  1: { icon: "at", action: "mentioned" },
+  2: { icon: "reply", action: "replied" },
+  3: { icon: "quote-right", action: "quoted" },
+  4: { icon: "pencil", action: "edited" },
+  5: { icon: "heart", action: "liked" },
+  6: { icon: "envelope", action: "messaged" },
+  7: { icon: "envelope", action: "messaged" },
+  9: { icon: "reply", action: "posted" },
+  11: { icon: "link", action: "linked" },
+  12: { icon: "certificate", action: "badge" },
+  15: { icon: "at", action: "mentioned" },
+  17: { icon: "reply", action: "posted" },
+  19: { icon: "heart", action: "liked" },
+  20: { icon: "check", action: "post_approved" },
+  25: { icon: "heart", action: "liked" },
+};
+
+// This plugin's `custom` notifications, keyed by their `data.mod_note_kind`.
+const MOD_NOTE_KINDS = {
+  post_deleted: { icon: "trash-can", action: "post_deleted" },
+  post_approved: { icon: "check", action: "post_approved" },
+  post_rejected: { icon: "xmark", action: "post_rejected" },
+  user_note: { icon: "shield-halved", action: "user_note" },
+  flag_note: { icon: "flag", action: "flag_note" },
+  note: { icon: "shield-halved", action: "note" },
+};
+
+const FALLBACK = { icon: "bell", action: "default" };
 
 export default class JtechPopupNotification extends Component {
   @service currentUser;
@@ -53,7 +93,6 @@ export default class JtechPopupNotification extends Component {
     this.messageBus.subscribe(this.channel, this.onMessage);
   }
 
-  // Read live so saving the account-page dropdown (which mirrors the value
   willDestroy() {
     super.willDestroy(...arguments);
     this.clear();
@@ -62,9 +101,28 @@ export default class JtechPopupNotification extends Component {
     }
   }
 
+  // Read live so saving the account-page dropdown (which mirrors the value
   // onto currentUser) takes effect without a page reload.
   get prefEnabled() {
     return !!this.currentUser?.jtech_popup_notifications_enabled;
+  }
+
+  // Icon + action label for a notification. Core types come from the stable
+  // enum map; our own `custom` notifications are decoded from their data
+  // markers (whisper, mod-note kinds — which cover flag notes and
+  // queued/pending-post approvals and rejections).
+  metaFor(notification) {
+    const data = notification.data || {};
+    if (notification.notification_type === CUSTOM_TYPE) {
+      if (data.mod_whisper) {
+        return { icon: "eye", action: "whispered" };
+      }
+      if (data.mod_note) {
+        return MOD_NOTE_KINDS[data.mod_note_kind] || MOD_NOTE_KINDS.note;
+      }
+      return FALLBACK;
+    }
+    return CORE_TYPES[notification.notification_type] || FALLBACK;
   }
 
   @action
@@ -94,21 +152,28 @@ export default class JtechPopupNotification extends Component {
 
   async present(notification) {
     const data = notification.data || {};
+    const meta = this.metaFor(notification);
+    const name =
+      data.display_username ||
+      data.username ||
+      data.original_username ||
+      data.mentioned_by_username ||
+      i18n("jtech_popup_notifications.someone");
+
     const toast = {
-      username:
-        data.display_username ||
-        data.username ||
-        data.original_username ||
-        data.mentioned_by_username ||
-        "",
-      title: notification.fancy_title || data.topic_title || data.title || "",
+      name,
+      action: i18n(`jtech_popup_notifications.action.${meta.action}`),
+      icon: meta.icon,
+      title: notification.fancy_title || data.topic_title || "",
       excerpt: data.excerpt || "",
       avatarUrl: null,
       url: this.urlFor(notification),
     };
 
     // Enrich with the acting user's avatar + a preview of their message from
-    // the source post. Best-effort: the card still shows without it.
+    // the source post. Best-effort: the card still shows without it (custom
+    // notifications such as flag notes have no source post — they render the
+    // type icon on its own instead of an avatar).
     try {
       const post = await this.fetchPost(notification, data);
       if (post) {
@@ -116,9 +181,6 @@ export default class JtechPopupNotification extends Component {
           toast.avatarUrl = getURLWithCDN(
             post.avatar_template.replace("{size}", AVATAR_SIZE)
           );
-        }
-        if (!toast.username && post.username) {
-          toast.username = post.username;
         }
         if (!toast.excerpt && post.cooked) {
           toast.excerpt = this.excerptFrom(post.cooked);
@@ -224,16 +286,21 @@ export default class JtechPopupNotification extends Component {
         <div class="jtech-popup-toast__avatar">
           {{#if this.toast.avatarUrl}}
             <img src={{this.toast.avatarUrl}} width="44" height="44" alt="" />
+            <span class="jtech-popup-toast__type-badge">
+              {{icon this.toast.icon}}
+            </span>
           {{else}}
-            {{icon "bell"}}
+            <span class="jtech-popup-toast__type-icon">
+              {{icon this.toast.icon}}
+            </span>
           {{/if}}
         </div>
         <div class="jtech-popup-toast__body">
-          {{#if this.toast.username}}
-            <div
-              class="jtech-popup-toast__username"
-            >{{this.toast.username}}</div>
-          {{/if}}
+          <div class="jtech-popup-toast__heading">
+            <span class="jtech-popup-toast__name">{{this.toast.name}}</span>
+            <span class="jtech-popup-toast__action">—
+              {{this.toast.action}}</span>
+          </div>
           {{#if this.toast.title}}
             <div class="jtech-popup-toast__title">{{this.toast.title}}</div>
           {{/if}}

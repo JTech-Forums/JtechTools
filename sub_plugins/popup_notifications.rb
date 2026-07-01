@@ -21,6 +21,27 @@
 
 register_asset "stylesheets/popup-notifications.scss"
 
+# Type-badge icons the toast draws on the avatar corner (and the icon-only
+# fallback for postless notifications). Registered so they land in the SVG
+# sprite; some are core, some are shared with mod-categories.
+%w[
+  at
+  reply
+  quote-right
+  pencil
+  heart
+  envelope
+  link
+  certificate
+  check
+  xmark
+  trash-can
+  flag
+  eye
+  shield-halved
+  bell
+].each { |name| register_svg_icon(name) }
+
 module ::DiscoursePopupNotifications
   # Per-user preference. Key PRESENCE + value decides; when the field is
   # absent the effective value falls back to

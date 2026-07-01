@@ -252,4 +252,57 @@ RSpec.describe "Desktop pop-up notification screenshots" do
     expect(page).to have_no_css(".jtech-popup-toast", wait: 5)
     shot("15_notification_off_no_popup")
   end
+
+  it "captures the plugin's custom types: whisper, flag, pending (16–18)" do
+    open_topic
+
+    # Moderator whisper — a custom notification enriched from a real post,
+    # with the eye badge on the avatar.
+    push(
+      type: :custom,
+      topic_id: topic.id,
+      post_number: reply_post.post_number,
+      slug: topic.slug,
+      fancy_title: topic.fancy_title,
+      data: {
+        mod_whisper: true,
+        display_username: author.username,
+        topic_title: topic.title,
+        original_post_id: reply_post.id,
+      },
+    )
+    expect(page).to have_css(".jtech-popup-toast .d-icon-eye", wait: 10)
+    shot("16_toast_whisper")
+    dismiss_toast
+
+    # Flag note — no source post, so the flag type icon renders on its own.
+    push(
+      type: :custom,
+      data: {
+        mod_note: true,
+        mod_note_kind: "flag_note",
+        display_username: "mod_mia",
+        excerpt: "Flagged as spam — please review.",
+        url: "/review",
+      },
+    )
+    expect(page).to have_css(".jtech-popup-toast .d-icon-flag", wait: 10)
+    shot("17_toast_flag")
+    dismiss_toast
+
+    # Queued / pending post approved by staff.
+    push(
+      type: :custom,
+      data: {
+        mod_note: true,
+        mod_note_kind: "post_approved",
+        display_username: "mod_mia",
+        topic_title: topic.title,
+        excerpt: "Approved a post that was awaiting review.",
+        url: "/review",
+      },
+    )
+    expect(page).to have_css(".jtech-popup-toast .d-icon-check", wait: 10)
+    shot("18_toast_pending_approved")
+  end
 end

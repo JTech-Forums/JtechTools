@@ -87,9 +87,10 @@ RSpec.describe "Desktop pop-up notifications" do
 
     reply_to_recipient!
 
-    # The toast appears, laid out name → avatar → bold title → message.
+    # The toast appears: avatar, a "Name — Action" heading, bold title, preview.
     expect(page).to have_css(".jtech-popup-toast", wait: 10)
-    expect(page).to have_css(".jtech-popup-toast__username", text: "poster_pat")
+    expect(page).to have_css(".jtech-popup-toast__name", text: "poster_pat")
+    expect(page).to have_css(".jtech-popup-toast__action", text: "Replied")
     expect(page).to have_css(".jtech-popup-toast__title", text: topic.title)
     shot("popup_notifications_on")
 
