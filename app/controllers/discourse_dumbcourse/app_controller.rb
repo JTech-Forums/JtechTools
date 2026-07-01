@@ -66,6 +66,30 @@ module DiscourseDumbcourse
         )
       html =
         html.gsub(/(dumbcourse\.(?:js|css)\?v=)\d+/) { Regexp.last_match(1) + asset_version.to_s }
+      # Mirror any custom-emoji overrides (native Admin → Customize → Emoji
+      # uploads AND plugin-registered emoji) into the SPA, so a reaction whose
+      # name has a custom image renders that image instead of the native
+      # unicode glyph. Auto-syncs with whatever is uploaded; never raises.
+      custom_reaction_emojis =
+        begin
+          ::Emoji.custom.each_with_object({}) do |e, h|
+            url = (e.url rescue nil)
+            h[e.name] = url if url.present?
+          end
+        rescue StandardError
+          {}
+        end
+
+      # The reactions the forum actually has enabled (discourse-reactions), so
+      # the SPA's reaction picker matches the main forum instead of a hardcoded
+      # list — including any uploaded custom emoji set as reactions.
+      enabled_reactions =
+        begin
+          SiteSetting.discourse_reactions_enabled_reactions.to_s.split("|").reject(&:blank?)
+        rescue StandardError
+          []
+        end
+
       settings = {
         defaultTheme: SiteSetting.dumbcourse_default_theme,
         defaultView: SiteSetting.dumbcourse_default_view,
@@ -78,6 +102,8 @@ module DiscourseDumbcourse
         topicPostersVisibility: SiteSetting.dumbcourse_topic_posters_visibility,
         onlineGlowEnabled: SiteSetting.dumbcourse_online_glow_enabled,
         languagetoolEnabled: SiteSetting.dumbcourse_languagetool_enabled,
+        customEmojis: custom_reaction_emojis,
+        enabledReactions: enabled_reactions,
       }
       settings_script = "<script>window.DUMBCOURSE_SETTINGS=#{settings.to_json};</script>"
       if html.include?("</head>")

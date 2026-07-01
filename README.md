@@ -44,6 +44,23 @@ No external services, no API keys, no embedding models — both backends (WordNe
 
 Editing the overlay: only ADD entries WordNet doesn't already cover — abbreviations, brand names, protocol initialisms. Don't curate general English (WordNet handles it for free). Lowercase ASCII rows, each row is a symmetric synonym group. Reloaded at boot (or via `DiscourseSmartSearch::Synonyms.reload!` in a Rails console). See `docs/smart_search.md` for the full architecture: two-backend lookup order, request-flow diagram, fallback contract, performance notes, and a console-recipe for diagnostics.
 
+### Custom emoji as reactions (and in dumbcourse)
+
+Replacing emoji and choosing reactions is **entirely native** — the plugin ships **no bundled images and no emoji settings**. Its only job here is bridging the dumbcourse SPA, which otherwise can't see Discourse's emoji system.
+
+**Replace any emoji** (no plugin change, no rebuild): **Admin → Customize → Emoji → Add new emoji**, upload your image, and **name it after the emoji you want to override** (e.g. `man_shrugging`, `+1`, `joy`). `buildEmojiUrl` checks custom emoji **before** the built-in set, so it overrides everywhere it renders.
+
+**Set a reaction from an uploaded emoji:** the `discourse_reactions_enabled_reactions` setting (Admin → Settings → **Emoji** area) is an emoji **picker** that already includes your uploaded custom emoji — add it there.
+
+**Image spec:** square, **transparent PNG**, **72×72 or larger** (144×144 recommended — Discourse scales it down; bigger source = crisper). Non-square images get distorted.
+
+**Dumbcourse bridge** (the only plugin code involved) — `app/controllers/discourse_dumbcourse/app_controller.rb` injects into `window.DUMBCOURSE_SETTINGS`:
+
+- `enabledReactions` — the forum's actual `discourse_reactions_enabled_reactions`, so the SPA's reaction picker matches the main forum instead of a hardcoded list (this also fixes the old `laughing`/`joy` drift).
+- `customEmojis` — `{name → url}` from `Emoji.custom`, every native upload + plugin-registered emoji.
+
+`public/dumbcourse.js` then builds its reaction list from `enabledReactions` (falling back to the old hardcoded set), and `reactionGlyph()` renders each reaction as: a custom-emoji `<img>` if one exists, else the unicode glyph (via the bundled `emoji_map.json` codepoints), else the raw name. So **anything you enable/upload natively shows in dumbcourse automatically — no code change, no rebuild beyond shipping this bridge once.**
+
 ## Layout
 
 ```
