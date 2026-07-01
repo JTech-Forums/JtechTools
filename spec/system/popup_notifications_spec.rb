@@ -13,7 +13,7 @@ require "rails_helper"
 #
 # Screenshots of both states are captured for UI/UX review; they land in
 # tmp/capybara/ and are published as the CI artifact.
-RSpec.describe "Desktop pop-up notifications", type: :system do
+RSpec.describe "Desktop pop-up notifications" do
   fab!(:author) { Fabricate(:user, username: "poster_pat") }
   fab!(:recipient) { Fabricate(:user, username: "reader_rhea") }
   fab!(:category)
