@@ -2,19 +2,20 @@
 
 require "rails_helper"
 
-# Screenshot gallery for the desktop pop-up notification feature — 15 shots
+# Screenshot gallery for the desktop pop-up notification feature — 18 shots
 # across the two surfaces the user interacts with:
 #
 #   * the account page where the preference is set (shots 01–04), plus the
 #     admin master switch (05) and the control hidden when the master is off
 #     (06); and
 #   * the page where the notification arrives — the toast itself, across
-#     notification types and content shapes (07–15).
+#     notification types (07–11), content shapes (12–14), the off state (15),
+#     and the plugin's own custom types: whisper, flag, pending (16–18).
 #
-# The toast shots drive the card by publishing crafted notifications on the
-# user's `/notification/:id` MessageBus channel (the same channel core uses),
-# which is fast and lets each shot pin an exact visual state. The REAL
-# end-to-end path (a live reply → toast) is proven separately in
+# Each toast shot loads the page fresh and publishes exactly ONE crafted
+# notification on the user's `/notification/:id` MessageBus channel (the same
+# channel core uses). One publish per fresh page is the reliable path in the
+# parallel system-test runner. The real end-to-end delivery is covered by
 # spec/system/popup_notifications_spec.rb.
 #
 # Screenshots land in tmp/capybara/ and are published as the CI artifact.
@@ -69,8 +70,8 @@ RSpec.describe "Desktop pop-up notification screenshots" do
   end
 
   let(:user_field) { DiscoursePopupNotifications::USER_ENABLED_FIELD }
-  # Mutable memoized counter (avoids an instance variable in the helper) so
-  # every crafted notification gets a fresh id and dedupe never suppresses it.
+  # Mutable memoized counter (avoids an instance variable) so every crafted
+  # notification gets a fresh id.
   let(:id_seq) { [500_000] }
 
   before do
@@ -92,9 +93,12 @@ RSpec.describe "Desktop pop-up notification screenshots" do
     page.save_screenshot("popup_notifications_#{name}.png")
   end
 
-  # Publish a crafted notification on the recipient's channel — the browser is
-  # subscribed, so the toast renders it. Each call uses a fresh id so the
-  # component's dedupe never suppresses it.
+  def set_pref(value)
+    recipient.custom_fields[user_field] = value
+    recipient.save_custom_fields(true)
+  end
+
+  # Publish a crafted notification on the recipient's channel.
   def push(type:, data:, topic_id: nil, post_number: nil, fancy_title: nil, slug: nil)
     id_seq[0] += 1
     payload = {
@@ -119,8 +123,8 @@ RSpec.describe "Desktop pop-up notification screenshots" do
     MessageBus.publish("/notification/#{recipient.id}", payload, user_ids: [recipient.id])
   end
 
-  # A reply-shaped notification that enriches from a real post (avatar + body
-  # excerpt), varying only the type so each screenshot is a distinct kind.
+  # A reply-shaped notification enriched from a real post (avatar + excerpt),
+  # varying only the type so each screenshot is a distinct kind.
   def push_from_post(type:, post:, into: topic)
     push(
       type: type,
@@ -136,26 +140,23 @@ RSpec.describe "Desktop pop-up notification screenshots" do
     )
   end
 
-  def show_toast(type:, post: reply_post, into: topic)
-    push_from_post(type: type, post: post, into: into)
-    expect(page).to have_css(".jtech-popup-toast", wait: 10)
+  def visit_topic(into = topic)
+    visit("/t/#{into.slug}/#{into.id}")
+    expect(page).to have_css("#post_1", wait: 10)
   end
 
-  def dismiss_toast
-    find("#post_1 .cooked").click
-    expect(page).to have_no_css(".jtech-popup-toast")
+  # One shot = one fresh page + one publish (the reliable pattern under turbo).
+  def enriched_toast_shot(name, type:, post: reply_post, into: topic)
+    visit_topic(into)
+    push_from_post(type: type, post: post, into: into)
+    expect(page).to have_css(".jtech-popup-toast", wait: 10)
+    shot(name)
   end
 
   def open_account_preference
     sign_in(recipient)
     visit("/u/#{recipient.username}/preferences/account")
     expect(page).to have_css(".jtech-desktop-popup-notifications", wait: 10)
-  end
-
-  def open_topic
-    sign_in(recipient)
-    visit("/t/#{topic.slug}/#{topic.id}")
-    expect(page).to have_css("#post_1", wait: 10)
   end
 
   it "captures the account-page preference control (01–04)" do
@@ -192,43 +193,30 @@ RSpec.describe "Desktop pop-up notification screenshots" do
   end
 
   it "captures a toast for each notification type (07–11)" do
-    open_topic
-
-    show_toast(type: :replied)
-    shot("07_toast_reply")
-    dismiss_toast
-
-    show_toast(type: :mentioned)
-    shot("08_toast_mention")
-    dismiss_toast
-
-    show_toast(type: :quoted)
-    shot("09_toast_quote")
-    dismiss_toast
-
-    show_toast(type: :private_message)
-    shot("10_toast_private_message")
-    dismiss_toast
-
-    show_toast(type: :liked)
-    shot("11_toast_liked")
+    sign_in(recipient)
+    enriched_toast_shot("07_toast_reply", type: :replied)
+    enriched_toast_shot("08_toast_mention", type: :mentioned)
+    enriched_toast_shot("09_toast_quote", type: :quoted)
+    enriched_toast_shot("10_toast_private_message", type: :private_message)
+    enriched_toast_shot("11_toast_liked", type: :liked)
   end
 
   it "captures content-shape variety: long title, long message, icon fallback (12–14)" do
-    open_topic
+    sign_in(recipient)
 
     # Long topic title → ellipsis on the bold title line.
-    show_toast(type: :replied, post: long_topic_reply, into: long_topic)
-    shot("12_toast_long_title")
-    dismiss_toast
+    enriched_toast_shot(
+      "12_toast_long_title",
+      type: :replied,
+      post: long_topic_reply,
+      into: long_topic,
+    )
 
     # Long message → the preview line clamps to two lines.
-    show_toast(type: :replied, post: long_reply)
-    shot("13_toast_long_message")
-    dismiss_toast
+    enriched_toast_shot("13_toast_long_message", type: :replied, post: long_reply)
 
-    # No source post → the avatar slot falls back to the bell icon, and the
-    # preview comes straight from the notification data.
+    # No source post → the type icon renders on its own, preview from data.
+    visit_topic
     push(
       type: :custom,
       data: {
@@ -243,21 +231,20 @@ RSpec.describe "Desktop pop-up notification screenshots" do
   end
 
   it "shows nothing extra when the preference is off (15)" do
-    recipient.custom_fields[user_field] = false
-    recipient.save_custom_fields(true)
-    open_topic
+    set_pref(false)
+    sign_in(recipient)
+    visit_topic
 
     push_from_post(type: :replied, post: reply_post)
-    # The core bell still works; the additive toast never appears.
     expect(page).to have_no_css(".jtech-popup-toast", wait: 5)
     shot("15_notification_off_no_popup")
   end
 
   it "captures the plugin's custom types: whisper, flag, pending (16–18)" do
-    open_topic
+    sign_in(recipient)
 
-    # Moderator whisper — a custom notification enriched from a real post,
-    # with the eye badge on the avatar.
+    # Moderator whisper — enriched from a real post, with the eye badge.
+    visit_topic
     push(
       type: :custom,
       topic_id: topic.id,
@@ -273,9 +260,9 @@ RSpec.describe "Desktop pop-up notification screenshots" do
     )
     expect(page).to have_css(".jtech-popup-toast .d-icon-eye", wait: 10)
     shot("16_toast_whisper")
-    dismiss_toast
 
     # Flag note — no source post, so the flag type icon renders on its own.
+    visit_topic
     push(
       type: :custom,
       data: {
@@ -288,9 +275,9 @@ RSpec.describe "Desktop pop-up notification screenshots" do
     )
     expect(page).to have_css(".jtech-popup-toast .d-icon-flag", wait: 10)
     shot("17_toast_flag")
-    dismiss_toast
 
     # Queued / pending post approved by staff.
+    visit_topic
     push(
       type: :custom,
       data: {

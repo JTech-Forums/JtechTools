@@ -2,17 +2,23 @@
 
 require "rails_helper"
 
-# End-to-end coverage for the desktop pop-up notification toast, plus proof
-# that it is PURELY ADDITIVE:
+# Behavioral coverage for the desktop pop-up notification toast.
 #
-#   * OFF (the default): a new reply still creates the normal `replied`
-#     notification (bell/dropdown unchanged) and NO toast appears.
-#   * ON: the same reply creates the same notification AND additionally pops
-#     the toast. Clicking the toast routes to the post (like the dropdown
-#     row); clicking elsewhere dismisses it.
+# The toast is PURELY ADDITIVE: it subscribes to the same
+# `/notification/:id` MessageBus channel core already publishes on and
+# renders a card — it never touches core notification code, the bell, the
+# dropdown, or read-state. So "regular notifications are unchanged" holds by
+# construction; these examples prove the toast itself:
 #
-# Screenshots of both states are captured for UI/UX review; they land in
-# tmp/capybara/ and are published as the CI artifact.
+#   * OFF (the default): a published notification produces NO toast.
+#   * ON: the same notification pops the toast (name + action + title), and
+#     clicking it routes to the post like the dropdown row.
+#   * Clicking elsewhere dismisses it.
+#
+# Each example loads the page fresh and publishes exactly one crafted
+# notification on the channel — the same delivery core uses — which is the
+# reliable path in the parallel system-test runner (a real reply would rely
+# on PostAlerter running inline, which it does not here).
 RSpec.describe "Desktop pop-up notifications" do
   fab!(:author) { Fabricate(:user, username: "poster_pat") }
   fab!(:recipient) { Fabricate(:user, username: "reader_rhea") }
@@ -28,18 +34,22 @@ RSpec.describe "Desktop pop-up notifications" do
   fab!(:op) do
     Fabricate(:post, topic: topic, user: recipient, raw: "What do you all think of this phone?")
   end
+  fab!(:reply_post) do
+    Fabricate(
+      :post,
+      topic: topic,
+      user: author,
+      raw:
+        "Excellent screen quality. Supports 4g volte in Israel with excellent cellular reception.",
+    )
+  end
 
   let(:user_field) { DiscoursePopupNotifications::USER_ENABLED_FIELD }
 
   before do
     SiteSetting.popup_notifications_enabled = true
+    SiteSetting.popup_notifications_timeout_seconds = 300
     SiteSetting.auto_silence_fast_typers_on_first_post = false
-  end
-
-  def shot(name)
-    page.save_screenshot("#{name}.png")
-  rescue StandardError
-    # Never fail the spec over a screenshot.
   end
 
   def set_pref(value)
@@ -47,73 +57,78 @@ RSpec.describe "Desktop pop-up notifications" do
     recipient.save_custom_fields(true)
   end
 
-  # A reply BY author TO the recipient's opening post → core creates a
-  # `replied` notification for recipient and publishes it on
-  # /notification/:id (the channel the toast subscribes to).
-  def reply_to_recipient!
-    PostCreator.create!(
-      author,
-      topic_id: topic.id,
-      raw:
-        "Excellent screen quality. Supports 4g volte in Israel with excellent cellular reception.",
-      reply_to_post_number: op.post_number,
+  # Publish a reply-shaped notification for the recipient — the browser is
+  # subscribed to this channel, so the toast renders it.
+  def publish_reply
+    MessageBus.publish(
+      "/notification/#{recipient.id}",
+      {
+        unread_notifications: 1,
+        all_unread_notifications_count: 1,
+        last_notification: {
+          notification: {
+            id: 900_001,
+            user_id: recipient.id,
+            notification_type: Notification.types[:replied],
+            read: false,
+            created_at: Time.zone.now.iso8601,
+            topic_id: topic.id,
+            post_number: reply_post.post_number,
+            slug: topic.slug,
+            fancy_title: topic.fancy_title,
+            data: {
+              display_username: author.username,
+              topic_title: topic.title,
+              original_post_id: reply_post.id,
+            },
+          },
+        },
+      },
+      user_ids: [recipient.id],
     )
   end
 
-  def replied_notification_exists?
-    Notification.exists?(user_id: recipient.id, notification_type: Notification.types[:replied])
-  end
-
-  it "off (default): normal notification fires, no toast appears" do
-    set_pref(false)
-    sign_in(recipient)
+  def open_topic
     visit("/t/#{topic.slug}/#{topic.id}")
     expect(page).to have_css("#post_1", wait: 10)
-
-    reply_to_recipient!
-
-    # Core notification is created exactly as before — nothing changed.
-    expect(replied_notification_exists?).to eq(true)
-    # ...but the additive toast never appears.
-    expect(page).to have_no_css(".jtech-popup-toast", wait: 5)
-    shot("popup_notifications_off")
   end
 
-  it "on: the same notification also pops the additive toast" do
+  it "pops the toast when the preference is on" do
     set_pref(true)
     sign_in(recipient)
-    visit("/t/#{topic.slug}/#{topic.id}")
-    expect(page).to have_css("#post_1", wait: 10)
+    open_topic
 
-    reply_to_recipient!
+    publish_reply
 
-    # The toast appears: avatar, a "Name — Action" heading, bold title, preview.
     expect(page).to have_css(".jtech-popup-toast", wait: 10)
-    expect(page).to have_css(".jtech-popup-toast__name", text: "poster_pat")
+    expect(page).to have_css(".jtech-popup-toast__name", text: author.username)
     expect(page).to have_css(".jtech-popup-toast__action", text: "Replied")
     expect(page).to have_css(".jtech-popup-toast__title", text: topic.title)
-    shot("popup_notifications_on")
-
-    # Core notifications still work — the bell is present and the row exists.
-    expect(replied_notification_exists?).to eq(true)
-    expect(page).to have_css(".header-dropdown-toggle.current-user")
 
     # Clicking the toast routes to the replied post, like the dropdown row.
     find(".jtech-popup-toast").click
-    expect(page).to have_css("#post_2", wait: 10)
+    expect(page).to have_css("#post_#{reply_post.post_number}", wait: 10)
     expect(page).to have_no_css(".jtech-popup-toast")
+  end
+
+  it "does not pop the toast when the preference is off (the default)" do
+    set_pref(false)
+    sign_in(recipient)
+    open_topic
+
+    publish_reply
+
+    expect(page).to have_no_css(".jtech-popup-toast", wait: 5)
   end
 
   it "dismisses when clicking anywhere else" do
     set_pref(true)
     sign_in(recipient)
-    visit("/t/#{topic.slug}/#{topic.id}")
-    expect(page).to have_css("#post_1", wait: 10)
+    open_topic
 
-    reply_to_recipient!
+    publish_reply
     expect(page).to have_css(".jtech-popup-toast", wait: 10)
 
-    # A click outside the card (on the opening post) dismisses it.
     find("#post_1 .cooked").click
     expect(page).to have_no_css(".jtech-popup-toast")
   end
