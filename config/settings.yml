@@ -183,6 +183,28 @@ jtech_smart_search:
     max: 5
 
 # ───────────────────────────────────────────────────────────────────────────
+# Jtech — Desktop pop-up notifications (Jelly-style toast, desktop only)
+# ───────────────────────────────────────────────────────────────────────────
+jtech_popup_notifications:
+  # Master switch. When off, no toast fires for anyone and the per-user
+  # preference on the account page is hidden.
+  popup_notifications_enabled:
+    default: true
+    client: true
+  # Default for users who have never set the per-user preference. Off by
+  # design — the toast only appears for users who opt in on their account
+  # page, so enabling the plugin never surprises the whole forum.
+  popup_notifications_default_enabled:
+    default: false
+    client: true
+  # Seconds the toast stays on screen before auto-dismissing.
+  popup_notifications_timeout_seconds:
+    default: 20
+    client: true
+    min: 3
+    max: 300
+
+# ───────────────────────────────────────────────────────────────────────────
 # Jtech — Dumbcourse (lightweight SPA at /dumb with push notifications)
 # ───────────────────────────────────────────────────────────────────────────
 jtech_dumbcourse:

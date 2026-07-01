@@ -13,8 +13,25 @@ One combined Discourse plugin. Bundles seven previously-separate plugins under a
 | Dumbcourse | `DiscourseDumbcourse` | `dumbcourse_*` | `dumbcourse_enabled` |
 | Translator-tweaks | *(patches `DiscourseTranslator`)* | *(none — gated by translator's own settings)* | `translator_enabled` (upstream) |
 | Smart search | `DiscourseSmartSearch` | `smart_search_*` | `smart_search_enabled` |
+| Desktop pop-ups | `DiscoursePopupNotifications` | `popup_notifications_*` | `popup_notifications_enabled` |
 
 The bundle is gated by `jtech_enabled`; each sub-plugin is independently gated by its own setting above.
+
+### Desktop pop-up notifications
+
+A Jelly-style toast card that appears in the top-right corner (just below the header search) when a new notification arrives, modelled on the [Jelly](https://github.com/lubabs770/Jelly) macOS notifier's look and delivery.
+
+- **Purely additive.** It subscribes to the same `/notification/:user_id` MessageBus channel that already drives the bell counter and the notifications dropdown, and does nothing else — the bell, the dropdown, and read-state are untouched. Turning it off simply stops the card from appearing.
+- **Desktop only.** Never mounts on mobile (`site.mobileView`).
+- **Opt-in per user, off by default.** Each user turns it on via a **Desktop Pop Up Notifications** On/Off dropdown on their account page (`/u/:username/preferences/account`), stored in the `jtech_popup_notifications_enabled` user custom field. `popup_notifications_default_enabled` (default `false`) controls the default for users who haven't chosen.
+- **Card layout:** the acting user's name on top, their avatar on the left, the topic title in bold, then a short preview of their message (fetched from the source post).
+- **Interaction:** clicking the card routes to the post (same as clicking the row in the dropdown); clicking anywhere else — or waiting `popup_notifications_timeout_seconds` (default 20) — dismisses it.
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `popup_notifications_enabled` | `true` | Master switch. Off ⇒ no card for anyone, per-user preference hidden. |
+| `popup_notifications_default_enabled` | `false` | Default for users who haven't set the account-page preference. |
+| `popup_notifications_timeout_seconds` | `20` | Seconds the card stays before auto-dismissing. |
 
 ### Mod-categories — staff-event notifications
 
