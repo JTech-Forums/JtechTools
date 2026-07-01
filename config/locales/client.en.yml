@@ -6,8 +6,10 @@ en:
         title: Desktop Pop Up Notifications
         instructions: Show a small pop-up card in the top-right corner when you
           receive a new notification. Desktop only — this never appears on mobile.
-        on: "On"
-        off: "Off"
+        # NB: "on"/"off" MUST be quoted — YAML parses bare on/off as booleans,
+        # which would make these i18n keys unreachable.
+        "on": "On"
+        "off": "Off"
     discourse_mod_categories:
       precheck:
         title: Before you post

@@ -166,12 +166,12 @@ RSpec.describe "Desktop pop-up notification screenshots" do
     expect(page).to have_css(".select-kit-collection", wait: 5)
     shot("02_settings_dropdown_open")
 
-    find(".select-kit-row", text: I18n.t("js.jtech_popup_notifications.preference.on")).click
+    find(".select-kit-row", text: "On").click
     expect(page).to have_css(".jtech-desktop-popup-notifications")
     shot("03_settings_set_on")
 
     find(".jtech-desktop-popup-notifications .select-kit-header").click
-    find(".select-kit-row", text: I18n.t("js.jtech_popup_notifications.preference.off")).click
+    find(".select-kit-row", text: "Off").click
     shot("04_settings_set_off")
   end
 
