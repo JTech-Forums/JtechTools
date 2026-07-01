@@ -8,10 +8,10 @@ require "rails_helper"
 # can take its place. 25 shots across single/double/triple stacks, type mixes,
 # content shapes, and the overflow-replaces-oldest behavior.
 #
-# Reliability: after a fresh page load the browser's MessageBus poll can take
-# a moment to subscribe, so each example first "primes" the channel (publish +
-# wait + dismiss) and then builds the stack with one publish per card, waiting
-# for the exact card count each step.
+# Each shot is its own example (fresh browser session) so a single flaky
+# capture never aborts the others. Within an example the channel is "primed"
+# (publish + wait + dismiss) before the stack is built one card at a time,
+# waiting for the exact card count each step.
 #
 # Screenshots land in tmp/capybara/ and are published as the CI artifact.
 RSpec.describe "Desktop pop-up notification stacking screenshots" do
@@ -201,60 +201,105 @@ RSpec.describe "Desktop pop-up notification stacking screenshots" do
     shot(name)
   end
 
-  it "single and double stacks (01–09)" do
+  it "single reply (01)" do
     stack_shot("stack_01_single_reply", enriched(:replied))
+  end
+
+  it "reply + like (02)" do
     stack_shot("stack_02_reply_like", enriched(:replied), enriched(:liked))
+  end
+
+  it "reply + mention (03)" do
     stack_shot("stack_03_reply_mention", enriched(:replied), enriched(:mentioned))
+  end
+
+  it "reply + quote (04)" do
     stack_shot("stack_04_reply_quote", enriched(:replied), enriched(:quoted))
+  end
+
+  it "pm + reply (05)" do
     stack_shot("stack_05_pm_reply", enriched(:private_message), enriched(:replied))
+  end
+
+  it "whisper + reply (06)" do
     stack_shot("stack_06_whisper_reply", whisper, enriched(:replied))
+  end
+
+  it "flag + pending (07)" do
     stack_shot(
       "stack_07_flag_pending",
       mod_note("flag_note", excerpt: "Flagged as spam — please review."),
       mod_note("post_approved", title: topic.title, excerpt: "Approved a queued reply."),
     )
+  end
+
+  it "badge + reply (08)" do
     stack_shot("stack_08_badge_reply", enriched(:granted_badge), enriched(:replied))
+  end
+
+  it "edited + linked (09)" do
     stack_shot("stack_09_edited_linked", enriched(:edited), enriched(:linked))
   end
 
-  it "triple stacks by type mix (10–17)" do
+  it "reply + like + mention (10)" do
     stack_shot(
       "stack_10_reply_like_mention",
       enriched(:replied),
       enriched(:liked),
       enriched(:mentioned),
     )
+  end
+
+  it "reply + quote + pm (11)" do
     stack_shot(
       "stack_11_reply_quote_pm",
       enriched(:replied),
       enriched(:quoted),
       enriched(:private_message),
     )
+  end
+
+  it "whisper + flag + pending (12)" do
     stack_shot(
       "stack_12_whisper_flag_pending",
       whisper,
       mod_note("flag_note", excerpt: "Flagged as off-topic."),
       mod_note("post_approved", title: topic.title, excerpt: "Approved a queued reply."),
     )
+  end
+
+  it "three likes (13)" do
     stack_shot(
       "stack_13_like_x3",
       enriched(:liked),
       enriched(:liked, post: reply_post2),
       enriched(:liked),
     )
+  end
+
+  it "mention + quote + reply (14)" do
     stack_shot(
       "stack_14_mention_quote_reply",
       enriched(:mentioned),
       enriched(:quoted),
       enriched(:replied),
     )
+  end
+
+  it "pm + whisper + reply (15)" do
     stack_shot("stack_15_pm_whisper_reply", enriched(:private_message), whisper, enriched(:replied))
+  end
+
+  it "reply + flag + like (16)" do
     stack_shot(
       "stack_16_reply_flag_like",
       enriched(:replied),
       mod_note("flag_note", excerpt: "A new flag needs attention."),
       enriched(:liked),
     )
+  end
+
+  it "fallback + reply + whisper (17)" do
     stack_shot(
       "stack_17_fallback_reply_whisper",
       fallback(
@@ -266,37 +311,52 @@ RSpec.describe "Desktop pop-up notification stacking screenshots" do
     )
   end
 
-  it "content shapes and more mixes in a stack (18–23)" do
+  it "long title + reply + like (18)" do
     stack_shot(
       "stack_18_longtitle_reply_like",
       enriched(:replied, post: long_topic_reply, into: long_topic),
       enriched(:replied),
       enriched(:liked),
     )
+  end
+
+  it "long message + like + mention (19)" do
     stack_shot(
       "stack_19_longmessage_like_mention",
       enriched(:replied, post: long_reply),
       enriched(:liked),
       enriched(:mentioned),
     )
+  end
+
+  it "badge + pm + reply (20)" do
     stack_shot(
       "stack_20_badge_pm_reply",
       enriched(:granted_badge),
       enriched(:private_message),
       enriched(:replied),
     )
+  end
+
+  it "edited + linked + quote (21)" do
     stack_shot(
       "stack_21_edited_linked_quote",
       enriched(:edited),
       enriched(:linked),
       enriched(:quoted),
     )
+  end
+
+  it "flag + pending + whisper (22)" do
     stack_shot(
       "stack_22_flag_pending_whisper",
       mod_note("flag_note", excerpt: "Flag raised on a reply."),
       mod_note("post_rejected", title: topic.title, excerpt: "Rejected a queued reply."),
       whisper,
     )
+  end
+
+  it "three replies, mixed topics (23)" do
     stack_shot(
       "stack_23_three_replies_mixed",
       enriched(:replied),
@@ -305,12 +365,15 @@ RSpec.describe "Desktop pop-up notification stacking screenshots" do
     )
   end
 
-  it "overflow — a 4th notification replaces the oldest (24–25)" do
+  it "overflow — a 4th engagement notification replaces the oldest (24)" do
     overflow_shot(
       "stack_24_overflow_engagement",
       [enriched(:replied), enriched(:liked), enriched(:mentioned), whisper],
       top_icon: ".d-icon-eye",
     )
+  end
+
+  it "overflow — a 4th staff notification replaces the oldest (25)" do
     overflow_shot(
       "stack_25_overflow_staff",
       [
