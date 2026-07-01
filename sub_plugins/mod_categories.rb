@@ -7,6 +7,8 @@ require_relative "../lib/discourse_mod_categories/guardian_extensions"
 require_relative "../lib/discourse_mod_categories/whisper_query_filter"
 require_relative "../lib/discourse_mod_categories/staff_notifier"
 require_relative "../lib/discourse_mod_categories/user_action_whisper_filter"
+require_relative "../lib/discourse_mod_categories/search_indexer_extension"
+require_relative "../lib/discourse_mod_categories/search_extension"
 
 register_asset "stylesheets/topic-footer-message.scss"
 register_asset "stylesheets/whisper.scss"
@@ -1370,6 +1372,57 @@ after_initialize do
         "[jtech-tools] tracking-state whisper filter fell back: #{e.class}: #{e.message}",
       )
       scope
+    end
+  end
+
+  # 3. Full-text search leaked whisper text to non-audience users. Discourse's
+  # `SearchIndexer` writes every post's tsvector into `post_search_data`, and
+  # `Search#execute` runs `ts_query` against that table BEFORE any per-user
+  # visibility check. So a whisper's raw contents were discoverable via
+  # `/search?q=<word from whisper>` — including through the `is:unseen`
+  # advanced filter, which shortcuts around Guardian by hitting the index
+  # directly. Two-layer fix, DB-level primary:
+  #
+  #   (a) `SearchIndexer` gate — skip whisper posts during indexing AND delete
+  #       any existing row. The whisper never sits in `post_search_data`, so
+  #       no tsquery can match it and no advanced filter can reach it.
+  #   (b) `Search#execute` post-filter — belt-and-suspenders. If a row
+  #       survives the indexer gate (race, backfill pending, custom field
+  #       written after first index write), the result-set filter still
+  #       drops it before serialization.
+  #
+  # The migration `20260701000001_purge_whisper_post_search_data.rb` runs the
+  # backfill: one SQL DELETE that strips every already-indexed whisper on
+  # deploy so the leak stops without waiting for each post to be re-touched.
+  reloadable_patch do
+    ::SearchIndexer.singleton_class.prepend(::DiscourseModCategories::SearchIndexerExtension)
+    ::Search.prepend(::DiscourseModCategories::SearchExtension) if defined?(::Search)
+  end
+
+  # When staff convert a whisper → public via update_post_whisper (disarm),
+  # the whisper custom field is removed, so the SearchIndexer gate would
+  # now let the post through — but nothing triggers a re-index by default.
+  # Force one so the newly-public post becomes discoverable.
+  #
+  # The inverse (public → whisper) is handled by the gate itself: the next
+  # `SearchIndexer.index` call for that post_id will delete its row, and
+  # we also fire one explicitly here to close the window between the arm
+  # and the next natural re-index (post edit, cook, etc.).
+  DiscourseEvent.on(:mod_whisper_state_changed) do |post, armed|
+    next unless SiteSetting.mod_whisper_enabled
+    next unless post.is_a?(::Post)
+
+    begin
+      if armed
+        ::PostSearchData.where(post_id: post.id).delete_all
+      else
+        ::SearchIndexer.index(post, force: true)
+      end
+    rescue StandardError => e
+      ::Rails.logger.warn(
+        "[jtech-tools] whisper search-index toggle failed for post=#{post.id}: " \
+          "#{e.class}: #{e.message}",
+      )
     end
   end
 

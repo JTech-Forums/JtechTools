@@ -72,10 +72,19 @@ module DiscourseDumbcourse
       # unicode glyph. Auto-syncs with whatever is uploaded; never raises.
       custom_reaction_emojis =
         begin
-          ::Emoji.custom.each_with_object({}) do |e, h|
-            url = (e.url rescue nil)
-            h[e.name] = url if url.present?
-          end
+          ::Emoji
+            .custom
+            .each_with_object({}) do |e, h|
+              url =
+                (
+                  begin
+                    e.url
+                  rescue StandardError
+                    nil
+                  end
+                )
+              h[e.name] = url if url.present?
+            end
         rescue StandardError
           {}
         end

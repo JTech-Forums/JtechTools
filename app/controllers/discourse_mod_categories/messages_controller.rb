@@ -274,6 +274,13 @@ module ::DiscourseModCategories
         post.reload
       end
 
+      # Toggle the search index in lockstep with the whisper state so a
+      # search leak doesn't outlive the arm/disarm click. Armed →
+      # `post_search_data` row is wiped. Disarmed → the post is re-indexed
+      # so it becomes discoverable now that it's public. Listener lives
+      # in sub_plugins/mod_categories.rb.
+      DiscourseEvent.trigger(:mod_whisper_state_changed, post, armed)
+
       render json: serialized_post_whisper_state(post.reload)
     end
 
