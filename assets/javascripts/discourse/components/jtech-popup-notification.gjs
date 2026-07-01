@@ -1,5 +1,6 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
+import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import { cancel } from "@ember/runloop";
@@ -16,7 +17,14 @@ import { i18n } from "discourse-i18n";
 // `/notification/:id` MessageBus channel (the same channel that already
 // drives the bell counter and the notifications dropdown) and does nothing
 // else. Core notifications, the bell, the dropdown, and read-state are all
-// untouched; turning the feature off simply stops this card from appearing.
+// untouched; turning the feature off simply stops the cards from appearing.
+//
+// Multiple notifications STACK one below another: the newest card sits at the
+// top-right (just below the header search) and older ones are pushed down,
+// each with its own auto-dismiss timer, up to MAX_TOASTS at once. A further
+// notification drops the oldest (bottom) card so the newest can take its
+// place. Clicking a card opens it (routes like the dropdown row); clicking
+// anywhere else dismisses them all.
 //
 // Card layout: the acting user's avatar on the left (with a small type-icon
 // badge on its corner), then a heading line "Name — Action" (e.g.
@@ -25,14 +33,12 @@ import { i18n } from "discourse-i18n";
 //
 // Fires for every notification the user receives, including the plugin's
 // own `custom` notifications — moderator whispers, flag notes, and
-// queued/pending-post approvals/rejections — which are decoded via their
-// `data` markers below.
-//
-// Never mounts on mobile (`site.mobileView`) or for users who have not
-// opted in on their account page.
+// queued/pending-post approvals/rejections — decoded via their `data`
+// markers below. Never mounts on mobile or for users who have not opted in.
 const AVATAR_SIZE = 48;
 const EXCERPT_LENGTH = 120;
 const STALE_MS = 10000;
+const MAX_TOASTS = 3; // stack up to 3; a 4th drops the oldest (bottom) card
 const CUSTOM_TYPE = 14; // Notification.types[:custom]
 
 // notification_type (core enum, stable) → icon + action i18n key suffix.
@@ -72,11 +78,11 @@ export default class JtechPopupNotification extends Component {
   @service site;
   @service messageBus;
 
-  @tracked toast = null;
+  @tracked toasts = [];
 
   channel = null;
-  dismissHandle = null;
-  lastShownId = null;
+  seen = new Set();
+  listening = false;
 
   constructor() {
     super(...arguments);
@@ -95,7 +101,7 @@ export default class JtechPopupNotification extends Component {
 
   willDestroy() {
     super.willDestroy(...arguments);
-    this.clear();
+    this.dismissAll();
     if (this.channel) {
       this.messageBus.unsubscribe(this.channel, this.onMessage);
     }
@@ -135,7 +141,9 @@ export default class JtechPopupNotification extends Component {
       if (!notification || notification.read) {
         return;
       }
-      if (notification.id === this.lastShownId) {
+      // Show each notification at most once (guards MessageBus replays and
+      // re-adds after dismissal).
+      if (this.seen.has(notification.id)) {
         return;
       }
       // Ignore MessageBus backlog replayed from before this tab mounted.
@@ -143,7 +151,7 @@ export default class JtechPopupNotification extends Component {
       if (createdAt && createdAt < this.mountedAt - STALE_MS) {
         return;
       }
-      this.lastShownId = notification.id;
+      this.seen.add(notification.id);
       await this.present(notification);
     } catch {
       // A malformed payload must never break the page.
@@ -153,21 +161,21 @@ export default class JtechPopupNotification extends Component {
   async present(notification) {
     const data = notification.data || {};
     const meta = this.metaFor(notification);
-    const name =
-      data.display_username ||
-      data.username ||
-      data.original_username ||
-      data.mentioned_by_username ||
-      i18n("jtech_popup_notifications.someone");
-
     const toast = {
-      name,
+      key: notification.id,
+      name:
+        data.display_username ||
+        data.username ||
+        data.original_username ||
+        data.mentioned_by_username ||
+        i18n("jtech_popup_notifications.someone"),
       action: i18n(`jtech_popup_notifications.action.${meta.action}`),
       icon: meta.icon,
       title: notification.fancy_title || data.topic_title || "",
       excerpt: data.excerpt || "",
       avatarUrl: null,
       url: this.urlFor(notification),
+      timer: null,
     };
 
     // Enrich with the acting user's avatar + a preview of their message from
@@ -194,8 +202,28 @@ export default class JtechPopupNotification extends Component {
     if (!this.prefEnabled) {
       return;
     }
-    this.toast = toast;
-    this.arm();
+    this.addToast(toast);
+  }
+
+  // Prepend the newest card; drop the oldest beyond the cap. Each card gets
+  // its own auto-dismiss timer.
+  addToast(toast) {
+    const secs =
+      parseInt(this.siteSettings.popup_notifications_timeout_seconds, 10) || 20;
+    toast.timer = discourseLater(this, this.dismiss, toast, secs * 1000);
+
+    const next = [toast, ...this.toasts];
+    while (next.length > MAX_TOASTS) {
+      const dropped = next.pop();
+      cancel(dropped.timer);
+      this.seen.delete(dropped.key);
+    }
+    this.toasts = next;
+
+    if (!this.listening) {
+      document.addEventListener("click", this.onDocumentClick, true);
+      this.listening = true;
+    }
   }
 
   fetchPost(notification, data) {
@@ -233,81 +261,83 @@ export default class JtechPopupNotification extends Component {
     return `/u/${this.currentUser.username}/notifications`;
   }
 
-  arm() {
-    this.clear();
-    const secs =
-      parseInt(this.siteSettings.popup_notifications_timeout_seconds, 10) || 20;
-    this.dismissHandle = discourseLater(this, this.dismiss, secs * 1000);
-    document.addEventListener("click", this.onDocumentClick, true);
-  }
-
-  clear() {
-    if (this.dismissHandle) {
-      cancel(this.dismissHandle);
-      this.dismissHandle = null;
-    }
-    if (this.onDocumentClick) {
+  stopListening() {
+    if (this.listening) {
       document.removeEventListener("click", this.onDocumentClick, true);
+      this.listening = false;
     }
   }
 
   onDocumentClick(event) {
-    // Clicking anywhere outside the card dismisses it. A click on the card
-    // itself is handled by `open` (this listener is capture-phase and only
-    // dismisses when the target is outside).
+    // A click anywhere outside every card dismisses them all. Clicks on a
+    // card are handled by `open` (this capture-phase listener only acts when
+    // the target is outside).
     if (!event.target.closest(".jtech-popup-toast")) {
-      this.dismiss();
+      this.dismissAll();
     }
   }
 
   @action
-  open() {
-    const url = this.toast?.url;
-    this.dismiss();
+  open(toast) {
+    const url = toast.url;
+    this.dismiss(toast);
     if (url) {
       DiscourseURL.routeTo(url);
     }
   }
 
   @action
-  dismiss() {
-    this.clear();
-    this.toast = null;
+  dismiss(toast) {
+    cancel(toast.timer);
+    this.toasts = this.toasts.filter((t) => t !== toast);
+    if (this.toasts.length === 0) {
+      this.stopListening();
+    }
+  }
+
+  dismissAll() {
+    this.toasts.forEach((t) => cancel(t.timer));
+    this.toasts = [];
+    this.stopListening();
   }
 
   <template>
-    {{#if this.toast}}
-      <div
-        class="jtech-popup-toast"
-        role="button"
-        tabindex="0"
-        {{on "click" this.open}}
-      >
-        <div class="jtech-popup-toast__avatar">
-          {{#if this.toast.avatarUrl}}
-            <img src={{this.toast.avatarUrl}} width="44" height="44" alt="" />
-            <span class="jtech-popup-toast__type-badge">
-              {{icon this.toast.icon}}
-            </span>
-          {{else}}
-            <span class="jtech-popup-toast__type-icon">
-              {{icon this.toast.icon}}
-            </span>
-          {{/if}}
-        </div>
-        <div class="jtech-popup-toast__body">
-          <div class="jtech-popup-toast__heading">
-            <span class="jtech-popup-toast__name">{{this.toast.name}}</span>
-            <span class="jtech-popup-toast__action">—
-              {{this.toast.action}}</span>
+    {{#if this.toasts.length}}
+      <div class="jtech-popup-toasts">
+        {{#each this.toasts key="key" as |toast|}}
+          <div
+            class="jtech-popup-toast"
+            role="button"
+            tabindex="0"
+            {{on "click" (fn this.open toast)}}
+          >
+            <div class="jtech-popup-toast__avatar">
+              {{#if toast.avatarUrl}}
+                <img src={{toast.avatarUrl}} width="44" height="44" alt="" />
+                <span class="jtech-popup-toast__type-badge">
+                  {{icon toast.icon}}
+                </span>
+              {{else}}
+                <span class="jtech-popup-toast__type-icon">
+                  {{icon toast.icon}}
+                </span>
+              {{/if}}
+            </div>
+            <div class="jtech-popup-toast__body">
+              <div class="jtech-popup-toast__heading">
+                <span class="jtech-popup-toast__name">{{toast.name}}</span>
+                <span class="jtech-popup-toast__action">—
+                  {{toast.action}}</span>
+              </div>
+              {{#if toast.title}}
+                <div class="jtech-popup-toast__title">{{toast.title}}</div>
+              {{/if}}
+              {{#if toast.excerpt}}
+                <div class="jtech-popup-toast__excerpt">{{toast.excerpt}}</div>
+              {{/if}}
+            </div>
           </div>
-          {{#if this.toast.title}}
-            <div class="jtech-popup-toast__title">{{this.toast.title}}</div>
-          {{/if}}
-          {{#if this.toast.excerpt}}
-            <div class="jtech-popup-toast__excerpt">{{this.toast.excerpt}}</div>
-          {{/if}}
-        </div>
+        {{/each}}
       </div>
     {{/if}}
   </template>
