@@ -1,7 +1,7 @@
 {
   "name": "jtech-tools",
   "about": "Jtech — combined Discourse plugin (dislike, another-smtp, mini-mod, mod-categories, dumbcourse, translator-tweaks, smart-search)",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "authors": "Jtech Forums",
   "url": "https://github.com/JTech-Forums/JtechTools"
 }
