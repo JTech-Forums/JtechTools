@@ -9,6 +9,7 @@ en:
       jtech_dumbcourse: Jtech — Dumbcourse
       jtech_smart_search: Jtech — Smart search
       jtech_popup_notifications: Jtech — Desktop pop-ups
+      jtech_disteleplus: Jtech — Disteleplus
 
     # ── Jtech (master) ─────────────────────────────────────────────────────
     jtech_enabled: Enable the Jtech plugin bundle
@@ -259,6 +260,85 @@ en:
     dumbcourse_languagetool_api_key: Official API key
     dumbcourse_languagetool_api_key_description: Required when a username
       is set.
+
+    # ── Jtech — Disteleplus ────────────────────────────────────────────────
+    disteleplus_enabled: Enable Disteleplus (Telegram ⇄ chat bridge)
+    disteleplus_enabled_description: Master switch for the two-way bridge
+      between one Telegram group and one Discourse chat channel.
+
+    disteleplus_bot_token: Telegram bot token
+    disteleplus_bot_token_description: Token from @BotFather (/newbot). The
+      bot must be in the bridged group, be a group admin, and have privacy
+      mode DISABLED (/setprivacy) or it will not see group messages.
+
+    disteleplus_webhook_secret: Webhook secret
+    disteleplus_webhook_secret_description: Shared secret Telegram echoes in
+      the X-Telegram-Bot-Api-Secret-Token header. Leave blank — the register
+      webhook button generates one automatically.
+
+    disteleplus_telegram_chat_id: Telegram group chat id
+    disteleplus_telegram_chat_id_description: The bridged group's chat id (a
+      negative number, e.g. -1001234567890). Find it via getUpdates or
+      @RawDataBot after adding the bot to the group.
+
+    disteleplus_chat_channel_id: Discourse chat channel id
+    disteleplus_chat_channel_id_description: The bridged chat channel's id —
+      the number in its URL, /chat/c/-/<id>.
+
+    disteleplus_bridge_bot_username: Bridge bot username
+    disteleplus_bridge_bot_username_description: Discourse user that posts
+      unmatched Telegram messages. Created automatically (at trust level 4)
+      if it doesn't exist; point it at an existing user to reuse one.
+
+    disteleplus_user_mappings: Telegram → Discourse user mappings
+    disteleplus_user_mappings_description: 'Manual pairs in the form
+      telegram_username:discourse_username. Takes precedence over the
+      automatic same-username match. Anyone controlling a mapped Telegram
+      account posts as that Discourse user — map people you trust.'
+
+    disteleplus_bridge_uploads: Bridge media/uploads
+    disteleplus_bridge_uploads_description: Copy photos, files, video and
+      audio across the bridge (both directions), up to the size limit below.
+
+    disteleplus_max_upload_mb: Max bridged file size (MB)
+    disteleplus_max_upload_mb_description: Media larger than this becomes a
+      placeholder/link instead. Hard ceiling 20 MB — the Bot API refuses
+      larger bot downloads.
+
+    disteleplus_bridge_edits: Bridge message edits
+    disteleplus_bridge_edits_description: Mirror edits both ways. Note that
+      Discourse-side edits of Telegram-originated messages stay local — bots
+      cannot edit other people's Telegram messages.
+
+    disteleplus_bridge_deletes: Bridge deletions (Discourse → Telegram)
+    disteleplus_bridge_deletes_description: Deleting a bridged chat message
+      also deletes it in Telegram (bot needs delete rights; Telegram allows
+      it for 48 hours). Telegram-side deletions are never reported to bots,
+      so they cannot be mirrored back.
+
+    disteleplus_bridge_polls: Bridge Telegram polls
+    disteleplus_bridge_polls_description: Render Telegram polls as a markdown
+      snapshot in chat and refresh vote counts as updates arrive. Voting from
+      Discourse is not possible.
+
+    disteleplus_bridge_reactions: Bridge reactions
+    disteleplus_bridge_reactions_description: Telegram reactions appear as
+      chat reactions (per user, when matched). Discourse reactions collapse
+      to the bot's single allowed Telegram reaction — the most recent one.
+
+    disteleplus_lock_chat_ui: Lock chat to the bridge channel
+    disteleplus_lock_chat_ui_description: The chat button opens the bridge
+      channel directly and creating channels or direct messages is hidden and
+      blocked. Chat becomes this one group conversation.
+
+    disteleplus_lock_chat_exempt_admins: Exempt admins from the chat lock
+    disteleplus_lock_chat_exempt_admins_description: When on, admins keep the
+      full chat UI even while the lock is active.
+
+    disteleplus_register_webhook_now: Register the Telegram webhook now
+    disteleplus_register_webhook_now_description: Flip on to call setWebhook
+      (generating the secret first if blank). Resets itself once enqueued;
+      check /logs if messages still don't arrive.
 
   discourse_mod_categories:
     note_notification_alert: '%{username} added a moderator note on "%{topic}"'

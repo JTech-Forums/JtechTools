@@ -1,6 +1,6 @@
 # Jtech
 
-One combined Discourse plugin. Bundles seven previously-separate plugins under a single registration and a single master site setting (`jtech_enabled`). Each sub-plugin keeps its own settings, locales, and Ruby namespace.
+One combined Discourse plugin. Bundles previously-separate plugins under a single registration and a single master site setting (`jtech_enabled`). Each sub-plugin keeps its own settings, locales, and Ruby namespace.
 
 ## Bundled sub-plugins
 
@@ -14,6 +14,7 @@ One combined Discourse plugin. Bundles seven previously-separate plugins under a
 | Translator-tweaks | *(patches `DiscourseTranslator`)* | *(none — gated by translator's own settings)* | `translator_enabled` (upstream) |
 | Smart search | `DiscourseSmartSearch` | `smart_search_*` | `smart_search_enabled` |
 | Desktop pop-ups | `DiscoursePopupNotifications` | `popup_notifications_*` | `popup_notifications_enabled` |
+| Disteleplus (Telegram ⇄ chat bridge) | `DiscourseDisteleplus` | `disteleplus_*` | `disteleplus_enabled` |
 
 The bundle is gated by `jtech_enabled`; each sub-plugin is independently gated by its own setting above.
 
@@ -77,6 +78,35 @@ Replacing emoji and choosing reactions is **entirely native** — the plugin shi
 - `customEmojis` — `{name → url}` from `Emoji.custom`, every native upload + plugin-registered emoji.
 
 `public/dumbcourse.js` then builds its reaction list from `enabledReactions` (falling back to the old hardcoded set), and `reactionGlyph()` renders each reaction as: a custom-emoji `<img>` if one exists, else the unicode glyph (via the bundled `emoji_map.json` codepoints), else the raw name. So **anything you enable/upload natively shows in dumbcourse automatically — no code change, no rebuild beyond shipping this bridge once.**
+
+### Disteleplus — Telegram ⇄ Discourse Chat bridge
+
+Bridges exactly **one Telegram group** with exactly **one Discourse Chat channel**, two-way, so an admin without Telegram can participate in the team's Telegram group from a chat channel (and everyone on Telegram sees their messages). Requires the official `chat` plugin to be enabled; everything no-ops gracefully when it isn't.
+
+**What bridges, and how far** (Bot API limits are real — the bridge documents them instead of faking around them):
+
+- **Text, both ways.** Telegram messages post into the channel **as the matching Discourse user** when the Telegram username matches a Discourse username (the manual `disteleplus_user_mappings` setting, `tg_name:discourse_name` pairs, takes precedence); unmatched senders post via the bridge-bot user with a `**Name (TG):**` prefix. Discourse messages appear in Telegram from the bot, prefixed **username:** — bots cannot impersonate people.
+- **Media, both ways,** up to `disteleplus_max_upload_mb` (hard ceiling 20 MB — the Bot API refuses larger bot downloads; bot sends cap at 50 MB). Oversized media becomes a placeholder (inbound) or a forum link (outbound; login-gated if secure uploads are on). Voice messages come in as `.ogg` uploads — add `ogg` to `authorized_extensions`. Animated stickers degrade to `[sticker 😀]` text.
+- **Edits, both ways** — with one asymmetry: a Discourse-side edit of a Telegram-originated message stays local (bots cannot edit other people's Telegram messages).
+- **Deletes, Discourse → Telegram only.** Telegram never notifies bots about deletions, so Telegram-side deletions leave the Discourse copy in place — that's a Bot API fact, not a setting.
+- **Replies, both ways,** threaded via the message-link table.
+- **Reactions, both ways, asymmetric.** Telegram reactions land per-user on the chat message (as the matched user, else the bot). Discourse reactions collapse to the bot's single allowed Telegram reaction (most recent wins) from Telegram's fixed emoji set. Requires the bot to be a **group admin** or Telegram never delivers reaction updates.
+- **Telegram polls → markdown snapshot** in chat, vote counts refreshed best-effort. No voting from Discourse (chat has no polls).
+- **Not bridged:** pins, typing indicators, join/leave notices, and muting (a Telegram mute is a moderation action; a Discourse channel mute is a private notification preference — semantically unrelated).
+
+**Chat lock (optional, `disteleplus_lock_chat_ui`):** the chat button opens the bridge channel directly and creating channels/DMs is hidden client-side and refused server-side (Guardian) — chat becomes this one admin conversation. `disteleplus_lock_chat_exempt_admins` (default on) keeps the full UI for admins.
+
+**Setup (once, ~5 minutes):**
+
+1. **BotFather:** `/newbot` → copy the token. Then `/setprivacy` → **Disable** — *mandatory*, otherwise the bot cannot see ordinary group messages (this is the #1 troubleshooting item).
+2. **Telegram group:** add the bot, promote it to **admin** (delete-messages right for delete bridging; admin status is also required for reaction updates). Get the group's chat id (a negative number like `-1001234…`): send any group message, then open `https://api.telegram.org/bot<token>/getUpdates` in a browser — or add @RawDataBot briefly.
+3. **Discourse (Admin → Settings → Jtech — Disteleplus):** paste `disteleplus_bot_token`, set `disteleplus_telegram_chat_id`, set `disteleplus_chat_channel_id` (the number in the channel URL, `/chat/c/-/<id>`), adjust mappings/toggles if wanted.
+4. Turn on `disteleplus_enabled`, then flip `disteleplus_register_webhook_now` — it auto-generates the webhook secret, calls `setWebhook`, and resets itself. Check `/logs` for a `[jtech-tools disteleplus]` warning if anything failed.
+5. Send a message in Telegram → it appears in the channel; reply in the channel → it appears in Telegram.
+
+**Honest limitations** (also inline in the settings descriptions): Telegram username changes silently break the automatic match (fix with a mapping entry); anyone controlling a mapped Telegram account posts as that Discourse user — map people you trust; the bot's messages older than 48 h can't be deleted from Telegram; a group→supergroup migration changes the chat id (update the setting); formatting is flattened to plain text in both directions in v1.
+
+Internals: webhook receiver at `/jtech-disteleplus/telegram/webhook` (secret-header auth, enqueue-and-200), Sidekiq jobs for both directions, echo suppression via a thread-local flag + the `disteleplus_message_links` table, and every chat-plugin API touchpoint isolated in `lib/discourse_disteleplus/chat_adapter.rb`.
 
 ## Layout
 
