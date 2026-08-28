@@ -154,6 +154,22 @@ module ::DiscourseDisteleplus
     Rails.logger.warn("#{LOG_TAG} reaction event failed: #{e.class}: #{e.message}")
   end
 
+  # Telegram forum supergroups address their General topic by OMITTING
+  # message_thread_id; sending with thread id 1 (General's internal id, which
+  # is what an admin reading the URL bar types in) fails with "message thread
+  # not found". Normalise both 0 and 1 to "no thread" so a copied id never
+  # silently breaks delivery.
+  GENERAL_TOPIC_IDS = [0, 1].freeze
+
+  def self.telegram_thread_id(value)
+    id = value.to_i
+    GENERAL_TOPIC_IDS.include?(id) ? nil : id
+  end
+
+  def self.general_topic?(value)
+    GENERAL_TOPIC_IDS.include?(value.to_i)
+  end
+
   # The lock's enforcement half: creating channels, DMs and threads is
   # refused for everyone — admins included, no exemption. Admins who need a
   # new channel turn the lock off first; that is the whole point of a lock.

@@ -42,9 +42,19 @@ module Jobs
       chat_id = SiteSetting.disteleplus_telegram_chat_id.to_s.strip
       topic_id = SiteSetting.disteleplus_forum_upload_topic_id.to_i
       return if chat_id.blank? || topic_id.zero?
-      if topic_id == SiteSetting.disteleplus_chat_topic_id.to_i
+      # 1 is General's internal id; Telegram refuses it as a thread, and even
+      # normalised to "no thread" it would dump the archive into the same
+      # conversation as the chat bridge. Refuse loudly instead of silently.
+      chat_topic_id = SiteSetting.disteleplus_chat_topic_id
+      if topic_id == chat_topic_id.to_i ||
+           (
+             DiscourseDisteleplus.general_topic?(topic_id) &&
+               DiscourseDisteleplus.general_topic?(chat_topic_id)
+           )
         Rails.logger.warn(
-          "#{DiscourseDisteleplus::LOG_TAG} forum upload topic must differ from chat topic",
+          "#{DiscourseDisteleplus::LOG_TAG} forum upload topic (#{topic_id}) must differ from " \
+            "the chat topic (#{chat_topic_id}); topic id 1 is General — run " \
+            "/disteleplus_create_uploads in Telegram to create a dedicated topic",
         )
         return
       end

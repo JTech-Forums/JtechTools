@@ -24,7 +24,8 @@ module DiscourseDisteleplus
 
       method, field = send_method_for(upload)
       fields = { chat_id: chat_id, caption: caption, parse_mode: "HTML" }
-      fields[:message_thread_id] = topic_id if topic_id.to_i.positive?
+      thread_id = DiscourseDisteleplus.telegram_thread_id(topic_id)
+      fields[:message_thread_id] = thread_id if thread_id
 
       begin
         result =
@@ -51,7 +52,8 @@ module DiscourseDisteleplus
         text: "#{caption}\n<a href=\"#{ForumUploadFormatter.escape(url)}\">Open file on JTech</a>",
         parse_mode: "HTML",
       }
-      payload[:message_thread_id] = topic_id if topic_id.to_i.positive?
+      thread_id = DiscourseDisteleplus.telegram_thread_id(topic_id)
+      payload[:message_thread_id] = thread_id if thread_id
       result = @api.call("sendMessage", payload)
       raise "Telegram fallback send failed: #{result.description}" unless result.ok
       Delivery.new(message: result.result, file_copied: false)
