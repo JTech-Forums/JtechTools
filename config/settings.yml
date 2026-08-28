@@ -808,10 +808,24 @@ jtech_disteleplus:
     client: false
     depends_on:
       - "disteleplus_enabled"
+  # Optional Telegram Forum Topic used by the existing Chat bridge. Zero
+  # keeps the legacy non-topic behavior.
+  disteleplus_chat_topic_id:
+    default: 0
+    client: false
+    min: 0
+    max: 2000000000
+    depends_on:
+      - "disteleplus_enabled"
   disteleplus_webhook_secret:
     default: ''
     client: false
     secret: true
+    depends_on:
+      - "disteleplus_enabled"
+  disteleplus_setup_commands_enabled:
+    default: true
+    client: false
     depends_on:
       - "disteleplus_enabled"
 
@@ -902,6 +916,77 @@ jtech_disteleplus:
     client: false
     depends_on:
       - "disteleplus_enabled"
+
+  # Ordinary forum Post uploads -> a separate Telegram Forum Topic.
+  disteleplus_forum_uploads_enabled:
+    default: false
+    client: false
+    depends_on:
+      - "disteleplus_enabled"
+  disteleplus_forum_upload_topic_id:
+    default: 0
+    client: false
+    min: 0
+    max: 2000000000
+    depends_on:
+      - "disteleplus_forum_uploads_enabled"
+  disteleplus_forum_upload_topic_name:
+    default: Uploads
+    client: false
+    depends_on:
+      - "disteleplus_enabled"
+  # Empty means every non-restricted, normal forum category.
+  disteleplus_forum_upload_category_ids:
+    default: ''
+    client: false
+    type: category_list
+    depends_on:
+      - "disteleplus_forum_uploads_enabled"
+  disteleplus_forum_upload_include_restricted_categories:
+    default: false
+    client: false
+    depends_on:
+      - "disteleplus_forum_uploads_enabled"
+  disteleplus_forum_upload_max_mb:
+    default: 50
+    client: false
+    min: 1
+    max: 50
+    depends_on:
+      - "disteleplus_forum_uploads_enabled"
+  disteleplus_forum_upload_backfill_batch_size:
+    default: 25
+    client: false
+    min: 1
+    max: 250
+    depends_on:
+      - "disteleplus_forum_uploads_enabled"
+  disteleplus_forum_upload_backfill_pause_seconds:
+    default: 10
+    client: false
+    min: 1
+    max: 3600
+    depends_on:
+      - "disteleplus_forum_uploads_enabled"
+  disteleplus_forum_upload_backfill_spacing_seconds:
+    default: 4
+    client: false
+    min: 3
+    max: 60
+    depends_on:
+      - "disteleplus_forum_uploads_enabled"
+  disteleplus_forum_upload_measure_now:
+    default: false
+    client: false
+    requires_confirmation: "simple_on_enable"
+    depends_on:
+      - "disteleplus_forum_uploads_enabled"
+  disteleplus_forum_upload_backfill_now:
+    default: false
+    client: false
+    requires_confirmation: "simple_on_enable"
+    depends_on:
+      - "disteleplus_forum_uploads_enabled"
 
   # Landing — the header chat button (and bare /chat) opens the bridge
   # conversation directly, for everyone, independent of the full lock below.

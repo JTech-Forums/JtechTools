@@ -24,6 +24,7 @@ module Jobs
       # Strip: a pasted trailing space in the setting makes Telegram answer
       # "chat not found" for an otherwise-correct id.
       @chat_id = SiteSetting.disteleplus_telegram_chat_id.to_s.strip
+      @topic_id = SiteSetting.disteleplus_chat_topic_id.to_i
       return if @chat_id.blank?
 
       case args[:action]
@@ -144,6 +145,7 @@ module Jobs
 
     def send_text(html, reply_to)
       payload = { chat_id: @chat_id, text: html, parse_mode: "HTML" }
+      payload[:message_thread_id] = @topic_id if @topic_id.positive?
       payload[:reply_to_message_id] = reply_to if reply_to
       result = @api.call("sendMessage", payload)
       result.ok ? result.result : log_send_failure(result)
@@ -170,6 +172,7 @@ module Jobs
 
       method, field = send_method_for(upload)
       fields = { chat_id: @chat_id }
+      fields[:message_thread_id] = @topic_id if @topic_id.positive?
       fields[:caption] = caption if caption.present?
       fields[:parse_mode] = "HTML" if caption.present?
       fields[:reply_to_message_id] = reply_to if reply_to

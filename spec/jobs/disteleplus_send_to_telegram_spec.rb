@@ -54,6 +54,15 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       expect(link).to be_discourse_to_tg
     end
 
+    it "routes chat messages into the configured Telegram topic" do
+      SiteSetting.disteleplus_chat_topic_id = 88
+      run("create")
+      expect(api).to have_received(:call).with(
+        "sendMessage",
+        a_hash_including(message_thread_id: 88),
+      )
+    end
+
     it "escapes HTML in the message body" do
       allow(chat_message).to receive(:message).and_return("<script>x & y</script>")
       run("create")

@@ -64,6 +64,22 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
     expect(adapter).not_to have_received(:create_message)
   end
 
+  it "keeps human replies in the forum-upload topic out of Discourse Chat" do
+    SiteSetting.disteleplus_forum_uploads_enabled = true
+    SiteSetting.disteleplus_forum_upload_topic_id = 99
+    run(message_update("message_thread_id" => 99))
+    expect(adapter).not_to have_received(:create_message)
+  end
+
+  it "accepts only the configured Telegram chat topic when one is set" do
+    SiteSetting.disteleplus_chat_topic_id = 42
+    run(message_update("message_thread_id" => 41))
+    expect(adapter).not_to have_received(:create_message)
+
+    run(message_update("message_thread_id" => 42))
+    expect(adapter).to have_received(:create_message).once
+  end
+
   it "skips messages already linked (echo layer 2)" do
     DiscourseDisteleplus::MessageLink.create!(
       telegram_chat_id: chat_id,

@@ -27,7 +27,9 @@ module DiscourseDisteleplus
     private
 
     def handle_message(msg)
-      unless bridge_chat?(msg.dig("chat", "id"))
+      return if SetupCommandHandler.new(msg).process?
+
+      unless bridge_message?(msg)
         # A misconfigured chat id fails silently otherwise — the #1 setup
         # trap. Loud enough to show in /logs, cheap enough to ignore if the
         # bot deliberately sits in other groups.
@@ -98,7 +100,7 @@ module DiscourseDisteleplus
 
     def handle_edit(msg)
       return unless SiteSetting.disteleplus_bridge_edits
-      return unless bridge_chat?(msg.dig("chat", "id"))
+      return unless bridge_message?(msg)
 
       link =
         MessageLink.for_telegram(msg.dig("chat", "id"), msg["message_id"]).tg_to_discourse.first
@@ -132,7 +134,7 @@ module DiscourseDisteleplus
 
     def handle_reaction(reaction)
       return unless SiteSetting.disteleplus_bridge_reactions
-      return unless bridge_chat?(reaction.dig("chat", "id"))
+      return unless bridge_message?(reaction)
       # Anonymous (channel-identity) reactions carry actor_chat, not user.
       return if reaction["user"].nil?
 
@@ -168,6 +170,24 @@ module DiscourseDisteleplus
     def bridge_chat?(chat_id)
       configured = SiteSetting.disteleplus_telegram_chat_id.to_s.strip
       configured.present? && chat_id.to_s == configured
+    end
+
+    def bridge_message?(message)
+      return false unless bridge_chat?(message.dig("chat", "id"))
+
+      actual_topic_id = message["message_thread_id"].to_i
+      # The archive exclusion wins even under a mistaken duplicate topic
+      # configuration: avoiding a privacy leak is more important than keeping
+      # the Chat bridge alive until the setting is corrected.
+      upload_topic_id = SiteSetting.disteleplus_forum_upload_topic_id.to_i
+      if SiteSetting.disteleplus_forum_uploads_enabled && upload_topic_id.positive?
+        return false if actual_topic_id == upload_topic_id
+      end
+
+      chat_topic_id = SiteSetting.disteleplus_chat_topic_id.to_i
+      return actual_topic_id == chat_topic_id if chat_topic_id.positive?
+
+      true
     end
 
     def channel_id

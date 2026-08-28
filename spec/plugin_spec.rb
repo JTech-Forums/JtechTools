@@ -169,6 +169,12 @@ RSpec.describe "DiscourseModCategories plugin.rb" do
       expect(SiteSetting.defaults[:disteleplus_bridge_polls]).to eq(true)
       expect(SiteSetting.defaults[:disteleplus_bridge_reactions]).to eq(true)
       expect(SiteSetting.defaults[:disteleplus_max_upload_mb]).to eq(10)
+      expect(SiteSetting.defaults[:disteleplus_forum_uploads_enabled]).to eq(false)
+      expect(SiteSetting.defaults[:disteleplus_setup_commands_enabled]).to eq(true)
+      expect(SiteSetting.defaults[:disteleplus_forum_upload_topic_name]).to eq("Uploads")
+      expect(SiteSetting.defaults[:disteleplus_forum_upload_max_mb]).to eq(50)
+      expect(SiteSetting.defaults[:disteleplus_forum_upload_backfill_batch_size]).to eq(25)
+      expect(SiteSetting.defaults[:disteleplus_forum_upload_backfill_spacing_seconds]).to eq(4)
     end
 
     it "exposes exactly the client-needed settings to the client" do

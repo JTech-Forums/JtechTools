@@ -159,7 +159,12 @@ require_relative "../lib/discourse_disteleplus/formatter"
 require_relative "../lib/discourse_disteleplus/telegram_api"
 require_relative "../lib/discourse_disteleplus/user_matcher"
 require_relative "../lib/discourse_disteleplus/chat_adapter"
+require_relative "../lib/discourse_disteleplus/setup_command_handler"
 require_relative "../lib/discourse_disteleplus/update_processor"
+require_relative "../lib/discourse_disteleplus/forum_upload_policy"
+require_relative "../lib/discourse_disteleplus/forum_upload_formatter"
+require_relative "../lib/discourse_disteleplus/telegram_upload_sender"
+require_relative "../lib/discourse_disteleplus/forum_upload_metrics"
 
 after_initialize do
   # ── "Register webhook" settings button ────────────────────────────────────
@@ -178,6 +183,36 @@ after_initialize do
         Jobs.enqueue(:disteleplus_register_webhook)
       end
       SiteSetting.disteleplus_register_webhook_now = false
+    elsif name.to_s == "disteleplus_forum_upload_measure_now" && new_val == true
+      if SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_forum_uploads_enabled
+        Jobs.enqueue(:disteleplus_measure_forum_uploads)
+      end
+      SiteSetting.disteleplus_forum_upload_measure_now = false
+    elsif name.to_s == "disteleplus_forum_upload_backfill_now" && new_val == true
+      if SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_forum_uploads_enabled
+        Jobs.enqueue(:disteleplus_backfill_forum_uploads, after_reference_id: 0)
+      end
+      SiteSetting.disteleplus_forum_upload_backfill_now = false
+    elsif name.to_s == "disteleplus_setup_commands_enabled" &&
+          SiteSetting.disteleplus_enabled
+      Jobs.enqueue(:disteleplus_register_webhook)
+    end
+  end
+
+  # Ordinary forum attachments are an independent one-way archive stream.
+  # Delay slightly because UploadReference rows are synchronized as part of
+  # post processing and may not yet be visible at the event boundary.
+  %i[post_created post_edited].each do |event|
+    on(event) do |post, *_args|
+      next unless SiteSetting.disteleplus_enabled
+      next unless SiteSetting.disteleplus_forum_uploads_enabled
+      next unless DiscourseDisteleplus::ForumUploadPolicy.eligible?(post)
+
+      Jobs.enqueue_in(5.seconds, :disteleplus_enqueue_post_uploads, post_id: post.id)
+    rescue StandardError => e
+      Rails.logger.warn(
+        "#{DiscourseDisteleplus::LOG_TAG} forum upload #{event} hook failed: #{e.message}",
+      )
     end
   end
 
