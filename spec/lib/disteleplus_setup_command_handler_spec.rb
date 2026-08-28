@@ -5,10 +5,7 @@ require "rails_helper"
 RSpec.describe DiscourseDisteleplus::SetupCommandHandler do
   let(:api) { instance_double(DiscourseDisteleplus::TelegramApi) }
   let(:admin_result) do
-    DiscourseDisteleplus::TelegramApi::Result.new(
-      ok: true,
-      result: { "status" => "administrator" },
-    )
+    DiscourseDisteleplus::TelegramApi::Result.new(ok: true, result: { "status" => "administrator" })
   end
   let(:sent_result) do
     DiscourseDisteleplus::TelegramApi::Result.new(ok: true, result: { "message_id" => 500 })
@@ -16,8 +13,14 @@ RSpec.describe DiscourseDisteleplus::SetupCommandHandler do
   let(:message) do
     {
       "message_id" => 20,
-      "chat" => { "id" => -100_555, "type" => "supergroup", "title" => "JTech" },
-      "from" => { "id" => 42 },
+      "chat" => {
+        "id" => -100_555,
+        "type" => "supergroup",
+        "title" => "JTech",
+      },
+      "from" => {
+        "id" => 42,
+      },
       "text" => "/disteleplus_help",
     }
   end
@@ -29,8 +32,16 @@ RSpec.describe DiscourseDisteleplus::SetupCommandHandler do
     SiteSetting.disteleplus_forum_upload_topic_id = 0
     SiteSetting.disteleplus_forum_upload_topic_name = "Uploads"
 
-    allow(api).to receive(:call).with("getChatMember", anything).and_return(admin_result)
-    allow(api).to receive(:call).with("sendMessage", anything).and_return(sent_result)
+    # `anything` resolves to Mocha's matcher here, which an rspec-mocks
+    # verifying double cannot match against. Use RSpec's own matchers.
+    allow(api).to receive(:call).with(
+      "getChatMember",
+      a_hash_including(chat_id: -100_555, user_id: 42),
+    ).and_return(admin_result)
+    allow(api).to receive(:call).with(
+      "sendMessage",
+      a_hash_including(chat_id: -100_555),
+    ).and_return(sent_result)
   end
 
   def process(payload = message)
@@ -74,7 +85,10 @@ RSpec.describe DiscourseDisteleplus::SetupCommandHandler do
     created =
       DiscourseDisteleplus::TelegramApi::Result.new(
         ok: true,
-        result: { "message_thread_id" => 88, "name" => "App Uploads" },
+        result: {
+          "message_thread_id" => 88,
+          "name" => "App Uploads",
+        },
       )
     allow(api).to receive(:call).with(
       "createForumTopic",
@@ -91,7 +105,10 @@ RSpec.describe DiscourseDisteleplus::SetupCommandHandler do
   it "rejects non-admin setup without changing destinations" do
     non_admin =
       DiscourseDisteleplus::TelegramApi::Result.new(ok: true, result: { "status" => "member" })
-    allow(api).to receive(:call).with("getChatMember", anything).and_return(non_admin)
+    allow(api).to receive(:call).with(
+      "getChatMember",
+      a_hash_including(chat_id: -100_555, user_id: 42),
+    ).and_return(non_admin)
     message["text"] = "/disteleplus_bind_uploads"
     message["message_thread_id"] = 77
 

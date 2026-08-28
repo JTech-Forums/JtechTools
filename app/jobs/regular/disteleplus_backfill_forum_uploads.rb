@@ -68,11 +68,10 @@ module Jobs
         )
       end
 
-      continuation_delay_seconds =
-        [
-          SiteSetting.disteleplus_forum_upload_backfill_pause_seconds,
-          queued_this_batch * spacing_seconds,
-        ].max
+      continuation_delay_seconds = [
+        SiteSetting.disteleplus_forum_upload_backfill_pause_seconds,
+        queued_this_batch * spacing_seconds,
+      ].max
       Jobs.enqueue_in(
         continuation_delay_seconds.seconds,
         :disteleplus_backfill_forum_uploads,

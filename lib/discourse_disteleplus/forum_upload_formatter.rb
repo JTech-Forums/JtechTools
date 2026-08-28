@@ -50,11 +50,7 @@ module DiscourseDisteleplus
 
     def self.hashtag(value, prefix)
       normalized =
-        I18n
-          .transliterate(value.to_s)
-          .downcase
-          .gsub(/[^a-z0-9]+/, "_")
-          .gsub(/\A_|_\z/, "")
+        I18n.transliterate(value.to_s).downcase.gsub(/[^a-z0-9]+/, "_").gsub(/\A_|_\z/, "")
       return nil if normalized.blank?
       "##{prefix}_#{normalized.first(48)}"
     end

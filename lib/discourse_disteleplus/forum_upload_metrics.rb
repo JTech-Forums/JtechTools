@@ -7,17 +7,16 @@ module DiscourseDisteleplus
     def self.measure
       eligible_post_ids = ForumUploadPolicy.eligible_scope.select("posts.id")
       refs =
-        ::UploadReference.where(target_type: "Post", target_id: eligible_post_ids).where.not(
-          upload_id: nil,
-        )
+        ::UploadReference
+          .where(target_type: "Post", target_id: eligible_post_ids)
+          .where.not(upload_id: nil)
       all_post_refs = ::UploadReference.where(target_type: "Post").where.not(upload_id: nil)
       upload_ids = refs.select(:upload_id)
       uploads = ::Upload.where(id: upload_ids)
-      limit =
-        [
-          SiteSetting.disteleplus_forum_upload_max_mb.megabytes,
-          TelegramUploadSender::MAX_SEND_BYTES,
-        ].min
+      limit = [
+        SiteSetting.disteleplus_forum_upload_max_mb.megabytes,
+        TelegramUploadSender::MAX_SEND_BYTES,
+      ].min
 
       occurrence_bytes =
         ::Upload

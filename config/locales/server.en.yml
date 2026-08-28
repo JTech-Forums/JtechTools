@@ -611,7 +611,7 @@ en:
     disteleplus_forum_uploads_enabled: Copy attachments from ordinary forum
       posts into a dedicated Telegram Forum Topic. This is an additional
       archive copy only; the forum Upload remains untouched and authoritative.
-      Private messages, whispers, deleted/hidden posts, and restricted
+      Personal messages, whispers, deleted/hidden posts, and restricted
       categories are excluded by default.
 
     disteleplus_forum_upload_topic_id: Telegram message_thread_id of the
@@ -631,7 +631,7 @@ en:
     disteleplus_forum_upload_include_restricted_categories: Also copy uploads
       from read-restricted categories. This can disclose staff or private
       material to every Telegram group member; leave off unless the audiences
-      are deliberately identical. Private messages and whispers remain
+      are deliberately identical. Personal messages and whispers remain
       excluded even when enabled.
 
     disteleplus_forum_upload_max_mb: Largest file copied into Telegram. The

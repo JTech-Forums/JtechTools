@@ -5,7 +5,8 @@ module DiscourseDisteleplus
   # and thread numerically, so an admin can bind the right destinations by
   # issuing a command in context instead of copying IDs into Discourse.
   class SetupCommandHandler
-    COMMAND = %r{
+    COMMAND =
+      %r{
       \A/disteleplus_
       (setup|help|status|bind_general|bind_uploads|create_uploads)
       (?:@\w+)?
@@ -180,9 +181,7 @@ module DiscourseDisteleplus
       end
 
       created_thread_id = result.result&.dig("message_thread_id").to_i
-      unless created_thread_id.positive?
-        raise "createForumTopic returned no message_thread_id"
-      end
+      raise "createForumTopic returned no message_thread_id" unless created_thread_id.positive?
 
       bind_group!
       SiteSetting.disteleplus_forum_upload_topic_id = created_thread_id
