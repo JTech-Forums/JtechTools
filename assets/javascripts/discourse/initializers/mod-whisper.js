@@ -21,67 +21,62 @@ export default {
 
       const currentUser = api.getCurrentUser();
 
-      api.modifyClass("model:composer", {
-        pluginId: "discourse-mod-whisper",
+      // Discourse's PostsController#update drops whisper params (the
+      // plugin's `add_permitted_post_create_param` whitelist is
+      // create-only), so editing a post and changing the whisper state in
+      // the modal saves the raw but the whisper state stays whatever it
+      // was. The composer service fires `composer:edited-post` right after
+      // a successful edit save, while its model is still live: if this was
+      // a STAFF edit AND the whisper state was touched in the modal
+      // (modWhisperDirty), chain a call to the dedicated
+      // update_post_whisper endpoint. Non-staff users never hit this path —
+      // the modal isn't opened for them in the first place — and the server
+      // endpoint 403s defensively even if they did.
+      // (An app event, not api.modifyClass("model:composer", { save }) —
+      // overriding model methods that way is deprecated,
+      // id:discourse.modify-class-model.)
+      api.onAppEvent("composer:edited-post", () => {
+        const composerService = api.container.lookup("service:composer");
+        const model = composerService?.model;
+        const post = model?.post;
+        const user = api.getCurrentUser();
 
-        // Discourse's PostsController#update drops whisper params (the
-        // plugin's `add_permitted_post_create_param` whitelist is
-        // create-only, and there's no `serializeOnUpdate`), so editing
-        // a post and changing the whisper state in the modal saves the
-        // raw but the whisper state stays whatever it was. Hooks the
-        // composer's save: if this is a STAFF edit AND the whisper
-        // state was touched in the modal (modWhisperDirty), chain a
-        // call to the dedicated update_post_whisper endpoint after the
-        // edit save resolves. Non-staff users never hit this path —
-        // the modal isn't opened for them in the first place — and the
-        // server endpoint 403s defensively even if they did.
-        save() {
-          const editingPost = this.editingPost;
-          const post = this.post;
-          const dirty = this.modWhisperDirty;
-          const user = api.getCurrentUser();
-          const result = this._super(...arguments);
+        if (!model?.modWhisperDirty || !post || !user?.staff) {
+          return;
+        }
 
-          if (editingPost && dirty && post && user?.staff) {
-            const state = {
-              mod_whisper: this.modWhisperArmed,
-              mod_whisper_target_user_ids: this.modWhisperTargetUserIds || [],
-              mod_whisper_target_group_ids: this.modWhisperTargetGroupIds || [],
-              mod_whisper_target_badge_ids: this.modWhisperTargetBadgeIds || [],
-            };
-            Promise.resolve(result)
-              .then(() =>
-                ajax(`/discourse-mod-categories/post/${post.id}/whisper`, {
-                  type: "PUT",
-                  data: state,
-                })
-              )
-              .then((res) => {
-                this.set("modWhisperDirty", false);
-                // Push the new state onto the post so the cooked-element
-                // decorator and the post serializer's mod_is_whisper read
-                // the same source as the response.
-                if (post.set) {
-                  post.set("mod_is_whisper", res?.mod_is_whisper);
-                  post.set(
-                    "mod_whisper_target_user_ids",
-                    res?.mod_whisper_target_user_ids || []
-                  );
-                  post.set(
-                    "mod_whisper_target_group_ids",
-                    res?.mod_whisper_target_group_ids || []
-                  );
-                  post.set(
-                    "mod_whisper_target_badge_ids",
-                    res?.mod_whisper_target_badge_ids || []
-                  );
-                }
-              })
-              .catch(popupAjaxError);
-          }
-
-          return result;
-        },
+        const state = {
+          mod_whisper: model.modWhisperArmed,
+          mod_whisper_target_user_ids: model.modWhisperTargetUserIds || [],
+          mod_whisper_target_group_ids: model.modWhisperTargetGroupIds || [],
+          mod_whisper_target_badge_ids: model.modWhisperTargetBadgeIds || [],
+        };
+        ajax(`/discourse-mod-categories/post/${post.id}/whisper`, {
+          type: "PUT",
+          data: state,
+        })
+          .then((res) => {
+            model.set("modWhisperDirty", false);
+            // Push the new state onto the post so the cooked-element
+            // decorator and the post serializer's mod_is_whisper read the
+            // same source as the response.
+            if (post.set) {
+              post.set("mod_is_whisper", res?.mod_is_whisper);
+              post.set(
+                "mod_whisper_target_user_ids",
+                res?.mod_whisper_target_user_ids || []
+              );
+              post.set(
+                "mod_whisper_target_group_ids",
+                res?.mod_whisper_target_group_ids || []
+              );
+              post.set(
+                "mod_whisper_target_badge_ids",
+                res?.mod_whisper_target_badge_ids || []
+              );
+            }
+          })
+          .catch(popupAjaxError);
       });
 
       api.onToolbarCreate((toolbar) => {
