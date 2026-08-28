@@ -11,10 +11,9 @@ en:
         try_again: Try again
         sending: Sending…
         requesting: Waiting for microphone permission…
-        idle_hint: Tap start and speak. Your note is sent as a voice bubble
-          here and in Telegram.
-        recording_hint: Recording… tap stop when you are done.
-        preview_hint: "%{duration} recorded. Listen back, then send or record again."
+        tap_to_record: Tap to record
+        recording_hint: Recording — tap to stop
+        preview_hint: Listen back, then send or record again.
         errors:
           unsupported: This browser cannot record audio. Try a current Chrome,
             Firefox, Edge or Safari.

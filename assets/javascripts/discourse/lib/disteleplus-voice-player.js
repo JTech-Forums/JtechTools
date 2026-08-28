@@ -1,28 +1,32 @@
 // Disteleplus voice-note player.
 //
 // Replaces the browser's default <audio controls> in chat messages with a
-// compact, theme-aware player: play/pause, a real waveform you can click or
-// drag to seek, elapsed/total time, and a playback-speed toggle. Pure DOM —
-// it wraps the existing <audio> element (which keeps doing the actual
-// playing, so nothing about upload URLs, secure media or CDN changes) and
-// hides it visually.
+// messenger-style player: round play button, a waveform you can click or
+// drag to seek, "elapsed / total", a speed toggle and a download link.
 //
-// The waveform is computed client-side: the file is fetched once, decoded
-// with WebAudio, reduced to BAR_COUNT peak samples and cached per URL. Until
-// that resolves (or if it fails — CORS, an odd codec, no AudioContext) the
-// bars render at a neutral height and the player is fully usable as a plain
-// progress bar. Only one note plays at a time; starting another pauses the
-// current one, the way every messaging app behaves.
+// Chat renders uploads inside a Glimmer-owned collapser that it re-renders
+// freely, so this NEVER moves or re-parents the <audio>. The native element
+// stays exactly where Glimmer put it (visually hidden) and the player is
+// inserted as its next sibling; a registry keyed on the audio node, plus the
+// observer's removedNodes, tears the player down the moment Glimmer drops
+// the audio, so re-renders never stack duplicate players.
+//
+// Waveform: the file is fetched once and decoded with WebAudio to real peaks
+// (cached per URL). Uploads on an S3/CDN host without CORS cannot be decoded
+// by the browser, so that failure falls back to a deterministic pattern
+// seeded from the URL — stable per file, clearly a pattern, never a broken
+// control. Only one note plays at a time.
 import { i18n } from "discourse-i18n";
 
 export const ENHANCED_CLASS = "disteleplus-audio--enhanced";
 
-const BAR_COUNT = 44;
+const BAR_COUNT = 40;
 const SPEEDS = [1, 1.5, 2];
 const SPEED_STORAGE_KEY = "disteleplus-voice-speed";
 const VOICE_NAME = /(^|\/)voice(-note)?[-_.]/i;
 
 const peaksCache = new Map();
+const players = new Map(); // audio element → VoicePlayer
 let current = null;
 
 export function isVoiceNoteSource(src) {
@@ -37,7 +41,7 @@ export function isVoiceNoteSource(src) {
   }
 }
 
-function formatTime(seconds) {
+export function formatTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) {
     return "0:00";
   }
@@ -85,35 +89,54 @@ function svgIcon(name) {
   return svg;
 }
 
-// Downmixes to mono, slices into BAR_COUNT windows, takes each window's peak,
-// then normalises so the loudest bar fills the track. Short notes are
-// upsampled so a 2-second clip still draws all bars.
-function reducePeaks(buffer) {
+// Reduces a decoded buffer to BAR_COUNT normalised peaks (0.12–1).
+export function reducePeaks(buffer, barCount = BAR_COUNT) {
   const channels = buffer.numberOfChannels;
   const length = buffer.length;
-  const window = Math.max(1, Math.floor(length / BAR_COUNT));
-  const peaks = new Array(BAR_COUNT).fill(0);
+  const window = Math.max(1, Math.floor(length / barCount));
+  const peaks = new Array(barCount).fill(0);
 
   for (let c = 0; c < channels; c++) {
     const data = buffer.getChannelData(c);
-    for (let i = 0; i < BAR_COUNT; i++) {
+    for (let i = 0; i < barCount; i++) {
       const start = i * window;
       const end = Math.min(length, start + window);
       let peak = 0;
-      for (let j = start; j < end; j += 8) {
+      for (let j = start; j < end; j += 4) {
         const v = Math.abs(data[j]);
         if (v > peak) {
           peak = v;
         }
       }
-      if (peak > peaks[i]) {
-        peaks[i] = peak;
-      }
+      peaks[i] = Math.max(peaks[i], peak);
     }
   }
+  return normalisePeaks(peaks);
+}
 
+export function normalisePeaks(peaks) {
   const max = Math.max(...peaks, 0.001);
-  return peaks.map((p) => Math.max(0.08, p / max));
+  return peaks.map((p) => Math.max(0.12, Math.min(1, p / max)));
+}
+
+// Deterministic, speech-shaped pattern for files the browser cannot decode.
+function patternPeaks(seedText, barCount = BAR_COUNT) {
+  // Small LCG seeded from the URL — arithmetic only, no bitwise ops.
+  const MOD = 4294967296;
+  let h = 2166136261;
+  for (let i = 0; i < seedText.length; i++) {
+    h = (h * 31 + seedText.charCodeAt(i)) % MOD;
+  }
+  const out = [];
+  for (let i = 0; i < barCount; i++) {
+    h = (h * 1103515245 + 12345) % MOD;
+    const noise = Math.floor(h / 256) / 16777216;
+    // Two slow envelopes so it reads as phrases, not static.
+    const phrase =
+      0.55 + 0.45 * Math.sin(i / 3.1 + (h % 7)) * Math.sin(i / 7.3);
+    out.push(0.18 + 0.82 * Math.abs(phrase) * (0.55 + 0.45 * noise));
+  }
+  return normalisePeaks(out);
 }
 
 async function loadPeaks(src) {
@@ -143,6 +166,39 @@ async function loadPeaks(src) {
   return promise;
 }
 
+// Builds the shared waveform track DOM. Used by the chat player and by the
+// recorder's preview so both look identical.
+export function buildTrack(barCount = BAR_COUNT) {
+  const track = el("div", "disteleplus-wave", {
+    role: "slider",
+    tabindex: "0",
+    "aria-valuemin": "0",
+    "aria-valuemax": "100",
+    "aria-valuenow": "0",
+  });
+  const bars = [];
+  for (let i = 0; i < barCount; i++) {
+    const bar = el("span", "disteleplus-wave__bar");
+    bar.style.setProperty("--peak", "0.3");
+    track.appendChild(bar);
+    bars.push(bar);
+  }
+  return { track, bars };
+}
+
+export function paintBars(bars, ratio) {
+  const active = Math.round(ratio * bars.length);
+  bars.forEach((bar, index) =>
+    bar.classList.toggle("is-played", index < active)
+  );
+}
+
+export function applyPeaks(bars, peaks) {
+  peaks.forEach((peak, index) => {
+    bars[index]?.style.setProperty("--peak", peak.toFixed(3));
+  });
+}
+
 class VoicePlayer {
   constructor(audio, { voice }) {
     this.audio = audio;
@@ -150,20 +206,24 @@ class VoicePlayer {
     this.speed = readSpeed();
     this.duration = Number.isFinite(audio.duration) ? audio.duration : 0;
     this.scrubbing = false;
+    this.src =
+      audio.currentSrc || audio.src || audio.querySelector("source")?.src || "";
     this.build();
     this.bind();
     this.audio.playbackRate = this.speed;
     this.paint();
-    loadPeaks(this.audio.currentSrc || this.audio.src)
+    loadPeaks(this.src)
       .then(({ peaks, duration }) => {
-        this.applyPeaks(peaks);
+        applyPeaks(this.bars, peaks);
+        this.root.classList.add("disteleplus-audio--decoded");
         if (!this.duration && duration) {
           this.duration = duration;
           this.paint();
         }
       })
       .catch(() => {
-        this.root.classList.add("disteleplus-audio--flat");
+        applyPeaks(this.bars, patternPeaks(this.src));
+        this.root.classList.add("disteleplus-audio--pattern");
       });
   }
 
@@ -178,82 +238,60 @@ class VoicePlayer {
       { role: "group", "aria-label": label }
     );
 
-    this.playButton = el("button", "disteleplus-audio__play btn-flat", {
+    this.playButton = el("button", "disteleplus-audio__play", {
       type: "button",
       "aria-label": i18n("disteleplus.player.play"),
     });
     this.playButton.appendChild(svgIcon("play"));
 
-    this.kind = el("span", "disteleplus-audio__kind");
-    this.kind.appendChild(svgIcon(this.voice ? "microphone" : "music"));
-    this.kind.title = label;
+    const { track, bars } = buildTrack();
+    this.track = track;
+    this.bars = bars;
+    this.track.setAttribute("aria-label", i18n("disteleplus.player.seek"));
 
-    this.track = el("div", "disteleplus-audio__track", {
-      role: "slider",
-      tabindex: "0",
-      "aria-label": i18n("disteleplus.player.seek"),
-      "aria-valuemin": "0",
-      "aria-valuemax": "100",
-      "aria-valuenow": "0",
-    });
-    this.bars = [];
-    for (let i = 0; i < BAR_COUNT; i++) {
-      const bar = el("span", "disteleplus-audio__bar");
-      bar.style.setProperty("--peak", "0.35");
-      this.track.appendChild(bar);
-      this.bars.push(bar);
-    }
-
+    this.meta = el("div", "disteleplus-audio__meta");
     this.time = el("span", "disteleplus-audio__time");
-    this.elapsed = el("span", "disteleplus-audio__elapsed");
-    this.total = el("span", "disteleplus-audio__total");
-    this.time.append(this.elapsed, this.total);
+    this.time.textContent = `0:00 / ${formatTime(this.duration)}`;
 
-    this.speedButton = el("button", "disteleplus-audio__speed btn-flat", {
+    this.speedButton = el("button", "disteleplus-audio__speed", {
       type: "button",
       title: i18n("disteleplus.player.speed"),
     });
 
-    const link = this.audio.currentSrc || this.audio.src;
     this.download = el("a", "disteleplus-audio__download", {
-      href: link,
+      href: this.src,
       download: "",
       title: i18n("disteleplus.player.download"),
       "aria-label": i18n("disteleplus.player.download"),
     });
     this.download.appendChild(svgIcon("download"));
 
-    this.root.append(
-      this.playButton,
-      this.kind,
-      this.track,
-      this.time,
-      this.speedButton,
-      this.download
-    );
+    this.kind = el("span", "disteleplus-audio__kind", { title: label });
+    this.kind.appendChild(svgIcon(this.voice ? "microphone" : "music"));
+
+    this.meta.append(this.kind, this.time, this.speedButton, this.download);
+
+    this.body = el("div", "disteleplus-audio__body");
+    this.body.append(this.track, this.meta);
+    this.root.append(this.playButton, this.body);
 
     this.audio.removeAttribute("controls");
     this.audio.classList.add("disteleplus-audio__native");
-    this.audio.parentNode.insertBefore(this.root, this.audio);
-    this.root.appendChild(this.audio);
+    this.audio.insertAdjacentElement("afterend", this.root);
   }
 
   bind() {
     this.playButton.addEventListener("click", () => this.toggle());
     this.speedButton.addEventListener("click", () => this.cycleSpeed());
 
-    this.audio.addEventListener("loadedmetadata", () => {
-      if (Number.isFinite(this.audio.duration)) {
-        this.duration = this.audio.duration;
-      }
-      this.paint();
-    });
-    this.audio.addEventListener("durationchange", () => {
-      if (Number.isFinite(this.audio.duration)) {
+    const syncDuration = () => {
+      if (Number.isFinite(this.audio.duration) && this.audio.duration > 0) {
         this.duration = this.audio.duration;
         this.paint();
       }
-    });
+    };
+    this.audio.addEventListener("loadedmetadata", syncDuration);
+    this.audio.addEventListener("durationchange", syncDuration);
     this.audio.addEventListener("timeupdate", () => {
       if (!this.scrubbing) {
         this.paint();
@@ -283,8 +321,6 @@ class VoicePlayer {
       this.playButton.title = i18n("disteleplus.player.unavailable");
     });
 
-    // Pointer scrubbing — press, drag, release. Pointer capture keeps the
-    // drag alive when the cursor leaves the (small) track.
     this.track.addEventListener("pointerdown", (event) => {
       event.preventDefault();
       this.scrubbing = true;
@@ -337,8 +373,7 @@ class VoicePlayer {
 
   toggle() {
     if (this.audio.paused) {
-      const attempt = this.audio.play();
-      attempt?.catch?.(() => {
+      this.audio.play()?.catch?.(() => {
         this.root.classList.add("disteleplus-audio--error");
       });
     } else {
@@ -347,10 +382,9 @@ class VoicePlayer {
   }
 
   cycleSpeed() {
-    const next = SPEEDS[(SPEEDS.indexOf(this.speed) + 1) % SPEEDS.length];
-    this.speed = next;
-    this.audio.playbackRate = next;
-    storeSpeed(next);
+    this.speed = SPEEDS[(SPEEDS.indexOf(this.speed) + 1) % SPEEDS.length];
+    this.audio.playbackRate = this.speed;
+    storeSpeed(this.speed);
     this.paintSpeed();
   }
 
@@ -379,16 +413,9 @@ class VoicePlayer {
     try {
       this.audio.currentTime = clamped;
     } catch {
-      // Metadata not ready yet; the next timeupdate will repaint.
+      // Metadata not ready yet; the next timeupdate repaints.
     }
     this.paint();
-  }
-
-  applyPeaks(peaks) {
-    peaks.forEach((peak, index) => {
-      this.bars[index]?.style.setProperty("--peak", peak.toFixed(3));
-    });
-    this.root.classList.add("disteleplus-audio--waveform");
   }
 
   paint() {
@@ -399,23 +426,12 @@ class VoicePlayer {
   }
 
   paintProgress(ratio, position) {
-    const percent = Math.round(ratio * 100);
     this.root.style.setProperty("--progress", ratio.toFixed(4));
-    this.track.setAttribute("aria-valuenow", String(percent));
-    this.track.setAttribute(
-      "aria-valuetext",
-      `${formatTime(position)} / ${formatTime(this.duration)}`
-    );
-    const showElapsed =
-      position > 0.25 ||
-      this.root.classList.contains("disteleplus-audio--playing");
-    this.elapsed.textContent = showElapsed ? formatTime(position) : "";
-    this.elapsed.hidden = !showElapsed;
-    this.total.textContent = formatTime(this.duration);
-    const active = Math.round(ratio * BAR_COUNT);
-    this.bars.forEach((bar, index) => {
-      bar.classList.toggle("is-played", index < active);
-    });
+    this.track.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
+    const label = `${formatTime(position)} / ${formatTime(this.duration)}`;
+    this.track.setAttribute("aria-valuetext", label);
+    this.time.textContent = label;
+    paintBars(this.bars, ratio);
   }
 
   paintSpeed() {
@@ -426,6 +442,13 @@ class VoicePlayer {
     );
     this.speedButton.classList.toggle("is-default", this.speed === 1);
   }
+
+  destroy() {
+    if (current === this) {
+      current = null;
+    }
+    this.root.remove();
+  }
 }
 
 // Wraps one <audio>. Idempotent — a second call on the same node is a no-op.
@@ -433,21 +456,27 @@ export function enhanceAudio(audio, { allAudio }) {
   if (!(audio instanceof HTMLAudioElement)) {
     return false;
   }
-  if (audio.classList.contains(ENHANCED_CLASS)) {
+  if (players.has(audio) || audio.classList.contains(ENHANCED_CLASS)) {
     return false;
   }
   const src =
     audio.currentSrc || audio.src || audio.querySelector("source")?.src;
+  if (!src) {
+    return false;
+  }
   const voice = isVoiceNoteSource(src);
   if (!voice && !allAudio) {
     return false;
   }
-  if (!src) {
-    return false;
-  }
   audio.classList.add(ENHANCED_CLASS);
-  // Kept on the element so devtools (and a future teardown) can reach it.
-  audio.disteleplusPlayer = new VoicePlayer(audio, { voice });
+  const player = new VoicePlayer(audio, { voice });
+  players.set(audio, player);
+  // Lets CSS hide the collapser's filename header for voice notes.
+  audio
+    .closest(".chat-message-collapser")
+    ?.classList.add(
+      voice ? "disteleplus-has-voice-note" : "disteleplus-has-audio"
+    );
   return true;
 }
 
@@ -470,4 +499,14 @@ export function enhanceWithin(root, options) {
     }
   });
   return count;
+}
+
+// Tears down players whose <audio> Glimmer has removed from the document.
+export function pruneDetached() {
+  for (const [audio, player] of players) {
+    if (!audio.isConnected) {
+      player.destroy();
+      players.delete(audio);
+    }
+  }
 }

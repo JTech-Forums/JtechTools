@@ -1,8 +1,9 @@
-// Disteleplus chat styles — three concerns:
+// Disteleplus chat styles — four concerns:
 //   1. Telegram-bridged message cards (bot-posted, "**Name (TG):**" prefix).
 //   2. The chat lock's cosmetic half (the Guardian/Chat::Channel prepends in
 //      sub_plugins/disteleplus.rb are the enforcement).
-//   3. Voice notes: the custom audio player and the recorder modal.
+//   3. The voice-note / audio player that replaces <audio controls> in chat.
+//   4. The recorder modal.
 // Everything resolves through theme variables so dark mode works for free.
 
 // ── 1. Bridged messages ──────────────────────────────────────────────────────
@@ -38,31 +39,24 @@
 
 // ── 2. Chat lock ─────────────────────────────────────────────────────────────
 // Creation affordances go for EVERYONE (admins included) whenever the lock
-// is on. Selectors target the chat plugin's create/browse controls across
-// the sidebar, the drawer, and the full-page UI; if an upstream rename makes
-// one miss, the server-side block still holds.
+// is on. If an upstream rename makes a selector miss, the server-side block
+// still holds.
 body.disteleplus-chat-locked {
-  // Sidebar chat section: "+" (new channel / new DM) and browse buttons.
-  .sidebar-section[data-section-name="chat-channels"] .sidebar-section-header-button,
+  .sidebar-section[data-section-name="chat-channels"]
+    .sidebar-section-header-button,
   .sidebar-section[data-section-name="chat-dms"] .sidebar-section-header-button,
-  // Full-page chat + drawer affordances.
   .c-navbar__new-dm-button,
   .c-navbar__open-browse-page-button,
   .c-navbar__new-channel-button,
   .open-browse-page-btn,
   .new-channel-btn,
   .chat-channel-row__new-dm,
-  // "Browse channels" / "start a conversation" empty-state links.
   .channels-list .open-browse-page-btn,
   .direct-message-creator,
   .c-footer__item[data-route="chat.direct-messages"] .new-dm,
-  // Threads: the per-message "reply in thread" action, the thread indicator
-  // footer, and the thread list button. Server-side threading is reported
-  // off while locked so these rarely render; belt and braces.
   .chat-message-actions .chat-message-thread-btn,
   .chat-message-actions__thread,
   .chat-message-actions [data-id="openThread"],
-  .chat-message-actions-container .btn[title*="thread" i],
   .chat-message-thread-indicator,
   .c-navbar__threads-list-button,
   .open-thread-list-btn,
@@ -72,7 +66,7 @@ body.disteleplus-chat-locked {
 }
 
 // Forced notifications: the level picker in channel settings would only
-// snap back, so hide it and say why.
+// snap back, so hide it.
 body.disteleplus-notifications-forced {
   .c-channel-settings__notifications-list,
   .c-channel-settings__notification-level,
@@ -83,35 +77,71 @@ body.disteleplus-notifications-forced {
   }
 }
 
-// ── 3a. Voice-note player ────────────────────────────────────────────────────
-// A single row: play, kind glyph, waveform, time, speed, download. The
-// waveform is 44 flex bars sized by --peak (set per bar by the JS) and tinted
-// past --progress; with no decoded peaks yet it renders as an even track, so
-// the player is never "loading" from the user's point of view.
+// ── 3. Shared waveform track ─────────────────────────────────────────────────
+// Used by the chat player and the recorder preview. Bars are flex items
+// sized by --peak; played bars pick up the accent colour.
+.disteleplus-wave {
+  --wave-height: 2.25em;
+  --wave-track: var(--primary-low-mid);
+  --wave-played: var(--tertiary);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  height: var(--wave-height);
+  cursor: pointer;
+  touch-action: none;
+  border-radius: 0.5em;
+
+  &:focus-visible {
+    outline: 2px solid var(--wave-played);
+    outline-offset: 3px;
+  }
+
+  &__bar {
+    --peak: 0.3;
+    flex: 1 1 0;
+    min-width: 2px;
+    height: max(4px, calc(var(--peak) * 100%));
+    border-radius: 2px;
+    background: var(--wave-track);
+    transition:
+      height 0.18s ease,
+      background-color 0.1s ease;
+
+    &.is-played {
+      background: var(--wave-played);
+    }
+  }
+}
+
+// ── 3. Chat player ───────────────────────────────────────────────────────────
+// Layout: [play] [ waveform          ]
+//                [ mic 0:09 / 0:25  1×  ↓ ]
+// A two-row body next to a round play button — the WhatsApp/Telegram shape.
+// Never touches the <audio>; it's the next sibling, and the native element
+// is only visually hidden.
 .disteleplus-audio {
-  --da-height: 2.75em;
   --da-bg: var(--primary-very-low);
+  --da-border: var(--primary-low);
   --da-fg: var(--primary);
   --da-muted: var(--primary-medium);
   --da-accent: var(--tertiary);
-  --da-track: var(--primary-low-mid);
-  --da-played: var(--tertiary);
-  --da-radius: 1.375em;
-  --progress: 0;
-  display: inline-flex;
+  --da-on-accent: var(--secondary);
+  display: flex;
   align-items: center;
-  gap: 0.5em;
+  gap: 0.7em;
   box-sizing: border-box;
-  width: 100%;
-  max-width: 26em;
-  min-height: var(--da-height);
-  padding: 0.35em 0.6em 0.35em 0.35em;
-  border-radius: var(--da-radius);
+  width: min(100%, 24rem);
+  min-width: 15rem;
+  margin: 0.3em 0;
+  padding: 0.55em 0.8em 0.55em 0.55em;
+  border: 1px solid var(--da-border);
+  border-radius: 1.1em;
   background: var(--da-bg);
-  border: 1px solid var(--primary-low);
   color: var(--da-fg);
   font-size: var(--font-down-1);
-  line-height: 1;
+  line-height: 1.2;
   user-select: none;
   transition: border-color 0.15s ease;
 
@@ -126,67 +156,59 @@ body.disteleplus-notifications-forced {
 
   &--voice {
     --da-bg: var(--tertiary-very-low);
-    --da-track: var(--tertiary-low);
-    border-color: var(--tertiary-low);
+    --da-border: var(--tertiary-low);
   }
 
   &--error {
     --da-accent: var(--danger);
-    --da-played: var(--danger);
     opacity: 0.7;
+  }
+
+  // Pattern fallback (undecodable cross-origin file): tone the bars down a
+  // touch so it never pretends to be a measurement.
+  &--pattern .disteleplus-wave {
+    --wave-track: var(--primary-low);
   }
 
   // The real <audio> keeps playing; it just has no UI of its own now.
   &__native {
     position: absolute !important;
-    width: 1px;
-    height: 1px;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px;
     overflow: hidden;
     clip-path: inset(50%);
     opacity: 0;
     pointer-events: none;
   }
 
-  &__play,
-  &__speed,
-  &__download {
+  &__play {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 2.6em;
+    height: 2.6em;
     margin: 0;
     padding: 0;
     border: 0;
-    background: transparent;
-    color: var(--da-fg);
-    cursor: pointer;
-    border-radius: 999px;
-
-    &:focus-visible {
-      outline: 2px solid var(--da-accent);
-      outline-offset: 1px;
-    }
-  }
-
-  &__play {
-    width: 2.1em;
-    height: 2.1em;
+    border-radius: 50%;
     background: var(--da-accent);
-    color: var(--secondary);
-    box-shadow: 0 1px 2px rgb(0 0 0 / 15%);
+    color: var(--da-on-accent);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 18%);
     transition:
       transform 0.12s ease,
       filter 0.12s ease;
 
     .d-icon {
-      width: 0.9em;
-      height: 0.9em;
+      width: 1em;
+      height: 1em;
       color: inherit;
     }
 
-    // Nudge the play glyph right; a centred triangle looks left-heavy.
     .d-icon-play {
-      margin-left: 0.12em;
+      margin-left: 0.15em;
     }
 
     &:hover:not(:disabled) {
@@ -197,89 +219,79 @@ body.disteleplus-notifications-forced {
       transform: scale(0.94);
     }
 
+    &:focus-visible {
+      outline: 2px solid var(--da-accent);
+      outline-offset: 2px;
+    }
+
     &:disabled {
       cursor: default;
       background: var(--primary-low-mid);
     }
   }
 
-  &__kind {
-    flex: 0 0 auto;
-    display: inline-flex;
-    color: var(--da-muted);
-
-    .d-icon {
-      width: 0.85em;
-      height: 0.85em;
-      color: inherit;
-    }
-  }
-
-  &__track {
+  &__body {
     flex: 1 1 auto;
     display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+    min-width: 0;
+  }
+
+  &__meta {
+    display: flex;
     align-items: center;
-    gap: 2px;
-    height: 1.9em;
-    min-width: 6em;
-    cursor: pointer;
-    touch-action: none;
-    border-radius: 0.5em;
-
-    &:focus-visible {
-      outline: 2px solid var(--da-accent);
-      outline-offset: 2px;
-    }
-  }
-
-  &__bar {
-    --peak: 0.35;
-    flex: 1 1 0;
-    min-width: 2px;
-    height: max(3px, calc(var(--peak) * 100%));
-    border-radius: 2px;
-    background: var(--da-track);
-    transition:
-      height 0.25s ease,
-      background-color 0.12s ease;
-
-    &.is-played {
-      background: var(--da-played);
-    }
-  }
-
-  // Flat fallback: identical bars, so it reads as a progress bar.
-  &--flat &__bar {
-    --peak: 0.35 !important;
-  }
-
-  &__time {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.25em;
-    min-width: 2.6em;
-    font-variant-numeric: tabular-nums;
+    gap: 0.5em;
+    min-width: 0;
     color: var(--da-muted);
     white-space: nowrap;
   }
 
-  &__elapsed {
-    color: var(--da-fg);
+  &__kind {
+    display: inline-flex;
+    flex: 0 0 auto;
 
-    &:not([hidden]) + .disteleplus-audio__total::before {
-      content: "/";
-      margin-right: 0.25em;
-      color: var(--da-muted);
+    .d-icon {
+      width: 0.85em;
+      height: 0.85em;
+      color: var(--da-accent);
+    }
+  }
+
+  &__time {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+    color: var(--da-fg);
+  }
+
+  &__speed,
+  &__download {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--da-muted);
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--da-accent);
+      outline-offset: 1px;
     }
   }
 
   &__speed {
-    min-width: 2.4em;
-    height: 1.6em;
+    min-width: 2.3em;
+    height: 1.55em;
     padding: 0 0.45em;
     font-size: var(--font-down-2);
-    font-weight: 600;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     color: var(--da-fg);
     background: var(--primary-low);
@@ -291,13 +303,14 @@ body.disteleplus-notifications-forced {
 
     &:hover {
       background: var(--primary-low-mid);
+      color: var(--da-fg);
     }
   }
 
   &__download {
-    width: 1.6em;
-    height: 1.6em;
-    color: var(--da-muted);
+    width: 1.55em;
+    height: 1.55em;
+    padding: 0;
 
     .d-icon {
       width: 0.8em;
@@ -312,141 +325,292 @@ body.disteleplus-notifications-forced {
   }
 }
 
-// Chat's upload container gives audio a fixed width; let the player breathe.
-.chat-uploads .disteleplus-audio,
-.chat-message .disteleplus-audio {
-  margin: 0.2em 0;
+// Chat wraps each upload in a collapser whose header is the raw filename
+// with a chevron — noise for a voice note, whose whole identity is the bubble.
+.chat-message-collapser.disteleplus-has-voice-note {
+  > .chat-message-collapser-header {
+    display: none;
+  }
+
+  .chat-uploads {
+    margin-top: 0;
+  }
 }
 
-.chat-upload:has(.disteleplus-audio) {
-  max-width: 100%;
-}
-
-// Small screens: drop the download link and shrink the chrome.
+// Small screens: let the bubble take the full width and drop the download.
 @media (width <= 480px) {
   .disteleplus-audio {
-    gap: 0.4em;
-    max-width: 100%;
+    width: 100%;
+    min-width: 0;
 
     &__download {
       display: none;
     }
-
-    &__kind {
-      display: none;
-    }
   }
 }
 
-// ── 3b. Recorder modal ───────────────────────────────────────────────────────
+// ── 4. Recorder modal ────────────────────────────────────────────────────────
 .disteleplus-voice-modal {
+  --rec-accent: var(--tertiary);
+  --rec-live: var(--danger);
+  --rec-on-accent: var(--secondary);
+
   .d-modal__body {
-    min-width: min(26em, 90vw);
+    width: min(26rem, 92vw);
+    padding-top: 0.5em;
   }
 
-  .disteleplus-voice__stage {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75em;
-    padding: 1em 0.5em 0.25em;
+  &.is-near-limit {
+    --rec-live: var(--danger-medium, var(--danger));
+  }
+}
+
+.disteleplus-rec {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1em;
+  padding: 0.75em 0.25em 0.25em;
+
+  &__hint {
+    margin: 0;
+    min-height: 1.4em;
+    color: var(--primary-medium);
+    text-align: center;
   }
 
-  .disteleplus-voice__meter {
+  &__glyph {
+    display: grid;
+    place-items: center;
+    width: 4.5em;
+    height: 4.5em;
+    border-radius: 50%;
+    background: var(--primary-very-low);
+
+    .d-icon {
+      width: 1.8em;
+      height: 1.8em;
+      color: var(--primary-medium);
+    }
+  }
+
+  &--error &__glyph .d-icon {
+    color: var(--danger);
+  }
+
+  // Live waveform: 48 bars, mirrored around the centre line so it reads as
+  // a signal rather than a bar chart.
+  &__wave {
     display: flex;
     align-items: center;
     gap: 3px;
     width: 100%;
-    max-width: 20em;
-    height: 3.5em;
+    height: 4.5em;
+    padding: 0 0.25em;
+    box-sizing: border-box;
+  }
 
-    span {
-      flex: 1 1 0;
-      min-height: 3px;
-      border-radius: 2px;
-      background: var(--primary-low-mid);
-      transition:
-        height 0.08s linear,
-        background-color 0.2s ease;
+  &__bar {
+    --peak: 0.06;
+    flex: 1 1 0;
+    min-width: 2px;
+    height: max(4px, calc(var(--peak) * 100%));
+    border-radius: 3px;
+    background: var(--primary-low-mid);
+    transition: height 0.07s linear;
+  }
+
+  .is-recording &__bar {
+    background: var(--rec-live);
+    opacity: 0.9;
+  }
+
+  &__clock {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  &__elapsed {
+    font-size: 2.4em;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--primary);
+  }
+
+  &__max {
+    color: var(--primary-medium);
+
+    &::before {
+      content: "/ ";
     }
   }
 
-  .disteleplus-voice__stage.is-recording .disteleplus-voice__meter span {
-    background: var(--tertiary);
-  }
-
-  .disteleplus-voice__stage.is-near-limit .disteleplus-voice__meter span {
-    background: var(--danger);
-  }
-
-  .disteleplus-voice__clock {
-    display: flex;
-    align-items: baseline;
-    gap: 0.35em;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .disteleplus-voice__elapsed {
-    font-size: var(--font-up-4);
-    font-weight: 600;
-  }
-
-  .disteleplus-voice__stage.is-recording .disteleplus-voice__elapsed::before {
-    content: "";
-    display: inline-block;
-    width: 0.5em;
-    height: 0.5em;
-    margin-right: 0.4em;
+  // The button: a conic ring (fills toward the limit) around a solid core.
+  &__button {
+    --ring: 0deg;
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 5.25em;
+    height: 5.25em;
+    margin: 0.25em 0;
+    padding: 0;
+    border: 0;
     border-radius: 50%;
-    background: var(--danger);
-    vertical-align: middle;
-    animation: disteleplus-voice-blink 1s steps(2, start) infinite;
+    background: transparent;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--rec-accent);
+      outline-offset: 4px;
+    }
+
+    &:disabled {
+      cursor: progress;
+      opacity: 0.6;
+    }
   }
 
-  .disteleplus-voice__max {
-    color: var(--primary-medium);
+  &__ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+      var(--rec-live) var(--ring),
+      var(--primary-low) 0
+    );
+    mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 0);
+    transition: background 0.1s linear;
   }
 
-  .disteleplus-voice__hint {
-    margin: 0;
-    color: var(--primary-medium);
-    text-align: center;
-  }
-
-  .disteleplus-voice__preview {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75em;
-    padding: 0.5em 0;
-  }
-
-  .disteleplus-voice__preview-audio {
-    width: 100%;
-  }
-
-  .disteleplus-voice__uploading,
-  .disteleplus-voice__error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5em;
-    padding: 1em 0;
-    text-align: center;
+  &__core {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 3.9em;
+    height: 3.9em;
+    border-radius: 50%;
+    background: var(--rec-accent);
+    color: var(--rec-on-accent);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 22%);
+    transition:
+      background-color 0.2s ease,
+      transform 0.12s ease;
 
     .d-icon {
       width: 1.6em;
       height: 1.6em;
+      color: inherit;
     }
   }
 
-  .disteleplus-voice__error .d-icon {
-    color: var(--danger);
+  &__button:hover:not(:disabled) &__core {
+    transform: scale(1.04);
+  }
+
+  &__button:active:not(:disabled) &__core {
+    transform: scale(0.96);
+  }
+
+  .is-recording &__core {
+    background: var(--rec-live);
+    animation: disteleplus-rec-pulse 1.4s ease-out infinite;
+  }
+
+  &__stop-glyph {
+    display: block;
+    width: 1.3em;
+    height: 1.3em;
+    border-radius: 0.25em;
+    background: currentcolor;
+  }
+
+  // Preview: the same bubble the message will get, at modal scale.
+  &__player {
+    display: flex;
+    align-items: center;
+    gap: 0.8em;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.7em 0.9em 0.7em 0.7em;
+    border: 1px solid var(--tertiary-low);
+    border-radius: 1.25em;
+    background: var(--tertiary-very-low);
+  }
+
+  &__play {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 3em;
+    height: 3em;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--rec-accent);
+    color: var(--rec-on-accent);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 18%);
+
+    .d-icon {
+      width: 1.1em;
+      height: 1.1em;
+      color: inherit;
+    }
+
+    .d-icon-play {
+      margin-left: 0.15em;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--rec-accent);
+      outline-offset: 2px;
+    }
+  }
+
+  &__player-body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35em;
+    min-width: 0;
+  }
+
+  &__preview-wave .disteleplus-wave {
+    --wave-height: 2.6em;
+  }
+
+  &__player-meta {
+    display: flex;
+    gap: 0.35em;
+    font-size: var(--font-down-1);
+    font-variant-numeric: tabular-nums;
+    color: var(--primary-medium);
+
+    .disteleplus-rec__time:first-child {
+      color: var(--primary);
+    }
+  }
+
+  &__send .d-icon {
+    margin-right: 0.35em;
   }
 }
 
-@keyframes disteleplus-voice-blink {
-  to {
-    visibility: hidden;
+@keyframes disteleplus-rec-pulse {
+  0% {
+    box-shadow:
+      0 2px 8px rgb(0 0 0 / 22%),
+      0 0 0 0 rgb(var(--danger-rgb, 226 74 74) / 45%);
+  }
+
+  100% {
+    box-shadow:
+      0 2px 8px rgb(0 0 0 / 22%),
+      0 0 0 1.1em rgb(var(--danger-rgb, 226 74 74) / 0%);
   }
 }
 

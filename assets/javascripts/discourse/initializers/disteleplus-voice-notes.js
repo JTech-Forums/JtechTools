@@ -14,7 +14,7 @@
 // thread panes — and the page-change hook catches anything already present.
 import { withPluginApi } from "discourse/lib/plugin-api";
 import DisteleplusVoiceRecorder from "../components/disteleplus-voice-recorder";
-import { enhanceWithin } from "../lib/disteleplus-voice-player";
+import { enhanceWithin, pruneDetached } from "../lib/disteleplus-voice-player";
 
 const CHANNEL_URL = /^\/chat\/c\/[^/]+\/(\d+)(?:\/t\/(\d+))?/;
 
@@ -112,13 +112,22 @@ export default {
           return;
         }
         observer = new MutationObserver((mutations) => {
+          let removed = false;
           for (const mutation of mutations) {
+            if (mutation.removedNodes.length) {
+              removed = true;
+            }
             for (const node of mutation.addedNodes) {
               if (node.nodeType !== Node.ELEMENT_NODE) {
                 continue;
               }
               enhanceWithin(node, options);
             }
+          }
+          // Glimmer re-rendered a message: drop players whose <audio> is
+          // gone so nothing stacks or lingers.
+          if (removed) {
+            pruneDetached();
           }
         });
         observer.observe(document.body, { childList: true, subtree: true });
