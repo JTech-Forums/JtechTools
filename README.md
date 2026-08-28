@@ -94,7 +94,7 @@ Bridges exactly **one Telegram group** with exactly **one Discourse Chat channel
 - **Telegram polls → markdown snapshot** in chat, vote counts refreshed best-effort. No voting from Discourse (chat has no polls).
 - **Not bridged:** pins, typing indicators, join/leave notices, and muting (a Telegram mute is a moderation action; a Discourse channel mute is a private notification preference — semantically unrelated).
 
-**Chat lock (optional, `disteleplus_lock_chat_ui`):** the chat button opens the bridge channel directly and creating channels/DMs is hidden client-side and refused server-side (Guardian) — chat becomes this one admin conversation. `disteleplus_lock_chat_exempt_admins` (default on) keeps the full UI for admins.
+**Chat lock (optional, `disteleplus_lock_chat_ui`):** the header chat button opens the bridged conversation directly (not the drawer/index), all chat hub routes redirect there, and creating channels/DMs is hidden client-side and refused server-side (Guardian) — chat becomes this one admin conversation. `disteleplus_lock_chat_exempt_admins` (default on) keeps the full UI for admins.
 
 **Setup (once, ~5 minutes):**
 

@@ -72,10 +72,18 @@ module DiscourseDisteleplus
     # Telegram HTML-mode body for an outbound chat message. Always prefixed
     # with the Discourse author (bots cannot impersonate). HTML parse mode is
     # used because, unlike Markdown mode, stray underscores/asterisks in user
-    # text cannot break it — everything user-supplied is escaped.
+    # text cannot break it — everything user-supplied is escaped. Emoji
+    # shortcodes (:grin: etc.) become real unicode so Telegram renders them.
     def self.outbound_html(username, text)
-      body = escape_html(text.to_s)
+      body = escape_html(emojify(text.to_s))
       body.blank? ? "<b>#{escape_html(username)}</b>" : "<b>#{escape_html(username)}:</b> #{body}"
+    end
+
+    # :grin: → 😁 via core's emoji db; guarded so the formatter stays usable
+    # outside a full Discourse boot (pure-unit specs, console experiments).
+    def self.emojify(text)
+      return text unless defined?(::Emoji) && ::Emoji.respond_to?(:gsub_emoji_to_unicode)
+      ::Emoji.gsub_emoji_to_unicode(text) || text
     end
 
     def self.escape_html(text)

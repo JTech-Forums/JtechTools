@@ -1,7 +1,12 @@
 // Disteleplus chat lock — makes Discourse Chat exist solely for the bridged
 // admin channel. When `disteleplus_lock_chat_ui` is on:
-//   * any chat "hub" route (index, browse, DMs, new-message) redirects
-//     straight to the bridge channel, so the header chat button lands there;
+//   * the header chat button goes STRAIGHT to the bridged conversation
+//     (capture-phase intercept on .chat-header-icon — verified against
+//     core's chat/header/icon.gjs markup — since the button's own action
+//     opens the drawer/index, not a channel);
+//   * any chat "hub" route (index, channels, DMs, threads, browse,
+//     new-message) redirects to the bridge channel as a backstop for
+//     keyboard shortcuts and deep links;
 //   * a body class scopes CSS (disteleplus.scss) that hides the create-DM /
 //     create-channel / browse affordances.
 // This is the cosmetic half; the real enforcement is the Guardian prepend in
@@ -13,6 +18,7 @@ const BLOCKED_ROUTES = [
   /^\/chat\/?$/,
   /^\/chat\/direct-messages(\/|$)/,
   /^\/chat\/channels(\/|$)/,
+  /^\/chat\/threads(\/|$)/,
   /^\/chat\/browse(\/|$)/,
   /^\/chat\/new-message(\/|$)/,
 ];
@@ -42,6 +48,18 @@ export default {
 
     withPluginApi("1.0", (api) => {
       document.body.classList.add("disteleplus-chat-locked");
+
+      document.addEventListener(
+        "click",
+        (event) => {
+          if (event.target?.closest?.(".chat-header-icon")) {
+            event.preventDefault();
+            event.stopPropagation();
+            DiscourseURL.routeTo(channelUrl);
+          }
+        },
+        { capture: true }
+      );
 
       api.onPageChange((url) => {
         const path = url.split("?")[0];

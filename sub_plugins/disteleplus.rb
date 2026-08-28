@@ -178,9 +178,37 @@ after_initialize do
     on(event) { |*args| DiscourseDisteleplus.handle_chat_event(event, args) }
   end
 
-  # Reaction event name is not stable across chat versions; registering a
-  # listener for an event that never fires is harmless.
+  # Chat fires NO DiscourseEvent for reactions (verified against core:
+  # plugins/chat triggers only created/edited/trashed/restored/processed),
+  # so Discourse → Telegram reaction bridging observes MessageReactor#react!
+  # directly. Fires only after a successful reaction; TG-originated reactions
+  # applied through this same reactor are skipped by the bridging? guard in
+  # handle_reaction_event. The listener below stays as a freebie in case a
+  # future chat version adds the event — double delivery is harmless because
+  # the "react" job just re-asserts the current reaction state.
   on(:chat_message_reacted) { |*args| DiscourseDisteleplus.handle_reaction_event(args) }
+
+  reloadable_patch do
+    if defined?(::Chat::MessageReactor) && ::Chat::MessageReactor.method_defined?(:react!)
+      ::Chat::MessageReactor.prepend(
+        Module.new do
+          def react!(message_id:, react_action:, emoji:)
+            result = super
+            begin
+              message = ::Chat::Message.find_by(id: message_id)
+              user = instance_variable_get(:@user)
+              ::DiscourseDisteleplus.handle_reaction_event([message, user].compact) if message
+            rescue StandardError => e
+              Rails.logger.warn(
+                "#{::DiscourseDisteleplus::LOG_TAG} reaction observe failed: #{e.message}",
+              )
+            end
+            result
+          end
+        end,
+      )
+    end
+  end
 
   # ── Chat lock: server-side enforcement ────────────────────────────────────
   # The client initializer hides the UI; this makes the restriction real.

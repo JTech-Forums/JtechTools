@@ -42,6 +42,10 @@ RSpec.describe DiscourseDisteleplus::Formatter do
     it "handles empty bodies" do
       expect(described_class.outbound_html("zev", "")).to eq("<b>zev</b>")
     end
+
+    it "converts emoji shortcodes to unicode for Telegram" do
+      expect(described_class.outbound_html("zev", "nice :grin:")).to eq("<b>zev:</b> nice 😁")
+    end
   end
 
   describe ".poll_markdown" do
