@@ -617,7 +617,9 @@ en:
     disteleplus_forum_upload_topic_id: Telegram message_thread_id of the
       archive topic. Create the topic in the bridged supergroup, send a message
       there, and read message_thread_id from the bot update. This must differ
-      from {{setting:disteleplus_chat_topic_id}}.
+      from {{setting:disteleplus_chat_topic_id}}. Do not use 1 — that is the
+      group's General topic, Telegram refuses it as a thread id, and every
+      archive send fails; run /disteleplus_create_uploads in Telegram instead.
 
     disteleplus_forum_upload_topic_name: Human-readable name shown by setup
       commands and used when the bot creates the archive topic. Telegram still

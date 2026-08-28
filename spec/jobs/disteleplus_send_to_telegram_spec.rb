@@ -63,6 +63,12 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       )
     end
 
+    it "treats topic id 1 as General and omits the thread id" do
+      SiteSetting.disteleplus_chat_topic_id = 1
+      run("create")
+      expect(api).to have_received(:call).with("sendMessage", a_hash_excluding(:message_thread_id))
+    end
+
     it "escapes HTML in the message body" do
       allow(chat_message).to receive(:message).and_return("<script>x & y</script>")
       run("create")

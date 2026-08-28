@@ -94,7 +94,10 @@ module DiscourseDisteleplus
       upload_id = SiteSetting.disteleplus_forum_upload_topic_id.to_i
       group_state = configured_chat == chat_id.to_s ? "this group" : "another/unbound group"
       upload_state =
-        if upload_id.positive?
+        if DiscourseDisteleplus.general_topic?(upload_id) && upload_id.positive?
+          "⚠️ topic id 1 is General — archive sends fail; run " \
+            "<code>/disteleplus_create_uploads Uploads</code>"
+        elsif upload_id.positive?
           "#{escape(upload_name)} (<code>#{upload_id}</code>)"
         else
           "not bound"
