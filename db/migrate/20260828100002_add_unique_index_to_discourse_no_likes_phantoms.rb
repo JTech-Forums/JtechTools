@@ -5,9 +5,10 @@
 # purge run re-inserted the entire audit table. De-duplicate, then add the
 # unique index the insert can target.
 #
-# Discourse's safe-migrate guard requires dropping a possibly-invalid
-# leftover index before CREATE INDEX CONCURRENTLY (a failed concurrent build
-# leaves an "invalid" index behind), hence the DROP INDEX IF EXISTS first.
+# Discourse's safe-migrate guard requires a possibly-invalid leftover index
+# to be dropped before CREATE INDEX CONCURRENTLY, and it recognises the drop
+# only through ActiveRecord's remove_index (which registers the index name)
+# — a raw DROP INDEX statement does not satisfy it.
 class AddUniqueIndexToDiscourseNoLikesPhantoms < ActiveRecord::Migration[7.2]
   disable_ddl_transaction!
 
@@ -21,14 +22,22 @@ class AddUniqueIndexToDiscourseNoLikesPhantoms < ActiveRecord::Migration[7.2]
          AND a.reaction_type = b.reaction_type
     SQL
 
-    execute "DROP INDEX IF EXISTS idx_dnl_phantoms_unique_reaction"
-    execute <<~SQL
-      CREATE UNIQUE INDEX CONCURRENTLY idx_dnl_phantoms_unique_reaction
-      ON discourse_no_likes_phantoms (post_id, user_id, reaction_type)
-    SQL
+    remove_index :discourse_no_likes_phantoms,
+                 name: "idx_dnl_phantoms_unique_reaction",
+                 algorithm: :concurrently,
+                 if_exists: true
+
+    add_index :discourse_no_likes_phantoms,
+              %i[post_id user_id reaction_type],
+              unique: true,
+              algorithm: :concurrently,
+              name: "idx_dnl_phantoms_unique_reaction"
   end
 
   def down
-    execute "DROP INDEX IF EXISTS idx_dnl_phantoms_unique_reaction"
+    remove_index :discourse_no_likes_phantoms,
+                 name: "idx_dnl_phantoms_unique_reaction",
+                 algorithm: :concurrently,
+                 if_exists: true
   end
 end
