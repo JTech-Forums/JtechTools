@@ -18,6 +18,7 @@ register_html_builder("server:before-head-close") do |controller|
   user = controller.current_user
   next "" if user.blank? || user.staff?
   next "" unless SiteSetting.mini_mod_enabled
+  next "" unless SiteSetting.mini_mod_preload_admin_bundle
   next "" unless SiteSetting.enable_category_group_moderation
 
   guardian = Guardian.new(user)

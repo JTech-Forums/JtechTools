@@ -17,7 +17,8 @@ export default {
     if (
       !currentUser ||
       !currentUser.staff ||
-      !siteSettings.topic_footer_message_enabled
+      !siteSettings.mod_categories_enabled ||
+      !siteSettings.mod_pin_post_enabled
     ) {
       return;
     }

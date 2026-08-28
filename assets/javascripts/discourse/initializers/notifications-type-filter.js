@@ -11,7 +11,12 @@ import NotificationsTypeFilter from "../components/notifications-type-filter";
 export default {
   name: "discourse-mod-notifications-type-filter",
 
-  initialize() {
+  initialize(container) {
+    const siteSettings = container.lookup("service:site-settings");
+    if (!siteSettings.mod_notification_type_filter_enabled) {
+      return;
+    }
+
     withPluginApi("1.8.0", (api) => {
       // Renders directly inside `<div class="user-notifications-filter">`,
       // right after Discourse's built-in NotificationsFilter — so the two

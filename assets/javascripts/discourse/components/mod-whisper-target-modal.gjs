@@ -19,6 +19,7 @@ import { i18n } from "discourse-i18n";
 // entry to either a user id or a group id. Badge selection is independent.
 export default class ModWhisperTargetModal extends Component {
   @service store;
+  @service siteSettings;
 
   @tracked selection = this.#initialSelection();
   @tracked selectedBadgeIds = this.#initialBadgeIds();
@@ -51,6 +52,10 @@ export default class ModWhisperTargetModal extends Component {
 
   async #loadBadges() {
     try {
+      if (!this.siteSettings.mod_whisper_badge_targeting_enabled) {
+        this.badgeChoices = [];
+        return;
+      }
       const list = await this.store.findAll("badge");
       this.badgeChoices = (list?.content || list || [])
         .filter((b) => b?.enabled !== false)

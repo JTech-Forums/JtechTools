@@ -103,16 +103,20 @@ module ::DiscourseModCategories
     return nil unless user
     return nil unless SiteSetting.mod_categories_enabled
 
-    # --- Targeted checklists (override trust level and staff status) ---
+    # --- Targeted checklists (override trust level and moderator status) ---
+    # Admins are exempt: a moderator-authored targeted checklist must never
+    # be able to gate an admin's posting.
     targeted_accepted = user.custom_fields[USER_TARGETED_CHECKLIST_FIELD]
     targeted_accepted = {} unless targeted_accepted.is_a?(Hash)
 
     owed_targeted =
-      targeted_checklists.find do |checklist|
-        items = checklist["items"]
-        next false unless items.is_a?(Array) && items.any?
-        next false if Array(checklist["user_ids"]).map(&:to_i).exclude?(user.id)
-        checklist["version"].to_i > targeted_accepted[checklist["id"]].to_i
+      if SiteSetting.mod_targeted_checklists_enabled && !user.admin?
+        targeted_checklists.find do |checklist|
+          items = checklist["items"]
+          next false unless items.is_a?(Array) && items.any?
+          next false if Array(checklist["user_ids"]).map(&:to_i).exclude?(user.id)
+          checklist["version"].to_i > targeted_accepted[checklist["id"]].to_i
+        end
       end
 
     if owed_targeted
@@ -134,7 +138,7 @@ module ::DiscourseModCategories
     # per-user-version-tracked) or "every_reply" (always prompt). A
     # max_tl cap filters higher-trust non-staff users out. Targeted
     # checklists already short-circuited above so they always show.
-    if topic_id.present?
+    if topic_id.present? && SiteSetting.mod_topic_prompt_checklist_enabled
       topic_checklist = topic_prompt_checklist(topic_id)
       if topic_checklist
         mode = topic_checklist["mode"].to_s
@@ -189,6 +193,7 @@ module ::DiscourseModCategories
 
     # --- Forum-wide checklist (staff excluded, trust-level cap) ---
     return nil if user.staff?
+    return nil unless SiteSetting.mod_first_post_checklist_enabled
 
     config = checklist_config
     return nil unless config
@@ -323,6 +328,7 @@ after_initialize do
       next unless read
       next unless notification_type == ::Notification.types[:custom]
       next if data.to_s.exclude?('"mod_note":true')
+      next unless SiteSetting.mod_categories_enabled && SiteSetting.mod_notes_feed_enabled
       user = ::User.find_by(id: user_id)
       user&.publish_notifications_state
     end
@@ -382,33 +388,63 @@ after_initialize do
 
   # Expose the per-topic messages to the topic view so the frontend can
   # read them without an extra request.
-  add_to_serializer(:topic_view, :mod_topic_footer_message) do
-    object.topic.custom_fields[DiscourseModCategories::TOPIC_FOOTER_FIELD]
-  end
-  add_to_serializer(:topic_view, :mod_topic_reply_prompt) do
-    object.topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD]
-  end
-  add_to_serializer(:topic_view, :mod_topic_reply_prompt_max_tl) do
-    object.topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD]
-  end
-  add_to_serializer(:topic_view, :mod_topic_pinned_post_id) do
-    object.topic.custom_fields[DiscourseModCategories::TOPIC_PINNED_POST_FIELD]
-  end
+  add_to_serializer(
+    :topic_view,
+    :mod_topic_footer_message,
+    include_condition: -> do
+      SiteSetting.mod_categories_enabled && SiteSetting.topic_footer_message_enabled
+    end,
+  ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_FOOTER_FIELD] }
+  add_to_serializer(
+    :topic_view,
+    :mod_topic_reply_prompt,
+    include_condition: -> do
+      SiteSetting.mod_categories_enabled && SiteSetting.topic_reply_prompt_enabled
+    end,
+  ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD] }
+  add_to_serializer(
+    :topic_view,
+    :mod_topic_reply_prompt_max_tl,
+    include_condition: -> do
+      SiteSetting.mod_categories_enabled && SiteSetting.topic_reply_prompt_enabled
+    end,
+  ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD] }
+  add_to_serializer(
+    :topic_view,
+    :mod_topic_pinned_post_id,
+    include_condition: -> do
+      SiteSetting.mod_categories_enabled && SiteSetting.mod_pin_post_enabled
+    end,
+  ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_PINNED_POST_FIELD] }
   # The pinned post's render data, attached to the topic so the bottom-copy
   # connector renders without needing the post to be in the currently-loaded
   # `postStream.posts` window — pinning a post far above the current scroll
   # position would otherwise leave the footer blank until reload.
-  add_to_serializer(:topic_view, :mod_topic_pinned_post) do
-    DiscourseModCategories.serialized_pinned_post(object.topic)
-  end
-  add_to_serializer(:topic_view, :mod_topic_require_reply_approval) do
-    !!object.topic.custom_fields[DiscourseModCategories::TOPIC_REQUIRE_REPLY_APPROVAL_FIELD]
-  end
+  add_to_serializer(
+    :topic_view,
+    :mod_topic_pinned_post,
+    include_condition: -> do
+      SiteSetting.mod_categories_enabled && SiteSetting.mod_pin_post_enabled
+    end,
+  ) { DiscourseModCategories.serialized_pinned_post(object.topic) }
+  add_to_serializer(
+    :topic_view,
+    :mod_topic_require_reply_approval,
+    include_condition: -> do
+      SiteSetting.mod_categories_enabled && SiteSetting.mod_topic_require_reply_approval_enabled
+    end,
+  ) { !!object.topic.custom_fields[DiscourseModCategories::TOPIC_REQUIRE_REPLY_APPROVAL_FIELD] }
 
   # The per-topic prompt checklist — surfaced on the topic so the
   # frontend editor modal can read its current state, and the gate can
   # detect an active checklist without an extra round trip.
-  add_to_serializer(:topic_view, :mod_topic_prompt_checklist) do
+  add_to_serializer(
+    :topic_view,
+    :mod_topic_prompt_checklist,
+    include_condition: -> do
+      SiteSetting.mod_categories_enabled && SiteSetting.mod_topic_prompt_checklist_enabled
+    end,
+  ) do
     raw = object.topic.custom_fields[DiscourseModCategories::TOPIC_PROMPT_CHECKLIST_FIELD]
     raw =
       begin
@@ -447,18 +483,27 @@ after_initialize do
   add_to_serializer(
     :topic_view,
     :mod_topic_private_note,
-    include_condition: -> { scope.is_staff? },
+    include_condition: -> do
+      scope.is_staff? && SiteSetting.mod_categories_enabled &&
+        SiteSetting.mod_topic_private_notes_enabled
+    end,
   ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_PRIVATE_NOTE_FIELD] }
   add_to_serializer(
     :topic_view,
     :mod_topic_private_note_position,
-    include_condition: -> { scope.is_staff? },
+    include_condition: -> do
+      scope.is_staff? && SiteSetting.mod_categories_enabled &&
+        SiteSetting.mod_topic_private_notes_enabled
+    end,
   ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_PRIVATE_NOTE_POSITION_FIELD] }
   # Who set the note — staff only, so the note can be shown like a post.
   add_to_serializer(
     :topic_view,
     :mod_topic_private_note_author,
-    include_condition: -> { scope.is_staff? },
+    include_condition: -> do
+      scope.is_staff? && SiteSetting.mod_categories_enabled &&
+        SiteSetting.mod_topic_private_notes_enabled
+    end,
   ) do
     user_id = object.topic.custom_fields[DiscourseModCategories::TOPIC_PRIVATE_NOTE_USER_FIELD]
     user = user_id && User.find_by(id: user_id)
@@ -467,13 +512,19 @@ after_initialize do
   add_to_serializer(
     :topic_view,
     :mod_topic_private_note_created_at,
-    include_condition: -> { scope.is_staff? },
+    include_condition: -> do
+      scope.is_staff? && SiteSetting.mod_categories_enabled &&
+        SiteSetting.mod_topic_private_notes_enabled
+    end,
   ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_PRIVATE_NOTE_CREATED_AT_FIELD] }
   # The thread of staff replies to the note.
   add_to_serializer(
     :topic_view,
     :mod_topic_private_note_replies,
-    include_condition: -> { scope.is_staff? },
+    include_condition: -> do
+      scope.is_staff? && SiteSetting.mod_categories_enabled &&
+        SiteSetting.mod_topic_private_notes_enabled
+    end,
   ) do
     raw = object.topic.custom_fields[DiscourseModCategories::TOPIC_PRIVATE_NOTE_REPLIES_FIELD]
     entries = raw.is_a?(Array) ? raw : []
@@ -500,7 +551,10 @@ after_initialize do
   add_to_serializer(
     :topic_view,
     :mod_topic_note_viewers,
-    include_condition: -> { scope.is_staff? },
+    include_condition: -> do
+      scope.is_staff? && SiteSetting.mod_categories_enabled &&
+        SiteSetting.mod_note_view_tracking_enabled
+    end,
   ) do
     raw = object.topic.custom_fields[DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD]
     Array(raw).map do |entry|
@@ -518,7 +572,13 @@ after_initialize do
   # from the same unread Notification rows that drive the standard avatar
   # bell dot, so reading a mod-note from the bell decrements this count and
   # opening the shield tab (which marks the rows read) decrements the bell.
-  add_to_serializer(:current_user, :mod_note_unread_count) do
+  add_to_serializer(
+    :current_user,
+    :mod_note_unread_count,
+    include_condition: -> do
+      SiteSetting.mod_categories_enabled && SiteSetting.mod_notes_feed_enabled
+    end,
+  ) do
     next 0 unless object.staff?
 
     ::Notification
@@ -544,6 +604,8 @@ after_initialize do
   # are routed to the review queue instead of being published directly.
   # This is the per-topic analogue of a category's require_reply_approval.
   NewPostManager.add_handler do |manager|
+    next nil unless SiteSetting.mod_categories_enabled
+    next nil unless SiteSetting.mod_topic_require_reply_approval_enabled
     topic_id = manager.args[:topic_id]
     next nil if topic_id.blank?
 
@@ -561,9 +623,13 @@ after_initialize do
   # composer can read it for the category a new topic is being created in.
   Site.preloaded_category_custom_fields << DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD
   Site.preloaded_category_custom_fields << DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD
-  add_to_serializer(:basic_category, :mod_category_new_topic_prompt) do
-    object.custom_fields[DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD]
-  end
+  add_to_serializer(
+    :basic_category,
+    :mod_category_new_topic_prompt,
+    include_condition: -> do
+      SiteSetting.mod_categories_enabled && SiteSetting.precheck_new_topic_enabled
+    end,
+  ) { object.custom_fields[DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD] }
 
   # ---------------------------------------------------------------------
   # Moderator whisper
@@ -599,7 +665,11 @@ after_initialize do
 
   # Expose the topic's cumulative whisper participants so the composer can
   # tell whether the current (non-staff) user may whisper back.
-  add_to_serializer(:topic_view, :mod_whisper_participant_ids) do
+  add_to_serializer(
+    :topic_view,
+    :mod_whisper_participant_ids,
+    include_condition: -> { SiteSetting.mod_whisper_enabled },
+  ) do
     raw = object.topic.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]
     Array(raw).map(&:to_i)
   end
@@ -820,6 +890,10 @@ after_initialize do
   # via specs in whisper_unread_badge_spec.rb so we'd see breakage early.
   register_modifier(:topic_query_create_list_topics) do |scope, _options, topic_query|
     begin
+      # With whispers off there is nothing to hide — skip the JOIN + reorder
+      # entirely instead of rewriting every topic-list query for nothing.
+      next scope unless SiteSetting.mod_whisper_enabled
+
       user = topic_query.user
 
       # Staff are in the audience for every whisper — sort by live bumped_at.
@@ -978,9 +1052,13 @@ after_initialize do
       object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
   end
 
-  add_to_serializer(:basic_category, :mod_category_new_topic_prompt_max_tl) do
-    object.custom_fields[DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD]
-  end
+  add_to_serializer(
+    :basic_category,
+    :mod_category_new_topic_prompt_max_tl,
+    include_condition: -> do
+      SiteSetting.mod_categories_enabled && SiteSetting.precheck_new_topic_enabled
+    end,
+  ) { object.custom_fields[DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD] }
 
   # Audience-aware highest_post_number for the topic list. Returns the max
   # post_number in the topic that the CURRENT user can see — whispers are
@@ -1439,6 +1517,8 @@ after_initialize do
     module ::DiscourseModCategories
       module NotificationsControllerTypeFilter
         def index
+          return super unless SiteSetting.mod_notification_type_filter_enabled
+
           requested_type = params[:type].to_s.strip
           return super if requested_type.blank? || requested_type == "all"
 

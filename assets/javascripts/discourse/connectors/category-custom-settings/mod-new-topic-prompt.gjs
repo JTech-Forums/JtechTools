@@ -15,7 +15,13 @@ import { trustLevelOptions } from "../../lib/trust-level-options";
 // the Guardian-gated plugin endpoint. Only rendered for existing
 // categories (a new, unsaved category has no id).
 export default class ModNewTopicPrompt extends Component {
-  static shouldRender(args) {
+  static shouldRender(args, context) {
+    if (
+      !context?.siteSettings?.mod_categories_enabled ||
+      !context?.siteSettings?.precheck_new_topic_enabled
+    ) {
+      return false;
+    }
     return !!(args && args.category && args.category.id);
   }
 

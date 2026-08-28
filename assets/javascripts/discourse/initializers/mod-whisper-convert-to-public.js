@@ -24,7 +24,8 @@ export default {
     if (
       !currentUser ||
       !currentUser.staff ||
-      !siteSettings.mod_whisper_enabled
+      !siteSettings.mod_whisper_enabled ||
+      !siteSettings.mod_whisper_convert_enabled
     ) {
       return;
     }

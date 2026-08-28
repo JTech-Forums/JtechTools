@@ -31,6 +31,7 @@ module ::DiscourseModCategories
     # the acceptance audit log for the moderator config page.
     def show
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_first_post_checklist_enabled)
       render json:
                checklist_json(DiscourseModCategories.checklist_config).merge(
                  log: acceptance_log,
@@ -42,6 +43,7 @@ module ::DiscourseModCategories
     # already accepted an older version are prompted again.
     def update
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_first_post_checklist_enabled)
 
       items = parse_items(params[:items])
       existing = DiscourseModCategories.checklist_config || {}
@@ -119,6 +121,7 @@ module ::DiscourseModCategories
     # their next post, by zeroing their recorded accepted version.
     def require_reaccept
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_first_post_checklist_enabled)
 
       user = find_target_user
       raise Discourse::NotFound unless user
@@ -132,6 +135,7 @@ module ::DiscourseModCategories
     # Creates a targeted checklist with a stable id, starting at version 1.
     def create_targeted
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_targeted_checklists_enabled)
 
       checklist = {
         "id" => SecureRandom.hex(8),
@@ -152,6 +156,7 @@ module ::DiscourseModCategories
     # users are re-prompted.
     def update_targeted
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_targeted_checklists_enabled)
 
       checklists = DiscourseModCategories.targeted_checklists
       checklist = checklists.find { |c| c["id"] == params[:id].to_s }
@@ -171,6 +176,7 @@ module ::DiscourseModCategories
     # Removes a targeted checklist.
     def delete_targeted
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_targeted_checklists_enabled)
 
       checklists = DiscourseModCategories.targeted_checklists
       remaining = checklists.reject { |c| c["id"] == params[:id].to_s }
@@ -190,6 +196,7 @@ module ::DiscourseModCategories
       topic = Topic.find_by(id: params[:topic_id])
       raise Discourse::NotFound unless topic
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_topic_prompt_checklist_enabled)
 
       render json: topic_checklist_json(topic)
     end
@@ -204,6 +211,7 @@ module ::DiscourseModCategories
       topic = Topic.find_by(id: params[:topic_id])
       raise Discourse::NotFound unless topic
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_topic_prompt_checklist_enabled)
 
       mode = params[:mode].to_s
       mode = "checklist" if %w[statement checklist].exclude?(mode)
@@ -243,6 +251,7 @@ module ::DiscourseModCategories
       topic = Topic.find_by(id: params[:topic_id])
       raise Discourse::NotFound unless topic
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_topic_prompt_checklist_enabled)
 
       topic.custom_fields[TOPIC_FIELD] = nil
       topic.save_custom_fields(true)
@@ -251,6 +260,12 @@ module ::DiscourseModCategories
     end
 
     private
+
+    # 404s when a per-feature toggle is off, so each checklist flavour can be
+    # revoked individually from the plugin settings.
+    def ensure_feature!(setting)
+      raise Discourse::NotFound unless SiteSetting.public_send(setting)
+    end
 
     # Resolves the user named by a `username` or `user_id` param.
     def find_target_user

@@ -15,7 +15,8 @@ export default {
     if (
       !currentUser ||
       !currentUser.staff ||
-      !siteSettings.mod_whisper_enabled
+      !siteSettings.mod_whisper_enabled ||
+      !siteSettings.mod_whisper_add_participant_enabled
     ) {
       return;
     }

@@ -9,7 +9,15 @@ import { i18n } from "discourse-i18n";
 export default {
   name: "discourse-mod-pin-decorate",
 
-  initialize() {
+  initialize(container) {
+    const siteSettings = container.lookup("service:site-settings");
+    if (
+      !siteSettings.mod_categories_enabled ||
+      !siteSettings.mod_pin_post_enabled
+    ) {
+      return;
+    }
+
     withPluginApi("1.0", (api) => {
       api.decorateCookedElement(
         (element, helper) => {

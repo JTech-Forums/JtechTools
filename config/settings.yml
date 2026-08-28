@@ -50,6 +50,15 @@ jtech_dislike:
     default: true
     client: false
 
+  # How far back the "liked" notification cleanup looks — under Sidekiq
+  # backlog the old hard-coded 30s window could miss and leave the
+  # notification standing.
+  dislike_notification_cleanup_window_seconds:
+    default: 30
+    client: false
+    min: 5
+    max: 600
+
   # Maintenance — toggle on to retroactively clear; auto-resets after run.
   purge_phantom_likes_now:
     default: false
@@ -102,7 +111,19 @@ jtech_mini_mod:
     default: false
     client: true
 
-  # What category group moderators are allowed to do.
+  # What category group moderators are allowed to do — one toggle per grant.
+  mini_mod_can_create_categories:
+    default: true
+    client: false
+  mini_mod_can_edit_categories:
+    default: true
+    client: false
+  mini_mod_can_edit_topics:
+    default: true
+    client: false
+  mini_mod_can_move_topics:
+    default: true
+    client: false
   mini_mod_manage_all_categories:
     default: false
     client: true
@@ -114,6 +135,9 @@ jtech_mini_mod:
     client: false
   mini_mod_can_reopen_topics:
     default: false
+    client: false
+  mini_mod_preload_admin_bundle:
+    default: true
     client: false
 
 # ───────────────────────────────────────────────────────────────────────────
@@ -129,28 +153,72 @@ trust_level_4:
     client: false
 
 # ───────────────────────────────────────────────────────────────────────────
-# Jtech — Mod (moderator topic tools: pre-checks, whispers, footers, etc.)
+# Jtech — Mod (master switch + the moderator category powers)
+# Every moderator grant in this module has its own toggle, split across the
+# jtech_mod_* subtabs below, so an admin can see and revoke each one.
 # ───────────────────────────────────────────────────────────────────────────
 jtech_mod:
-  # Master switch.
+  # Master switch for the whole module (except whispers, which have their
+  # own independent master on the Whispers subtab).
   mod_categories_enabled:
     default: false
     client: true
 
-  # Per-feature toggles.
-  precheck_new_topic_enabled:
+  # Moderator category powers (any moderator, site-wide).
+  mod_moderators_can_create_categories:
     default: true
-    client: true
-  topic_footer_message_enabled:
+    client: false
+  mod_moderators_can_edit_categories:
     default: true
-    client: true
-  topic_reply_prompt_enabled:
+    client: false
+  mod_moderators_can_delete_categories:
     default: true
-    client: true
+    client: false
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Mod: Whispers
+# ───────────────────────────────────────────────────────────────────────────
+jtech_mod_whispers:
   mod_whisper_enabled:
     default: true
     client: true
+  mod_whisper_add_participant_enabled:
+    default: true
+    client: true
+  mod_whisper_convert_enabled:
+    default: true
+    client: true
+  mod_whisper_badge_targeting_enabled:
+    default: true
+    client: true
 
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Mod: Notes (private staff notes on topics)
+# ───────────────────────────────────────────────────────────────────────────
+jtech_mod_notes:
+  mod_topic_private_notes_enabled:
+    default: true
+    client: true
+  # Off by default: previously any moderator could silently rewrite or
+  # delete another staff member's note or reply. Authors and admins always
+  # can; this opts other moderators in.
+  mod_moderators_can_edit_others_notes:
+    default: false
+    client: false
+  mod_note_view_tracking_enabled:
+    default: true
+    client: true
+  mod_notes_feed_enabled:
+    default: true
+    client: true
+  mod_notify_staff_on_topic_notes:
+    default: true
+    client: false
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Mod: Staff notifications
+# ───────────────────────────────────────────────────────────────────────────
+jtech_mod_notifications:
   mod_notify_staff_on_post_actions:
     default: true
     client: false
@@ -163,6 +231,49 @@ jtech_mod:
   mod_notify_staff_on_flag_notes:
     default: true
     client: false
+  mod_auto_mark_notifications_seen:
+    default: true
+    client: true
+  mod_notification_type_filter_enabled:
+    default: true
+    client: true
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Mod: Topic tools
+# ───────────────────────────────────────────────────────────────────────────
+jtech_mod_topic_tools:
+  precheck_new_topic_enabled:
+    default: true
+    client: true
+  topic_footer_message_enabled:
+    default: true
+    client: true
+  topic_reply_prompt_enabled:
+    default: true
+    client: true
+  mod_pin_post_enabled:
+    default: true
+    client: true
+  mod_topic_require_reply_approval_enabled:
+    default: true
+    client: true
+  mod_pm_badge_group_enabled:
+    default: true
+    client: true
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Mod: Checklists
+# ───────────────────────────────────────────────────────────────────────────
+jtech_mod_checklists:
+  mod_first_post_checklist_enabled:
+    default: true
+    client: true
+  mod_targeted_checklists_enabled:
+    default: true
+    client: false
+  mod_topic_prompt_checklist_enabled:
+    default: true
+    client: true
 
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech — Smart search (synonym query expansion)
@@ -198,6 +309,11 @@ jtech_popup_notifications:
     default: false
     client: true
   # Seconds the toast stays on screen before auto-dismissing.
+  popup_notifications_max_stack:
+    default: 3
+    client: true
+    min: 1
+    max: 10
   popup_notifications_timeout_seconds:
     default: 20
     client: true

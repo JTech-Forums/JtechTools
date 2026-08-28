@@ -184,7 +184,10 @@ after_initialize do
           topic_id: post.topic_id,
           post_number: post.post_number,
         )
-        .where("created_at >= ?", 30.seconds.ago)
+        .where(
+          "created_at >= ?",
+          SiteSetting.dislike_notification_cleanup_window_seconds.seconds.ago,
+        )
         .destroy_all
     end
   end

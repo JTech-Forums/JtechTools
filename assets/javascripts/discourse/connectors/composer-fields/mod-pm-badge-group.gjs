@@ -12,12 +12,21 @@ import ModPmBadgePicker from "../../components/mod-pm-badge-picker";
 // plugin code — the audience is the snapshot of holders at send time.
 export default class ModPmBadgeGroup extends Component {
   @service modal;
+  @service siteSettings;
+  @service currentUser;
 
   get composer() {
     return this.args.outletArgs?.model;
   }
 
   get show() {
+    if (
+      !this.siteSettings.mod_categories_enabled ||
+      !this.siteSettings.mod_pm_badge_group_enabled ||
+      !this.currentUser?.staff
+    ) {
+      return false;
+    }
     const composer = this.composer;
     if (!composer) {
       return false;

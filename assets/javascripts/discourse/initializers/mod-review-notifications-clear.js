@@ -21,7 +21,15 @@ const REVIEW_URL_RE = /^\/review(?:\/(\d+))?(?:\?.*)?$/;
 export default {
   name: "discourse-mod-review-notifications-clear",
 
-  initialize() {
+  initialize(container) {
+    const siteSettings = container.lookup("service:site-settings");
+    if (
+      !siteSettings.mod_categories_enabled ||
+      !siteSettings.mod_auto_mark_notifications_seen
+    ) {
+      return;
+    }
+
     withPluginApi("1.0", (api) => {
       const currentUser = api.getCurrentUser();
       if (!currentUser || !currentUser.staff) {

@@ -79,6 +79,16 @@ Replacing emoji and choosing reactions is **entirely native** — the plugin shi
 
 `public/dumbcourse.js` then builds its reaction list from `enabledReactions` (falling back to the old hardcoded set), and `reactionGlyph()` renders each reaction as: a custom-emoji `<img>` if one exists, else the unicode glyph (via the bundled `emoji_map.json` codepoints), else the raw name. So **anything you enable/upload natively shows in dumbcourse automatically — no code change, no rebuild beyond shipping this bridge once.**
 
+### Moderator powers — one toggle per grant
+
+Every right the mini-mod and mod-categories modules hand to moderators (or TL4 users) is individually gated by its own site setting, organized into per-feature admin tabs: **Jtech — Mod** (master + moderator category create/edit/delete), **Mod: Whispers**, **Mod: Notes**, **Mod: Staff notifications**, **Mod: Topic tools**, and **Mod: Checklists**. All toggles default to the previously shipped behavior, so upgrading changes nothing until you flip switches — with three deliberate security exceptions:
+
+- **Badge-member enumeration is staff-only.** `/discourse-mod-categories/badge-members/:id` (the PM "Add badge group" lookup) previously let *any* PM-capable user list every holder of any badge; it now requires moderator rights, and the composer button only renders for staff.
+- **Note entries belong to their author.** Editing/deleting another staff member's private-note or note reply now requires being an admin or the site opting in via `mod_moderators_can_edit_others_notes` (default off).
+- **Targeted checklists can't gate admins.** A moderator-authored targeted checklist previously overrode staff status entirely and could block an admin from posting; admins are now always exempt.
+
+Serializer exposures (footer texts, pinned-post HTML, reply-approval flags, note bodies, whisper participant lists, unread counters) also now respect the module master switch and their feature toggles instead of leaking whenever the plugin bundle was enabled.
+
 ### Disteleplus — Telegram ⇄ Discourse Chat bridge
 
 Bridges exactly **one Telegram group** with exactly **one Discourse Chat channel**, two-way, so an admin without Telegram can participate in the team's Telegram group from a chat channel (and everyone on Telegram sees their messages). Requires the official `chat` plugin to be enabled; everything no-ops gracefully when it isn't.

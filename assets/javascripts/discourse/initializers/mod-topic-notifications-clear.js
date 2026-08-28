@@ -16,7 +16,12 @@ const TOPIC_URL_RE = /^\/t\/[^/]+\/(\d+)(?:\/\d+)?\/?$/;
 export default {
   name: "discourse-mod-topic-notifications-clear",
 
-  initialize() {
+  initialize(container) {
+    const siteSettings = container.lookup("service:site-settings");
+    if (!siteSettings.mod_auto_mark_notifications_seen) {
+      return;
+    }
+
     withPluginApi("1.0", (api) => {
       const currentUser = api.getCurrentUser();
       if (!currentUser) {

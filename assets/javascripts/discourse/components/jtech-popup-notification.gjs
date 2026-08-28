@@ -21,7 +21,8 @@ import { i18n } from "discourse-i18n";
 //
 // Multiple notifications STACK one below another: the newest card sits at the
 // top-right (just below the header search) and older ones are pushed down,
-// each with its own auto-dismiss timer, up to MAX_TOASTS at once. A further
+// each with its own auto-dismiss timer, up to popup_notifications_max_stack
+// at once. A further
 // notification drops the oldest (bottom) card so the newest can take its
 // place. Clicking a card opens it (routes like the dropdown row); clicking
 // anywhere else dismisses them all.
@@ -38,7 +39,9 @@ import { i18n } from "discourse-i18n";
 const AVATAR_SIZE = 48;
 const EXCERPT_LENGTH = 120;
 const STALE_MS = 10000;
-const MAX_TOASTS = 3; // stack up to 3; a 4th drops the oldest (bottom) card
+// Stack depth comes from the popup_notifications_max_stack site setting;
+// 3 matches the historical hard-coded value.
+const DEFAULT_MAX_TOASTS = 3; // stack up to 3; a 4th drops the oldest (bottom) card
 const CUSTOM_TYPE = 14; // Notification.types[:custom]
 
 // notification_type (core enum, stable) → icon + action i18n key suffix.
@@ -213,7 +216,10 @@ export default class JtechPopupNotification extends Component {
     toast.timer = discourseLater(this, this.dismiss, toast, secs * 1000);
 
     const next = [toast, ...this.toasts];
-    while (next.length > MAX_TOASTS) {
+    const maxToasts =
+      parseInt(this.siteSettings.popup_notifications_max_stack, 10) ||
+      DEFAULT_MAX_TOASTS;
+    while (next.length > maxToasts) {
       const dropped = next.pop();
       cancel(dropped.timer);
       this.seen.delete(dropped.key);

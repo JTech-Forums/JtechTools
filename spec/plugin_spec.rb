@@ -93,6 +93,40 @@ RSpec.describe "DiscourseModCategories plugin.rb" do
     end
   end
 
+  describe "per-feature moderator toggle registration" do
+    it "registers a toggle for every moderator grant, defaulting to current behavior" do
+      %i[
+        mod_moderators_can_create_categories
+        mod_moderators_can_edit_categories
+        mod_moderators_can_delete_categories
+        mod_whisper_add_participant_enabled
+        mod_whisper_convert_enabled
+        mod_whisper_badge_targeting_enabled
+        mod_topic_private_notes_enabled
+        mod_note_view_tracking_enabled
+        mod_notes_feed_enabled
+        mod_notify_staff_on_topic_notes
+        mod_auto_mark_notifications_seen
+        mod_notification_type_filter_enabled
+        mod_pin_post_enabled
+        mod_topic_require_reply_approval_enabled
+        mod_pm_badge_group_enabled
+        mod_first_post_checklist_enabled
+        mod_targeted_checklists_enabled
+        mod_topic_prompt_checklist_enabled
+        mini_mod_can_create_categories
+        mini_mod_can_edit_categories
+        mini_mod_can_edit_topics
+        mini_mod_can_move_topics
+        mini_mod_preload_admin_bundle
+      ].each { |setting| expect(SiteSetting.defaults[setting]).to eq(true), setting.to_s }
+    end
+
+    it "defaults cross-staff note editing to off (security fix)" do
+      expect(SiteSetting.defaults[:mod_moderators_can_edit_others_notes]).to eq(false)
+    end
+  end
+
   describe "disteleplus settings registration" do
     it "registers the module master switch, off by default" do
       expect(SiteSetting.defaults[:disteleplus_enabled]).to eq(false)

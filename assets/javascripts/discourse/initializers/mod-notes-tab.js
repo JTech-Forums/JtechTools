@@ -7,7 +7,15 @@ import ModNotesPanel from "../components/mod-notes-panel";
 export default {
   name: "discourse-mod-notes-tab",
 
-  initialize() {
+  initialize(container) {
+    const siteSettings = container.lookup("service:site-settings");
+    if (
+      !siteSettings.mod_categories_enabled ||
+      !siteSettings.mod_notes_feed_enabled
+    ) {
+      return;
+    }
+
     withPluginApi("1.0", (api) => {
       api.registerUserMenuTab((UserMenuTab) => {
         return class extends UserMenuTab {

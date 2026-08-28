@@ -10,6 +10,11 @@ en:
       jtech_smart_search: Jtech — Smart search
       jtech_popup_notifications: Jtech — Desktop pop-ups
       jtech_disteleplus: Jtech — Disteleplus
+      jtech_mod_whispers: "Jtech — Mod: Whispers"
+      jtech_mod_notes: "Jtech — Mod: Notes"
+      jtech_mod_notifications: "Jtech — Mod: Staff notifications"
+      jtech_mod_topic_tools: "Jtech — Mod: Topic tools"
+      jtech_mod_checklists: "Jtech — Mod: Checklists"
 
     # ── Jtech (master) ─────────────────────────────────────────────────────
     jtech_enabled: Enable the Jtech plugin bundle
@@ -41,6 +46,11 @@ en:
     dislike_count_in_leaderboard: Count phantom likes in user stats
     dislike_count_in_leaderboard_description: When on, phantom likes
       increment likes_given / likes_received counters used by leaderboards.
+
+    dislike_notification_cleanup_window_seconds: Liked-notification cleanup window (seconds)
+    dislike_notification_cleanup_window_seconds_description: How far back the
+      phantom-like cleanup looks when retro-deleting the "liked" notification.
+      Raise it if Sidekiq backlogs let notifications slip through.
 
     dislike_record_audit_trail: Record audit trail of phantom likes
     dislike_record_audit_trail_description: When on, every phantom like is
@@ -83,6 +93,31 @@ en:
     mini_mod_enabled_description: Lets category group moderators create
       and edit categories they moderate, plus optional extras below.
 
+    mini_mod_can_create_categories: Mini-mods can create categories
+    mini_mod_can_create_categories_description: Category group moderators may
+      create categories (subcategories under ones they moderate, or anywhere
+      with "manage all categories").
+
+    mini_mod_can_edit_categories: Mini-mods can edit categories
+    mini_mod_can_edit_categories_description: Category group moderators may
+      edit the categories they moderate (or all, with "manage all
+      categories").
+
+    mini_mod_can_edit_topics: Mini-mods can edit any topic
+    mini_mod_can_edit_topics_description: With "manage all categories" on,
+      category group moderators may edit any topic they can see, unless its
+      first post is locked.
+
+    mini_mod_can_move_topics: Mini-mods can move topics between categories
+    mini_mod_can_move_topics_description: Category group moderators may move
+      topics into categories they moderate (or any they can see, with
+      "manage all categories").
+
+    mini_mod_preload_admin_bundle: Preload the admin UI for mini-mods
+    mini_mod_preload_admin_bundle_description: Preload the admin JavaScript
+      bundle for non-staff category group moderators so admin-only category
+      screens render for them. Grants no server-side rights by itself.
+
     mini_mod_manage_all_categories: Manage all categories
     mini_mod_manage_all_categories_description: When on, category group
       moderators can manage every category, not just the ones they
@@ -117,6 +152,18 @@ en:
       topic-tools sub-plugin (pre-checks, footers, reply prompts, whispers,
       moderator notes, checklists). Each feature has its own toggle below.
 
+    mod_moderators_can_create_categories: Moderators can create categories
+    mod_moderators_can_create_categories_description: Any moderator may create
+      any category, site-wide.
+
+    mod_moderators_can_edit_categories: Moderators can edit categories
+    mod_moderators_can_edit_categories_description: Any moderator may edit any
+      category, including its security settings.
+
+    mod_moderators_can_delete_categories: Moderators can delete categories
+    mod_moderators_can_delete_categories_description: Any moderator may delete
+      an empty, childless category.
+
     precheck_new_topic_enabled: Per-category new-topic confirmation
     precheck_new_topic_enabled_description: When on, users see a 'before
       you post a new topic' prompt configurable per category.
@@ -133,6 +180,82 @@ en:
     mod_whisper_enabled_description: When on, staff can post in-topic
       whispers visible only to staff, the post author, the topic's whisper
       participants, and any users staff explicitly target.
+
+    mod_whisper_add_participant_enabled: Whispers — add participants
+    mod_whisper_add_participant_enabled_description: Staff may add a user to a
+      topic's whisper conversation; that user then sees every past and future
+      whisper in the topic.
+
+    mod_whisper_convert_enabled: Whispers — convert posts
+    mod_whisper_convert_enabled_description: Staff may toggle whisper status
+      on an existing post (whisper to public and back) and retarget its
+      audience.
+
+    mod_whisper_badge_targeting_enabled: Whispers — badge targeting
+    mod_whisper_badge_targeting_enabled_description: Whispers may target badge
+      holders (membership evaluated lazily at read time) in addition to users
+      and groups.
+
+    mod_topic_private_notes_enabled: Private staff notes on topics
+    mod_topic_private_notes_enabled_description: Staff may attach a private
+      note (with a reply thread) to any topic, visible only to staff.
+
+    mod_moderators_can_edit_others_notes: Moderators can edit others' notes
+    mod_moderators_can_edit_others_notes_description: When on, any moderator
+      may edit or delete notes and note replies written by other staff.
+      Authors and admins always can.
+
+    mod_note_view_tracking_enabled: Track who viewed a note
+    mod_note_view_tracking_enabled_description: Record and show which staff
+      members opened a topic's note panel, and when ("Viewed by N").
+
+    mod_notes_feed_enabled: Moderator notes feed (shield tab)
+    mod_notes_feed_enabled_description: The staff user-menu shield tab with
+      the cross-forum feed of noted topics and staff events, plus its unread
+      counter.
+
+    mod_notify_staff_on_topic_notes: Notify staff on topic notes
+    mod_notify_staff_on_topic_notes_description: When a staff member writes or
+      replies to a topic note, notify every other admin and moderator.
+
+    mod_auto_mark_notifications_seen: Auto-mark plugin notifications read
+    mod_auto_mark_notifications_seen_description: Opening a topic or the
+      review queue marks the plugin's own note/whisper notifications for it
+      as read.
+
+    mod_notification_type_filter_enabled: Notification type filter
+    mod_notification_type_filter_enabled_description: Adds a type filter
+      dropdown to the user notifications page (staff also get the mod-notes
+      stream filter).
+
+    mod_pin_post_enabled: Pin a post to the topic footer
+    mod_pin_post_enabled_description: Moderators may pin any post to the
+      bottom of its topic; the pinned copy and in-stream badge render for all
+      viewers.
+
+    mod_topic_require_reply_approval_enabled: Per-topic reply approval
+    mod_topic_require_reply_approval_enabled_description: Moderators may flag
+      a topic so all replies route to the review queue.
+
+    mod_pm_badge_group_enabled: PM badge groups
+    mod_pm_badge_group_enabled_description: Staff composing a personal
+      message may splice in every holder of a badge as recipients. The badge
+      member lookup is staff-only.
+
+    mod_first_post_checklist_enabled: Forum-wide first-post checklist
+    mod_first_post_checklist_enabled_description: Moderators may maintain a
+      checklist every non-staff user (under the trust-level cap) must accept
+      before posting, including the acceptance audit log and forced
+      re-acceptance.
+
+    mod_targeted_checklists_enabled: Targeted checklists
+    mod_targeted_checklists_enabled_description: Moderators may aim a
+      checklist at named users, gating their posting regardless of trust
+      level. Admins are always exempt.
+
+    mod_topic_prompt_checklist_enabled: Per-topic prompt checklists
+    mod_topic_prompt_checklist_enabled_description: Moderators may attach a
+      blocking checklist or statement to a topic, shown before posting in it.
 
     mod_notify_staff_on_post_actions: Notify staff on post actions
     mod_notify_staff_on_post_actions_description: When on, every other
@@ -185,6 +308,10 @@ en:
     popup_notifications_default_enabled_description: The default for users who
       have not chosen on their account page. Off by design, so enabling the
       plugin never surprises the whole forum — each user opts in themselves.
+    popup_notifications_max_stack: Pop-up stack depth
+    popup_notifications_max_stack_description: How many toast cards may be on
+      screen at once; a further notification drops the oldest.
+
     popup_notifications_timeout_seconds: Pop-up auto-dismiss (seconds)
     popup_notifications_timeout_seconds_description: How long the card stays on
       screen before dismissing itself. Clicking anywhere else also dismisses it.

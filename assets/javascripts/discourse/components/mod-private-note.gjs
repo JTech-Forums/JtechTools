@@ -59,6 +59,7 @@ function avatarUrl(author) {
 export default class ModPrivateNote extends Component {
   @service appEvents;
   @service currentUser;
+  @service siteSettings;
   @service dialog;
   @service modal;
 
@@ -165,6 +166,9 @@ export default class ModPrivateNote extends Component {
   // `didInsert` modifier the scroll-on-hash uses.
   @action
   async recordNoteView() {
+    if (!this.siteSettings.mod_note_view_tracking_enabled) {
+      return;
+    }
     if (!this.visible) {
       return;
     }
@@ -240,6 +244,12 @@ export default class ModPrivateNote extends Component {
   }
 
   get visible() {
+    if (
+      !this.siteSettings.mod_categories_enabled ||
+      !this.siteSettings.mod_topic_private_notes_enabled
+    ) {
+      return false;
+    }
     if (!this.currentUser?.staff) {
       return false;
     }

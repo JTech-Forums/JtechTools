@@ -31,6 +31,20 @@ module ::DiscourseModCategories
 
       guardian.ensure_can_manage_mod_messages!
 
+      # Every message flavour is individually feature-gated so an admin can
+      # revoke each moderator power from settings, not just the whole module.
+      ensure_feature!(:topic_footer_message_enabled) if params.key?(:footer_message)
+      if params.key?(:reply_prompt) || params.key?(:reply_prompt_max_tl)
+        ensure_feature!(:topic_reply_prompt_enabled)
+      end
+      ensure_feature!(:mod_pin_post_enabled) if params.key?(:pinned_post_id)
+      if params.key?(:require_reply_approval)
+        ensure_feature!(:mod_topic_require_reply_approval_enabled)
+      end
+      if params.key?(:private_note) || params.key?(:private_note_position)
+        ensure_feature!(:mod_topic_private_notes_enabled)
+      end
+
       if params.key?(:footer_message)
         topic.custom_fields[TOPIC_FOOTER_FIELD] = params[:footer_message].to_s
       end
@@ -78,7 +92,8 @@ module ::DiscourseModCategories
 
       topic.save_custom_fields(true)
 
-      if params.key?(:private_note) && topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].present?
+      if params.key?(:private_note) && topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].present? &&
+           SiteSetting.mod_notify_staff_on_topic_notes
         notify_staff_of_note(topic)
       end
 
@@ -103,6 +118,7 @@ module ::DiscourseModCategories
       # Editing a category is already a moderator-granted ability in this
       # plugin; reuse that gate for the per-category prompt.
       guardian.ensure_can_edit_category!(category)
+      ensure_feature!(:precheck_new_topic_enabled)
 
       category.custom_fields[CATEGORY_NEW_TOPIC_PROMPT_FIELD] = params[:new_topic_prompt].to_s
 
@@ -126,6 +142,7 @@ module ::DiscourseModCategories
       raise Discourse::NotFound unless topic
 
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_topic_private_notes_enabled)
 
       raw = params[:raw].to_s.strip
       raise Discourse::InvalidParameters.new(:raw) if raw.empty?
@@ -141,7 +158,7 @@ module ::DiscourseModCategories
       topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
       topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
       topic.save_custom_fields(true)
-      notify_staff_of_reply(topic, reply)
+      notify_staff_of_reply(topic, reply) if SiteSetting.mod_notify_staff_on_topic_notes
 
       render json: { replies: serialized_note_replies(topic) }
     end
@@ -152,6 +169,7 @@ module ::DiscourseModCategories
       raise Discourse::NotFound unless topic
 
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_topic_private_notes_enabled)
 
       raw = params[:raw].to_s.strip
       raise Discourse::InvalidParameters.new(:raw) if raw.empty?
@@ -160,6 +178,7 @@ module ::DiscourseModCategories
       replies = note_replies(topic)
       reply = replies.find { |r| r["id"] == reply_id }
       raise Discourse::InvalidParameters.new(:reply_id) unless reply
+      ensure_can_touch_note_entry!(reply["user_id"])
 
       reply["raw"] = raw
       topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
@@ -175,12 +194,13 @@ module ::DiscourseModCategories
       raise Discourse::NotFound unless topic
 
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_topic_private_notes_enabled)
 
       reply_id = params[:reply_id].to_s
       replies = note_replies(topic)
-      unless replies.any? { |r| r["id"] == reply_id }
-        raise Discourse::InvalidParameters.new(:reply_id)
-      end
+      target = replies.find { |r| r["id"] == reply_id }
+      raise Discourse::InvalidParameters.new(:reply_id) unless target
+      ensure_can_touch_note_entry!(target["user_id"])
 
       replies.reject! { |r| r["id"] == reply_id }
       topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
@@ -196,6 +216,8 @@ module ::DiscourseModCategories
       raise Discourse::NotFound unless topic
 
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_topic_private_notes_enabled)
+      ensure_can_touch_note_entry!(topic.custom_fields[TOPIC_PRIVATE_NOTE_USER_FIELD])
 
       topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD] = ""
       topic.custom_fields[TOPIC_PRIVATE_NOTE_USER_FIELD] = nil
@@ -220,6 +242,7 @@ module ::DiscourseModCategories
     # create shouldn't be able to add or remove one on edit.
     def update_post_whisper
       raise Discourse::NotFound unless SiteSetting.mod_whisper_enabled
+      raise Discourse::NotFound unless SiteSetting.mod_whisper_convert_enabled
 
       post = ::Post.find_by(id: params[:id])
       raise Discourse::NotFound unless post
@@ -237,6 +260,7 @@ module ::DiscourseModCategories
         user_ids = sanitize_ids(params[:mod_whisper_target_user_ids])
         group_ids = sanitize_ids(params[:mod_whisper_target_group_ids])
         badge_ids = sanitize_ids(params[:mod_whisper_target_badge_ids])
+        badge_ids = [] unless SiteSetting.mod_whisper_badge_targeting_enabled
 
         # Validate IDs against the DB so a typo / stale ID doesn't end up
         # in the custom_fields. on(:post_created) does the same shape.
@@ -294,6 +318,7 @@ module ::DiscourseModCategories
       raise Discourse::NotFound unless topic
 
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_note_view_tracking_enabled)
 
       # No-op if there's no note to view — keeps stray refresh-on-mount
       # pings from creating viewer rows on topics that never had a note.
@@ -342,6 +367,10 @@ module ::DiscourseModCategories
       topic = Topic.find_by(id: params[:topic_id])
       raise Discourse::NotFound unless topic
 
+      # Cheap no-op instead of an error when disabled: the frontend pings
+      # this on every topic open, and stale clients shouldn't 4xx-spam logs.
+      return render json: { marked: 0 } unless SiteSetting.mod_auto_mark_notifications_seen
+
       marked =
         ::Notification
           .where(
@@ -380,6 +409,7 @@ module ::DiscourseModCategories
     #     since the staff member is viewing all reviewables at once.
     def mark_review_notifications_seen
       guardian.ensure_can_manage_mod_messages!
+      return render json: { marked: 0 } unless SiteSetting.mod_auto_mark_notifications_seen
 
       scope =
         ::Notification.where(
@@ -419,6 +449,7 @@ module ::DiscourseModCategories
     # section first.
     def notes_feed
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_notes_feed_enabled)
 
       seen_at = current_user.custom_fields[USER_NOTES_SEEN_FIELD].presence || "1970-01-01T00:00:00Z"
 
@@ -521,6 +552,7 @@ module ::DiscourseModCategories
     # Marks the staff user's moderator-note feed as read.
     def notes_feed_seen
       guardian.ensure_can_manage_mod_messages!
+      ensure_feature!(:mod_notes_feed_enabled)
 
       current_user.with_lock do
         current_user.custom_fields[USER_NOTES_SEEN_FIELD] = Time.zone.now.iso8601
@@ -558,7 +590,13 @@ module ::DiscourseModCategories
     # holders into the standard `target_recipients` field — the PM is then
     # sent through the normal PostCreator path with no further plugin code.
     # Self is excluded (no point messaging yourself); the list is deduped.
+    #
+    # Staff-gated: this enumerates badge holders (usernames in bulk), which
+    # is membership data ordinary users have no business harvesting. It was
+    # previously open to anyone who could send a PM.
     def badge_members
+      ensure_feature!(:mod_pm_badge_group_enabled)
+      guardian.ensure_can_manage_mod_messages!
       guardian.ensure_can_send_private_messages!
       badge = Badge.find_by(id: params[:badge_id])
       raise Discourse::NotFound unless badge
@@ -580,6 +618,7 @@ module ::DiscourseModCategories
     # and the topic-stream SQL filter grant visibility to participants).
     def add_whisper_participant
       raise Discourse::NotFound unless SiteSetting.mod_whisper_enabled
+      raise Discourse::NotFound unless SiteSetting.mod_whisper_add_participant_enabled
 
       topic = Topic.find_by(id: params[:topic_id])
       raise Discourse::NotFound unless topic
@@ -607,6 +646,23 @@ module ::DiscourseModCategories
     end
 
     private
+
+    # 404s when a per-feature toggle is off — same shape the whisper
+    # endpoints already use for their master switch.
+    def ensure_feature!(setting)
+      raise Discourse::NotFound unless SiteSetting.public_send(setting)
+    end
+
+    # Note-thread entries are editable/deletable by their author and by
+    # admins; other moderators only when the site explicitly opts in via
+    # mod_moderators_can_edit_others_notes (default off — previously any
+    # moderator could silently rewrite a colleague's note).
+    def ensure_can_touch_note_entry!(author_id)
+      return if current_user.admin?
+      return if author_id.to_i == current_user.id
+      return if SiteSetting.mod_moderators_can_edit_others_notes
+      raise Discourse::InvalidAccess.new("not_note_author")
+    end
 
     # Notifies a newly added user that they were added to the topic's whisper
     # conversation, mirroring the whisper `post_created` notification pattern.

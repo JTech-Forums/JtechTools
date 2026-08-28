@@ -9,6 +9,13 @@ export default {
 
   initialize(container) {
     const currentUser = container.lookup("service:current-user");
+    const siteSettings = container.lookup("service:site-settings");
+    if (
+      !siteSettings.mod_categories_enabled ||
+      !siteSettings.mod_topic_prompt_checklist_enabled
+    ) {
+      return;
+    }
     if (!currentUser || !currentUser.staff) {
       return;
     }

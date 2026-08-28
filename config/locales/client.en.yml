@@ -271,4 +271,11 @@ en:
           jtech_mod: Jtech — Mod
           jtech_dumbcourse: Jtech — Dumbcourse
           jtech_disteleplus: Jtech — Disteleplus
+          jtech_smart_search: Jtech — Smart search
+          jtech_popup_notifications: Jtech — Desktop pop-ups
+          jtech_mod_whispers: "Jtech — Mod: Whispers"
+          jtech_mod_notes: "Jtech — Mod: Notes"
+          jtech_mod_notifications: "Jtech — Mod: Staff notifications"
+          jtech_mod_topic_tools: "Jtech — Mod: Topic tools"
+          jtech_mod_checklists: "Jtech — Mod: Checklists"
           trust_level_4: Trust Level 4
