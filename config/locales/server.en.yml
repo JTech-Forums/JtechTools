@@ -534,6 +534,17 @@ en:
       read the ID from @RawDataBot or from getUpdates. Messages from any
       other group are ignored and logged to /logs.
 
+    disteleplus_setup_commands_enabled: Allow Telegram group administrators
+      to bind General, bind an existing upload topic, create the upload topic,
+      and inspect setup through /disteleplus_* commands. Commands are consumed
+      by the setup wizard and never copied into Discourse Chat. Turn this off
+      after setup if Telegram-side reconfiguration is not wanted.
+
+    disteleplus_chat_topic_id: Optional Telegram Forum Topic ID for the
+      existing Discourse Chat bridge. Set this when the group uses topics so
+      chat traffic stays in one topic. Zero preserves the legacy whole-group
+      behavior, except that the forum-upload archive topic is always excluded.
+
     disteleplus_webhook_secret: Shared secret that Telegram sends back in the
       X-Telegram-Bot-Api-Secret-Token header; it is the only thing
       authenticating the inbound webhook. Leave this blank and it is
@@ -597,6 +608,59 @@ en:
       exactly one reaction per message, so all Discourse reactions on a
       message collapse into the most recent one.
 
+    disteleplus_forum_uploads_enabled: Copy attachments from ordinary forum
+      posts into a dedicated Telegram Forum Topic. This is an additional
+      archive copy only; the forum Upload remains untouched and authoritative.
+      Private messages, whispers, deleted/hidden posts, and restricted
+      categories are excluded by default.
+
+    disteleplus_forum_upload_topic_id: Telegram message_thread_id of the
+      archive topic. Create the topic in the bridged supergroup, send a message
+      there, and read message_thread_id from the bot update. This must differ
+      from {{setting:disteleplus_chat_topic_id}}.
+
+    disteleplus_forum_upload_topic_name: Human-readable name shown by setup
+      commands and used when the bot creates the archive topic. Telegram still
+      requires a numeric thread ID internally; the setup wizard saves it
+      automatically so administrators do not need to copy it.
+
+    disteleplus_forum_upload_category_ids: Categories whose post attachments
+      are mirrored. Empty means every eligible normal forum category.
+      Subcategories are not selected automatically when this list is used.
+
+    disteleplus_forum_upload_include_restricted_categories: Also copy uploads
+      from read-restricted categories. This can disclose staff or private
+      material to every Telegram group member; leave off unless the audiences
+      are deliberately identical. Private messages and whispers remain
+      excluded even when enabled.
+
+    disteleplus_forum_upload_max_mb: Largest file copied into Telegram. The
+      Bot API currently caps bot-sent files at 50 MB. Larger or unreadable
+      files produce a metadata message linking back to JTech instead.
+
+    disteleplus_forum_upload_backfill_batch_size: Number of historical upload
+      references examined per backfill step. Smaller batches reduce load and
+      queue bursts, including for posts containing many attachments.
+
+    disteleplus_forum_upload_backfill_pause_seconds: Delay between historical
+      batches. Delivery receipts make repeated runs resume safely and skip
+      attachment occurrences already sent.
+
+    disteleplus_forum_upload_backfill_spacing_seconds: Minimum spacing between
+      historical Telegram sends. The default is 4 seconds (15 per minute),
+      below Telegram's 20-messages-per-minute group limit. Live uploads remain
+      immediate; Telegram 429 responses are still retried as a safety net.
+
+    disteleplus_forum_upload_measure_now: Measure eligible posts, occurrences,
+      unique files, bytes, date range, extensions, oversize files, and prior
+      deliveries, including unique content hashes, without sending anything.
+      Results are written to /logs under the [jtech-tools disteleplus] tag,
+      then this switch resets itself.
+
+    disteleplus_forum_upload_backfill_now: Start or resume the historical
+      archive. A measurement is logged first, work runs in paced batches, and
+      a final measurement is logged at completion. This switch resets itself.
+
     disteleplus_chat_button_opens_bridge: The header chat button, and the
       bare /chat page, open the bridge conversation directly instead of the
       chat home — for everyone, admins included, and independent of the
@@ -619,11 +683,13 @@ en:
 
     disteleplus_register_webhook_now: Tells Telegram where to deliver this
       group's messages. Turn on and save; it generates the webhook secret if
-      it is still blank, calls setWebhook, then switches itself back off (the
-      checkbox stays ticked until you reload the page). There is no success
-      message — check /logs for "setWebhook OK". Run this after first setup,
-      after changing the bot token or webhook secret, and after changing the
-      forum's domain.
+      it is still blank, calls setWebhook, installs the admin-only
+      /disteleplus_* command menu, then switches itself back off (the checkbox
+      stays ticked until you reload the page). There is no success message —
+      check /logs for "setWebhook OK". Run this after first setup, after
+      changing the bot token or webhook secret, and after changing the forum's
+      domain. Toggling {{setting:disteleplus_setup_commands_enabled}} refreshes
+      or removes the command menu automatically.
 
     placeholder:
       discourse_another_email_smtp_address: smtp.example.com

@@ -109,14 +109,73 @@ Bridges exactly **one Telegram group** with exactly **one Discourse Chat channel
 **Setup (once, ~5 minutes):**
 
 1. **BotFather:** `/newbot` → copy the token. Then `/setprivacy` → **Disable** — *mandatory*, otherwise the bot cannot see ordinary group messages (this is the #1 troubleshooting item).
-2. **Telegram group:** add the bot, promote it to **admin** (delete-messages right for delete bridging; admin status is also required for reaction updates). Get the group's chat id (a negative number like `-1001234…`): send any group message, then open `https://api.telegram.org/bot<token>/getUpdates` in a browser — or add @RawDataBot briefly.
-3. **Discourse (Admin → Settings → Jtech — Disteleplus):** paste `disteleplus_bot_token`, set `disteleplus_telegram_chat_id`, set `disteleplus_chat_channel_id` (the number in the channel URL, `/chat/c/-/<id>`), adjust mappings/toggles if wanted.
-4. Turn on `disteleplus_enabled`, then flip `disteleplus_register_webhook_now` — it auto-generates the webhook secret, calls `setWebhook`, and resets itself. Check `/logs` for a `[jtech-tools disteleplus]` warning if anything failed.
-5. Send a message in Telegram → it appears in the channel; reply in the channel → it appears in Telegram.
+2. **Telegram group:** add the bot and promote it to **admin**. Grant manage-topics if the bot should create the Uploads topic, delete-messages for delete bridging, and keep admin status for reaction updates.
+3. **Discourse (Admin → Settings → Jtech — Disteleplus):** paste `disteleplus_bot_token`, set `disteleplus_chat_channel_id` (the number in `/chat/c/-/<id>`), and turn on `disteleplus_enabled`.
+4. Flip `disteleplus_register_webhook_now` — it generates the webhook secret, calls `setWebhook`, installs an admin-only Telegram command menu, and resets itself. Check `/logs` for warnings.
+5. In the Telegram group, run `/disteleplus_setup`. Bind General, then either enter an existing upload topic and run `/disteleplus_bind_uploads`, or run `/disteleplus_create_uploads Uploads` from General. The bot reads and saves the group/thread IDs automatically.
+6. Run `/disteleplus_status`, then send a normal message in Telegram and reply from Discourse Chat to test both directions.
 
 **Honest limitations** (also inline in the settings descriptions): Telegram username changes silently break the automatic match (fix with a mapping entry); anyone controlling a mapped Telegram account posts as that Discourse user — map people you trust; the bot's messages older than 48 h can't be deleted from Telegram; a group→supergroup migration changes the chat id (update the setting); formatting is flattened to plain text in both directions in v1.
 
 Internals: webhook receiver at `/jtech-disteleplus/telegram/webhook` (secret-header auth, enqueue-and-200), Sidekiq jobs for both directions, echo suppression via a thread-local flag + the `disteleplus_message_links` table, and every chat-plugin API touchpoint isolated in `lib/discourse_disteleplus/chat_adapter.rb`.
+
+#### Forum upload archive topic
+
+Disteleplus can additionally mirror attachments from ordinary forum posts into
+a dedicated Telegram Forum Topic. This is a one-way secondary copy: JTech
+remains the source of truth and its Upload is never moved or deleted. Each
+Telegram file has a compact caption whose collapsed expandable section contains
+the post comment, author, UTC time, exact/human file size, topic title, and a
+link back to the exact post. Searchable tags (`#jtechupload`, file type,
+category, and a short `#jtu_…` fingerprint) make Telegram lookup practical;
+the full Discourse SHA-1 is included in the expanded metadata.
+
+**No-ID Telegram setup:** after the webhook is registered, Telegram group
+administrators get these commands in the bot command menu:
+
+- `/disteleplus_setup` — a short guided checklist.
+- `/disteleplus_bind_general` — run in General; saves the group and keeps the
+  existing Chat bridge in General.
+- `/disteleplus_bind_uploads [name]` — run inside an existing destination
+  topic; saves that thread as the upload archive.
+- `/disteleplus_create_uploads [name]` — run in General; creates and binds the
+  topic (the bot needs manage-topics permission).
+- `/disteleplus_status` — confirms the human topic name, saved destination,
+  and whether the live mirror is enabled.
+
+Every setup command verifies the sender through Telegram's `getChatMember` and
+accepts only a group creator/administrator. Commands are consumed before the
+Chat bridge, so neither successful nor rejected setup attempts appear in
+Discourse. Binding a destination never starts the historical archive: measure
+and start it explicitly in Discourse admin settings.
+
+The live path observes both new and edited posts. The historical path walks
+`UploadReference` rows in small ascending-ID batches and records each delivered
+`(post_id, upload_id)` occurrence in `disteleplus_forum_upload_links`, making a
+repeat run resumable. The receipt snapshots and indexes the upload SHA-1, so a
+delivery can still be found by hash if its forum association later changes.
+Telegram rate limits re-enqueue only the affected file.
+Files above the separately configurable outbound limit (maximum 50 MB) remain
+on JTech and produce a linked metadata message instead.
+
+Safety defaults exclude private messages, whispers, deleted/hidden posts and
+read-restricted categories. A category allowlist can narrow the archive;
+restricted categories require a separate explicit switch. Before sending,
+`disteleplus_forum_upload_measure_now` logs eligible post/occurrence/unique-file
+counts, total bytes, date range, extension breakdown, oversize volume and
+already-delivered count. `disteleplus_forum_upload_backfill_now` measures, then
+starts or resumes the paced archive.
+
+Historical sends are spaced four seconds apart by default (15/minute), below
+Telegram's documented 20-messages-per-minute group limit. Batch continuation
+waits until the last scheduled delivery in the current batch, so increasing the
+batch size does not accidentally increase the send rate. Telegram 429 replies
+remain independently retryable as a safety net.
+
+When Telegram topics are in use, set `disteleplus_chat_topic_id` for the
+existing two-way Chat bridge and `disteleplus_forum_upload_topic_id` for the
+archive. Human messages in the archive topic are explicitly excluded from the
+inbound Chat bridge.
 
 ## Layout
 

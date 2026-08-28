@@ -23,8 +23,9 @@ module Jobs
         return
       end
 
+      api = DiscourseDisteleplus::TelegramApi.new
       result =
-        DiscourseDisteleplus::TelegramApi.new.call(
+        api.call(
           "setWebhook",
           url: "#{Discourse.base_url}/jtech-disteleplus/telegram/webhook",
           secret_token: SiteSetting.disteleplus_webhook_secret,
@@ -34,6 +35,7 @@ module Jobs
 
       if result.ok
         Rails.logger.info("#{DiscourseDisteleplus::LOG_TAG} setWebhook OK")
+        configure_setup_commands(api)
       else
         Rails.logger.warn(
           "#{DiscourseDisteleplus::LOG_TAG} setWebhook failed: #{result.description}",
@@ -42,6 +44,33 @@ module Jobs
     rescue StandardError => e
       Rails.logger.warn(
         "#{DiscourseDisteleplus::LOG_TAG} setWebhook error: #{e.class}: #{e.message}",
+      )
+    end
+
+    private
+
+    def configure_setup_commands(api)
+      scope = { type: "all_chat_administrators" }
+      result =
+        if SiteSetting.disteleplus_setup_commands_enabled
+          api.call(
+            "setMyCommands",
+            scope: scope,
+            commands: [
+              { command: "disteleplus_setup", description: "Guided JTech setup" },
+              { command: "disteleplus_status", description: "Show saved destinations" },
+              { command: "disteleplus_bind_general", description: "Bind this group and General" },
+              { command: "disteleplus_bind_uploads", description: "Bind this topic for uploads" },
+              { command: "disteleplus_create_uploads", description: "Create the upload topic" },
+            ],
+          )
+        else
+          api.call("deleteMyCommands", scope: scope)
+        end
+
+      return if result.ok
+      Rails.logger.warn(
+        "#{DiscourseDisteleplus::LOG_TAG} setup command menu failed: #{result.description}",
       )
     end
   end
