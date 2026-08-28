@@ -10,9 +10,14 @@ export default {
   initialize(container) {
     const currentUser = container.lookup("service:current-user");
     const siteSettings = container.lookup("service:site-settings");
+    // The modal hosts three independent tools; show the menu entry while ANY
+    // of them is enabled — gating on private notes alone used to remove the
+    // footer and reply-approval UI when notes were switched off.
     if (
       !siteSettings.mod_categories_enabled ||
-      !siteSettings.mod_topic_private_notes_enabled
+      (!siteSettings.mod_topic_private_notes_enabled &&
+        !siteSettings.topic_footer_message_enabled &&
+        !siteSettings.mod_topic_require_reply_approval_enabled)
     ) {
       return;
     }

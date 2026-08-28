@@ -1,10 +1,14 @@
 # Jtech — combined plugin settings.
 #
-# Each top-level key (jtech, jtech_dislike, jtech_smtp, jtech_mini_mod,
-# jtech_mod, jtech_dumbcourse) becomes its own admin-UI settings tab.
-# Within each tab, settings are ordered: master enable first, then feature
-# toggles, then config options for those features. trust_level_4 is the
-# Discourse core category.
+# Each top-level key becomes one settings category (= one tab on the plugin
+# config page and one section on the classic admin settings page). Within
+# each tab, settings are ordered: master enable first, then scope, then
+# feature toggles, then config options for those features, maintenance last.
+#
+# depends_on is display-only (the admin UI greys the setting out with a
+# "depends on X" notice until the parent is truthy); enforcement always
+# lives in the code gates. Bare depends_on works only with boolean parents;
+# non-boolean parents need depends_on_values.
 
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech (master)
@@ -18,225 +22,304 @@ jtech:
 # Jtech — Dislike (phantom reactions in restricted categories)
 # ───────────────────────────────────────────────────────────────────────────
 jtech_dislike:
-  # Master switch.
+  # Master switch (kept under its historical name; renaming a setting
+  # orphans its stored value).
   discourse_no_likes_enabled:
     default: true
     client: false
 
-  # Scope — which categories trigger phantom-reaction behavior.
+  # Scope — which categories trigger phantom-reaction behavior. Empty means
+  # the whole module is inert.
   no_reactions_category_ids:
     default: ''
     client: false
     type: category_list
+    depends_on:
+      - "discourse_no_likes_enabled"
 
   # Audience — who can react inside restricted categories.
   dislike_hide_like_button:
     default: false
     client: false
+    depends_on:
+      - "discourse_no_likes_enabled"
+  # Meaningless while the button is hidden outright, so grey it out then.
   dislike_allowed_like_groups:
     default: ''
     client: false
     type: group_list
-    allow_any: true
+    depends_on:
+      - "discourse_no_likes_enabled"
+    depends_on_values:
+      dislike_hide_like_button:
+        - "false"
 
   # What "phantom" actually means — pick any combination.
   dislike_show_in_history:
     default: false
     client: false
-  dislike_count_in_leaderboard:
-    default: false
-    client: false
-  dislike_record_audit_trail:
-    default: true
-    client: false
-
-  # How far back the "liked" notification cleanup looks — under Sidekiq
-  # backlog the old hard-coded 30s window could miss and leave the
-  # notification standing.
+    depends_on:
+      - "discourse_no_likes_enabled"
+  # Only consulted while history is suppressed (the notification delete is
+  # part of hiding the like).
   dislike_notification_cleanup_window_seconds:
     default: 30
     client: false
     min: 5
     max: 600
+    depends_on:
+      - "discourse_no_likes_enabled"
+    depends_on_values:
+      dislike_show_in_history:
+        - "false"
+  dislike_count_in_leaderboard:
+    default: false
+    client: false
+    depends_on:
+      - "discourse_no_likes_enabled"
 
-  # Maintenance — toggle on to retroactively clear; auto-resets after run.
+  # Audit trail + maintenance.
+  dislike_record_audit_trail:
+    default: true
+    client: false
+    depends_on:
+      - "discourse_no_likes_enabled"
+  # Run-now toggle: flips itself back off once the job is enqueued.
   purge_phantom_likes_now:
     default: false
     client: false
-    type: bool
+    requires_confirmation: "simple_on_enable"
+    depends_on:
+      - "discourse_no_likes_enabled"
 
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech — Alternate SMTP
 # ───────────────────────────────────────────────────────────────────────────
 jtech_smtp:
-  # Master switch.
+  # Master switch. Gates the whole :before_email_send handler, including the
+  # from-rewriting settings below.
   discourse_another_email_enabled:
     default: false
     client: false
+    requires_confirmation: "simple_on_enable"
 
-  # SMTP credentials & endpoint.
+  # Endpoint. Blank address = unconfigured; the handler no-ops.
   discourse_another_email_smtp_address:
-    default: 172.17.0.1
+    default: ''
     client: false
+    depends_on:
+      - "discourse_another_email_enabled"
   discourse_another_email_smtp_port:
     default: 587
     client: false
-    min: 0
-    max: 65537
+    min: 1
+    max: 65535
+    depends_on:
+      - "discourse_another_email_enabled"
+
+  # Transport security. A single enum — Mail::SMTP raises if implicit TLS
+  # and STARTTLS are both requested, so the invalid combination must be
+  # unrepresentable.
+  discourse_another_email_smtp_security:
+    default: starttls_auto
+    client: false
+    type: enum
+    enum: "JtechSmtpSecuritySiteSetting"
+    depends_on:
+      - "discourse_another_email_enabled"
+  discourse_another_email_smtp_openssl_verify_mode:
+    default: peer
+    client: false
+    type: enum
+    enum: "JtechSmtpVerifyModeSiteSetting"
+    depends_on:
+      - "discourse_another_email_enabled"
+
+  # Authentication. The mode values must match net-smtp's registered auth
+  # types exactly — a free-text typo here used to raise out of the mail job
+  # and silently kill all outbound mail, hence the enum.
   discourse_another_email_smtp_authentication_mode:
     default: plain
     client: false
+    type: enum
+    enum: "JtechSmtpAuthenticationModeSiteSetting"
+    depends_on:
+      - "discourse_another_email_enabled"
   discourse_another_email_smtp_username:
-    default: username@example.com
+    default: ''
     client: false
+    depends_on:
+      - "discourse_another_email_enabled"
+    depends_on_values:
+      discourse_another_email_smtp_authentication_mode:
+        - "plain"
+        - "login"
+        - "cram_md5"
   discourse_another_email_smtp_password:
-    default: password
+    default: ''
     client: false
     secret: true
+    depends_on:
+      - "discourse_another_email_enabled"
+    depends_on_values:
+      discourse_another_email_smtp_authentication_mode:
+        - "plain"
+        - "login"
+        - "cram_md5"
 
   # From-address rewriting (optional).
   discourse_another_email_force_from_domain:
     default: ''
     client: false
+    depends_on:
+      - "discourse_another_email_enabled"
   discourse_another_email_force_smtp_username_to_sender:
     default: false
     client: false
+    depends_on:
+      - "discourse_another_email_enabled"
+
+  # Advanced. Blank domain = keep the server's global HELO domain.
+  discourse_another_email_smtp_domain:
+    default: ''
+    client: false
+    depends_on:
+      - "discourse_another_email_enabled"
+  discourse_another_email_smtp_open_timeout_seconds:
+    default: 5
+    client: false
+    min: 1
+    max: 120
+    depends_on:
+      - "discourse_another_email_enabled"
+  discourse_another_email_smtp_read_timeout_seconds:
+    default: 5
+    client: false
+    min: 1
+    max: 300
+    depends_on:
+      - "discourse_another_email_enabled"
 
 # ───────────────────────────────────────────────────────────────────────────
-# Jtech — Mini-mod (category group moderators get category-create rights)
+# Jtech — Mini-mod (extra rights for CATEGORY GROUP moderators)
+#
+# Scope note: this module only ever affects users who moderate a category
+# via a category moderation group (core's enable_category_group_moderation).
+# Site-wide moderators are the Jtech — Mod tab; staff are never affected.
+#
+# Two polarities live on this tab:
+#   * grants       — default on;  ADD a right core withholds.
+#   * restrictions — default off; REMOVE a right core already grants.
+# The tl4_* pair are restrictions implemented by this module (every read is
+# gated on mini_mod_enabled), which is why they live here and not on core's
+# Trust Level 4 tab. Moving a setting between categories is metadata-only.
 # ───────────────────────────────────────────────────────────────────────────
 jtech_mini_mod:
   # Master switch.
   mini_mod_enabled:
     default: false
-    client: true
+    client: false
 
-  # What category group moderators are allowed to do — one toggle per grant.
+  # Scope multiplier — read before the grants; it redefines all of them.
+  mini_mod_manage_all_categories:
+    default: false
+    client: false
+    depends_on:
+      - "mini_mod_enabled"
+      - "enable_category_group_moderation"
+
+  # Grants — each ADDS a right core withholds from category group moderators.
   mini_mod_can_create_categories:
     default: true
     client: false
+    depends_on:
+      - "mini_mod_enabled"
+      - "enable_category_group_moderation"
   mini_mod_can_edit_categories:
     default: true
     client: false
+    depends_on:
+      - "mini_mod_enabled"
+      - "enable_category_group_moderation"
   mini_mod_can_edit_topics:
     default: true
     client: false
+    depends_on:
+      - "mini_mod_enabled"
+      - "mini_mod_manage_all_categories"
   mini_mod_can_move_topics:
     default: true
     client: false
-  mini_mod_manage_all_categories:
-    default: false
-    client: true
+    depends_on:
+      - "mini_mod_enabled"
+      - "enable_category_group_moderation"
   mini_mod_manage_tags:
     default: false
-    client: true
+    client: false
+    depends_on:
+      - "mini_mod_enabled"
+      - "enable_category_group_moderation"
+      - "tagging_enabled"
+
+  # Restrictions — INVERTED polarity. Core grants these; leaving the toggle
+  # off is what revokes them. Turning one on restores core behaviour.
   mini_mod_can_post_in_closed_topics:
     default: false
     client: false
+    depends_on:
+      - "mini_mod_enabled"
+      - "enable_category_group_moderation"
   mini_mod_can_reopen_topics:
     default: false
     client: false
-  mini_mod_preload_admin_bundle:
-    default: true
-    client: false
-
-# ───────────────────────────────────────────────────────────────────────────
-# Trust Level 4 (Discourse core category — kept here because mini-mod adds
-# settings to it.)
-# ───────────────────────────────────────────────────────────────────────────
-trust_level_4:
+    depends_on:
+      - "mini_mod_enabled"
+      - "enable_category_group_moderation"
+  # These two apply to every trust level 4 user site-wide, not only to
+  # category group moderators — but they are implemented by, and inert
+  # without, this module. Names kept verbatim: renaming a setting key
+  # orphans its stored value.
   tl4_can_post_in_closed_topics:
     default: false
     client: false
+    depends_on:
+      - "mini_mod_enabled"
   tl4_can_reopen_topics:
     default: false
     client: false
+    depends_on:
+      - "mini_mod_enabled"
 
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech — Mod (master switch + the moderator category powers)
-# Every moderator grant in this module has its own toggle, split across the
-# jtech_mod_* subtabs below, so an admin can see and revoke each one.
+#
+# The master gates every moderator power in this module (Guardian#
+# mod_categories_grant?). It does NOT gate whispers, the notification type
+# filter, or notification auto-mark — those are independent by design and
+# say so in their descriptions.
 # ───────────────────────────────────────────────────────────────────────────
 jtech_mod:
-  # Master switch for the whole module (except whispers, which have their
-  # own independent master on the Whispers subtab).
   mod_categories_enabled:
     default: false
     client: true
 
-  # Moderator category powers (any moderator, site-wide).
+  # Guardian grants: these change what EVERY moderator can do, site-wide,
+  # beyond what Discourse core allows.
   mod_moderators_can_create_categories:
     default: true
     client: false
+    depends_on:
+      - "mod_categories_enabled"
   mod_moderators_can_edit_categories:
     default: true
     client: false
+    depends_on:
+      - "mod_categories_enabled"
   mod_moderators_can_delete_categories:
     default: true
     client: false
-
-# ───────────────────────────────────────────────────────────────────────────
-# Jtech — Mod: Whispers
-# ───────────────────────────────────────────────────────────────────────────
-jtech_mod_whispers:
-  mod_whisper_enabled:
-    default: true
-    client: true
-  mod_whisper_add_participant_enabled:
-    default: true
-    client: true
-  mod_whisper_convert_enabled:
-    default: true
-    client: true
-  mod_whisper_badge_targeting_enabled:
-    default: true
-    client: true
-
-# ───────────────────────────────────────────────────────────────────────────
-# Jtech — Mod: Notes (private staff notes on topics)
-# ───────────────────────────────────────────────────────────────────────────
-jtech_mod_notes:
-  mod_topic_private_notes_enabled:
-    default: true
-    client: true
-  # Off by default: previously any moderator could silently rewrite or
-  # delete another staff member's note or reply. Authors and admins always
-  # can; this opts other moderators in.
-  mod_moderators_can_edit_others_notes:
-    default: false
-    client: false
-  mod_note_view_tracking_enabled:
-    default: true
-    client: true
-  mod_notes_feed_enabled:
-    default: true
-    client: true
-  mod_notify_staff_on_topic_notes:
-    default: true
-    client: false
-
-# ───────────────────────────────────────────────────────────────────────────
-# Jtech — Mod: Staff notifications
-# ───────────────────────────────────────────────────────────────────────────
-jtech_mod_notifications:
-  mod_notify_staff_on_post_actions:
-    default: true
-    client: false
-  mod_notify_staff_on_post_approved:
-    default: false
-    client: false
-  mod_notify_staff_on_user_notes:
-    default: true
-    client: false
-  mod_notify_staff_on_flag_notes:
-    default: true
-    client: false
-  mod_auto_mark_notifications_seen:
-    default: true
-    client: true
-  mod_notification_type_filter_enabled:
-    default: true
-    client: true
+    depends_on:
+      - "mod_categories_enabled"
 
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech — Mod: Topic tools
@@ -245,80 +328,312 @@ jtech_mod_topic_tools:
   precheck_new_topic_enabled:
     default: true
     client: true
+    depends_on:
+      - "mod_categories_enabled"
   topic_footer_message_enabled:
     default: true
     client: true
-  topic_reply_prompt_enabled:
-    default: true
-    client: true
+    depends_on:
+      - "mod_categories_enabled"
   mod_pin_post_enabled:
     default: true
     client: true
+    depends_on:
+      - "mod_categories_enabled"
   mod_topic_require_reply_approval_enabled:
     default: true
     client: true
+    depends_on:
+      - "mod_categories_enabled"
   mod_pm_badge_group_enabled:
     default: true
     client: true
+    depends_on:
+      - "mod_categories_enabled"
 
 # ───────────────────────────────────────────────────────────────────────────
-# Jtech — Mod: Checklists
+# Jtech — Mod: Checklists and posting prompts
 # ───────────────────────────────────────────────────────────────────────────
 jtech_mod_checklists:
   mod_first_post_checklist_enabled:
     default: true
     client: true
+    depends_on:
+      - "mod_categories_enabled"
+  # client:true — the checklist editor renders the targeted section, whose
+  # saves 404 when this is off.
   mod_targeted_checklists_enabled:
     default: true
-    client: false
+    client: true
+    depends_on:
+      - "mod_categories_enabled"
   mod_topic_prompt_checklist_enabled:
     default: true
     client: true
+    depends_on:
+      - "mod_categories_enabled"
+  # Legacy: superseded by mod_topic_prompt_checklist_enabled. No UI writes
+  # reply prompts any more; this only displays prompts stored before the
+  # prompt-checklist migration.
+  topic_reply_prompt_enabled:
+    default: true
+    client: true
+    depends_on:
+      - "mod_categories_enabled"
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Mod: Notes (private staff notes on topics)
+# ───────────────────────────────────────────────────────────────────────────
+jtech_mod_notes:
+  mod_topic_private_notes_enabled:
+    default: true
+    client: true
+    depends_on:
+      - "mod_categories_enabled"
+  # Off by default: note edits leave no revision history, so a moderator
+  # rewriting a colleague's note is silent and unrecoverable.
+  # client:true so the panel hides the edit/delete controls the server
+  # would 403 anyway.
+  mod_moderators_can_edit_others_notes:
+    default: false
+    client: true
+    depends_on:
+      - "mod_topic_private_notes_enabled"
+  mod_note_view_tracking_enabled:
+    default: true
+    client: true
+    depends_on:
+      - "mod_topic_private_notes_enabled"
+  mod_notes_feed_enabled:
+    default: true
+    client: true
+    depends_on:
+      - "mod_categories_enabled"
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Mod: Notifications
+# Event streams first, then delivery/read-state plumbing.
+# ───────────────────────────────────────────────────────────────────────────
+jtech_mod_notifications:
+  # Moved here from jtech_mod_notes — it is the fifth member of the
+  # notify-staff family (category moves are metadata-only).
+  mod_notify_staff_on_topic_notes:
+    default: true
+    client: false
+    depends_on:
+      - "mod_topic_private_notes_enabled"
+  mod_notify_staff_on_post_actions:
+    default: true
+    client: false
+    depends_on:
+      - "mod_categories_enabled"
+  mod_notify_staff_on_post_approved:
+    default: false
+    client: false
+    depends_on:
+      - "mod_categories_enabled"
+  mod_notify_staff_on_user_notes:
+    default: true
+    client: false
+    depends_on:
+      - "mod_categories_enabled"
+  mod_notify_staff_on_flag_notes:
+    default: true
+    client: false
+    depends_on:
+      - "mod_categories_enabled"
+  # The whisper fan-out and the participant-added notice were the only
+  # notification streams in this module without a toggle.
+  mod_notify_whisper_targets:
+    default: true
+    client: false
+    depends_on:
+      - "mod_whisper_enabled"
+
+  # Plumbing — both run independently of the module master.
+  mod_auto_mark_notifications_seen:
+    default: true
+    client: true
+  mod_notification_type_filter_enabled:
+    default: true
+    client: true
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Mod: Whispers (independent of the Enable Mod master switch)
+# ───────────────────────────────────────────────────────────────────────────
+jtech_mod_whispers:
+  mod_whisper_enabled:
+    default: true
+    client: true
+  mod_whisper_add_participant_enabled:
+    default: true
+    client: true
+    depends_on:
+      - "mod_whisper_enabled"
+  mod_whisper_convert_enabled:
+    default: true
+    client: true
+    depends_on:
+      - "mod_whisper_enabled"
+  mod_whisper_badge_targeting_enabled:
+    default: true
+    client: true
+    depends_on:
+      - "mod_whisper_enabled"
+  # Escape hatch: keep whispers while dropping the /latest query rewrite
+  # (two extra joins per topic-list query) if it ever misbehaves.
+  mod_whisper_audience_aware_topic_list:
+    default: true
+    client: false
+    depends_on:
+      - "mod_whisper_enabled"
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Translator tweaks (patches upstream discourse-translator)
+# Two unrelated tweaks, each with its own toggle: a Google API proxy and a
+# fix for the dead translate globe. Everything here is inert unless the
+# discourse/discourse-translator plugin is installed.
+# ───────────────────────────────────────────────────────────────────────────
+jtech_translator:
+  # Master switch. Default true preserves the behavior this module has
+  # shipped with since it was written (it had no off switch at all).
+  translator_tweaks_enabled:
+    default: true
+    client: false
+
+  # Checked per Guardian call, so this takes effect immediately.
+  translator_tweaks_hide_untranslatable:
+    default: true
+    client: false
+    depends_on:
+      - "translator_tweaks_enabled"
+
+  # The value the module used to hard-code. Blank means "leave upstream
+  # alone and call googleapis.com directly". Boot-time only: the endpoints
+  # are Ruby constants, so a change needs an app restart. The confirmation
+  # dialog says so at the moment of editing.
+  translator_tweaks_worker_url:
+    default: https://google-translate-worker.abesternheim.workers.dev/language/translate/v2
+    client: false
+    regex: '\Ahttps://[^\s/]+(/[^\s]*)?\z'
+    regex_error: "site_settings.errors.translator_tweaks_invalid_worker_url"
+    requires_confirmation: "simple"
+    depends_on:
+      - "translator_tweaks_enabled"
 
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech — Smart search (synonym query expansion)
 # ───────────────────────────────────────────────────────────────────────────
 jtech_smart_search:
+  # Master switch. Off = search behaves exactly like vanilla Discourse.
   smart_search_enabled:
     default: false
     client: false
+
+  # When expansion kicks in, and how far it goes.
+  # min is 1, not 0: the guard is `return base if posts.size >= threshold`,
+  # so 0 would mean "never expand" — a silent off-switch contradicting the
+  # toggle above.
   smart_search_minimum_results:
     default: 5
     client: false
-    min: 0
+    min: 1
     max: 50
+    depends_on:
+      - "smart_search_enabled"
+  # max is 2, not 5: QueryExpander builds at most two variants (every word
+  # swapped, and first word only). 3-5 were indistinguishable from 2.
   smart_search_variant_limit:
     default: 2
     client: false
     min: 1
-    max: 5
+    max: 2
+    depends_on:
+      - "smart_search_enabled"
+
+  # Site-specific synonym groups layered on top of the shipped dictionary
+  # (config/dictionaries/smart_search_synonyms.yml). One group per entry,
+  # words comma-separated ("|" is the list separator and cannot be used).
+  smart_search_extra_synonyms:
+    default: ''
+    client: false
+    type: list
+    list_type: compact
+    depends_on:
+      - "smart_search_enabled"
 
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech — Desktop pop-up notifications (Jelly-style toast, desktop only)
 # ───────────────────────────────────────────────────────────────────────────
 jtech_popup_notifications:
   # Master switch. When off, no toast fires for anyone and the per-user
-  # preference on the account page is hidden.
+  # preference on the account page is hidden. Read at page boot, hence
+  # refresh: true — open tabs need a reload to pick the change up.
   popup_notifications_enabled:
     default: true
     client: true
+    refresh: true
+
   # Default for users who have never set the per-user preference. Off by
   # design — the toast only appears for users who opt in on their account
   # page, so enabling the plugin never surprises the whole forum.
+  # Server-only: resolved into currentUser.jtech_popup_notifications_enabled
+  # by the current-user serializer; no JS reads this setting directly.
   popup_notifications_default_enabled:
     default: false
-    client: true
+    client: false
+    depends_on:
+      - "popup_notifications_enabled"
+
+  # Presentation.
   # Seconds the toast stays on screen before auto-dismissing.
-  popup_notifications_max_stack:
-    default: 3
-    client: true
-    min: 1
-    max: 10
   popup_notifications_timeout_seconds:
     default: 20
     client: true
     min: 3
     max: 300
+    depends_on:
+      - "popup_notifications_enabled"
+  # How many cards may be stacked at once; a further notification drops the
+  # oldest. Capped at 5: the stack is a fixed, top-anchored column with no
+  # overflow handling, and ten cards run off most viewports.
+  popup_notifications_max_stack:
+    default: 3
+    client: true
+    min: 1
+    max: 5
+    depends_on:
+      - "popup_notifications_enabled"
+
+  # Noise control. Values are the action keys the toast component maps
+  # notification types onto; excluding one key excludes every notification
+  # type mapped to it (e.g. "liked" also covers consolidated likes).
+  popup_notifications_excluded_types:
+    default: ''
+    client: true
+    type: list
+    list_type: compact
+    allow_any: false
+    choices:
+      - liked
+      - replied
+      - mentioned
+      - quoted
+      - edited
+      - messaged
+      - posted
+      - linked
+      - badge
+      - whispered
+      - post_deleted
+      - post_approved
+      - post_rejected
+      - user_note
+      - flag_note
+      - note
+      - other
+    depends_on:
+      - "popup_notifications_enabled"
 
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech — Dumbcourse (lightweight SPA at /dumb with push notifications)
@@ -329,89 +644,148 @@ jtech_dumbcourse:
     default: true
     client: true
 
-  # Where the SPA mounts and how it looks by default.
+  # Where the SPA mounts. Validated: must be a single URL segment and not a
+  # reserved core path — core routes always win a collision, so a bad value
+  # silently 404s the whole SPA.
   dumbcourse_base_path:
     default: dumb
     client: true
+    validator: "DumbcourseBasePathValidator"
+    depends_on:
+      - "dumbcourse_enabled"
+
+  # Appearance.
   dumbcourse_default_theme:
     default: dark
-    client: true
+    client: false
     type: enum
     choices:
     - dark
     - light
+    depends_on:
+      - "dumbcourse_enabled"
   dumbcourse_default_view:
     default: latest
-    client: true
+    client: false
     type: enum
-    choices:
-    - latest
-    - new
-    - top
-    - unseen
-    - hot
-    - my
-    - categories
+    enum: "DumbcourseDefaultViewSiteSetting"
+    depends_on:
+      - "dumbcourse_enabled"
 
-  # Display options.
+  # Topic-list display.
+  dumbcourse_show_category_names:
+    default: true
+    client: false
+    depends_on:
+      - "dumbcourse_enabled"
+  dumbcourse_topic_posters_visibility:
+    default: all
+    client: false
+    type: enum
+    enum: "DumbcoursePostersVisibilitySiteSetting"
+    depends_on:
+      - "dumbcourse_enabled"
+  dumbcourse_online_glow_enabled:
+    default: true
+    client: false
+    depends_on:
+      - "dumbcourse_enabled"
+
+  # Forum sidebar link (configures the MAIN forum's sidebar, not the SPA).
   dumbcourse_sidebar_link_enabled:
     default: true
     client: true
-  dumbcourse_show_category_names:
-    default: true
-    client: true
-  dumbcourse_topic_posters_visibility:
-    default: all
-    client: true
-    type: enum
-    choices:
-    - all
-    - desktop
-    - mobile
-    - none
-  dumbcourse_online_glow_enabled:
-    default: true
-    client: true
+    depends_on:
+      - "dumbcourse_enabled"
 
   # Topic-list pagination.
   dumbcourse_pagination_enabled:
     default: false
-    client: true
+    client: false
+    depends_on:
+      - "dumbcourse_enabled"
   dumbcourse_topics_per_page:
     default: 30
     min: 10
     max: 100
-    client: true
+    client: false
+    depends_on:
+      - "dumbcourse_pagination_enabled"
 
   # Push notifications (web push + ntfy SSE).
   dumbcourse_push_enabled:
     default: false
     client: false
+    depends_on:
+      - "dumbcourse_enabled"
 
-  # LanguageTool integration (composer Refine button).
+  # LanguageTool integration (composer Refine button). The mode enum picks
+  # which credential cluster below applies; the other cluster is hidden.
   dumbcourse_languagetool_enabled:
     default: false
     client: false
+    depends_on:
+      - "dumbcourse_enabled"
   dumbcourse_languagetool_mode:
     default: self_hosted
     client: false
     type: enum
-    enum: DumbcourseLanguagetoolModeSiteSetting
+    enum: "DumbcourseLanguagetoolModeSiteSetting"
+    depends_on:
+      - "dumbcourse_languagetool_enabled"
+    depends_behavior: "hidden"
   dumbcourse_languagetool_url:
     default: ''
     client: false
+    depends_on:
+      - "dumbcourse_languagetool_enabled"
+      - "dumbcourse_languagetool_mode"
+    depends_on_values:
+      dumbcourse_languagetool_mode:
+        - "self_hosted"
+    depends_behavior: "hidden"
   dumbcourse_languagetool_secret:
     default: ''
     client: false
+    secret: true
+    depends_on:
+      - "dumbcourse_languagetool_enabled"
+      - "dumbcourse_languagetool_mode"
+    depends_on_values:
+      dumbcourse_languagetool_mode:
+        - "self_hosted"
+    depends_behavior: "hidden"
   dumbcourse_languagetool_api_url:
     default: https://api.languagetool.org/v2/check
     client: false
+    depends_on:
+      - "dumbcourse_languagetool_enabled"
+      - "dumbcourse_languagetool_mode"
+    depends_on_values:
+      dumbcourse_languagetool_mode:
+        - "official_api"
+    depends_behavior: "hidden"
   dumbcourse_languagetool_api_username:
     default: ''
     client: false
+    depends_on:
+      - "dumbcourse_languagetool_enabled"
+      - "dumbcourse_languagetool_mode"
+    depends_on_values:
+      dumbcourse_languagetool_mode:
+        - "official_api"
+    depends_behavior: "hidden"
   dumbcourse_languagetool_api_key:
     default: ''
     client: false
+    secret: true
+    depends_on:
+      - "dumbcourse_languagetool_enabled"
+      - "dumbcourse_languagetool_mode"
+    depends_on_values:
+      dumbcourse_languagetool_mode:
+        - "official_api"
+    depends_behavior: "hidden"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Jtech — Disteleplus (Telegram ⇄ Discourse Chat bridge)
@@ -422,75 +796,131 @@ jtech_disteleplus:
     default: false
     client: true
 
-  # Telegram side. The bot token comes from @BotFather; the webhook secret is
-  # auto-generated by the "register webhook" button when left blank; the chat
-  # id is the bridged group's id (negative for groups/supergroups).
+  # Telegram side.
   disteleplus_bot_token:
     default: ''
     client: false
     secret: true
+    depends_on:
+      - "disteleplus_enabled"
+  disteleplus_telegram_chat_id:
+    default: ''
+    client: false
+    depends_on:
+      - "disteleplus_enabled"
   disteleplus_webhook_secret:
     default: ''
     client: false
     secret: true
-  disteleplus_telegram_chat_id:
-    default: ''
-    client: false
+    depends_on:
+      - "disteleplus_enabled"
 
-  # Discourse side. Channel id is the number in the channel URL
-  # (/chat/c/-/<id>). The bridge bot posts unmatched Telegram messages and is
-  # lazily created at TL4 if the username doesn't exist yet.
+  # Discourse side. Core has no chat-channel setting type, so this is an
+  # integer; the id is the number at the end of the channel URL.
   disteleplus_chat_channel_id:
     default: 0
     client: true
     min: 0
-    max: 10000000
+    max: 2000000000
+    depends_on:
+      - "disteleplus_enabled"
   disteleplus_bridge_bot_username:
     default: telegram_bridge
     client: false
+    depends_on:
+      - "disteleplus_enabled"
 
-  # Manual "telegram_username:discourse_username" pairs; takes precedence
-  # over the automatic same-username match.
+  # Who posts as whom. A schema setting — the admin UI shows an Edit button
+  # that opens a proper table editor (rows of telegram_username →
+  # discourse_username). Field labels/descriptions here are display strings,
+  # not locale keys (core limitation for schema settings).
+  disteleplus_user_map:
+    default: '[]'
+    client: false
+    type: objects
+    depends_on:
+      - "disteleplus_enabled"
+    schema:
+      name: Telegram user
+      identifier: telegram_username
+      properties:
+        telegram_username:
+          type: string
+          required: true
+          label: "Telegram username"
+          description: "Their @username in Telegram, without the @. Case does not matter."
+          validations:
+            max_length: 32
+        discourse_username:
+          type: string
+          required: true
+          label: "Posts as this Discourse user"
+          description: "An existing Discourse username. Messages from the Telegram account above are posted into chat as this user."
+          validations:
+            max_length: 60
+
+  # Legacy pipe-delimited form, migrated into disteleplus_user_map by
+  # db/migrate/20260828000001. Hidden rather than deleted so a rollback to
+  # the previous release still finds its data. Delete in a later release.
   disteleplus_user_mappings:
     default: ''
     client: false
     type: list
     list_type: compact
+    hidden: true
 
-  # Feature toggles.
+  # What crosses the bridge.
   disteleplus_bridge_uploads:
     default: true
     client: false
+    depends_on:
+      - "disteleplus_enabled"
   disteleplus_max_upload_mb:
     default: 10
     client: false
     min: 1
     max: 20
+    depends_on:
+      - "disteleplus_bridge_uploads"
   disteleplus_bridge_edits:
     default: true
     client: false
+    depends_on:
+      - "disteleplus_enabled"
   disteleplus_bridge_deletes:
     default: true
     client: false
+    depends_on:
+      - "disteleplus_enabled"
   disteleplus_bridge_polls:
     default: true
     client: false
+    depends_on:
+      - "disteleplus_enabled"
   disteleplus_bridge_reactions:
     default: true
     client: false
+    depends_on:
+      - "disteleplus_enabled"
 
   # Chat UI lock — the chat button lands on the bridge channel and creating
   # channels/DMs is hidden (client) and blocked (Guardian).
   disteleplus_lock_chat_ui:
     default: false
     client: true
+    depends_on:
+      - "disteleplus_enabled"
   disteleplus_lock_chat_exempt_admins:
     default: true
     client: true
+    depends_on:
+      - "disteleplus_lock_chat_ui"
 
   # Maintenance — flip on to (re)register the Telegram webhook; enqueues
-  # setWebhook and resets itself (purge_phantom_likes_now precedent).
+  # setWebhook and resets itself.
   disteleplus_register_webhook_now:
     default: false
     client: false
-    type: bool
+    requires_confirmation: "simple_on_enable"
+    depends_on:
+      - "disteleplus_enabled"

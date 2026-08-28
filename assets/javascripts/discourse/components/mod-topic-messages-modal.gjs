@@ -8,14 +8,21 @@ import DModal from "discourse/components/d-modal";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import { i18n } from "discourse-i18n";
+import { or } from "truth-helpers";
 
 // Moderator-facing modal (opened from the topic admin wrench menu) for
 // setting this topic's pinned footer message, require-approval flag, and
 // the private staff note. The per-topic before-reply prompt has moved
 // out of this modal and into the dedicated "Prompt Checklist" entry,
 // which supports both statement and checklist modes.
+//
+// Each section renders only while its feature toggle is on, and the PUT
+// payload carries only the enabled fields — the server 404s any param whose
+// toggle is off, so sending everything unconditionally used to break saving
+// the remaining sections when one toggle was disabled.
 export default class ModTopicMessagesModal extends Component {
   @service appEvents;
+  @service siteSettings;
   @service toasts;
 
   @tracked footerMessage = this.topic.mod_topic_footer_message || "";
@@ -28,6 +35,18 @@ export default class ModTopicMessagesModal extends Component {
 
   get topic() {
     return this.args.model.topic;
+  }
+
+  get footerEnabled() {
+    return this.siteSettings.topic_footer_message_enabled;
+  }
+
+  get approvalEnabled() {
+    return this.siteSettings.mod_topic_require_reply_approval_enabled;
+  }
+
+  get notesEnabled() {
+    return this.siteSettings.mod_topic_private_notes_enabled;
   }
 
   @action
@@ -55,33 +74,43 @@ export default class ModTopicMessagesModal extends Component {
     this.saving = true;
 
     try {
+      const data = {};
+      if (this.footerEnabled) {
+        data.footer_message = this.footerMessage;
+      }
+      if (this.approvalEnabled) {
+        data.require_reply_approval = this.requireApproval;
+      }
+      if (this.notesEnabled) {
+        data.private_note = this.privateNote;
+        data.private_note_position = this.notePosition;
+      }
+
       const result = await ajax(
         `/discourse-mod-categories/topic/${this.topic.id}`,
-        {
-          type: "PUT",
-          data: {
-            footer_message: this.footerMessage,
-            require_reply_approval: this.requireApproval,
-            private_note: this.privateNote,
-            private_note_position: this.notePosition,
-          },
-        }
+        { type: "PUT", data }
       );
 
-      this.topic.set("mod_topic_footer_message", result.footer_message);
-      this.topic.set(
-        "mod_topic_require_reply_approval",
-        result.require_reply_approval
-      );
-      this.topic.set("mod_topic_private_note", result.private_note);
-      this.topic.set(
-        "mod_topic_private_note_position",
-        result.private_note_position
-      );
-      this.topic.set(
-        "mod_topic_private_note_author",
-        result.private_note_author
-      );
+      if (this.footerEnabled) {
+        this.topic.set("mod_topic_footer_message", result.footer_message);
+      }
+      if (this.approvalEnabled) {
+        this.topic.set(
+          "mod_topic_require_reply_approval",
+          result.require_reply_approval
+        );
+      }
+      if (this.notesEnabled) {
+        this.topic.set("mod_topic_private_note", result.private_note);
+        this.topic.set(
+          "mod_topic_private_note_position",
+          result.private_note_position
+        );
+        this.topic.set(
+          "mod_topic_private_note_author",
+          result.private_note_author
+        );
+      }
       this.appEvents.trigger("discourse-mod:messages-updated", this.topic);
       this.toasts.success({
         duration: 3000,
@@ -104,79 +133,91 @@ export default class ModTopicMessagesModal extends Component {
       class="mod-topic-messages-modal"
     >
       <:body>
-        <h3 class="mod-messages-section">
-          {{i18n "discourse_mod_categories.topic_messages.section_visible"}}
-        </h3>
-        <div class="control-group">
-          <label class="mod-messages-label">
-            {{i18n "discourse_mod_categories.topic_messages.footer_label"}}
-          </label>
-          <p class="mod-messages-hint">
-            {{i18n "discourse_mod_categories.topic_messages.footer_hint"}}
-          </p>
-          <textarea
-            class="mod-footer-input"
-            rows="3"
-            value={{this.footerMessage}}
-            {{on "input" this.updateFooter}}
-          ></textarea>
-        </div>
+        {{#if this.footerEnabled}}
+          <h3 class="mod-messages-section">
+            {{i18n "discourse_mod_categories.topic_messages.section_visible"}}
+          </h3>
+          <div class="control-group">
+            <label class="mod-messages-label">
+              {{i18n "discourse_mod_categories.topic_messages.footer_label"}}
+            </label>
+            <p class="mod-messages-hint">
+              {{i18n "discourse_mod_categories.topic_messages.footer_hint"}}
+            </p>
+            <textarea
+              class="mod-footer-input"
+              rows="3"
+              value={{this.footerMessage}}
+              {{on "input" this.updateFooter}}
+            ></textarea>
+          </div>
+        {{/if}}
 
-        <h3 class="mod-messages-section">
-          {{i18n "discourse_mod_categories.topic_messages.section_moderation"}}
-        </h3>
-        <div class="control-group mod-approval-control">
-          <label class="mod-approval-checkbox">
-            <input
-              type="checkbox"
-              class="mod-require-approval-input"
-              checked={{this.requireApproval}}
-              {{on "change" this.toggleApproval}}
-            />
-            <span class="mod-messages-label">
-              {{i18n "discourse_mod_categories.topic_messages.approval_label"}}
-            </span>
-          </label>
-          <p class="mod-messages-hint">
-            {{i18n "discourse_mod_categories.topic_messages.approval_hint"}}
-          </p>
-        </div>
-
-        <div class="control-group mod-private-note-control">
-          <label class="mod-messages-label">
-            {{i18n "discourse_mod_categories.topic_messages.note_label"}}
-          </label>
-          <p class="mod-messages-hint">
-            {{i18n "discourse_mod_categories.topic_messages.note_hint"}}
-          </p>
-          <textarea
-            class="mod-private-note-input"
-            rows="3"
-            value={{this.privateNote}}
-            {{on "input" this.updateNote}}
-          ></textarea>
-          <label class="mod-messages-label">
+        {{#if (or this.approvalEnabled this.notesEnabled)}}
+          <h3 class="mod-messages-section">
             {{i18n
-              "discourse_mod_categories.topic_messages.note_position_label"
+              "discourse_mod_categories.topic_messages.section_moderation"
             }}
-          </label>
-          <select
-            class="mod-private-note-position-input"
-            value={{this.notePosition}}
-            {{on "change" this.updateNotePosition}}
-          >
-            <option value="bottom">
+          </h3>
+        {{/if}}
+        {{#if this.approvalEnabled}}
+          <div class="control-group mod-approval-control">
+            <label class="mod-approval-checkbox">
+              <input
+                type="checkbox"
+                class="mod-require-approval-input"
+                checked={{this.requireApproval}}
+                {{on "change" this.toggleApproval}}
+              />
+              <span class="mod-messages-label">
+                {{i18n
+                  "discourse_mod_categories.topic_messages.approval_label"
+                }}
+              </span>
+            </label>
+            <p class="mod-messages-hint">
+              {{i18n "discourse_mod_categories.topic_messages.approval_hint"}}
+            </p>
+          </div>
+        {{/if}}
+
+        {{#if this.notesEnabled}}
+          <div class="control-group mod-private-note-control">
+            <label class="mod-messages-label">
+              {{i18n "discourse_mod_categories.topic_messages.note_label"}}
+            </label>
+            <p class="mod-messages-hint">
+              {{i18n "discourse_mod_categories.topic_messages.note_hint"}}
+            </p>
+            <textarea
+              class="mod-private-note-input"
+              rows="3"
+              value={{this.privateNote}}
+              {{on "input" this.updateNote}}
+            ></textarea>
+            <label class="mod-messages-label">
               {{i18n
-                "discourse_mod_categories.topic_messages.note_position_bottom"
+                "discourse_mod_categories.topic_messages.note_position_label"
               }}
-            </option>
-            <option value="top">
-              {{i18n
-                "discourse_mod_categories.topic_messages.note_position_top"
-              }}
-            </option>
-          </select>
-        </div>
+            </label>
+            <select
+              class="mod-private-note-position-input"
+              value={{this.notePosition}}
+              {{on "change" this.updateNotePosition}}
+            >
+              <option value="bottom">
+                {{i18n
+                  "discourse_mod_categories.topic_messages.note_position_bottom"
+                }}
+              </option>
+              <option value="top">
+                {{i18n
+                  "discourse_mod_categories.topic_messages.note_position_top"
+                }}
+              </option>
+            </select>
+          </div>
+        {{/if}}
       </:body>
 
       <:footer>

@@ -58,6 +58,9 @@ module Jobs
       html = DiscourseDisteleplus::Formatter.outbound_html(author_name(message), message.message)
       reply_to = reply_target(message)
       uploads = DiscourseDisteleplus::ChatAdapter.message_uploads(message)
+      # The uploads toggle gates both directions — inbound is checked in
+      # UpdateProcessor#process_media.
+      uploads = [] unless SiteSetting.disteleplus_bridge_uploads
 
       sent = [] # [[telegram_message, kind], ...]
       if uploads.blank?

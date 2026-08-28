@@ -277,6 +277,24 @@ export default class ModPrivateNote extends Component {
     return timeAgo(this.createdAt);
   }
 
+  // Mirrors the server's ownership rule (messages_controller
+  // ensure_can_touch_note_entry!): the entry's author, admins, or any
+  // moderator when the site opts into cross-staff editing. Rendering the
+  // buttons to everyone used to invite a guaranteed 403.
+  canTouchEntry(author) {
+    if (this.currentUser?.admin) {
+      return true;
+    }
+    if (this.siteSettings.mod_moderators_can_edit_others_notes) {
+      return true;
+    }
+    return !!author?.username && author.username === this.currentUser?.username;
+  }
+
+  get canTouchNote() {
+    return this.canTouchEntry(this.author);
+  }
+
   get decoratedReplies() {
     return (this.replies || []).map((reply, index) => ({
       id: reply.id,
@@ -286,6 +304,7 @@ export default class ModPrivateNote extends Component {
       authorName: authorName(reply.author),
       avatarUrl: avatarUrl(reply.author),
       editing: this.editingReplyId === reply.id,
+      canTouch: this.canTouchEntry(reply.author),
     }));
   }
 
@@ -488,20 +507,22 @@ export default class ModPrivateNote extends Component {
                 {{#if this.createdAgo}}
                   <span class="mod-private-note-time">{{this.createdAgo}}</span>
                 {{/if}}
-                <span class="mod-private-note-controls">
-                  <DButton
-                    @action={{this.editNote}}
-                    @icon="pencil"
-                    @title="discourse_mod_categories.private_note.edit_note"
-                    class="btn-flat btn-small mod-private-note-edit-note"
-                  />
-                  <DButton
-                    @action={{this.deleteNote}}
-                    @icon="trash-can"
-                    @title="discourse_mod_categories.private_note.delete_note"
-                    class="btn-flat btn-small mod-private-note-delete-note"
-                  />
-                </span>
+                {{#if this.canTouchNote}}
+                  <span class="mod-private-note-controls">
+                    <DButton
+                      @action={{this.editNote}}
+                      @icon="pencil"
+                      @title="discourse_mod_categories.private_note.edit_note"
+                      class="btn-flat btn-small mod-private-note-edit-note"
+                    />
+                    <DButton
+                      @action={{this.deleteNote}}
+                      @icon="trash-can"
+                      @title="discourse_mod_categories.private_note.delete_note"
+                      class="btn-flat btn-small mod-private-note-delete-note"
+                    />
+                  </span>
+                {{/if}}
               </div>
               <div class="cooked">{{this.noteHtml}}</div>
             </div>
@@ -533,22 +554,24 @@ export default class ModPrivateNote extends Component {
                       class="mod-private-note-time"
                     >{{reply.agoLabel}}</span>
                   {{/if}}
-                  {{#unless reply.editing}}
-                    <span class="mod-private-note-controls">
-                      <DButton
-                        @action={{fn this.startEditReply reply}}
-                        @icon="pencil"
-                        @title="discourse_mod_categories.private_note.edit_reply"
-                        class="btn-flat btn-small mod-private-note-edit-reply"
-                      />
-                      <DButton
-                        @action={{fn this.deleteReply reply}}
-                        @icon="trash-can"
-                        @title="discourse_mod_categories.private_note.delete_reply"
-                        class="btn-flat btn-small mod-private-note-delete-reply"
-                      />
-                    </span>
-                  {{/unless}}
+                  {{#if reply.canTouch}}
+                    {{#unless reply.editing}}
+                      <span class="mod-private-note-controls">
+                        <DButton
+                          @action={{fn this.startEditReply reply}}
+                          @icon="pencil"
+                          @title="discourse_mod_categories.private_note.edit_reply"
+                          class="btn-flat btn-small mod-private-note-edit-reply"
+                        />
+                        <DButton
+                          @action={{fn this.deleteReply reply}}
+                          @icon="trash-can"
+                          @title="discourse_mod_categories.private_note.delete_reply"
+                          class="btn-flat btn-small mod-private-note-delete-reply"
+                        />
+                      </span>
+                    {{/unless}}
+                  {{/if}}
                 </div>
                 {{#if reply.editing}}
                   <div class="mod-private-note-reply-box">

@@ -5,6 +5,7 @@ module DiscourseDumbcourse
     requires_plugin "jtech-tools"
     requires_login except: [:server_info]
     skip_before_action :verify_authenticity_token
+    before_action :ensure_dumbcourse_enabled, except: [:server_info]
 
     # GET /<base>/push/info
     # Returns push server URL for SSE connections
@@ -125,6 +126,12 @@ module DiscourseDumbcourse
     end
 
     private
+
+    def ensure_dumbcourse_enabled
+      if !SiteSetting.dumbcourse_enabled || !SiteSetting.dumbcourse_push_enabled
+        raise Discourse::NotFound
+      end
+    end
 
     def default_prefs
       {

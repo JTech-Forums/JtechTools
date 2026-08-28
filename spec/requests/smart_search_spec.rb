@@ -80,7 +80,7 @@ RSpec.describe "Smart search" do
 
     it "skips variant expansion when the original returns enough results" do
       skip "See above — depends on the vanilla baseline"
-      SiteSetting.smart_search_minimum_results = 0
+      SiteSetting.smart_search_minimum_results = 1
       result = ::Search.execute("js")
       expect(result.posts.map(&:id)).not_to include(javascript_post.id)
     end

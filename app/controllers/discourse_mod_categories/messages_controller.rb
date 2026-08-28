@@ -623,7 +623,10 @@ module ::DiscourseModCategories
       topic = Topic.find_by(id: params[:topic_id])
       raise Discourse::NotFound unless topic
 
-      guardian.ensure_can_manage_mod_messages!
+      # Whisper-scoped guard, not ensure_can_manage_mod_messages! — that
+      # Guardian rides on mod_categories_enabled, and whispers are
+      # deliberately independent of the module master.
+      raise Discourse::InvalidAccess unless current_user&.staff?
 
       user =
         if params[:user_id].present?
@@ -667,6 +670,7 @@ module ::DiscourseModCategories
     # Notifies a newly added user that they were added to the topic's whisper
     # conversation, mirroring the whisper `post_created` notification pattern.
     def notify_whisper_participant(topic, user)
+      return unless SiteSetting.mod_notify_whisper_targets
       return if user.id == current_user.id
 
       Notification.create!(

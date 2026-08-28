@@ -4,6 +4,8 @@
 # so DSL methods (after_initialize, register_asset, on, …) work unchanged.
 
 # [Jtech] removed top-level: enabled_site_setting :discourse_no_likes_enabled
+# — replaced by the runtime DiscourseNoLikes.enabled? gate below, which every
+# code path reaches through restricted_category_ids/restricted?.
 
 module ::DiscourseNoLikes
   PLUGIN_NAME = "dislike"
@@ -32,8 +34,15 @@ module ::DiscourseNoLikes
        AND t.category_id NOT IN (%{restricted})
   SQL
 
+  def self.enabled?
+    SiteSetting.jtech_enabled && SiteSetting.discourse_no_likes_enabled
+  end
+
+  # Single choke point: every hook, prepend and job funnels through this (or
+  # restricted?), so the two master switches actually turn the module off.
   def self.restricted_category_ids
-    SiteSetting.no_reactions_category_ids.to_s.split("|").map(&:to_i).reject(&:zero?)
+    return [] unless enabled?
+    SiteSetting.no_reactions_category_ids_map.reject(&:zero?)
   end
 
   def self.restricted?(post)
@@ -167,12 +176,17 @@ after_initialize do
     next unless DiscourseNoLikes.restricted?(post)
 
     if SiteSetting.dislike_record_audit_trail
-      DiscourseNoLikes::PhantomReaction.create!(
-        post_id: post.id,
-        user_id: post_action.user_id,
-        category_id: post.topic.category_id,
-        reaction_type: "like",
-      )
+      # `create`, not `create!` — an audit-row failure must never 500 the like.
+      record =
+        DiscourseNoLikes::PhantomReaction.create(
+          post_id: post.id,
+          user_id: post_action.user_id,
+          category_id: post.topic.category_id,
+          reaction_type: "like",
+        )
+      unless record.persisted?
+        Rails.logger.warn("[jtech-tools dislike] audit row failed: #{record.errors.full_messages}")
+      end
     end
 
     # Only suppress notification if history is disabled
@@ -213,7 +227,9 @@ after_initialize do
         return if rv == main_id
         return unless SiteSetting.dislike_record_audit_trail
 
-        DiscourseNoLikes::PhantomReaction.create!(
+        # `create`, not `create!` — an audit-row failure must never break the
+        # reaction (this runs in an after_create callback).
+        DiscourseNoLikes::PhantomReaction.create(
           post_id: post_id,
           user_id: user_id,
           category_id: post.topic.category_id,

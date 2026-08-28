@@ -67,6 +67,7 @@ module ::DiscourseSmartSearch
 
     def smart_search_applies?
       return false unless defined?(::SiteSetting)
+      return false unless ::SiteSetting.jtech_enabled
       return false unless ::SiteSetting.smart_search_enabled
       return false if @term.blank?
       true
@@ -97,7 +98,10 @@ module ::DiscourseSmartSearch
       existing_ids = base.posts.map(&:id).to_set
       alt.posts.each do |post|
         next if existing_ids.include?(post.id)
-        base.posts << post
+        # Go through GroupedSearchResults#add, not `posts <<` — add enforces
+        # the search_page_size cap and sets more_full_page_results, so a
+        # merged page can never carry multiples of the page size.
+        base.add(post)
         existing_ids << post.id
       end
     rescue StandardError => e

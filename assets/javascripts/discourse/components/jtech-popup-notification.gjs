@@ -73,7 +73,9 @@ const MOD_NOTE_KINDS = {
   note: { icon: "shield-halved", action: "note" },
 };
 
-const FALLBACK = { icon: "bell", action: "default" };
+// "other" is also the choice-list value exposed by the
+// popup_notifications_excluded_types site setting.
+const FALLBACK = { icon: "bell", action: "other" };
 
 export default class JtechPopupNotification extends Component {
   @service currentUser;
@@ -137,11 +139,20 @@ export default class JtechPopupNotification extends Component {
   @action
   async onMessage(payload) {
     try {
-      if (!this.prefEnabled) {
+      // Re-check the master switch live so an admin turning the feature off
+      // stops toasts in already-open tabs, not just after a reload.
+      if (!this.siteSettings.popup_notifications_enabled || !this.prefEnabled) {
         return;
       }
       const notification = payload?.last_notification?.notification;
       if (!notification || notification.read) {
+        return;
+      }
+      // Client-side list settings arrive as a "|"-joined string.
+      const excluded = (
+        this.siteSettings.popup_notifications_excluded_types || ""
+      ).split("|");
+      if (excluded.includes(this.metaFor(notification).action)) {
         return;
       }
       // Show each notification at most once (guards MessageBus replays and

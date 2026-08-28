@@ -20,7 +20,7 @@ en:
         user_note: Added a note on a user
         flag_note: Added a note on a flag
         note: Added a moderator note
-        default: Sent you a notification
+        other: Sent you a notification
       preference:
         title: Desktop Pop Up Notifications
         instructions: Show a small pop-up card in the top-right corner when you
@@ -244,38 +244,76 @@ en:
       sidebar_section_title: Dumbcourse
       sidebar_link_text: Dumbcourse
       sidebar_link_title: Open Dumbcourse
-  site_settings:
-    discourse_another_email_enabled: Enable another smtp server for special email
-      addresses
-    discourse_another_email_smtp_authentication_mode: smtp_authentication_mode
-    discourse_another_email_enabling_mails: Email domains that use the other smtp
-      server
-    discourse_another_email_smtp_address: another_email_smtp_address
-    discourse_another_email_smtp_port: another_email_smtp_port
-    discourse_another_email_smtp_username: another_email_smtp_username
-    discourse_another_email_smtp_password: another_email_smtp_password
-    discourse_another_email_maillist_allowing_emails: which emails are allowed in
-      maillist mode?
-    discourse_another_email_force_from_domain: Force from address domain (e.g., example.com).
-      When set, all emails will be sent from this domain.
-    discourse_another_email_force_smtp_username_to_sender: Force SMTP username to
-      match the sender email address
+    jtech_tools:
+      admin:
+        # Tab labels on the /admin/plugins/jtech-tools config page.
+        tabs:
+          dislike: Dislike
+          smtp: Alternate SMTP
+          mini_mod: Mini-mod
+          mod: Mod
+          dumbcourse: Dumbcourse
+          translator: Translator tweaks
+          smart_search: Smart search
+          popups: Pop-ups
+          disteleplus: Disteleplus
+          all_settings: All settings
   admin_js:
     admin:
       site_settings:
         categories:
           jtech: Jtech
+          jtech_tools: Jtech Tools
           jtech_dislike: Jtech — Dislike
           jtech_smtp: Jtech — Alternate SMTP
           jtech_mini_mod: Jtech — Mini-mod
           jtech_mod: Jtech — Mod
           jtech_dumbcourse: Jtech — Dumbcourse
           jtech_disteleplus: Jtech — Disteleplus
+          jtech_translator: Jtech — Translator tweaks
           jtech_smart_search: Jtech — Smart search
           jtech_popup_notifications: Jtech — Desktop pop-ups
           jtech_mod_whispers: "Jtech — Mod: Whispers"
           jtech_mod_notes: "Jtech — Mod: Notes"
-          jtech_mod_notifications: "Jtech — Mod: Staff notifications"
+          jtech_mod_notifications: "Jtech — Mod: Notifications"
           jtech_mod_topic_tools: "Jtech — Mod: Topic tools"
           jtech_mod_checklists: "Jtech — Mod: Checklists"
-          trust_level_4: Trust Level 4
+        # Dropdown labels for the plugin's translatable enum settings.
+        dumbcourse:
+          view:
+            latest: Latest
+            new: New
+            top: Top
+            unseen: Unseen
+            hot: Hot
+            my: My posts
+            categories: Categories
+          posters:
+            all: All devices
+            desktop: Desktop only
+            mobile: Mobile only
+            none: "Off"
+          languagetool_mode:
+            self_hosted: Self-hosted server
+            official_api: LanguageTool cloud API
+        requires_confirmation_messages:
+          purge_phantom_likes_now:
+            prompt: This rewrites likes_given and likes_received for every
+              user who has liked in a restricted category, and deletes their
+              like history rows. It cannot be undone. Run the purge now?
+            confirm: Run purge
+          discourse_another_email_enabled:
+            prompt: This reroutes every outgoing forum email — including group
+              SMTP mail — through the relay configured on this tab. Enable
+              the alternate relay?
+            confirm: Enable relay
+          disteleplus_register_webhook_now:
+            prompt: This calls Telegram's setWebhook with this forum's webhook
+              address (generating the secret first if blank). Register the
+              webhook now?
+            confirm: Register webhook
+          translator_tweaks_worker_url:
+            prompt: The translation endpoints are swapped at boot, so this
+              change only takes effect after a full app restart. Save it
+              anyway?
+            confirm: Save (restart required)

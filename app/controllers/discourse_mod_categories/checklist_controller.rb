@@ -82,6 +82,17 @@ module ::DiscourseModCategories
       kind = params[:kind].to_s
       submitted = params[:version].to_i
 
+      # Match the per-kind feature gates the other endpoints use — with a
+      # feature off, its acceptance store must not be writable either.
+      case kind
+      when "targeted"
+        ensure_feature!(:mod_targeted_checklists_enabled)
+      when "topic"
+        ensure_feature!(:mod_topic_prompt_checklist_enabled)
+      else
+        ensure_feature!(:mod_first_post_checklist_enabled)
+      end
+
       if kind == "targeted"
         checklist =
           DiscourseModCategories.targeted_checklists.find { |c| c["id"] == params[:id].to_s }

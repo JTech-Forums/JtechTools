@@ -109,7 +109,9 @@ module DiscourseDumbcourse
 
     def build_languagetool_uri(raw)
       url = raw.to_s.strip
-      url = "http://#{url}" unless url.start_with?("http://", "https://")
+      # Default a scheme-less host to https — an http:// fallback would send
+      # the bearer secret in cleartext.
+      url = "https://#{url}" unless url.start_with?("http://", "https://")
       uri = URI.parse(url)
 
       path = uri.path.to_s

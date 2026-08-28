@@ -10,6 +10,11 @@ RSpec.describe DiscourseDisteleplus::UserMatcher do
     { "id" => 1, "username" => username }
   end
 
+  def map!(*pairs)
+    SiteSetting.disteleplus_user_map =
+      pairs.map { |tg, dc| { "telegram_username" => tg, "discourse_username" => dc } }.to_json
+  end
+
   it "matches automatically on the same username" do
     expect(described_class.match(from("alice"))).to eq(alice)
   end
@@ -27,11 +32,11 @@ RSpec.describe DiscourseDisteleplus::UserMatcher do
     expect(described_class.match(nil)).to be_nil
   end
 
-  describe "manual mappings" do
-    before { SiteSetting.disteleplus_user_mappings = "tg_alice:bob|@Weird_TG:alice" }
+  describe "manual mappings (disteleplus_user_map)" do
+    before { map!(%w[tg_alice bob], %w[@Weird_TG alice]) }
 
     it "wins over the automatic match" do
-      SiteSetting.disteleplus_user_mappings = "alice:bob"
+      map!(%w[alice bob])
       expect(described_class.match(from("alice"))).to eq(bob)
     end
 
@@ -43,9 +48,36 @@ RSpec.describe DiscourseDisteleplus::UserMatcher do
       expect(described_class.match(from("weird_tg"))).to eq(alice)
     end
 
-    it "ignores malformed pairs" do
-      SiteSetting.disteleplus_user_mappings = "justoneword|:missing|also:"
+    it "falls back to the automatic match when the mapped user is gone" do
+      map!(%w[alice no_such_user_anymore])
+      expect(described_class.match(from("alice"))).to eq(alice)
+    end
+
+    it "tolerates a malformed stored value" do
+      SiteSetting.disteleplus_user_map = "[]"
+      expect(described_class.rows("not json at all")).to eq([])
       expect(described_class.mappings).to eq({})
+    end
+  end
+
+  describe "legacy disteleplus_user_mappings migration shape" do
+    it "parses the pipe format the migration converts" do
+      rows =
+        "tg_alice:bob|@Weird_TG:alice|justoneword|:missing|also:"
+          .split("|")
+          .filter_map do |pair|
+            tg, dc = pair.split(":", 2)
+            tg = tg.to_s.strip.delete_prefix("@")
+            dc = dc.to_s.strip.delete_prefix("@")
+            next if tg.blank? || dc.blank?
+            { "telegram_username" => tg, "discourse_username" => dc }
+          end
+      expect(rows).to eq(
+        [
+          { "telegram_username" => "tg_alice", "discourse_username" => "bob" },
+          { "telegram_username" => "Weird_TG", "discourse_username" => "alice" },
+        ],
+      )
     end
   end
 end

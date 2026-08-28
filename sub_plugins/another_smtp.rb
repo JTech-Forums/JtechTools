@@ -2,87 +2,112 @@
 # Jtech sub-plugin body, lifted from `discourse-another-smtp/plugin.rb` of the original plugin.
 # This file is instance_eval'd by Jtech/plugin.rb in the Plugin::Instance context,
 # so DSL methods (after_initialize, register_asset, on, …) work unchanged.
+#
+# Mechanism: not an interceptor and not a delivery_method swap. The
+# :before_email_send hook fires immediately before message.deliver! and this
+# handler mutates the per-message Mail::SMTP settings hash in place. It is a
+# PARTIAL override — host, port, transport security, verification, HELO
+# domain, timeouts and credentials are replaced; everything else stays at
+# what GlobalSetting.smtp_settings produced. It applies to EVERY outgoing
+# message, including group SMTP mail.
 
 # [Jtech] removed top-level: enabled_site_setting :discourse_another_email_enabled
+# — the handler gates on jtech_enabled + the module master at call time.
 
 after_initialize do
   DiscourseEvent.on(:before_email_send) do |*params|
-    if SiteSetting.discourse_another_email_enabled
-      message, type = *params
+    next unless SiteSetting.jtech_enabled
+    next unless SiteSetting.discourse_another_email_enabled
 
-      message.delivery_method.settings[
-        :authentication
-      ] = SiteSetting.discourse_another_email_smtp_authentication_mode
-      message.delivery_method.settings[:address] = SiteSetting.discourse_another_email_smtp_address
-      message.delivery_method.settings[:port] = SiteSetting.discourse_another_email_smtp_port
-      message.delivery_method.settings[
-        :password
-      ] = SiteSetting.discourse_another_email_smtp_password
-      message.delivery_method.settings[
-        :user_name
-      ] = SiteSetting.discourse_another_email_smtp_username
+    begin
+      message, _type = *params
+      settings = message.delivery_method.settings
 
-      # Force from domain if configured
-      force_domain = SiteSetting.discourse_another_email_force_from_domain
-      if force_domain.present?
-        # Get the current from address
-        from_addresses = message.from
-        if from_addresses && from_addresses.any?
-          # Replace domain for each from address
-          new_from_addresses =
-            from_addresses.map do |addr|
-              if addr.include?("@")
-                local_part = addr.split("@").first
-                # Preserve display name if present
-                if addr.include?("<") && addr.include?(">")
-                  # Format: "Display Name <email@domain.com>"
-                  display_name = addr.split("<").first.strip
-                  if display_name.present?
-                    "#{display_name} <#{local_part}@#{force_domain}>"
-                  else
-                    "#{local_part}@#{force_domain}"
-                  end
-                else
-                  # Simple email format
-                  "#{local_part}@#{force_domain}"
-                end
-              else
-                addr
-              end
-            end
-          message.from = new_from_addresses
-        end
+      # Blank address = unconfigured: leave the global relay alone entirely.
+      address = SiteSetting.discourse_another_email_smtp_address.presence
+      next if address.nil?
+
+      settings[:address] = address
+      settings[:port] = SiteSetting.discourse_another_email_smtp_port
+
+      # Transport security. Every nil below is load-bearing: mail's
+      # setting_provided? is `!settings[k].nil?`, so false and nil mean
+      # different things, and Mail::SMTP raises if :tls and :enable_starttls*
+      # are both truthy.
+      case SiteSetting.discourse_another_email_smtp_security
+      when JtechSmtpSecuritySiteSetting::TLS
+        settings[:tls] = settings[:ssl] = true
+        settings[:enable_starttls] = settings[:enable_starttls_auto] = false
+      when JtechSmtpSecuritySiteSetting::STARTTLS_ALWAYS
+        settings[:tls] = settings[:ssl] = nil
+        settings[:enable_starttls] = :always
+        settings[:enable_starttls_auto] = nil
+      when JtechSmtpSecuritySiteSetting::STARTTLS_AUTO
+        settings[:tls] = settings[:ssl] = settings[:enable_starttls] = nil
+        settings[:enable_starttls_auto] = true
+      when JtechSmtpSecuritySiteSetting::NONE
+        settings[:tls] = settings[:ssl] = nil
+        settings[:enable_starttls] = settings[:enable_starttls_auto] = false
       end
 
-      # Force SMTP username to match sender address if configured
-      if SiteSetting.discourse_another_email_force_smtp_username_to_sender
-        from_addresses = message.from
-        if from_addresses && from_addresses.any?
-          # Get the first from address and extract just the email part
-          first_from = from_addresses.first
-          email_address =
-            if first_from.include?("<") && first_from.include?(">")
-              # Extract email from "Display Name <email@domain.com>" format
-              first_from.match(/<(.+)>/)[1]
-            else
-              # Already in simple email format
-              first_from
-            end
+      settings[:openssl_verify_mode] = SiteSetting.discourse_another_email_smtp_openssl_verify_mode
+      settings[:open_timeout] = SiteSetting.discourse_another_email_smtp_open_timeout_seconds
+      settings[:read_timeout] = SiteSetting.discourse_another_email_smtp_read_timeout_seconds
 
-          # Strip plus addressing from the email
-          if email_address.include?("@")
-            local_part, domain = email_address.split("@")
-            # Remove plus addressing (e.g., user+tag@domain.com becomes user@domain.com)
-            local_part = local_part.split("+").first
-            smtp_username = "#{local_part}@#{domain}"
-          else
-            smtp_username = email_address
+      helo = SiteSetting.discourse_another_email_smtp_domain.presence
+      settings[:domain] = helo if helo
+
+      # Authentication. Credentials must become nil, not "" — net-smtp still
+      # issues AUTH for an empty string (`"" ` is truthy), which fails at the
+      # relay instead of skipping AUTH.
+      mode = SiteSetting.discourse_another_email_smtp_authentication_mode
+      username = SiteSetting.discourse_another_email_smtp_username.presence
+      password = SiteSetting.discourse_another_email_smtp_password.presence
+
+      if mode == JtechSmtpAuthenticationModeSiteSetting::NONE || (username.nil? && password.nil?)
+        settings[:authentication] = nil
+        settings[:user_name] = nil
+        settings[:password] = nil
+      else
+        settings[:authentication] = mode
+        settings[:user_name] = username
+        settings[:password] = password
+      end
+
+      # Force From domain if configured. Read the address OBJECTS, not the
+      # flattened strings — message.from returns bare addresses with display
+      # names already stripped, so string parsing for "Name <addr>" never
+      # matches; Mail::Address#display_name is the only way to keep the name.
+      force_domain = SiteSetting.discourse_another_email_force_from_domain.presence
+      if force_domain && message[:from]
+        message.from =
+          message[:from].addrs.map do |a|
+            addr = a.address.to_s
+            next a.to_s if addr.exclude?("@")
+            rewritten = "#{addr.split("@").first}@#{force_domain}"
+            a.display_name.present? ? "#{a.display_name} <#{rewritten}>" : rewritten
           end
+      end
 
-          # Update the SMTP username to match the sender (without plus addressing)
-          message.delivery_method.settings[:user_name] = smtp_username
+      # Force SMTP username to match the sender if configured. Runs after the
+      # domain rewrite, so the AUTH user carries the rewritten domain. Never
+      # resurrects AUTH when the mode above resolved to no authentication.
+      if settings[:user_name] && SiteSetting.discourse_another_email_force_smtp_username_to_sender
+        first_from = Array(message.from).first.to_s
+        if first_from.include?("@")
+          local_part, domain = first_from.split("@", 2)
+          # Strip plus addressing (user+tag@domain → user@domain).
+          settings[:user_name] = "#{local_part.split("+").first}@#{domain}"
         end
       end
+    rescue StandardError => e
+      # Email::Sender only rescues SMTP errors — anything raised here would
+      # escape into the Sidekiq job and take down all outbound mail with no
+      # admin-visible signal. Log and let the message go out on whatever
+      # settings were applied so far.
+      Rails.logger.error(
+        "[jtech-tools another_smtp] before_email_send failed: #{e.class}: #{e.message}",
+      )
     end
   end
 end

@@ -84,7 +84,9 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
 
   it "prefers the manual mapping over the automatic match" do
     other = Fabricate(:user, username: "mapped_target")
-    SiteSetting.disteleplus_user_mappings = "tgmatch:mapped_target"
+    SiteSetting.disteleplus_user_map = [
+      { "telegram_username" => "tgmatch", "discourse_username" => "mapped_target" },
+    ].to_json
     run(message_update("from" => { "id" => 1, "username" => "tgmatch" }))
     expect(adapter).to have_received(:create_message).with(a_hash_including(user: other))
   end

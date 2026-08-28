@@ -38,6 +38,9 @@ module DiscourseDisteleplus
         return
       end
       return if msg["from"].nil? || msg.dig("from", "is_bot")
+      # The polls toggle gates the whole feature — including the initial poll
+      # snapshot, not just the later vote-count refreshes.
+      return if msg["poll"] && !SiteSetting.disteleplus_bridge_polls
       return if MessageLink.for_telegram(msg.dig("chat", "id"), msg["message_id"]).exists?
 
       sender = UserMatcher.match(msg["from"])

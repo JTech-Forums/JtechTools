@@ -99,11 +99,27 @@ module DiscourseDumbcourse
           []
         end
 
+      # The captcha settings belong to discourse-captcha; reading them raises
+      # NoMethodError when that plugin is absent, so guard like the emoji and
+      # reactions lookups below.
+      hcaptcha_enabled =
+        begin
+          SiteSetting.discourse_captcha_enabled
+        rescue StandardError
+          false
+        end
+      hcaptcha_site_key =
+        begin
+          SiteSetting.hcaptcha_site_key.to_s
+        rescue StandardError
+          ""
+        end
+
       settings = {
         defaultTheme: SiteSetting.dumbcourse_default_theme,
         defaultView: SiteSetting.dumbcourse_default_view,
-        hcaptchaEnabled: SiteSetting.discourse_captcha_enabled,
-        hcaptchaSiteKey: SiteSetting.hcaptcha_site_key.to_s,
+        hcaptchaEnabled: hcaptcha_enabled,
+        hcaptchaSiteKey: hcaptcha_site_key,
         basePath: DiscourseDumbcourse.base_path_with_slash,
         paginationEnabled: SiteSetting.dumbcourse_pagination_enabled,
         topicsPerPage: SiteSetting.dumbcourse_topics_per_page,
@@ -127,7 +143,13 @@ module DiscourseDumbcourse
     end
 
     def hcaptcha
-      raise Discourse::NotFound unless SiteSetting.discourse_captcha_enabled
+      captcha_enabled =
+        begin
+          SiteSetting.discourse_captcha_enabled
+        rescue StandardError
+          false
+        end
+      raise Discourse::NotFound unless captcha_enabled
       token = params[:token].to_s
       raise Discourse::InvalidAccess.new if token.blank?
 

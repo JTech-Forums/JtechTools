@@ -8,33 +8,14 @@ require_relative "../lib/discourse_mini_mod/guardian_extensions"
 require_relative "../lib/discourse_mini_mod/topic_extension"
 require_relative "../lib/discourse_mini_mod/topic_view_details_serializer_extension"
 
-# Load the admin JS bundle for category group moderators so they can access
-# the category edit/create routes (which live in the admin bundle).
-# Security: this only loads client-side route handlers. All actual permissions
-# are enforced server-side by Guardian. The admin bundle is a public static
-# asset — loading it grants no server-side privileges.
-register_html_builder("server:before-head-close") do |controller|
-  next "" if controller.blank?
-  user = controller.current_user
-  next "" if user.blank? || user.staff?
-  next "" unless SiteSetting.mini_mod_enabled
-  next "" unless SiteSetting.mini_mod_preload_admin_bundle
-  next "" unless SiteSetting.enable_category_group_moderation
-
-  guardian = Guardian.new(user)
-  next "" unless guardian.send(:category_group_moderator_scope).exists?
-
-  chunks = EmberCli.script_chunks["chunk.admin"]
-  next "" if chunks.blank?
-
-  nonce = controller.helpers.csp_nonce_placeholder
-  chunks
-    .map do |script_name|
-      path = controller.helpers.script_asset_path(script_name)
-      %(<link rel="preload" href="#{path}" as="script" nonce="#{nonce}" data-discourse-entrypoint="admin">)
-    end
-    .join("\n")
-end
+# NOTE: the old "preload the admin JS bundle for mini-mods" html builder is
+# gone, together with its mini_mod_preload_admin_bundle setting. It called
+# EmberCli.script_chunks — a constant that no longer exists in core (replaced
+# by EmberAssets) — inside an unrescued builder, which raised NameError on
+# every page render for exactly the users it targeted. Even fixed, it could
+# not work: the admin bundle is now a staff-gated dynamic import
+# (loadAdmin() runs only when data-is-staff="true"), so a preload link
+# defines no modules for non-staff.
 
 after_initialize do
   reloadable_patch do

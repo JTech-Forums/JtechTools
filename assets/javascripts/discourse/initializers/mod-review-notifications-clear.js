@@ -23,10 +23,10 @@ export default {
 
   initialize(container) {
     const siteSettings = container.lookup("service:site-settings");
-    if (
-      !siteSettings.mod_categories_enabled ||
-      !siteSettings.mod_auto_mark_notifications_seen
-    ) {
+    // Deliberately no mod_categories_enabled check: auto-mark is independent
+    // of the module master, matching the server endpoints and the sibling
+    // mod-topic-notifications-clear initializer.
+    if (!siteSettings.mod_auto_mark_notifications_seen) {
       return;
     }
 

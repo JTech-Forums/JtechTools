@@ -114,16 +114,46 @@ RSpec.describe "DiscourseModCategories plugin.rb" do
         mod_first_post_checklist_enabled
         mod_targeted_checklists_enabled
         mod_topic_prompt_checklist_enabled
+        mod_notify_whisper_targets
+        mod_whisper_audience_aware_topic_list
         mini_mod_can_create_categories
         mini_mod_can_edit_categories
         mini_mod_can_edit_topics
         mini_mod_can_move_topics
-        mini_mod_preload_admin_bundle
       ].each { |setting| expect(SiteSetting.defaults[setting]).to eq(true), setting.to_s }
     end
 
     it "defaults cross-staff note editing to off (security fix)" do
       expect(SiteSetting.defaults[:mod_moderators_can_edit_others_notes]).to eq(false)
+    end
+
+    it "keeps the mini-mod settings off the client payload" do
+      client_settings = SiteSetting.client_settings
+      expect(client_settings).not_to include(:mini_mod_enabled)
+      expect(client_settings).not_to include(:mini_mod_manage_all_categories)
+      expect(client_settings).not_to include(:mini_mod_manage_tags)
+    end
+  end
+
+  describe "translator-tweaks settings registration" do
+    it "registers the module master switch, on by default (preserves shipped behavior)" do
+      expect(SiteSetting.defaults[:translator_tweaks_enabled]).to eq(true)
+    end
+
+    it "registers the globe-hiding toggle, on by default" do
+      expect(SiteSetting.defaults[:translator_tweaks_hide_untranslatable]).to eq(true)
+    end
+
+    it "defaults the worker URL to the proxy the module used to hard-code" do
+      expect(SiteSetting.defaults[:translator_tweaks_worker_url]).to eq(
+        "https://google-translate-worker.abesternheim.workers.dev/language/translate/v2",
+      )
+    end
+
+    it "keeps the translator settings off the client payload" do
+      client_settings = SiteSetting.client_settings
+      expect(client_settings).not_to include(:translator_tweaks_enabled)
+      expect(client_settings).not_to include(:translator_tweaks_worker_url)
     end
   end
 

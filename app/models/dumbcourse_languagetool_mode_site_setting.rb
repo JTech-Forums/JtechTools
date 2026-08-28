@@ -9,8 +9,18 @@ class DumbcourseLanguagetoolModeSiteSetting < EnumSiteSetting
 
   def self.values
     @values ||= [
-      { name: "Self-hosted", value: "self_hosted" },
-      { name: "Official API", value: "official_api" },
+      {
+        name: "admin.site_settings.dumbcourse.languagetool_mode.self_hosted",
+        value: "self_hosted",
+      },
+      {
+        name: "admin.site_settings.dumbcourse.languagetool_mode.official_api",
+        value: "official_api",
+      },
     ]
+  end
+
+  def self.translate_names?
+    true
   end
 end

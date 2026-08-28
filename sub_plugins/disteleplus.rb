@@ -146,6 +146,9 @@ module ::DiscourseDisteleplus
 
   def self.lock_active_for?(user)
     return false unless SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_lock_chat_ui
+    # Without a configured channel the client has nowhere to redirect to, so
+    # an active lock would strand users in a chat UI that can open nothing.
+    return false if SiteSetting.disteleplus_chat_channel_id.to_i.zero?
     return false if SiteSetting.disteleplus_lock_chat_exempt_admins && user&.admin?
     true
   end
@@ -165,10 +168,15 @@ after_initialize do
   # same pattern as dislike's purge_phantom_likes_now.
   on(:site_setting_changed) do |name, _old_val, new_val|
     if name.to_s == "disteleplus_register_webhook_now" && new_val == true
-      if SiteSetting.disteleplus_webhook_secret.blank?
-        SiteSetting.disteleplus_webhook_secret = SecureRandom.hex(32)
+      # Do nothing (not even generate a secret) while the module is off — the
+      # job would early-return anyway and the admin would be left with a
+      # silently written secret.
+      if SiteSetting.disteleplus_enabled
+        if SiteSetting.disteleplus_webhook_secret.blank?
+          SiteSetting.disteleplus_webhook_secret = SecureRandom.hex(32)
+        end
+        Jobs.enqueue(:disteleplus_register_webhook)
       end
-      Jobs.enqueue(:disteleplus_register_webhook)
       SiteSetting.disteleplus_register_webhook_now = false
     end
   end

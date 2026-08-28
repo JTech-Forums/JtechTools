@@ -11,7 +11,7 @@ One combined Discourse plugin. Bundles previously-separate plugins under a singl
 | Mini-mod | `DiscourseMiniMod` | `mini_mod_*`, `tl4_*` | `mini_mod_enabled` |
 | Mod-categories | `DiscourseModCategories` | `mod_*`, `precheck_*`, `topic_footer_*`, `topic_reply_prompt_*` | `mod_categories_enabled` |
 | Dumbcourse | `DiscourseDumbcourse` | `dumbcourse_*` | `dumbcourse_enabled` |
-| Translator-tweaks | *(patches `DiscourseTranslator`)* | *(none — gated by translator's own settings)* | `translator_enabled` (upstream) |
+| Translator-tweaks | *(patches `DiscourseTranslator`)* | `translator_tweaks_*` | `translator_tweaks_enabled` + `translator_enabled` (upstream) |
 | Smart search | `DiscourseSmartSearch` | `smart_search_*` | `smart_search_enabled` |
 | Desktop pop-ups | `DiscoursePopupNotifications` | `popup_notifications_*` | `popup_notifications_enabled` |
 | Disteleplus (Telegram ⇄ chat bridge) | `DiscourseDisteleplus` | `disteleplus_*` | `disteleplus_enabled` |
@@ -95,7 +95,7 @@ Bridges exactly **one Telegram group** with exactly **one Discourse Chat channel
 
 **What bridges, and how far** (Bot API limits are real — the bridge documents them instead of faking around them):
 
-- **Text, both ways.** Telegram messages post into the channel **as the matching Discourse user** when the Telegram username matches a Discourse username (the manual `disteleplus_user_mappings` setting, `tg_name:discourse_name` pairs, takes precedence); unmatched senders post via the bridge-bot user with a `**Name (TG):**` prefix. Discourse messages appear in Telegram from the bot, prefixed **username:** — bots cannot impersonate people.
+- **Text, both ways.** Telegram messages post into the channel **as the matching Discourse user** when the Telegram username matches a Discourse username (the `disteleplus_user_map` table setting — edited via a proper row editor in admin — takes precedence; the legacy pipe-delimited `disteleplus_user_mappings` value is migrated automatically); unmatched senders post via the bridge-bot user with a `**Name (TG):**` prefix. Discourse messages appear in Telegram from the bot, prefixed **username:** — bots cannot impersonate people.
 - **Media, both ways,** up to `disteleplus_max_upload_mb` (hard ceiling 20 MB — the Bot API refuses larger bot downloads; bot sends cap at 50 MB). Oversized media becomes a placeholder (inbound) or a forum link (outbound; login-gated if secure uploads are on). Voice messages come in as `.ogg` uploads — add `ogg` to `authorized_extensions`. Animated stickers degrade to `[sticker 😀]` text.
 - **Edits, both ways** — with one asymmetry: a Discourse-side edit of a Telegram-originated message stays local (bots cannot edit other people's Telegram messages).
 - **Deletes, Discourse → Telegram only.** Telegram never notifies bots about deletions, so Telegram-side deletions leave the Discourse copy in place — that's a Bot API fact, not a setting.
@@ -162,7 +162,7 @@ public/                Dumbcourse SPA bundle (index.html, dumbcourse.{js,css}, e
 
 ## Admin-UI tabs
 
-The merged `config/settings.yml` exposes one admin tab per sub-plugin: **Jtech**, **Jtech — Dislike**, **Jtech — Alternate SMTP**, **Jtech — Mini-mod**, **Jtech — Mod**, **Jtech — Dumbcourse**, **Jtech — Smart search**. TL4 settings remain in Discourse's core **Trust Level 4** tab.
+The plugin config page at `/admin/plugins/jtech-tools` renders one tab per sub-plugin — **Dislike**, **Alternate SMTP**, **Mini-mod**, **Mod** (spanning its six settings groups), **Dumbcourse**, **Translator tweaks**, **Smart search**, **Pop-ups**, **Disteleplus** — plus core's **All settings** tab kept last as a search-everything fallback. The same category grouping also appears on the classic Admin → Settings sidebar. The `tl4_*` settings live on the Mini-mod tab (they are implemented by, and inert without, that module).
 
 ## Visual review (screenshot specs)
 

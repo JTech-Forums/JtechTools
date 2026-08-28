@@ -761,6 +761,7 @@ after_initialize do
   # notify the chosen targets; a non-staff whisper-back notifies all staff.
   on(:post_created) do |post, opts, user|
     next unless SiteSetting.mod_whisper_enabled
+    next unless SiteSetting.mod_notify_whisper_targets
     next unless post.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
 
     target_ids =
@@ -892,7 +893,10 @@ after_initialize do
     begin
       # With whispers off there is nothing to hide — skip the JOIN + reorder
       # entirely instead of rewriting every topic-list query for nothing.
+      # The audience-aware toggle is the escape hatch that keeps whispers
+      # while dropping this query rewrite.
       next scope unless SiteSetting.mod_whisper_enabled
+      next scope unless SiteSetting.mod_whisper_audience_aware_topic_list
 
       user = topic_query.user
 
@@ -1069,6 +1073,7 @@ after_initialize do
   add_to_serializer(:listable_topic, :highest_post_number) do
     raw = object.highest_post_number
     next raw unless SiteSetting.mod_whisper_enabled
+    next raw unless SiteSetting.mod_whisper_audience_aware_topic_list
 
     visible_max = DiscourseModCategories.whisper_audience_max_post_number(object, scope&.user)
     visible_max || raw
@@ -1086,6 +1091,7 @@ after_initialize do
   add_to_serializer(:listable_topic, :bumped_at) do
     raw = object.bumped_at
     next raw unless SiteSetting.mod_whisper_enabled
+    next raw unless SiteSetting.mod_whisper_audience_aware_topic_list
 
     user = scope&.user
     next raw if user&.staff?

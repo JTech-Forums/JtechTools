@@ -33,7 +33,12 @@ require_relative "../lib/discourse_dumbcourse/engine"
 require_relative "../lib/discourse_dumbcourse/push_sender"
 
 after_initialize do
-  enabled_site_setting :dumbcourse_enabled
+  # NOTE: no `enabled_site_setting :dumbcourse_enabled` here. That call is a
+  # plain setter on the shared Plugin::Instance — it was OVERWRITING
+  # plugin.rb's `enabled_site_setting :jtech_enabled`, making Dumbcourse's
+  # toggle the enable switch for the entire Jtech bundle (serializers, event
+  # handlers, requires_plugin guards of every module). Dumbcourse gates
+  # itself in its own controllers instead.
 
   # Hook: Notification created
   on(:notification_created) do |notification|

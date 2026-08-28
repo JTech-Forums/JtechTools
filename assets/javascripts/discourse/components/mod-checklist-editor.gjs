@@ -53,6 +53,7 @@ class TargetedChecklist {
 // version so every user who already accepted is prompted again. The
 // editor also manages targeted checklists and per-user re-accept resets.
 export default class ModChecklistEditor extends Component {
+  @service siteSettings;
   @service toasts;
 
   audienceOptions = trustLevelOptions(false);
@@ -510,137 +511,139 @@ export default class ModChecklistEditor extends Component {
         {{/if}}
       </section>
 
-      <section class="mod-checklist-targeted">
-        <h3 class="mod-checklist-targeted-title">
-          {{i18n
-            "discourse_mod_categories.first_post_checklist.targeted_title"
-          }}
-        </h3>
-        <p class="mod-checklist-targeted-intro">
-          {{i18n
-            "discourse_mod_categories.first_post_checklist.targeted_intro"
-          }}
-        </p>
+      {{#if this.siteSettings.mod_targeted_checklists_enabled}}
+        <section class="mod-checklist-targeted">
+          <h3 class="mod-checklist-targeted-title">
+            {{i18n
+              "discourse_mod_categories.first_post_checklist.targeted_title"
+            }}
+          </h3>
+          <p class="mod-checklist-targeted-intro">
+            {{i18n
+              "discourse_mod_categories.first_post_checklist.targeted_intro"
+            }}
+          </p>
 
-        {{#each this.targeted as |checklist|}}
-          <div class="mod-checklist-targeted-item">
-            {{#if checklist.version}}
-              <p class="mod-checklist-version">
-                {{i18n
-                  "discourse_mod_categories.first_post_checklist.current_version"
-                  count=checklist.version
-                }}
-              </p>
-            {{/if}}
+          {{#each this.targeted as |checklist|}}
+            <div class="mod-checklist-targeted-item">
+              {{#if checklist.version}}
+                <p class="mod-checklist-version">
+                  {{i18n
+                    "discourse_mod_categories.first_post_checklist.current_version"
+                    count=checklist.version
+                  }}
+                </p>
+              {{/if}}
 
-            <div class="mod-checklist-field">
-              <label class="mod-checklist-field-label">
-                {{i18n
-                  "discourse_mod_categories.first_post_checklist.targeted_name_label"
-                }}
-              </label>
-              <input
-                type="text"
-                class="mod-checklist-targeted-name"
-                value={{checklist.name}}
-                {{on "input" (fn this.updateTargetedName checklist)}}
-              />
-            </div>
-
-            <div class="mod-checklist-field">
-              <label class="mod-checklist-field-label">
-                {{i18n
-                  "discourse_mod_categories.first_post_checklist.targeted_users_label"
-                }}
-              </label>
-              <EmailGroupUserChooser
-                @value={{checklist.usernames}}
-                @onChange={{fn this.updateTargetedUsers checklist}}
-                @options={{hash includeGroups=false}}
-                class="mod-checklist-targeted-users"
-              />
-            </div>
-
-            {{#if checklist.rows.length}}
-              <div class="mod-checklist-rows">
-                {{#each checklist.rows as |row|}}
-                  <div class="mod-checklist-row">
-                    <input
-                      type="text"
-                      class="mod-checklist-row-label"
-                      placeholder={{i18n
-                        "discourse_mod_categories.first_post_checklist.item_label"
-                      }}
-                      value={{row.label}}
-                      {{on "input" (fn this.updateTargetedLabel row)}}
-                    />
-                    <input
-                      type="text"
-                      class="mod-checklist-row-url"
-                      placeholder={{i18n
-                        "discourse_mod_categories.first_post_checklist.item_url"
-                      }}
-                      value={{row.url}}
-                      {{on "input" (fn this.updateTargetedUrl row)}}
-                    />
-                    <DButton
-                      @action={{fn this.removeTargetedRow checklist row}}
-                      @icon="trash-can"
-                      @title="discourse_mod_categories.first_post_checklist.remove_item"
-                      class="btn-flat mod-checklist-remove"
-                    />
-                  </div>
-                {{/each}}
+              <div class="mod-checklist-field">
+                <label class="mod-checklist-field-label">
+                  {{i18n
+                    "discourse_mod_categories.first_post_checklist.targeted_name_label"
+                  }}
+                </label>
+                <input
+                  type="text"
+                  class="mod-checklist-targeted-name"
+                  value={{checklist.name}}
+                  {{on "input" (fn this.updateTargetedName checklist)}}
+                />
               </div>
-            {{/if}}
 
-            <div class="mod-checklist-field">
-              <label class="mod-checklist-field-label">
-                {{i18n
-                  "discourse_mod_categories.first_post_checklist.button_label_label"
-                }}
-              </label>
-              <input
-                type="text"
-                class="mod-checklist-button-label"
-                placeholder={{i18n
-                  "discourse_mod_categories.first_post_checklist.button_label_placeholder"
-                }}
-                value={{checklist.buttonLabel}}
-                {{on "input" (fn this.updateTargetedButtonLabel checklist)}}
-              />
+              <div class="mod-checklist-field">
+                <label class="mod-checklist-field-label">
+                  {{i18n
+                    "discourse_mod_categories.first_post_checklist.targeted_users_label"
+                  }}
+                </label>
+                <EmailGroupUserChooser
+                  @value={{checklist.usernames}}
+                  @onChange={{fn this.updateTargetedUsers checklist}}
+                  @options={{hash includeGroups=false}}
+                  class="mod-checklist-targeted-users"
+                />
+              </div>
+
+              {{#if checklist.rows.length}}
+                <div class="mod-checklist-rows">
+                  {{#each checklist.rows as |row|}}
+                    <div class="mod-checklist-row">
+                      <input
+                        type="text"
+                        class="mod-checklist-row-label"
+                        placeholder={{i18n
+                          "discourse_mod_categories.first_post_checklist.item_label"
+                        }}
+                        value={{row.label}}
+                        {{on "input" (fn this.updateTargetedLabel row)}}
+                      />
+                      <input
+                        type="text"
+                        class="mod-checklist-row-url"
+                        placeholder={{i18n
+                          "discourse_mod_categories.first_post_checklist.item_url"
+                        }}
+                        value={{row.url}}
+                        {{on "input" (fn this.updateTargetedUrl row)}}
+                      />
+                      <DButton
+                        @action={{fn this.removeTargetedRow checklist row}}
+                        @icon="trash-can"
+                        @title="discourse_mod_categories.first_post_checklist.remove_item"
+                        class="btn-flat mod-checklist-remove"
+                      />
+                    </div>
+                  {{/each}}
+                </div>
+              {{/if}}
+
+              <div class="mod-checklist-field">
+                <label class="mod-checklist-field-label">
+                  {{i18n
+                    "discourse_mod_categories.first_post_checklist.button_label_label"
+                  }}
+                </label>
+                <input
+                  type="text"
+                  class="mod-checklist-button-label"
+                  placeholder={{i18n
+                    "discourse_mod_categories.first_post_checklist.button_label_placeholder"
+                  }}
+                  value={{checklist.buttonLabel}}
+                  {{on "input" (fn this.updateTargetedButtonLabel checklist)}}
+                />
+              </div>
+
+              <div class="mod-checklist-editor-actions">
+                <DButton
+                  @action={{fn this.addTargetedRow checklist}}
+                  @icon="plus"
+                  @label="discourse_mod_categories.first_post_checklist.add_item"
+                  class="mod-checklist-targeted-add-item"
+                />
+                <DButton
+                  @action={{fn this.saveTargeted checklist}}
+                  @label="discourse_mod_categories.first_post_checklist.targeted_save"
+                  @disabled={{this.saving}}
+                  class="btn-primary mod-checklist-targeted-save"
+                />
+                <DButton
+                  @action={{fn this.deleteTargeted checklist}}
+                  @icon="trash-can"
+                  @label="discourse_mod_categories.first_post_checklist.targeted_delete"
+                  class="btn-danger mod-checklist-targeted-delete"
+                />
+              </div>
             </div>
+          {{/each}}
 
-            <div class="mod-checklist-editor-actions">
-              <DButton
-                @action={{fn this.addTargetedRow checklist}}
-                @icon="plus"
-                @label="discourse_mod_categories.first_post_checklist.add_item"
-                class="mod-checklist-targeted-add-item"
-              />
-              <DButton
-                @action={{fn this.saveTargeted checklist}}
-                @label="discourse_mod_categories.first_post_checklist.targeted_save"
-                @disabled={{this.saving}}
-                class="btn-primary mod-checklist-targeted-save"
-              />
-              <DButton
-                @action={{fn this.deleteTargeted checklist}}
-                @icon="trash-can"
-                @label="discourse_mod_categories.first_post_checklist.targeted_delete"
-                class="btn-danger mod-checklist-targeted-delete"
-              />
-            </div>
-          </div>
-        {{/each}}
-
-        <DButton
-          @action={{this.addTargeted}}
-          @icon="plus"
-          @label="discourse_mod_categories.first_post_checklist.targeted_add"
-          class="mod-checklist-targeted-add"
-        />
-      </section>
+          <DButton
+            @action={{this.addTargeted}}
+            @icon="plus"
+            @label="discourse_mod_categories.first_post_checklist.targeted_add"
+            class="mod-checklist-targeted-add"
+          />
+        </section>
+      {{/if}}
     </div>
   </template>
 }
