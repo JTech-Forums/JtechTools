@@ -170,7 +170,13 @@ module Jobs
         ]
       end
 
-      method, field = send_method_for(upload)
+      # Voice notes become real Telegram voice bubbles (sendVoice, transcoded
+      # to OGG/OPUS when needed); everything else routes by extension.
+      method, field, io, filename, mime =
+        DiscourseDisteleplus::VoiceNotes.telegram_send_plan(upload, io)
+      method, field = send_method_for(upload) if method.nil?
+      filename = upload.original_filename if filename.blank?
+
       fields = { chat_id: @chat_id }
       fields[:message_thread_id] = @topic_id if @topic_id.positive?
       fields[:caption] = caption if caption.present?
@@ -178,17 +184,13 @@ module Jobs
       fields[:reply_to_message_id] = reply_to if reply_to
 
       begin
-        result =
-          @api.call_multipart(
-            method,
-            fields,
-            file_field: field,
-            io: io,
-            filename: upload.original_filename,
-          )
+        multipart = { file_field: field, io: io, filename: filename }
+        multipart[:mime] = mime if mime.present?
+        result = @api.call_multipart(method, fields, **multipart)
         result.ok ? [result.result, :media] : [log_send_failure(result), nil]
       ensure
-        io.close
+        io.close if io.respond_to?(:close)
+        io.unlink if io.respond_to?(:unlink)
       end
     end
 

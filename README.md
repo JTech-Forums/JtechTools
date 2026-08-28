@@ -96,7 +96,7 @@ Bridges exactly **one Telegram group** with exactly **one Discourse Chat channel
 **What bridges, and how far** (Bot API limits are real — the bridge documents them instead of faking around them):
 
 - **Text, both ways.** Telegram messages post into the channel **as the matching Discourse user** when the Telegram username matches a Discourse username (the `disteleplus_user_map` table setting — edited via a proper row editor in admin — takes precedence; the legacy pipe-delimited `disteleplus_user_mappings` value is migrated automatically); unmatched senders post via the bridge-bot user with a `**Name (TG):**` prefix. Discourse messages appear in Telegram from the bot, prefixed **username:** — bots cannot impersonate people.
-- **Media, both ways,** up to `disteleplus_max_upload_mb` (hard ceiling 20 MB — the Bot API refuses larger bot downloads; bot sends cap at 50 MB). Oversized media becomes a placeholder (inbound) or a forum link (outbound; login-gated if secure uploads are on). Voice messages come in as `.ogg` uploads — add `ogg` to `authorized_extensions`. Animated stickers degrade to `[sticker 😀]` text.
+- **Media, both ways,** up to `disteleplus_max_upload_mb` (hard ceiling 20 MB — the Bot API refuses larger bot downloads; bot sends cap at 50 MB). Oversized media becomes a placeholder (inbound) or a forum link (outbound; login-gated if secure uploads are on). Voice messages come in as `voice-note-*.ogg` uploads and get the voice-note player (see below). Animated stickers degrade to `[sticker 😀]` text.
 - **Edits, both ways** — with one asymmetry: a Discourse-side edit of a Telegram-originated message stays local (bots cannot edit other people's Telegram messages).
 - **Deletes, Discourse → Telegram only.** Telegram never notifies bots about deletions, so Telegram-side deletions leave the Discourse copy in place — that's a Bot API fact, not a setting.
 - **Replies, both ways,** threaded via the message-link table.
@@ -104,7 +104,11 @@ Bridges exactly **one Telegram group** with exactly **one Discourse Chat channel
 - **Telegram polls → markdown snapshot** in chat, vote counts refreshed best-effort. No voting from Discourse (chat has no polls).
 - **Not bridged:** pins, typing indicators, join/leave notices, and muting (a Telegram mute is a moderation action; a Discourse channel mute is a private notification preference — semantically unrelated).
 
-**Chat lock (optional, `disteleplus_lock_chat_ui`):** the header chat button opens the bridged conversation directly (not the drawer/index), all chat hub routes redirect there, and creating channels/DMs is hidden client-side and refused server-side (Guardian) — chat becomes this one admin conversation. `disteleplus_lock_chat_exempt_admins` (default on) keeps the full UI for admins.
+**Chat lock (optional, `disteleplus_lock_chat_ui`):** the header chat button opens the bridged conversation directly (not the drawer/index), all chat hub routes redirect there, and creating channels, DMs **and threads** is hidden client-side and refused server-side — for **everyone, admins included**; there is no creation exemption (turn the lock off to create something, then back on). Enforcement is a Guardian prepend for channels/DMs and a `Chat::Channel#threading_enabled` prepend for threads, so the block holds against the API, not just the UI. `disteleplus_lock_chat_exempt_admins` (default on) only lets admins still *browse* the hub pages instead of being redirected.
+
+**Forced channel notifications (`disteleplus_force_channel_notifications`, default on):** every user allowed into chat is enrolled in the bridge channel at notification level **always** (desktop + web push), chat is re-enabled for anyone who had switched it off, and the level is pinned — a `before_save` on the membership snaps changes back, a scheduled sync runs every 30 minutes, and new/approved/group-added users are enrolled within seconds. `/disteleplus_sync_notifications` (Telegram) or `disteleplus_notification_sync_now` (admin) forces a run; `/disteleplus_status` reports how many members are at "always" and whether site-wide push is on. This deliberately overrides personal mute choices for this one channel. Web push additionally needs core's `push_notifications_enabled` and each person to have accepted push on a device — the plugin cannot do that for them, and the sync log counts members without a push subscription.
+
+**Voice notes (`disteleplus_voice_notes_enabled`, default on):** a microphone button in the chat composer (bridge channel only by default) records in-browser with a live level meter and a countdown to `disteleplus_voice_note_max_seconds`, previews, and sends the note as its own message. Every audio in chat gets a compact waveform player (play, click/drag scrub, elapsed/total, 1×/1.5×/2× speed remembered per browser, download) instead of the browser default; `disteleplus_voice_player_all_audio` limits it to voice notes only. Voice notes travel to Telegram as real **voice bubbles** (`sendVoice`) — Firefox records OGG/OPUS natively; Chrome/Edge WebM is transcoded server-side when `ffmpeg` is present (it is in the standard Discourse image), otherwise the note arrives as an audio file. Telegram voice messages arrive as `voice-note-<n>s.ogg` and get the same player. The recorder uploads through core, so enabling the feature adds `ogg|webm|m4a|opus` to `authorized_extensions` if missing.
 
 **Setup (once, ~5 minutes):**
 
@@ -141,7 +145,10 @@ administrators get these commands in the bot command menu:
 - `/disteleplus_create_uploads [name]` — run in General; creates and binds the
   topic (the bot needs manage-topics permission).
 - `/disteleplus_status` — confirms the human topic name, saved destination,
-  and whether the live mirror is enabled.
+  whether the live mirror is enabled, the chat lock state, channel
+  notification enrolment counts, and voice-note capability.
+- `/disteleplus_sync_notifications` — re-enrols every eligible Discourse
+  member in the bridge channel at notification level "always".
 
 Every setup command verifies the sender through Telegram's `getChatMember` and
 accepts only a group creator/administrator. Commands are consumed before the

@@ -1,5 +1,38 @@
 en:
   js:
+    disteleplus:
+      voice:
+        button: Record a voice note
+        title: Voice note
+        start: Start recording
+        stop: Stop
+        send: Send voice note
+        rerecord: Record again
+        try_again: Try again
+        sending: Sending…
+        requesting: Waiting for microphone permission…
+        idle_hint: Tap start and speak. Your note is sent as a voice bubble
+          here and in Telegram.
+        recording_hint: Recording… tap stop when you are done.
+        preview_hint: "%{duration} recorded. Listen back, then send or record again."
+        errors:
+          unsupported: This browser cannot record audio. Try a current Chrome,
+            Firefox, Edge or Safari.
+          denied: Microphone access was blocked. Allow it for this site in your
+            browser's permissions and try again.
+          no_microphone: No microphone was found.
+          recording_failed: Recording failed. Please try again.
+          too_short: That was too short to send. Hold for at least a second.
+      player:
+        voice_note: Voice note
+        audio: Audio
+        play: Play
+        pause: Pause
+        seek: Seek
+        speed: Playback speed
+        speed_value: "Playback speed %{speed}×"
+        download: Download
+        unavailable: This audio could not be loaded.
     jtech_popup_notifications:
       someone: Someone
       # Second half of the toast heading line, "Name — <action>".

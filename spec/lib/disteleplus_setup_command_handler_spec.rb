@@ -121,6 +121,56 @@ RSpec.describe DiscourseDisteleplus::SetupCommandHandler do
     )
   end
 
+  it "reports lock, notification and voice-note state in /disteleplus_status" do
+    SiteSetting.disteleplus_enabled = true
+    SiteSetting.disteleplus_telegram_chat_id = "-100555"
+    SiteSetting.disteleplus_chat_channel_id = 42
+    SiteSetting.disteleplus_lock_chat_ui = true
+    allow(DiscourseDisteleplus::ChannelNotifications).to receive(:status_summary).and_return(
+      "on — 3/3 members at always, push on",
+    )
+    allow(DiscourseDisteleplus::VoiceNotes).to receive(:ffmpeg_available?).and_return(true)
+    message["text"] = "/disteleplus_status"
+
+    process
+
+    expect(api).to have_received(:call).with(
+      "sendMessage",
+      a_hash_including(
+        text:
+          a_string_including(
+            "Chat lock: on — no new channels, DMs or threads for anyone; admins may browse",
+            "Channel notifications: on — 3/3 members at always, push on",
+            "Voice notes: on — bridge channel",
+          ),
+      ),
+    )
+  end
+
+  it "queues a notification sync from /disteleplus_sync_notifications" do
+    SiteSetting.disteleplus_chat_channel_id = 42
+    allow(DiscourseDisteleplus::ChannelNotifications).to receive(:active?).and_return(true)
+    message["text"] = "/disteleplus_sync_notifications"
+
+    expect_enqueued_with(job: :disteleplus_sync_channel_notifications) { process }
+    expect(api).to have_received(:call).with(
+      "sendMessage",
+      a_hash_including(text: a_string_including("Notification sync queued")),
+    )
+  end
+
+  it "explains when the sync command is run with forced notifications off" do
+    SiteSetting.disteleplus_force_channel_notifications = false
+    message["text"] = "/disteleplus_sync_notifications"
+
+    process
+
+    expect(api).to have_received(:call).with(
+      "sendMessage",
+      a_hash_including(text: a_string_including("Forced channel notifications are off")),
+    )
+  end
+
   it "does not let an administrator in another group hijack an existing binding" do
     SiteSetting.disteleplus_telegram_chat_id = "-100999"
     message["text"] = "/disteleplus_bind_uploads"

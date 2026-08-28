@@ -1,16 +1,11 @@
-// Disteleplus chat lock — cosmetic half of the lock (the Guardian prepend in
-// sub_plugins/disteleplus.rb is the enforcement). Scoped to the body class
-// the disteleplus-chat-lock initializer adds, so nothing here leaks when the
-// lock is off or the viewer is an exempted admin.
-//
-// Selectors target the chat plugin's create/browse affordances across the
-// sidebar, the drawer, and the full-page chat UI; if an upstream rename
-// makes one miss, the server-side block still holds.
-// Telegram-bridged messages (bot-posted, "**Name (TG):**" prefix) — the
-// disteleplus-bridged-messages initializer marks them and splits the sender
-// out of the body; this renders each as a compact card: sender name as a
-// small tinted header line with a "Telegram" pill, message underneath.
+// Disteleplus chat styles — three concerns:
+//   1. Telegram-bridged message cards (bot-posted, "**Name (TG):**" prefix).
+//   2. The chat lock's cosmetic half (the Guardian/Chat::Channel prepends in
+//      sub_plugins/disteleplus.rb are the enforcement).
+//   3. Voice notes: the custom audio player and the recorder modal.
 // Everything resolves through theme variables so dark mode works for free.
+
+// ── 1. Bridged messages ──────────────────────────────────────────────────────
 .chat-message .disteleplus-bridged {
   background: var(--primary-very-low);
   border-left: 3px solid var(--tertiary);
@@ -41,6 +36,11 @@
   }
 }
 
+// ── 2. Chat lock ─────────────────────────────────────────────────────────────
+// Creation affordances go for EVERYONE (admins included) whenever the lock
+// is on. Selectors target the chat plugin's create/browse controls across
+// the sidebar, the drawer, and the full-page UI; if an upstream rename makes
+// one miss, the server-side block still holds.
 body.disteleplus-chat-locked {
   // Sidebar chat section: "+" (new channel / new DM) and browse buttons.
   .sidebar-section[data-section-name="chat-channels"] .sidebar-section-header-button,
@@ -48,12 +48,409 @@ body.disteleplus-chat-locked {
   // Full-page chat + drawer affordances.
   .c-navbar__new-dm-button,
   .c-navbar__open-browse-page-button,
+  .c-navbar__new-channel-button,
   .open-browse-page-btn,
   .new-channel-btn,
   .chat-channel-row__new-dm,
   // "Browse channels" / "start a conversation" empty-state links.
   .channels-list .open-browse-page-btn,
-  .direct-message-creator {
+  .direct-message-creator,
+  .c-footer__item[data-route="chat.direct-messages"] .new-dm,
+  // Threads: the per-message "reply in thread" action, the thread indicator
+  // footer, and the thread list button. Server-side threading is reported
+  // off while locked so these rarely render; belt and braces.
+  .chat-message-actions .chat-message-thread-btn,
+  .chat-message-actions__thread,
+  .chat-message-actions [data-id="openThread"],
+  .chat-message-actions-container .btn[title*="thread" i],
+  .chat-message-thread-indicator,
+  .c-navbar__threads-list-button,
+  .open-thread-list-btn,
+  .chat-composer__thread-btn {
     display: none !important;
   }
+}
+
+// Forced notifications: the level picker in channel settings would only
+// snap back, so hide it and say why.
+body.disteleplus-notifications-forced {
+  .c-channel-settings__notifications-list,
+  .c-channel-settings__notification-level,
+  .chat-channel-settings .notifications-level-selector,
+  .c-channel-settings [data-setting="notification_level"],
+  .channel-settings-view__notification-level {
+    display: none !important;
+  }
+}
+
+// ── 3a. Voice-note player ────────────────────────────────────────────────────
+// A single row: play, kind glyph, waveform, time, speed, download. The
+// waveform is 44 flex bars sized by --peak (set per bar by the JS) and tinted
+// past --progress; with no decoded peaks yet it renders as an even track, so
+// the player is never "loading" from the user's point of view.
+.disteleplus-audio {
+  --da-height: 2.75em;
+  --da-bg: var(--primary-very-low);
+  --da-fg: var(--primary);
+  --da-muted: var(--primary-medium);
+  --da-accent: var(--tertiary);
+  --da-track: var(--primary-low-mid);
+  --da-played: var(--tertiary);
+  --da-radius: 1.375em;
+  --progress: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 26em;
+  min-height: var(--da-height);
+  padding: 0.35em 0.6em 0.35em 0.35em;
+  border-radius: var(--da-radius);
+  background: var(--da-bg);
+  border: 1px solid var(--primary-low);
+  color: var(--da-fg);
+  font-size: var(--font-down-1);
+  line-height: 1;
+  user-select: none;
+  transition: border-color 0.15s ease;
+
+  &:hover,
+  &:focus-within {
+    border-color: var(--primary-low-mid);
+  }
+
+  &--playing {
+    border-color: var(--da-accent);
+  }
+
+  &--voice {
+    --da-bg: var(--tertiary-very-low);
+    --da-track: var(--tertiary-low);
+    border-color: var(--tertiary-low);
+  }
+
+  &--error {
+    --da-accent: var(--danger);
+    --da-played: var(--danger);
+    opacity: 0.7;
+  }
+
+  // The real <audio> keeps playing; it just has no UI of its own now.
+  &__native {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &__play,
+  &__speed,
+  &__download {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--da-fg);
+    cursor: pointer;
+    border-radius: 999px;
+
+    &:focus-visible {
+      outline: 2px solid var(--da-accent);
+      outline-offset: 1px;
+    }
+  }
+
+  &__play {
+    width: 2.1em;
+    height: 2.1em;
+    background: var(--da-accent);
+    color: var(--secondary);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 15%);
+    transition:
+      transform 0.12s ease,
+      filter 0.12s ease;
+
+    .d-icon {
+      width: 0.9em;
+      height: 0.9em;
+      color: inherit;
+    }
+
+    // Nudge the play glyph right; a centred triangle looks left-heavy.
+    .d-icon-play {
+      margin-left: 0.12em;
+    }
+
+    &:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.94);
+    }
+
+    &:disabled {
+      cursor: default;
+      background: var(--primary-low-mid);
+    }
+  }
+
+  &__kind {
+    flex: 0 0 auto;
+    display: inline-flex;
+    color: var(--da-muted);
+
+    .d-icon {
+      width: 0.85em;
+      height: 0.85em;
+      color: inherit;
+    }
+  }
+
+  &__track {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 1.9em;
+    min-width: 6em;
+    cursor: pointer;
+    touch-action: none;
+    border-radius: 0.5em;
+
+    &:focus-visible {
+      outline: 2px solid var(--da-accent);
+      outline-offset: 2px;
+    }
+  }
+
+  &__bar {
+    --peak: 0.35;
+    flex: 1 1 0;
+    min-width: 2px;
+    height: max(3px, calc(var(--peak) * 100%));
+    border-radius: 2px;
+    background: var(--da-track);
+    transition:
+      height 0.25s ease,
+      background-color 0.12s ease;
+
+    &.is-played {
+      background: var(--da-played);
+    }
+  }
+
+  // Flat fallback: identical bars, so it reads as a progress bar.
+  &--flat &__bar {
+    --peak: 0.35 !important;
+  }
+
+  &__time {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.25em;
+    min-width: 2.6em;
+    font-variant-numeric: tabular-nums;
+    color: var(--da-muted);
+    white-space: nowrap;
+  }
+
+  &__elapsed {
+    color: var(--da-fg);
+
+    &:not([hidden]) + .disteleplus-audio__total::before {
+      content: "/";
+      margin-right: 0.25em;
+      color: var(--da-muted);
+    }
+  }
+
+  &__speed {
+    min-width: 2.4em;
+    height: 1.6em;
+    padding: 0 0.45em;
+    font-size: var(--font-down-2);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--da-fg);
+    background: var(--primary-low);
+
+    &.is-default {
+      color: var(--da-muted);
+      background: transparent;
+    }
+
+    &:hover {
+      background: var(--primary-low-mid);
+    }
+  }
+
+  &__download {
+    width: 1.6em;
+    height: 1.6em;
+    color: var(--da-muted);
+
+    .d-icon {
+      width: 0.8em;
+      height: 0.8em;
+      color: inherit;
+    }
+
+    &:hover {
+      color: var(--da-fg);
+      background: var(--primary-low);
+    }
+  }
+}
+
+// Chat's upload container gives audio a fixed width; let the player breathe.
+.chat-uploads .disteleplus-audio,
+.chat-message .disteleplus-audio {
+  margin: 0.2em 0;
+}
+
+.chat-upload:has(.disteleplus-audio) {
+  max-width: 100%;
+}
+
+// Small screens: drop the download link and shrink the chrome.
+@media (width <= 480px) {
+  .disteleplus-audio {
+    gap: 0.4em;
+    max-width: 100%;
+
+    &__download {
+      display: none;
+    }
+
+    &__kind {
+      display: none;
+    }
+  }
+}
+
+// ── 3b. Recorder modal ───────────────────────────────────────────────────────
+.disteleplus-voice-modal {
+  .d-modal__body {
+    min-width: min(26em, 90vw);
+  }
+
+  .disteleplus-voice__stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75em;
+    padding: 1em 0.5em 0.25em;
+  }
+
+  .disteleplus-voice__meter {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    width: 100%;
+    max-width: 20em;
+    height: 3.5em;
+
+    span {
+      flex: 1 1 0;
+      min-height: 3px;
+      border-radius: 2px;
+      background: var(--primary-low-mid);
+      transition:
+        height 0.08s linear,
+        background-color 0.2s ease;
+    }
+  }
+
+  .disteleplus-voice__stage.is-recording .disteleplus-voice__meter span {
+    background: var(--tertiary);
+  }
+
+  .disteleplus-voice__stage.is-near-limit .disteleplus-voice__meter span {
+    background: var(--danger);
+  }
+
+  .disteleplus-voice__clock {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .disteleplus-voice__elapsed {
+    font-size: var(--font-up-4);
+    font-weight: 600;
+  }
+
+  .disteleplus-voice__stage.is-recording .disteleplus-voice__elapsed::before {
+    content: "";
+    display: inline-block;
+    width: 0.5em;
+    height: 0.5em;
+    margin-right: 0.4em;
+    border-radius: 50%;
+    background: var(--danger);
+    vertical-align: middle;
+    animation: disteleplus-voice-blink 1s steps(2, start) infinite;
+  }
+
+  .disteleplus-voice__max {
+    color: var(--primary-medium);
+  }
+
+  .disteleplus-voice__hint {
+    margin: 0;
+    color: var(--primary-medium);
+    text-align: center;
+  }
+
+  .disteleplus-voice__preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75em;
+    padding: 0.5em 0;
+  }
+
+  .disteleplus-voice__preview-audio {
+    width: 100%;
+  }
+
+  .disteleplus-voice__uploading,
+  .disteleplus-voice__error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5em;
+    padding: 1em 0;
+    text-align: center;
+
+    .d-icon {
+      width: 1.6em;
+      height: 1.6em;
+    }
+  }
+
+  .disteleplus-voice__error .d-icon {
+    color: var(--danger);
+  }
+}
+
+@keyframes disteleplus-voice-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+// Composer button: tint it so it reads as "record", not "attach".
+.chat-composer .disteleplus-voice-note-btn .d-icon {
+  color: var(--tertiary);
 }

@@ -59,6 +59,37 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
     expect(bot.trust_level).to eq(TrustLevel[4])
   end
 
+  it "names an inbound Telegram voice message as a voice note with its duration" do
+    tempfile = Tempfile.new(%w[voice .oga], binmode: true)
+    tempfile.write("OggS")
+    tempfile.rewind
+    allow_any_instance_of(DiscourseDisteleplus::TelegramApi).to receive(:download_file).and_return(
+      tempfile,
+    )
+    upload = Struct.new(:id, :persisted?).new(501, true)
+    creator = instance_double(UploadCreator, create_for: upload)
+    allow(UploadCreator).to receive(:new).and_return(creator)
+
+    run(
+      message_update(
+        "text" => nil,
+        "voice" => {
+          "file_id" => "AwAC",
+          "duration" => 25,
+          "mime_type" => "audio/ogg",
+          "file_size" => 4000,
+        },
+      ),
+    )
+
+    expect(UploadCreator).to have_received(:new).with(
+      tempfile,
+      "voice-note-25s.ogg",
+      type: "composer",
+    )
+    expect(adapter).to have_received(:create_message).with(a_hash_including(upload_ids: [501]))
+  end
+
   it "ignores messages from other Telegram chats" do
     run(message_update("chat" => { "id" => -1 }))
     expect(adapter).not_to have_received(:create_message)

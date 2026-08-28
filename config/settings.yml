@@ -996,18 +996,60 @@ jtech_disteleplus:
     depends_on:
       - "disteleplus_enabled"
 
-  # Chat UI lock — hub pages redirect to the bridge channel and creating
-  # channels/DMs is hidden (client) and blocked (Guardian).
+  # Chat UI lock — creating channels, DMs and threads is blocked for EVERYONE
+  # (admins included; Guardian + Chat::Channel prepends) and hidden in the
+  # client; hub pages redirect to the bridge channel.
   disteleplus_lock_chat_ui:
     default: false
     client: true
     depends_on:
       - "disteleplus_enabled"
+  # Admins may still browse hub pages (channel list, DMs, browse) while the
+  # lock is on. Creation stays blocked for them regardless.
   disteleplus_lock_chat_exempt_admins:
     default: true
     client: true
     depends_on:
       - "disteleplus_lock_chat_ui"
+
+  # Channel notifications — every eligible user is enrolled in the bridge
+  # channel at notification level "always" (desktop + push), and kept there.
+  disteleplus_force_channel_notifications:
+    default: true
+    client: true
+    depends_on:
+      - "disteleplus_enabled"
+  disteleplus_notification_sync_now:
+    default: false
+    client: false
+    requires_confirmation: "simple_on_enable"
+    depends_on:
+      - "disteleplus_force_channel_notifications"
+
+  # Voice notes — mic button in the chat composer, custom player, and
+  # Telegram voice-bubble delivery.
+  disteleplus_voice_notes_enabled:
+    default: true
+    client: true
+    depends_on:
+      - "disteleplus_enabled"
+  disteleplus_voice_note_max_seconds:
+    default: 300
+    client: true
+    min: 5
+    max: 1800
+    depends_on:
+      - "disteleplus_voice_notes_enabled"
+  disteleplus_voice_notes_bridge_channel_only:
+    default: true
+    client: true
+    depends_on:
+      - "disteleplus_voice_notes_enabled"
+  disteleplus_voice_player_all_audio:
+    default: true
+    client: true
+    depends_on:
+      - "disteleplus_voice_notes_enabled"
 
   # Maintenance — flip on to (re)register the Telegram webhook; enqueues
   # setWebhook and resets itself.

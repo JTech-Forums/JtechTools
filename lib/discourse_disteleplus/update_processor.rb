@@ -275,7 +275,9 @@ module DiscourseDisteleplus
       elsif (note = msg["video_note"])
         ["video note", note["file_id"], "video_note.mp4", nil]
       elsif (voice = msg["voice"])
-        ["voice message", voice["file_id"], "voice.ogg", nil]
+        # Named so the custom player and the outbound sendVoice path both
+        # recognise it as a voice note (see VoiceNotes.voice_note?).
+        ["voice message", voice["file_id"], VoiceNotes.inbound_filename(voice), nil]
       elsif (audio = msg["audio"])
         ["audio", audio["file_id"], audio["file_name"].presence || "audio.mp3", nil]
       elsif (animation = msg["animation"])
