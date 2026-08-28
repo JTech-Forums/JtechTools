@@ -71,7 +71,7 @@ RSpec.describe DiscourseDisteleplus do
     end
 
     it "restores normal behaviour when the lock is off" do
-      skip "no channel-creation guardian method" unless methods.include?(:can_create_chat_channel?)
+      skip "no channel-creation guardian method" if methods.exclude?(:can_create_chat_channel?)
       SiteSetting.disteleplus_lock_chat_ui = false
       expect(Guardian.new(admin).can_create_chat_channel?).to eq(true)
     end

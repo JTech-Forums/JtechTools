@@ -32,14 +32,34 @@ module DiscourseDisteleplus
         :updated,
         :chat_disabled_fixed,
         :without_push_subscription,
-        :push_enabled,
+        :push_prompt,
+        :push_devices,
         keyword_init: true,
       )
 
     def self.active?
-      SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_force_channel_notifications &&
-        SiteSetting.disteleplus_chat_channel_id.to_i.positive? && ChatAdapter.available? &&
-        defined?(::Chat::UserChatChannelMembership)
+      return false unless SiteSetting.disteleplus_enabled
+      return false unless SiteSetting.disteleplus_force_channel_notifications
+      return false unless SiteSetting.disteleplus_chat_channel_id.to_i.positive?
+      return false unless ChatAdapter.available?
+      # `defined?` yields a String, not a boolean — keep the predicate honest.
+      return false unless defined?(::Chat::UserChatChannelMembership)
+      true
+    end
+
+    # Core has no on/off switch for web push: a browser subscribes (usually
+    # via the push_notifications_prompt banner) and PostAlerter pushes to
+    # every PushSubscription. So "is push working" reduces to whether the
+    # prompt is on and how many devices have subscribed.
+    def self.push_prompt_enabled?
+      SiteSetting.respond_to?(:push_notifications_prompt) &&
+        SiteSetting.push_notifications_prompt == true
+    end
+
+    def self.push_device_count
+      defined?(::PushSubscription) ? ::PushSubscription.count : 0
+    rescue StandardError
+      0
     end
 
     def self.channel
@@ -64,7 +84,8 @@ module DiscourseDisteleplus
           updated: 0,
           chat_disabled_fixed: 0,
           without_push_subscription: 0,
-          push_enabled: SiteSetting.push_notifications_enabled,
+          push_prompt: push_prompt_enabled?,
+          push_devices: push_device_count,
         )
 
       eligible_users(target).find_each(batch_size: BATCH_SIZE) do |user|
@@ -82,7 +103,7 @@ module DiscourseDisteleplus
           "eligible=#{report.eligible} newly_enrolled=#{report.enrolled} " \
           "updated=#{report.updated} chat_reenabled=#{report.chat_disabled_fixed} " \
           "no_push_subscription=#{report.without_push_subscription} " \
-          "push_notifications_enabled=#{report.push_enabled}",
+          "push_prompt=#{report.push_prompt} push_devices=#{report.push_devices}",
       )
       report
     end
@@ -230,8 +251,8 @@ module DiscourseDisteleplus
         else
           total
         end
-      push = SiteSetting.push_notifications_enabled ? "push on" : "push OFF in site settings"
-      "on — #{always}/#{total} members at always, #{push}"
+      prompt = push_prompt_enabled? ? "push prompt on" : "push prompt OFF in site settings"
+      "on — #{always}/#{total} members at always, #{prompt}, #{push_device_count} devices subscribed"
     rescue StandardError => e
       "on (status unavailable: #{e.message})"
     end

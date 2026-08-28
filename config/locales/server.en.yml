@@ -688,7 +688,7 @@ en:
       snap back, and a sync runs every 30 minutes plus whenever someone is
       created, approved or added to a group. This overrides personal mute
       choices for this one channel; that is the point. Web push still needs
-      {{setting:push_notifications_enabled}} and each person to have accepted
+      {{setting:push_notifications_prompt}} and each person to have accepted
       push on at least one device. /disteleplus_status in Telegram reports how
       many members are at "always".
 
