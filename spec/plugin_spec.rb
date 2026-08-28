@@ -93,6 +93,31 @@ RSpec.describe "DiscourseModCategories plugin.rb" do
     end
   end
 
+  describe "disteleplus settings registration" do
+    it "registers the module master switch, off by default" do
+      expect(SiteSetting.defaults[:disteleplus_enabled]).to eq(false)
+    end
+
+    it "registers the bridge feature toggles with their defaults" do
+      expect(SiteSetting.defaults[:disteleplus_bridge_uploads]).to eq(true)
+      expect(SiteSetting.defaults[:disteleplus_bridge_edits]).to eq(true)
+      expect(SiteSetting.defaults[:disteleplus_bridge_deletes]).to eq(true)
+      expect(SiteSetting.defaults[:disteleplus_bridge_polls]).to eq(true)
+      expect(SiteSetting.defaults[:disteleplus_bridge_reactions]).to eq(true)
+      expect(SiteSetting.defaults[:disteleplus_max_upload_mb]).to eq(10)
+    end
+
+    it "exposes exactly the client-needed settings to the client" do
+      client_settings = SiteSetting.client_settings
+      expect(client_settings).to include(:disteleplus_enabled)
+      expect(client_settings).to include(:disteleplus_chat_channel_id)
+      expect(client_settings).to include(:disteleplus_lock_chat_ui)
+      expect(client_settings).to include(:disteleplus_lock_chat_exempt_admins)
+      expect(client_settings).not_to include(:disteleplus_bot_token)
+      expect(client_settings).not_to include(:disteleplus_webhook_secret)
+    end
+  end
+
   describe "moderator-messages Guardian" do
     before { SiteSetting.mod_categories_enabled = true }
 

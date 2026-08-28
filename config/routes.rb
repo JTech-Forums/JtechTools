@@ -100,3 +100,12 @@ Discourse::Application.routes.append do
     end
   end
 end
+
+# ── Disteleplus ────────────────────────────────────────────────────────────
+Discourse::Application.routes.append do
+  scope "/jtech-disteleplus", module: "discourse_disteleplus", as: :disteleplus do
+    # Telegram Bot API webhook receiver. No session — authenticated by the
+    # X-Telegram-Bot-Api-Secret-Token header set via setWebhook.
+    post "/telegram/webhook" => "webhook#receive"
+  end
+end

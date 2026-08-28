@@ -1,0 +1,24 @@
+// Disteleplus chat lock — cosmetic half of the lock (the Guardian prepend in
+// sub_plugins/disteleplus.rb is the enforcement). Scoped to the body class
+// the disteleplus-chat-lock initializer adds, so nothing here leaks when the
+// lock is off or the viewer is an exempted admin.
+//
+// Selectors target the chat plugin's create/browse affordances across the
+// sidebar, the drawer, and the full-page chat UI; if an upstream rename
+// makes one miss, the server-side block still holds.
+body.disteleplus-chat-locked {
+  // Sidebar chat section: "+" (new channel / new DM) and browse buttons.
+  .sidebar-section[data-section-name="chat-channels"] .sidebar-section-header-button,
+  .sidebar-section[data-section-name="chat-dms"] .sidebar-section-header-button,
+  // Full-page chat + drawer affordances.
+  .c-navbar__new-dm-button,
+  .c-navbar__open-browse-page-button,
+  .open-browse-page-btn,
+  .new-channel-btn,
+  .chat-channel-row__new-dm,
+  // "Browse channels" / "start a conversation" empty-state links.
+  .channels-list .open-browse-page-btn,
+  .direct-message-creator {
+    display: none !important;
+  }
+}
