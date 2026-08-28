@@ -667,19 +667,57 @@ en:
       full chat lock below. Needs {{setting:disteleplus_chat_channel_id}}
       to be set; does nothing until then.
 
-    disteleplus_lock_chat_ui: Turns chat into this one conversation — every
-      chat hub page (channel list, DMs, browse) redirects to the bridge
-      channel, and creating channels or direct messages is both hidden and
-      refused by the server. Set {{setting:disteleplus_chat_channel_id}}
-      first — creating channels and DMs is blocked as soon as this is on,
-      but the redirect to the bridge channel only works once the channel ID
-      is set.
+    disteleplus_lock_chat_ui: Turns chat into this one conversation. Creating
+      channels, direct messages and threads is hidden and refused by the
+      server for everyone — administrators included, with no exemption — and
+      every chat hub page (channel list, DMs, browse) redirects to the bridge
+      channel. Turn the lock off to create something, then turn it back on.
+      Set {{setting:disteleplus_chat_channel_id}} first; the lock does nothing
+      until a channel ID is set.
 
-    disteleplus_lock_chat_exempt_admins: Admins keep the full chat interface
-      while the lock is active — browsing, DMs and channel creation stay
-      available to them. The chat button still opens the bridge conversation
-      directly, for admins too. Applies to admins only; moderators are locked
-      like everyone else.
+    disteleplus_lock_chat_exempt_admins: While the lock is active, let admins
+      still open the chat hub pages (channel list, DMs, browse) instead of
+      being redirected to the bridge channel. This is browsing only —
+      creating channels, DMs or threads stays blocked for admins exactly like
+      everyone else. Moderators are never exempt.
+
+    disteleplus_force_channel_notifications: Enrol every user who is allowed
+      into chat as a member of the bridge channel at notification level
+      "always" (desktop alerts and web push), re-enable chat for anyone who
+      had turned it off, and keep it that way — changes in channel settings
+      snap back, and a sync runs every 30 minutes plus whenever someone is
+      created, approved or added to a group. This overrides personal mute
+      choices for this one channel; that is the point. Web push still needs
+      {{setting:push_notifications_enabled}} and each person to have accepted
+      push on at least one device. /disteleplus_status in Telegram reports how
+      many members are at "always".
+
+    disteleplus_notification_sync_now: Runs the channel-notification enrolment
+      right now instead of waiting for the next scheduled sync. Turn on and
+      save; it queues the job and switches itself back off. Results are logged
+      to /logs as "notification sync".
+
+    disteleplus_voice_notes_enabled: Adds a microphone button to the chat
+      composer that records a voice note in the browser and sends it as its
+      own message, and replaces the browser's default audio controls in chat
+      with a compact waveform player (play, scrub, speed, download). Voice
+      notes reach Telegram as real voice bubbles; Telegram voice messages
+      arrive here the same way. Enabling this adds ogg, webm, m4a and opus to
+      {{setting:authorized_extensions}} if they are missing. Telegram voice
+      bubbles from Chrome/Edge recordings (WebM) need ffmpeg on the server;
+      without it those notes arrive in Telegram as audio files instead.
+
+    disteleplus_voice_note_max_seconds: Longest voice note the composer will
+      record. Recording stops automatically at this length.
+
+    disteleplus_voice_notes_bridge_channel_only: Show the microphone button
+      only in the bridged channel. Turn off to allow voice notes in every chat
+      channel and DM (they are still only forwarded to Telegram from the
+      bridged channel).
+
+    disteleplus_voice_player_all_audio: Use the waveform player for every
+      audio file in chat, not just voice notes. Turn off to keep the browser's
+      default controls for ordinary music/audio uploads.
 
     disteleplus_register_webhook_now: Tells Telegram where to deliver this
       group's messages. Turn on and save; it generates the webhook secret if

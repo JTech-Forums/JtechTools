@@ -8,7 +8,7 @@ module DiscourseDisteleplus
     COMMAND =
       %r{
       \A/disteleplus_
-      (setup|help|status|bind_general|bind_uploads|create_uploads)
+      (setup|help|status|bind_general|bind_uploads|create_uploads|sync_notifications)
       (?:@\w+)?
       (?:\s+(.+))?
       \z
@@ -74,8 +74,11 @@ module DiscourseDisteleplus
         Or create and bind it automatically from General:
         <code>/disteleplus_create_uploads Uploads</code>
 
-        Check the saved destinations:
+        Check the saved destinations, lock, notifications and voice notes:
         <code>/disteleplus_status</code>
+
+        Re-enrol every Discourse member for channel notifications now:
+        <code>/disteleplus_sync_notifications</code>
 
         Binding does not start history automatically.
         Measure and start the backfill from Discourse admin settings.
@@ -97,6 +100,20 @@ module DiscourseDisteleplus
           "not bound"
         end
       mirror_state = SiteSetting.disteleplus_forum_uploads_enabled ? "enabled" : "disabled"
+      lock_state =
+        if DiscourseDisteleplus.creation_locked?
+          admins =
+            (
+              if SiteSetting.disteleplus_lock_chat_exempt_admins
+                "admins may browse"
+              else
+                "admins locked too"
+              end
+            )
+          "on — no new channels, DMs or threads for anyone; #{admins}"
+        else
+          "off"
+        end
 
       reply(<<~HTML.strip)
         <b>Disteleplus status</b>
@@ -104,6 +121,31 @@ module DiscourseDisteleplus
         Chat bridge: General
         Upload archive: #{upload_state}
         Live upload mirror: #{mirror_state}
+        Chat lock: #{escape(lock_state)}
+        Channel notifications: #{escape(ChannelNotifications.status_summary)}
+        Voice notes: #{escape(VoiceNotes.status_summary)}
+      HTML
+    end
+
+    def handle_sync_notifications(_topic_name)
+      unless SiteSetting.disteleplus_force_channel_notifications
+        reply(
+          "Forced channel notifications are off. Enable " \
+            "<code>disteleplus_force_channel_notifications</code> in Discourse admin first.",
+        )
+        return
+      end
+      unless ChannelNotifications.active?
+        reply("Set <code>disteleplus_chat_channel_id</code> in Discourse admin first.")
+        return
+      end
+
+      Jobs.enqueue(:disteleplus_sync_channel_notifications)
+      reply(<<~HTML.strip)
+        🔔 <b>Notification sync queued</b>
+        Every eligible Discourse member is being enrolled in the bridge channel
+        at notification level <i>always</i>. Run <code>/disteleplus_status</code>
+        in a minute to see the count.
       HTML
     end
 

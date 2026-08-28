@@ -62,6 +62,10 @@ module Jobs
               { command: "disteleplus_bind_general", description: "Bind this group and General" },
               { command: "disteleplus_bind_uploads", description: "Bind this topic for uploads" },
               { command: "disteleplus_create_uploads", description: "Create the upload topic" },
+              {
+                command: "disteleplus_sync_notifications",
+                description: "Re-enrol members for channel notifications",
+              },
             ],
           )
         else

@@ -78,6 +78,52 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       expect(api).not_to have_received(:call)
     end
 
+    context "with a voice note upload" do
+      let(:upload_struct) { Struct.new(:id, :original_filename, :extension, :filesize, :url) }
+      let(:voice_upload) do
+        upload_struct.new(5, "voice-note-20260828-152213.ogg", "ogg", 40_000, "/x")
+      end
+      let(:media_result) do
+        DiscourseDisteleplus::TelegramApi::Result.new(ok: true, result: { "message_id" => 777 })
+      end
+
+      before do
+        allow(adapter).to receive(:message_uploads).and_return([voice_upload])
+        allow_any_instance_of(described_class).to receive(:upload_io).and_return(
+          StringIO.new("ogg"),
+        )
+        allow(api).to receive(:call_multipart).and_return(media_result)
+      end
+
+      it "delivers it as a Telegram voice bubble via sendVoice" do
+        run("create")
+        expect(api).to have_received(:call_multipart).with(
+          "sendVoice",
+          a_hash_including(chat_id: chat_id, caption: "<b>chatter:</b> hi there"),
+          a_hash_including(
+            file_field: "voice",
+            filename: "voice-note-20260828-152213.ogg",
+            mime: "audio/ogg",
+          ),
+        )
+        expect(DiscourseDisteleplus::MessageLink.last.telegram_message_id).to eq(777)
+      end
+
+      it "still routes plain audio through sendAudio" do
+        allow(adapter).to receive(:message_uploads).and_return(
+          [upload_struct.new(6, "song.mp3", "mp3", 40_000, "/y")],
+        )
+        run("create")
+        # Not `anything` — that resolves to Mocha's matcher under Discourse's
+        # harness and never matches on an rspec-mocks double.
+        expect(api).to have_received(:call_multipart).with(
+          "sendAudio",
+          a_hash_including(chat_id: chat_id),
+          a_hash_including(file_field: "audio", filename: "song.mp3"),
+        )
+      end
+    end
+
     it "threads Telegram replies via the link table" do
       link!(tg_id: 42, chat_message_id: 8000)
       allow(chat_message).to receive(:in_reply_to_id).and_return(8000)

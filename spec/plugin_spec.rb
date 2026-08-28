@@ -177,6 +177,17 @@ RSpec.describe "DiscourseModCategories plugin.rb" do
       expect(SiteSetting.defaults[:disteleplus_forum_upload_backfill_spacing_seconds]).to eq(4)
     end
 
+    it "registers the lock, notification and voice-note settings with their defaults" do
+      expect(SiteSetting.defaults[:disteleplus_lock_chat_ui]).to eq(false)
+      expect(SiteSetting.defaults[:disteleplus_lock_chat_exempt_admins]).to eq(true)
+      expect(SiteSetting.defaults[:disteleplus_force_channel_notifications]).to eq(true)
+      expect(SiteSetting.defaults[:disteleplus_notification_sync_now]).to eq(false)
+      expect(SiteSetting.defaults[:disteleplus_voice_notes_enabled]).to eq(true)
+      expect(SiteSetting.defaults[:disteleplus_voice_note_max_seconds]).to eq(300)
+      expect(SiteSetting.defaults[:disteleplus_voice_notes_bridge_channel_only]).to eq(true)
+      expect(SiteSetting.defaults[:disteleplus_voice_player_all_audio]).to eq(true)
+    end
+
     it "exposes exactly the client-needed settings to the client" do
       client_settings = SiteSetting.client_settings
       expect(client_settings).to include(:disteleplus_enabled)
@@ -184,8 +195,14 @@ RSpec.describe "DiscourseModCategories plugin.rb" do
       expect(client_settings).to include(:disteleplus_lock_chat_ui)
       expect(client_settings).to include(:disteleplus_lock_chat_exempt_admins)
       expect(client_settings).to include(:disteleplus_chat_button_opens_bridge)
+      expect(client_settings).to include(:disteleplus_force_channel_notifications)
+      expect(client_settings).to include(:disteleplus_voice_notes_enabled)
+      expect(client_settings).to include(:disteleplus_voice_note_max_seconds)
+      expect(client_settings).to include(:disteleplus_voice_notes_bridge_channel_only)
+      expect(client_settings).to include(:disteleplus_voice_player_all_audio)
       expect(client_settings).not_to include(:disteleplus_bot_token)
       expect(client_settings).not_to include(:disteleplus_webhook_secret)
+      expect(client_settings).not_to include(:disteleplus_notification_sync_now)
     end
   end
 

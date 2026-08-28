@@ -29,8 +29,18 @@
 # Discourse copy in place.
 #
 # The optional "chat lock" mode points the chat button straight at the
-# bridge channel and blocks creating channels/DMs — UI hidden client-side,
-# enforced by a Guardian prepend server-side.
+# bridge channel and blocks creating channels, DMs and threads for EVERYONE
+# (admins included) — UI hidden client-side, enforced by Guardian and
+# Chat::Channel prepends server-side. Admins may optionally keep browsing
+# the hub pages; nothing lets anyone create.
+#
+# Channel notifications: every eligible user is enrolled in the bridge
+# channel at level "always" and pinned there (ChannelNotifications), so
+# chat's own notifier delivers desktop alerts + web push for each message.
+#
+# Voice notes: a composer mic button records in-browser and posts the note
+# as an upload; a custom player renders chat audio; outbound notes reach
+# Telegram as real voice bubbles via sendVoice (VoiceNotes).
 #
 # All chat-plugin API touchpoints live in ChatAdapter so the whole module
 # no-ops gracefully when the chat plugin is absent (translator_tweaks
@@ -144,11 +154,21 @@ module ::DiscourseDisteleplus
     Rails.logger.warn("#{LOG_TAG} reaction event failed: #{e.class}: #{e.message}")
   end
 
-  def self.lock_active_for?(user)
+  # The lock's enforcement half: creating channels, DMs and threads is
+  # refused for everyone — admins included, no exemption. Admins who need a
+  # new channel turn the lock off first; that is the whole point of a lock.
+  def self.creation_locked?
     return false unless SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_lock_chat_ui
     # Without a configured channel the client has nowhere to redirect to, so
     # an active lock would strand users in a chat UI that can open nothing.
     return false if SiteSetting.disteleplus_chat_channel_id.to_i.zero?
+    true
+  end
+
+  # The lock's navigation half: hub pages redirect to the bridge channel.
+  # disteleplus_lock_chat_exempt_admins lets admins keep browsing them.
+  def self.hub_locked_for?(user)
+    return false unless creation_locked?
     return false if SiteSetting.disteleplus_lock_chat_exempt_admins && user&.admin?
     true
   end
@@ -165,6 +185,8 @@ require_relative "../lib/discourse_disteleplus/forum_upload_policy"
 require_relative "../lib/discourse_disteleplus/forum_upload_formatter"
 require_relative "../lib/discourse_disteleplus/telegram_upload_sender"
 require_relative "../lib/discourse_disteleplus/forum_upload_metrics"
+require_relative "../lib/discourse_disteleplus/channel_notifications"
+require_relative "../lib/discourse_disteleplus/voice_notes"
 
 after_initialize do
   # ── "Register webhook" settings button ────────────────────────────────────
@@ -195,6 +217,40 @@ after_initialize do
       SiteSetting.disteleplus_forum_upload_backfill_now = false
     elsif name.to_s == "disteleplus_setup_commands_enabled" && SiteSetting.disteleplus_enabled
       Jobs.enqueue(:disteleplus_register_webhook)
+    elsif name.to_s == "disteleplus_notification_sync_now" && new_val == true
+      Jobs.enqueue(:disteleplus_sync_channel_notifications) if SiteSetting.disteleplus_enabled
+      SiteSetting.disteleplus_notification_sync_now = false
+    elsif %w[
+          disteleplus_force_channel_notifications
+          disteleplus_chat_channel_id
+          disteleplus_enabled
+        ].include?(name.to_s)
+      # Enrol everyone the moment notifications are forced on (or the
+      # channel changes) — not at the next scheduled sync.
+      if DiscourseDisteleplus::ChannelNotifications.active?
+        Jobs.enqueue(:disteleplus_sync_channel_notifications)
+      end
+      if DiscourseDisteleplus::VoiceNotes.enabled?
+        DiscourseDisteleplus::VoiceNotes.ensure_extensions_authorized!
+      end
+    elsif name.to_s == "disteleplus_voice_notes_enabled" && new_val == true
+      if SiteSetting.disteleplus_enabled
+        DiscourseDisteleplus::VoiceNotes.ensure_extensions_authorized!
+      end
+    end
+  end
+
+  # New members get their bridge-channel membership at "always" immediately.
+  %i[user_created user_approved user_added_to_group].each do |event|
+    on(event) do |first, *_rest|
+      next unless DiscourseDisteleplus::ChannelNotifications.active?
+      user = first.is_a?(::User) ? first : nil
+      next if user.nil?
+      Jobs.enqueue_in(5.seconds, :disteleplus_enforce_user_notifications, user_id: user.id)
+    rescue StandardError => e
+      Rails.logger.warn(
+        "#{DiscourseDisteleplus::LOG_TAG} notification #{event} hook failed: #{e.message}",
+      )
     end
   end
 
@@ -253,27 +309,76 @@ after_initialize do
   end
 
   # ── Chat lock: server-side enforcement ────────────────────────────────────
-  # The client initializer hides the UI; this makes the restriction real.
-  # Only methods the installed chat version actually defines are patched, so
-  # an upstream rename degrades to "not enforced for that action" instead of
-  # a boot error.
+  # The client initializer hides the UI; this makes the restriction real, for
+  # admins too. Only methods the installed chat version actually defines are
+  # patched, so an upstream rename degrades to "not enforced for that action"
+  # instead of a boot error.
   reloadable_patch do
     lock_methods =
-      %i[can_create_direct_message? can_create_chat_channel? can_create_channel?].select do |m|
-        ::Guardian.method_defined?(m)
-      end
+      %i[
+        can_create_direct_message?
+        can_create_chat_channel?
+        can_create_channel?
+        can_create_thread?
+        can_create_chat_thread?
+      ].select { |m| ::Guardian.method_defined?(m) }
 
     if defined?(::Chat) && lock_methods.any?
       ::Guardian.prepend(
         Module.new do
           lock_methods.each do |m|
             define_method(m) do |*args, **kwargs|
-              return false if ::DiscourseDisteleplus.lock_active_for?(@user)
+              return false if ::DiscourseDisteleplus.creation_locked?
               super(*args, **kwargs)
             end
           end
         end,
       )
+    end
+
+    # Threads have no guardian gate of their own — Chat::CreateThread and the
+    # implicit reply-creates-thread path both key off the channel's
+    # threading_enabled flag. Reporting it as off while locked stops every
+    # thread from being born and hides the thread UI in the same stroke.
+    # These are ActiveRecord attribute methods, generated lazily on first
+    # instantiation — `method_defined?` at boot would say no. Prepend
+    # unconditionally and let `defined?(super)` decide at call time.
+    if defined?(::Chat::Channel)
+      ::Chat::Channel.prepend(
+        Module.new do
+          %i[threading_enabled threading_enabled?].each do |m|
+            define_method(m) do |*args|
+              return false if ::DiscourseDisteleplus.creation_locked?
+              defined?(super) ? super(*args) : false
+            end
+          end
+        end,
+      )
+    end
+  end
+
+  # ── Forced channel notifications: pin the membership row ──────────────────
+  # Any save of a bridge-channel membership (the user lowering their level in
+  # channel settings, muting, a bulk update) is snapped back to "always"
+  # before it hits the database. Bulk reconciliation lives in the sync job.
+  reloadable_patch do
+    if defined?(::Chat::UserChatChannelMembership)
+      ::Chat::UserChatChannelMembership.class_eval do
+        before_save :disteleplus_pin_notification_level
+
+        def disteleplus_pin_notification_level
+          return unless ::DiscourseDisteleplus::ChannelNotifications.active?
+          unless ::DiscourseDisteleplus::ChannelNotifications.bridge_channel_id?(chat_channel_id)
+            return
+          end
+          return unless following
+          ::DiscourseDisteleplus::ChannelNotifications.pin_membership_attributes(self)
+        rescue StandardError => e
+          Rails.logger.warn(
+            "#{::DiscourseDisteleplus::LOG_TAG} membership pin failed: #{e.message}",
+          )
+        end
+      end
     end
   end
 end
