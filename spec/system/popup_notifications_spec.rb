@@ -95,13 +95,18 @@ RSpec.describe "Desktop pop-up notifications" do
 
   # Re-publish (fresh id each time) until the toast appears, in case the
   # browser's MessageBus poll is not yet listening when the first publish
-  # lands.
+  # lands. Polls with wait: 0 so no Capybara wait window is ever exhausted —
+  # Discourse's CapybaraTimeoutExtension fails specs that let one expire in
+  # full, which made this spec flaky on CI.
   def publish_reply_until_toast
-    8.times do
-      publish_reply
-      return if page.has_css?(".jtech-popup-toast", wait: 1.5)
+    toast_up = false
+    40.times do |i|
+      publish_reply if (i % 5).zero?
+      toast_up = page.has_css?(".jtech-popup-toast", wait: 0)
+      break if toast_up
+      sleep 0.25
     end
-    expect(page).to have_css(".jtech-popup-toast", wait: 5)
+    expect(page).to have_css(".jtech-popup-toast") unless toast_up
   end
 
   it "pops the toast when the preference is on" do
