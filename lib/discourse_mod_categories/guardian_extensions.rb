@@ -21,6 +21,13 @@ module DiscourseModCategories
     end
 
     def can_delete_category?(category)
+      # Core's delete check flows through can_edit_category?, which the
+      # module's edit grant satisfies — deferring to super first would let
+      # the edit toggle transitively re-grant delete. Check the delete
+      # toggle before core gets a say.
+      if mod_categories_grant? && !is_admin? && !SiteSetting.mod_moderators_can_delete_categories
+        return false
+      end
       return true if super
       return false if !mod_categories_grant?
       return false if !SiteSetting.mod_moderators_can_delete_categories
