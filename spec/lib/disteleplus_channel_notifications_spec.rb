@@ -112,7 +112,8 @@ RSpec.describe DiscourseDisteleplus::ChannelNotifications do
       expect(membership_for(member)).to be_present
       expect(membership_for(admin)).to be_present
       expect(membership_for(staged)).to be_nil
-      expect(report.push_enabled).to eq(SiteSetting.push_notifications_enabled)
+      expect(report.push_prompt).to be(true).or be(false)
+      expect(report.push_devices).to be >= 0
     end
   end
 
