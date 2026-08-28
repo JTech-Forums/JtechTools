@@ -4,6 +4,10 @@
 # only had non-unique indexes — so there was nothing to conflict on and every
 # purge run re-inserted the entire audit table. De-duplicate, then add the
 # unique index the insert can target.
+#
+# Discourse's safe-migrate guard requires dropping a possibly-invalid
+# leftover index before CREATE INDEX CONCURRENTLY (a failed concurrent build
+# leaves an "invalid" index behind), hence the DROP INDEX IF EXISTS first.
 class AddUniqueIndexToDiscourseNoLikesPhantoms < ActiveRecord::Migration[7.2]
   disable_ddl_transaction!
 
@@ -17,17 +21,14 @@ class AddUniqueIndexToDiscourseNoLikesPhantoms < ActiveRecord::Migration[7.2]
          AND a.reaction_type = b.reaction_type
     SQL
 
-    add_index :discourse_no_likes_phantoms,
-              %i[post_id user_id reaction_type],
-              unique: true,
-              algorithm: :concurrently,
-              if_not_exists: true,
-              name: "idx_dnl_phantoms_unique_reaction"
+    execute "DROP INDEX IF EXISTS idx_dnl_phantoms_unique_reaction"
+    execute <<~SQL
+      CREATE UNIQUE INDEX CONCURRENTLY idx_dnl_phantoms_unique_reaction
+      ON discourse_no_likes_phantoms (post_id, user_id, reaction_type)
+    SQL
   end
 
   def down
-    remove_index :discourse_no_likes_phantoms,
-                 name: "idx_dnl_phantoms_unique_reaction",
-                 if_exists: true
+    execute "DROP INDEX IF EXISTS idx_dnl_phantoms_unique_reaction"
   end
 end

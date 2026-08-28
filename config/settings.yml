@@ -631,7 +631,7 @@ jtech_popup_notifications:
       - user_note
       - flag_note
       - note
-      - other
+      - generic
     depends_on:
       - "popup_notifications_enabled"
 

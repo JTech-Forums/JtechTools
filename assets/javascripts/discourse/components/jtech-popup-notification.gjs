@@ -73,9 +73,10 @@ const MOD_NOTE_KINDS = {
   note: { icon: "shield-halved", action: "note" },
 };
 
-// "other" is also the choice-list value exposed by the
-// popup_notifications_excluded_types site setting.
-const FALLBACK = { icon: "bell", action: "other" };
+// "generic" is also the choice-list value exposed by the
+// popup_notifications_excluded_types site setting. (Not "other" — that key
+// would make the i18n linter treat the action map as a pluralized string.)
+const FALLBACK = { icon: "bell", action: "generic" };
 
 export default class JtechPopupNotification extends Component {
   @service currentUser;
