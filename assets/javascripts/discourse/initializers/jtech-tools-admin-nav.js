@@ -1,7 +1,12 @@
 import { withPluginApi } from "discourse/lib/plugin-api";
 
-// The nav registry is keyed on AdminPlugin#id = the plugin's directory name.
-const PLUGIN_ID = "jtech-tools";
+// The nav registry is keyed on AdminPlugin#id, which is the plugin's
+// DIRECTORY name on the server — not the metadata name. Core itself warns
+// about installs where the two differ ("Plugin name is 'jtech-tools', but
+// plugin directory is named 'JtechTools'"), and a standard
+// `git clone .../JtechTools.git` produces exactly that. Register under
+// every plausible id; extra keys in the registry are harmless.
+const PLUGIN_IDS = ["jtech-tools", "JtechTools", "jtechtools", "JTechTools"];
 
 // One tab per sub-plugin, in plugin.rb load order, plus core's own
 // all-settings tab kept last (if omitted, core unshifts it to position 0
@@ -59,8 +64,12 @@ export default {
       return;
     }
     withPluginApi((api) => {
-      // Fresh copy: the nav manager mutates the stored array (unshift).
-      api.addAdminPluginConfigurationNav(PLUGIN_ID, [...LINKS]);
+      PLUGIN_IDS.forEach((id) => {
+        api.setAdminPluginIcon(id, "wrench");
+        // Fresh copy per id: the nav manager mutates the stored array
+        // (unshift of the settings link when absent).
+        api.addAdminPluginConfigurationNav(id, [...LINKS]);
+      });
     });
   },
 };

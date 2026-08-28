@@ -3,7 +3,6 @@ import AdminAreaSettings from "discourse/admin/components/admin-area-settings";
 
 export default <template>
   <AdminAreaSettings
-    @plugin="jtech-tools"
     @categories={{array "jtech_mini_mod"}}
     @path="/admin/plugins/jtech-tools/mini-mod"
     @filter={{@controller.filter}}

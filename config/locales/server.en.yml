@@ -597,12 +597,19 @@ en:
       exactly one reaction per message, so all Discourse reactions on a
       message collapse into the most recent one.
 
-    disteleplus_lock_chat_ui: Turns chat into this one conversation — the chat
-      button opens the bridge channel directly, chat hub pages redirect to
-      it, and creating channels or direct messages is both hidden and refused
-      by the server. Set {{setting:disteleplus_chat_channel_id}} first —
-      creating channels and DMs is blocked as soon as this is on, but the
-      redirect to the bridge channel only works once the channel ID is set.
+    disteleplus_chat_button_opens_bridge: The header chat button, and the
+      bare /chat page, open the bridge conversation directly instead of the
+      chat home — for everyone, admins included, and independent of the
+      full chat lock below. Needs {{setting:disteleplus_chat_channel_id}}
+      to be set; does nothing until then.
+
+    disteleplus_lock_chat_ui: Turns chat into this one conversation — every
+      chat hub page (channel list, DMs, browse) redirects to the bridge
+      channel, and creating channels or direct messages is both hidden and
+      refused by the server. Set {{setting:disteleplus_chat_channel_id}}
+      first — creating channels and DMs is blocked as soon as this is on,
+      but the redirect to the bridge channel only works once the channel ID
+      is set.
 
     disteleplus_lock_chat_exempt_admins: Admins keep the full chat interface
       while the lock is active — browsing, DMs and channel creation stay

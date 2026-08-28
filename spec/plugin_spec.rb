@@ -177,6 +177,7 @@ RSpec.describe "DiscourseModCategories plugin.rb" do
       expect(client_settings).to include(:disteleplus_chat_channel_id)
       expect(client_settings).to include(:disteleplus_lock_chat_ui)
       expect(client_settings).to include(:disteleplus_lock_chat_exempt_admins)
+      expect(client_settings).to include(:disteleplus_chat_button_opens_bridge)
       expect(client_settings).not_to include(:disteleplus_bot_token)
       expect(client_settings).not_to include(:disteleplus_webhook_secret)
     end

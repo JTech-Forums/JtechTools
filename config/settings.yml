@@ -903,7 +903,15 @@ jtech_disteleplus:
     depends_on:
       - "disteleplus_enabled"
 
-  # Chat UI lock — the chat button lands on the bridge channel and creating
+  # Landing — the header chat button (and bare /chat) opens the bridge
+  # conversation directly, for everyone, independent of the full lock below.
+  disteleplus_chat_button_opens_bridge:
+    default: true
+    client: true
+    depends_on:
+      - "disteleplus_enabled"
+
+  # Chat UI lock — hub pages redirect to the bridge channel and creating
   # channels/DMs is hidden (client) and blocked (Guardian).
   disteleplus_lock_chat_ui:
     default: false
