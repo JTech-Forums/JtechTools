@@ -605,7 +605,9 @@ en:
       redirect to the bridge channel only works once the channel ID is set.
 
     disteleplus_lock_chat_exempt_admins: Admins keep the full chat interface
-      while the lock is active. Applies to admins only; moderators are locked
+      while the lock is active — browsing, DMs and channel creation stay
+      available to them. The chat button still opens the bridge conversation
+      directly, for admins too. Applies to admins only; moderators are locked
       like everyone else.
 
     disteleplus_register_webhook_now: Tells Telegram where to deliver this

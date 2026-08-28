@@ -6,6 +6,41 @@
 // Selectors target the chat plugin's create/browse affordances across the
 // sidebar, the drawer, and the full-page chat UI; if an upstream rename
 // makes one miss, the server-side block still holds.
+// Telegram-bridged messages (bot-posted, "**Name (TG):**" prefix) — the
+// disteleplus-bridged-messages initializer marks them and splits the sender
+// out of the body; this renders each as a compact card: sender name as a
+// small tinted header line with a "Telegram" pill, message underneath.
+// Everything resolves through theme variables so dark mode works for free.
+.chat-message .disteleplus-bridged {
+  background: var(--primary-very-low);
+  border-left: 3px solid var(--tertiary);
+  border-radius: var(--d-border-radius, 8px);
+  padding: 0.35em 0.65em 0.45em;
+  margin: 0.15em 0;
+
+  .disteleplus-bridged__sender {
+    display: block;
+    margin-bottom: 0.15em;
+    font-size: var(--font-down-1);
+    line-height: 1.2;
+    color: var(--tertiary);
+
+    &::after {
+      content: "Telegram";
+      display: inline-block;
+      margin-left: 0.5em;
+      padding: 0 0.45em;
+      border-radius: 1em;
+      font-size: var(--font-down-2);
+      font-weight: normal;
+      letter-spacing: 0.02em;
+      color: var(--primary-medium);
+      background: var(--primary-low);
+      vertical-align: 0.1em;
+    }
+  }
+}
+
 body.disteleplus-chat-locked {
   // Sidebar chat section: "+" (new channel / new DM) and browse buttons.
   .sidebar-section[data-section-name="chat-channels"] .sidebar-section-header-button,

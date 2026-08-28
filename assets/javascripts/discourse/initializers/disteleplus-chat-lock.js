@@ -3,12 +3,17 @@
 //   * the header chat button goes STRAIGHT to the bridged conversation
 //     (capture-phase intercept on .chat-header-icon — verified against
 //     core's chat/header/icon.gjs markup — since the button's own action
-//     opens the drawer/index, not a channel);
+//     opens the drawer/index, not a channel). This applies to EVERYONE,
+//     exempt admins included: landing in the conversation is the point of
+//     the feature, and the DM index is never the right landing page;
 //   * any chat "hub" route (index, channels, DMs, threads, browse,
 //     new-message) redirects to the bridge channel as a backstop for
 //     keyboard shortcuts and deep links;
 //   * a body class scopes CSS (disteleplus.scss) that hides the create-DM /
 //     create-channel / browse affordances.
+// Exempt admins (disteleplus_lock_chat_exempt_admins) skip the last two —
+// they keep the full chat UI and can deep-link to DMs/browse — but the chat
+// button still lands them in the bridge channel.
 // This is the cosmetic half; the real enforcement is the Guardian prepend in
 // sub_plugins/disteleplus.rb, which refuses channel/DM creation server-side.
 import { withPluginApi } from "discourse/lib/plugin-api";
@@ -37,18 +42,14 @@ export default {
     }
 
     const currentUser = container.lookup("service:current-user");
-    if (
-      siteSettings.disteleplus_lock_chat_exempt_admins &&
-      currentUser?.admin
-    ) {
-      return;
-    }
+    const exemptAdmin =
+      siteSettings.disteleplus_lock_chat_exempt_admins && currentUser?.admin;
 
     const channelUrl = `/chat/c/-/${siteSettings.disteleplus_chat_channel_id}`;
 
     withPluginApi("1.0", (api) => {
-      document.body.classList.add("disteleplus-chat-locked");
-
+      // The chat button always lands on the bridge conversation — even for
+      // exempt admins, who otherwise land on an empty DM index.
       document.addEventListener(
         "click",
         (event) => {
@@ -60,6 +61,12 @@ export default {
         },
         { capture: true }
       );
+
+      if (exemptAdmin) {
+        return;
+      }
+
+      document.body.classList.add("disteleplus-chat-locked");
 
       api.onPageChange((url) => {
         const path = url.split("?")[0];
