@@ -193,8 +193,7 @@ after_initialize do
         Jobs.enqueue(:disteleplus_backfill_forum_uploads, after_reference_id: 0)
       end
       SiteSetting.disteleplus_forum_upload_backfill_now = false
-    elsif name.to_s == "disteleplus_setup_commands_enabled" &&
-          SiteSetting.disteleplus_enabled
+    elsif name.to_s == "disteleplus_setup_commands_enabled" && SiteSetting.disteleplus_enabled
       Jobs.enqueue(:disteleplus_register_webhook)
     end
   end
