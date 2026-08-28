@@ -1,1 +1,6 @@
-< 2026.2.0-latest: a9a4b65f6bc70d4327491eb36f291116cd5fb511
+# Version pins for older Discourse cores. Pin COMMIT SHAs ON MAIN only —
+# never a SHA that lives solely on a side branch (squash-merges orphan those
+# and the pin dies, which is exactly what happened to the old < 2026.2.0
+# entry). Forums on 2026.8+ track main directly.
+< 2026.7.0-latest: e1b306c30dcf41e8e241f651f243e4b3e0bee8fa
+< 2026.8.0-latest: 3531fce1e23fafedae8eebd9a2c7eac20bec6eb0
