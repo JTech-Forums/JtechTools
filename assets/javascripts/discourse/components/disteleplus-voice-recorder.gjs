@@ -1,25 +1,33 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
-import { concat } from "@ember/helper";
+import { on } from "@ember/modifier";
 import { action } from "@ember/object";
+import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import { service } from "@ember/service";
-import { htmlSafe } from "@ember/template";
 import DButton from "discourse/components/d-button";
 import DModal from "discourse/components/d-modal";
 import icon from "discourse/helpers/d-icon";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import { i18n } from "discourse-i18n";
+import {
+  applyPeaks,
+  buildTrack,
+  formatTime,
+  normalisePeaks,
+  paintBars,
+} from "../lib/disteleplus-voice-player";
 
 // Voice-note recorder modal for the chat composer.
 //
-// Flow: open → (ask for the mic) → recording, with a live level meter and a
-// countdown against disteleplus_voice_note_max_seconds → stop → preview
-// (the browser's own decode of the fresh blob, through the same custom
-// player styling) → send. Sending uploads the blob through core's
-// /uploads.json as a `chat-composer` upload and then posts a message to the
-// channel with only that upload — no text — so the note lands as its own
-// bubble, exactly like a phone messenger.
+// One big round button is the whole interface: tap to record (it turns red
+// and pulses, a live waveform scrolls across the stage, a ring around the
+// button fills toward the length limit), tap again to stop. The preview is
+// the same waveform — built from the levels captured WHILE recording, so it
+// is the real shape of what was said — with a play button and scrubbing, so
+// what you hear back looks exactly like the bubble that will land in chat.
+// Send uploads the blob through core's /uploads.json as a `chat-composer`
+// upload and posts a message carrying only that upload.
 //
 // Codec choice, in order: OGG/OPUS (Firefox; what Telegram natively speaks),
 // WebM/OPUS (Chromium; transcoded server-side for Telegram when ffmpeg is
@@ -33,7 +41,9 @@ const CANDIDATE_TYPES = [
   { mime: "audio/mp4", ext: "m4a" },
 ];
 
-const METER_BARS = 24;
+const LIVE_BARS = 48;
+const PREVIEW_BARS = 40;
+const LEVEL_FLOOR = 0.06;
 
 function pickType() {
   if (!window.MediaRecorder?.isTypeSupported) {
@@ -51,45 +61,60 @@ function stamp() {
   );
 }
 
-function formatTime(seconds) {
-  const whole = Math.max(0, Math.round(seconds));
-  const m = Math.floor(whole / 60);
-  const s = whole % 60;
-  return `${m}:${s < 10 ? "0" : ""}${s}`;
+// Downsamples the recorded level history to a fixed bar count (peak per bin).
+function historyToPeaks(history, barCount) {
+  if (!history.length) {
+    return new Array(barCount).fill(0.2);
+  }
+  const bin = history.length / barCount;
+  const peaks = [];
+  for (let i = 0; i < barCount; i++) {
+    const start = Math.floor(i * bin);
+    const end = Math.max(start + 1, Math.floor((i + 1) * bin));
+    let peak = 0;
+    for (let j = start; j < end && j < history.length; j++) {
+      peak = Math.max(peak, history[j]);
+    }
+    peaks.push(peak);
+  }
+  return normalisePeaks(peaks);
 }
 
 export default class DisteleplusVoiceRecorder extends Component {
   @service siteSettings;
 
-  // idle | requesting | recording | preview | uploading | sent | error
+  // idle | requesting | recording | preview | uploading | error
   @tracked state = "idle";
   @tracked elapsed = 0;
   @tracked errorKey = null;
-  @tracked previewUrl = null;
-  @tracked levels = new Array(METER_BARS).fill(0.05);
+  @tracked previewPlaying = false;
+  @tracked previewPosition = 0;
 
   stream = null;
   recorder = null;
   chunks = [];
   blob = null;
+  previewUrl = null;
+  previewAudio = null;
+  previewBars = null;
   type = null;
   timer = null;
   startedAt = 0;
   analyser = null;
   audioCtx = null;
   meterFrame = null;
+  levelHistory = [];
+  liveBars = [];
+  liveIndex = 0;
 
   willDestroy() {
     super.willDestroy(...arguments);
     this.teardown();
+    this.teardownPreview();
   }
 
   get maxSeconds() {
     return this.siteSettings.disteleplus_voice_note_max_seconds || 300;
-  }
-
-  get remaining() {
-    return Math.max(0, this.maxSeconds - this.elapsed);
   }
 
   get supported() {
@@ -132,8 +157,21 @@ export default class DisteleplusVoiceRecorder extends Component {
     return formatTime(this.maxSeconds);
   }
 
+  get previewPositionLabel() {
+    return formatTime(this.previewPosition);
+  }
+
+  get progressRatio() {
+    return Math.min(1, this.elapsed / this.maxSeconds);
+  }
+
+  // Conic ring around the record button, filling as the limit approaches.
+  get ringStyle() {
+    return `--ring: ${Math.round(this.progressRatio * 360)}deg`;
+  }
+
   get nearLimit() {
-    return this.isRecording && this.remaining <= 10;
+    return this.isRecording && this.maxSeconds - this.elapsed <= 10;
   }
 
   get title() {
@@ -144,8 +182,26 @@ export default class DisteleplusVoiceRecorder extends Component {
     return this.errorKey ? i18n(this.errorKey) : "";
   }
 
-  get meterStyle() {
-    return this.levels.map((v) => `${Math.round(v * 100)}%`);
+  get stageHint() {
+    if (this.isRecording) {
+      return i18n("disteleplus.voice.recording_hint");
+    }
+    if (this.isRequesting) {
+      return i18n("disteleplus.voice.requesting");
+    }
+    return i18n("disteleplus.voice.tap_to_record");
+  }
+
+  get recordButtonLabel() {
+    return this.isRecording
+      ? i18n("disteleplus.voice.stop")
+      : i18n("disteleplus.voice.start");
+  }
+
+  get previewToggleLabel() {
+    return this.previewPlaying
+      ? i18n("disteleplus.player.pause")
+      : i18n("disteleplus.player.play");
   }
 
   teardown() {
@@ -168,10 +224,21 @@ export default class DisteleplusVoiceRecorder extends Component {
     this.audioCtx?.close?.();
     this.audioCtx = null;
     this.analyser = null;
+  }
+
+  teardownPreview() {
+    if (this.previewAudio) {
+      this.previewAudio.pause();
+      this.previewAudio.removeAttribute("src");
+      this.previewAudio = null;
+    }
     if (this.previewUrl) {
       URL.revokeObjectURL(this.previewUrl);
       this.previewUrl = null;
     }
+    this.previewBars = null;
+    this.previewPlaying = false;
+    this.previewPosition = 0;
   }
 
   fail(key) {
@@ -181,6 +248,28 @@ export default class DisteleplusVoiceRecorder extends Component {
   }
 
   @action
+  mountLiveWave(element) {
+    element.replaceChildren();
+    this.liveBars = [];
+    for (let i = 0; i < LIVE_BARS; i++) {
+      const bar = document.createElement("span");
+      bar.className = "disteleplus-rec__bar";
+      bar.style.setProperty("--peak", String(LEVEL_FLOOR));
+      element.appendChild(bar);
+      this.liveBars.push(bar);
+    }
+    this.liveIndex = 0;
+  }
+
+  @action
+  toggleRecording() {
+    if (this.isRecording) {
+      this.stop();
+    } else if (this.isIdle) {
+      this.start();
+    }
+  }
+
   async start() {
     if (!this.supported) {
       this.fail("disteleplus.voice.errors.unsupported");
@@ -209,6 +298,7 @@ export default class DisteleplusVoiceRecorder extends Component {
 
     this.type = pickType();
     this.chunks = [];
+    this.levelHistory = [];
     try {
       this.recorder = new MediaRecorder(this.stream, {
         mimeType: this.type.mime,
@@ -239,7 +329,7 @@ export default class DisteleplusVoiceRecorder extends Component {
       if (this.elapsed >= this.maxSeconds) {
         this.stop();
       }
-    }, 200);
+    }, 100);
   }
 
   startMeter() {
@@ -251,9 +341,10 @@ export default class DisteleplusVoiceRecorder extends Component {
       this.audioCtx = new AudioCtx();
       const source = this.audioCtx.createMediaStreamSource(this.stream);
       this.analyser = this.audioCtx.createAnalyser();
-      this.analyser.fftSize = 256;
+      this.analyser.fftSize = 512;
+      this.analyser.smoothingTimeConstant = 0.6;
       source.connect(this.analyser);
-      const data = new Uint8Array(this.analyser.frequencyBinCount);
+      const data = new Uint8Array(this.analyser.fftSize);
       const tick = () => {
         if (!this.analyser) {
           return;
@@ -265,14 +356,43 @@ export default class DisteleplusVoiceRecorder extends Component {
           sum += v * v;
         }
         const rms = Math.sqrt(sum / data.length);
-        const level = Math.min(1, Math.max(0.05, rms * 3));
-        this.levels = [...this.levels.slice(1), level];
+        // Speech RMS sits around 0.05–0.3; sqrt + gain lets a normal voice
+        // fill most of the stage without clipping on a shout.
+        const level = Math.min(1, Math.max(LEVEL_FLOOR, Math.sqrt(rms) * 1.6));
+        this.levelHistory.push(level);
+        this.paintLive(level);
         this.meterFrame = requestAnimationFrame(tick);
       };
       this.meterFrame = requestAnimationFrame(tick);
     } catch {
       // Meter is decoration; recording proceeds without it.
     }
+  }
+
+  // Scrolling oscilloscope: newest level enters on the right, the rest
+  // slides one slot left.
+  paintLive(level) {
+    if (!this.liveBars.length) {
+      return;
+    }
+    if (this.liveIndex < this.liveBars.length) {
+      this.liveBars[this.liveIndex].style.setProperty(
+        "--peak",
+        level.toFixed(3)
+      );
+      this.liveIndex++;
+      return;
+    }
+    for (let i = 0; i < this.liveBars.length - 1; i++) {
+      this.liveBars[i].style.setProperty(
+        "--peak",
+        this.liveBars[i + 1].style.getPropertyValue("--peak")
+      );
+    }
+    this.liveBars[this.liveBars.length - 1].style.setProperty(
+      "--peak",
+      level.toFixed(3)
+    );
   }
 
   @action
@@ -301,15 +421,103 @@ export default class DisteleplusVoiceRecorder extends Component {
     }
     this.blob = new Blob(this.chunks, { type: this.type.mime.split(";")[0] });
     this.previewUrl = URL.createObjectURL(this.blob);
+    this.previewAudio = new Audio(this.previewUrl);
+    this.previewAudio.preload = "auto";
+    this.previewAudio.addEventListener("timeupdate", () => {
+      this.previewPosition = this.previewAudio.currentTime;
+      this.paintPreview();
+    });
+    this.previewAudio.addEventListener("play", () => {
+      this.previewPlaying = true;
+    });
+    this.previewAudio.addEventListener("pause", () => {
+      this.previewPlaying = false;
+    });
+    this.previewAudio.addEventListener("ended", () => {
+      this.previewPlaying = false;
+      this.previewAudio.currentTime = 0;
+      this.previewPosition = 0;
+      this.paintPreview();
+    });
     this.state = "preview";
+  }
+
+  @action
+  mountPreviewWave(element) {
+    const { track, bars } = buildTrack(PREVIEW_BARS);
+    track.setAttribute("aria-label", i18n("disteleplus.player.seek"));
+    this.previewBars = bars;
+    applyPeaks(bars, historyToPeaks(this.levelHistory, PREVIEW_BARS));
+    element.replaceChildren(track);
+
+    const seekTo = (event) => {
+      const rect = track.getBoundingClientRect();
+      if (!rect.width || !this.previewAudio) {
+        return;
+      }
+      const ratio = Math.min(
+        1,
+        Math.max(0, (event.clientX - rect.left) / rect.width)
+      );
+      const duration = this.previewDuration();
+      this.previewAudio.currentTime = ratio * duration;
+      this.previewPosition = ratio * duration;
+      this.paintPreview();
+    };
+    let scrubbing = false;
+    track.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      scrubbing = true;
+      track.setPointerCapture?.(event.pointerId);
+      seekTo(event);
+    });
+    track.addEventListener("pointermove", (event) => {
+      if (scrubbing) {
+        seekTo(event);
+      }
+    });
+    const done = () => {
+      scrubbing = false;
+    };
+    track.addEventListener("pointerup", done);
+    track.addEventListener("pointercancel", done);
+    this.paintPreview();
+  }
+
+  previewDuration() {
+    const d = this.previewAudio?.duration;
+    return Number.isFinite(d) && d > 0 ? d : this.elapsed;
+  }
+
+  paintPreview() {
+    if (!this.previewBars) {
+      return;
+    }
+    const duration = this.previewDuration();
+    paintBars(this.previewBars, duration ? this.previewPosition / duration : 0);
+  }
+
+  @action
+  togglePreview() {
+    if (!this.previewAudio) {
+      return;
+    }
+    if (this.previewAudio.paused) {
+      this.previewAudio.play()?.catch?.(() => {});
+    } else {
+      this.previewAudio.pause();
+    }
   }
 
   @action
   discard() {
     this.teardown();
+    this.teardownPreview();
     this.blob = null;
     this.chunks = [];
+    this.levelHistory = [];
     this.elapsed = 0;
+    this.errorKey = null;
     this.state = "idle";
   }
 
@@ -318,6 +526,7 @@ export default class DisteleplusVoiceRecorder extends Component {
     if (!this.blob) {
       return;
     }
+    this.previewAudio?.pause();
     this.state = "uploading";
     const filename = `voice-note-${stamp()}.${this.type.ext}`;
     const form = new FormData();
@@ -343,8 +552,6 @@ export default class DisteleplusVoiceRecorder extends Component {
         type: "POST",
         data: payload,
       });
-
-      this.state = "sent";
       this.args.closeModal();
     } catch (e) {
       this.state = "preview";
@@ -356,60 +563,98 @@ export default class DisteleplusVoiceRecorder extends Component {
     <DModal
       @title={{this.title}}
       @closeModal={{@closeModal}}
-      class="disteleplus-voice-modal"
+      class="disteleplus-voice-modal
+        {{if this.isRecording 'is-recording'}}
+        {{if this.nearLimit 'is-near-limit'}}
+        {{if this.isPreview 'is-preview'}}"
     >
       <:body>
         {{#if this.isError}}
-          <div class="disteleplus-voice__error">
-            {{icon "triangle-exclamation"}}
-            <p>{{this.errorMessage}}</p>
+          <div class="disteleplus-rec disteleplus-rec--error">
+            <div class="disteleplus-rec__glyph">{{icon
+                "microphone-slash"
+              }}</div>
+            <p class="disteleplus-rec__hint">{{this.errorMessage}}</p>
           </div>
+
         {{else if this.isPreview}}
-          <div class="disteleplus-voice__preview">
-            <p class="disteleplus-voice__hint">
-              {{i18n
+          <div class="disteleplus-rec disteleplus-rec--preview">
+            <div class="disteleplus-rec__player">
+              <button
+                type="button"
+                class="disteleplus-rec__play"
+                aria-label={{this.previewToggleLabel}}
+                {{on "click" this.togglePreview}}
+              >
+                {{icon (if this.previewPlaying "pause" "play")}}
+              </button>
+              <div class="disteleplus-rec__player-body">
+                <div
+                  class="disteleplus-rec__preview-wave"
+                  {{didInsert this.mountPreviewWave}}
+                ></div>
+                <div class="disteleplus-rec__player-meta">
+                  <span
+                    class="disteleplus-rec__time"
+                  >{{this.previewPositionLabel}}</span>
+                  <span class="disteleplus-rec__sep">/</span>
+                  <span
+                    class="disteleplus-rec__time"
+                  >{{this.elapsedLabel}}</span>
+                </div>
+              </div>
+            </div>
+            <p class="disteleplus-rec__hint">{{i18n
                 "disteleplus.voice.preview_hint"
-                duration=this.elapsedLabel
-              }}
-            </p>
-            <audio
-              class="disteleplus-voice__preview-audio"
-              controls
-              preload="auto"
-              src={{this.previewUrl}}
-            ></audio>
+              }}</p>
           </div>
+
         {{else if this.isUploading}}
-          <div class="disteleplus-voice__uploading">
-            {{icon "spinner" class="loading-icon"}}
-            <p>{{i18n "disteleplus.voice.sending"}}</p>
+          <div class="disteleplus-rec disteleplus-rec--uploading">
+            <div class="disteleplus-rec__glyph">{{icon
+                "spinner"
+                class="loading-icon"
+              }}</div>
+            <p class="disteleplus-rec__hint">{{i18n
+                "disteleplus.voice.sending"
+              }}</p>
           </div>
+
         {{else}}
-          <div
-            class="disteleplus-voice__stage
-              {{if this.isRecording 'is-recording'}}
-              {{if this.nearLimit 'is-near-limit'}}"
-          >
-            <div class="disteleplus-voice__meter" aria-hidden="true">
-              {{#each this.meterStyle as |height|}}
-                <span style={{htmlSafe (concat "height:" height)}}></span>
-              {{/each}}
-            </div>
-            <div class="disteleplus-voice__clock">
+          <div class="disteleplus-rec disteleplus-rec--stage">
+            <div
+              class="disteleplus-rec__wave"
+              aria-hidden="true"
+              {{didInsert this.mountLiveWave}}
+            ></div>
+
+            <div class="disteleplus-rec__clock">
               <span
-                class="disteleplus-voice__elapsed"
+                class="disteleplus-rec__elapsed"
               >{{this.elapsedLabel}}</span>
-              <span class="disteleplus-voice__max">/ {{this.maxLabel}}</span>
+              <span class="disteleplus-rec__max">{{this.maxLabel}}</span>
             </div>
-            <p class="disteleplus-voice__hint">
-              {{#if this.isRecording}}
-                {{i18n "disteleplus.voice.recording_hint"}}
-              {{else if this.isRequesting}}
-                {{i18n "disteleplus.voice.requesting"}}
-              {{else}}
-                {{i18n "disteleplus.voice.idle_hint"}}
-              {{/if}}
-            </p>
+
+            <button
+              type="button"
+              class="disteleplus-rec__button"
+              style={{this.ringStyle}}
+              disabled={{this.isRequesting}}
+              aria-label={{this.recordButtonLabel}}
+              aria-pressed={{if this.isRecording "true" "false"}}
+              {{on "click" this.toggleRecording}}
+            >
+              <span class="disteleplus-rec__ring"></span>
+              <span class="disteleplus-rec__core">
+                {{#if this.isRecording}}
+                  <span class="disteleplus-rec__stop-glyph"></span>
+                {{else}}
+                  {{icon "microphone"}}
+                {{/if}}
+              </span>
+            </button>
+
+            <p class="disteleplus-rec__hint">{{this.stageHint}}</p>
           </div>
         {{/if}}
       </:body>
@@ -428,21 +673,13 @@ export default class DisteleplusVoiceRecorder extends Component {
             @action={{this.send}}
             @label="disteleplus.voice.send"
             @icon="paper-plane"
-            class="btn-primary disteleplus-voice__send"
+            class="btn-primary disteleplus-rec__send"
           />
           <DButton
             @action={{this.discard}}
             @label="disteleplus.voice.rerecord"
             @icon="rotate"
-            class="btn-default"
-          />
-          <DButton @action={{@closeModal}} @label="cancel" class="btn-flat" />
-        {{else if this.isRecording}}
-          <DButton
-            @action={{this.stop}}
-            @label="disteleplus.voice.stop"
-            @icon="stop"
-            class="btn-danger disteleplus-voice__stop"
+            class="btn-flat"
           />
           <DButton @action={{@closeModal}} @label="cancel" class="btn-flat" />
         {{else if this.isUploading}}
@@ -452,13 +689,6 @@ export default class DisteleplusVoiceRecorder extends Component {
             class="btn-primary"
           />
         {{else}}
-          <DButton
-            @action={{this.start}}
-            @label="disteleplus.voice.start"
-            @icon="microphone"
-            @disabled={{this.isRequesting}}
-            class="btn-primary disteleplus-voice__start"
-          />
           <DButton @action={{@closeModal}} @label="cancel" class="btn-flat" />
         {{/if}}
       </:footer>
