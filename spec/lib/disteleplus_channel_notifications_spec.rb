@@ -5,8 +5,18 @@ require "rails_helper"
 # Enrolment + pinning against a real chat channel. CI loads the chat plugin
 # (LOAD_PLUGINS=1); when it is absent — a bare core checkout — the behaviour
 # under test cannot exist, so the group skips rather than fakes.
+#
+# Fabricated records get very large ids in the test database, above the
+# integer site-setting ceiling, so the channel id is stubbed on SiteSetting
+# rather than assigned.
 RSpec.describe DiscourseDisteleplus::ChannelNotifications do
-  subject(:notifications) { described_class }
+  fab!(:channel, :category_channel)
+  fab!(:member) { Fabricate(:user, trust_level: TrustLevel[1]) }
+  fab!(:admin)
+  fab!(:staged) { Fabricate(:user, staged: true) }
+
+  let(:notifications) { described_class }
+  let(:membership_class) { ::Chat::UserChatChannelMembership }
 
   before do
     skip "chat plugin not loaded" unless defined?(::Chat::UserChatChannelMembership)
@@ -15,14 +25,8 @@ RSpec.describe DiscourseDisteleplus::ChannelNotifications do
     SiteSetting.chat_allowed_groups = Group::AUTO_GROUPS[:trust_level_0].to_s
     SiteSetting.disteleplus_enabled = true
     SiteSetting.disteleplus_force_channel_notifications = true
+    allow(SiteSetting).to receive(:disteleplus_chat_channel_id).and_return(channel.id)
   end
-
-  fab!(:channel) { Fabricate(:category_channel) }
-  fab!(:member) { Fabricate(:user, trust_level: TrustLevel[1]) }
-  fab!(:admin)
-  fab!(:staged) { Fabricate(:user, staged: true) }
-
-  let(:membership_class) { ::Chat::UserChatChannelMembership }
 
   def membership_for(user)
     membership_class.find_by(user_id: user.id, chat_channel_id: channel.id)
@@ -37,8 +41,6 @@ RSpec.describe DiscourseDisteleplus::ChannelNotifications do
     end
   end
 
-  before { SiteSetting.disteleplus_chat_channel_id = channel.id }
-
   describe ".active?" do
     it "requires the master switch, the toggle and a channel id" do
       expect(notifications.active?).to eq(true)
@@ -47,7 +49,7 @@ RSpec.describe DiscourseDisteleplus::ChannelNotifications do
       expect(notifications.active?).to eq(false)
 
       SiteSetting.disteleplus_force_channel_notifications = true
-      SiteSetting.disteleplus_chat_channel_id = 0
+      allow(SiteSetting).to receive(:disteleplus_chat_channel_id).and_return(0)
       expect(notifications.active?).to eq(false)
     end
   end
@@ -114,31 +116,29 @@ RSpec.describe DiscourseDisteleplus::ChannelNotifications do
     end
   end
 
-  describe "membership pin (before_save prepend)" do
+  describe "membership pin (before_save)" do
     it "snaps a user's own level change straight back to always" do
       notifications.enforce_user!(member)
       membership = membership_for(member)
 
       if membership.respond_to?(:notification_level=)
         membership.notification_level = :mention
-        membership.save!
-        expect(level_of(membership)).to eq("always")
       else
         membership.desktop_notification_level = :mention
-        membership.save!
-        expect(level_of(membership)).to eq("always")
       end
+      membership.save!
+      expect(level_of(membership)).to eq("always")
     end
 
     it "leaves memberships of other channels alone" do
       other = Fabricate(:category_channel)
       other_membership =
         membership_class.create!(user_id: member.id, chat_channel_id: other.id, following: true)
-      if other_membership.respond_to?(:notification_level=)
-        other_membership.notification_level = :never
-        other_membership.save!
-        expect(other_membership.reload.notification_level.to_s).to eq("never")
-      end
+      skip "legacy membership schema" unless other_membership.respond_to?(:notification_level=)
+
+      other_membership.notification_level = :never
+      other_membership.save!
+      expect(other_membership.reload.notification_level.to_s).to eq("never")
     end
   end
 
