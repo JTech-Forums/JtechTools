@@ -47,7 +47,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       expect { run("create") }.to change { DiscourseDisteleplus::MessageLink.count }.by(1)
       expect(api).to have_received(:call).with(
         "sendMessage",
-        hash_including(chat_id: chat_id, parse_mode: "HTML", text: "<b>chatter:</b> hi there"),
+        a_hash_including(chat_id: chat_id, parse_mode: "HTML", text: "<b>chatter:</b> hi there"),
       )
       link = DiscourseDisteleplus::MessageLink.last
       expect(link.telegram_message_id).to eq(321)
@@ -59,7 +59,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       run("create")
       expect(api).to have_received(:call).with(
         "sendMessage",
-        hash_including(text: "<b>chatter:</b> &lt;script&gt;x &amp; y&lt;/script&gt;"),
+        a_hash_including(text: "<b>chatter:</b> &lt;script&gt;x &amp; y&lt;/script&gt;"),
       )
     end
 
@@ -75,7 +75,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       run("create")
       expect(api).to have_received(:call).with(
         "sendMessage",
-        hash_including(reply_to_message_id: 42),
+        a_hash_including(reply_to_message_id: 42),
       )
     end
   end
@@ -86,7 +86,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       run("edit")
       expect(api).to have_received(:call).with(
         "editMessageText",
-        hash_including(message_id: 321, text: "<b>chatter:</b> hi there"),
+        a_hash_including(message_id: 321, text: "<b>chatter:</b> hi there"),
       )
     end
 
@@ -95,7 +95,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       run("edit")
       expect(api).to have_received(:call).with(
         "editMessageCaption",
-        hash_including(message_id: 321, caption: "<b>chatter:</b> hi there"),
+        a_hash_including(message_id: 321, caption: "<b>chatter:</b> hi there"),
       )
     end
 
@@ -110,8 +110,8 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       link!(tg_id: 321)
       link!(tg_id: 322, kind: :media)
       expect { run("delete") }.to change { DiscourseDisteleplus::MessageLink.count }.by(-2)
-      expect(api).to have_received(:call).with("deleteMessage", hash_including(message_id: 321))
-      expect(api).to have_received(:call).with("deleteMessage", hash_including(message_id: 322))
+      expect(api).to have_received(:call).with("deleteMessage", a_hash_including(message_id: 321))
+      expect(api).to have_received(:call).with("deleteMessage", a_hash_including(message_id: 322))
     end
 
     it "never touches tg_to_discourse links (the humans' own messages)" do
@@ -129,7 +129,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       run("react")
       expect(api).to have_received(:call).with(
         "setMessageReaction",
-        hash_including(message_id: 321, reaction: [{ type: "emoji", emoji: "🔥" }]),
+        a_hash_including(message_id: 321, reaction: [{ type: "emoji", emoji: "🔥" }]),
       )
     end
 
@@ -138,13 +138,13 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       run("react")
       expect(api).to have_received(:call).with(
         "setMessageReaction",
-        hash_including(reaction: [{ type: "emoji", emoji: "👍" }]),
+        a_hash_including(reaction: [{ type: "emoji", emoji: "👍" }]),
       )
     end
 
     it "clears the bot reaction when no reactions remain" do
       run("react")
-      expect(api).to have_received(:call).with("setMessageReaction", hash_including(reaction: []))
+      expect(api).to have_received(:call).with("setMessageReaction", a_hash_including(reaction: []))
     end
   end
 

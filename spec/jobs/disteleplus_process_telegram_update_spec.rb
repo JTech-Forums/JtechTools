@@ -12,7 +12,7 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
   let(:adapter) { DiscourseDisteleplus::ChatAdapter }
   let(:chat_id) { -100_555 }
   let(:channel_id) { 42 }
-  let(:fake_message) { instance_double("ChatMessage", id: 9001) }
+  let(:fake_message) { Struct.new(:id).new(9001) }
 
   before do
     SiteSetting.jtech_enabled = true
@@ -78,7 +78,7 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
   it "posts as the matched Discourse user without a prefix" do
     run(message_update("from" => { "id" => 1, "username" => "tgmatch", "first_name" => "Zev" }))
     expect(adapter).to have_received(:create_message).with(
-      hash_including(user: user, text: "hello from telegram"),
+      a_hash_including(user: user, text: "hello from telegram"),
     )
   end
 
@@ -86,13 +86,13 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
     other = Fabricate(:user, username: "mapped_target")
     SiteSetting.disteleplus_user_mappings = "tgmatch:mapped_target"
     run(message_update("from" => { "id" => 1, "username" => "tgmatch" }))
-    expect(adapter).to have_received(:create_message).with(hash_including(user: other))
+    expect(adapter).to have_received(:create_message).with(a_hash_including(user: other))
   end
 
   it "posts unmatched senders as the bot with a name prefix" do
     run(message_update)
     expect(adapter).to have_received(:create_message).with(
-      hash_including(user: bot, text: "**Zev (TG):** hello from telegram"),
+      a_hash_including(user: bot, text: "**Zev (TG):** hello from telegram"),
     )
   end
 
@@ -112,7 +112,7 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
       direction: :tg_to_discourse,
     )
     run(message_update("reply_to_message" => { "message_id" => 50 }))
-    expect(adapter).to have_received(:create_message).with(hash_including(in_reply_to_id: 500))
+    expect(adapter).to have_received(:create_message).with(a_hash_including(in_reply_to_id: 500))
   end
 
   it "renders polls as markdown and links the poll id" do
@@ -125,7 +125,7 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
     }
     run(message_update("text" => nil, "poll" => poll))
     expect(adapter).to have_received(:create_message).with(
-      hash_including(text: a_string_including("📊 **Poll:** Lunch?", "Pizza — 1 (100%)")),
+      a_hash_including(text: a_string_including("📊 **Poll:** Lunch?", "Pizza — 1 (100%)")),
     )
     expect(DiscourseDisteleplus::MessageLink.last.telegram_poll_id).to eq("987")
   end
@@ -148,7 +148,7 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
     it "revises the linked chat message" do
       run(edit_update)
       expect(adapter).to have_received(:update_message).with(
-        hash_including(message_id: 9001, text: a_string_including("edited!")),
+        a_hash_including(message_id: 9001, text: a_string_including("edited!")),
       )
     end
 
@@ -196,18 +196,20 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
     it "adds a mapped reaction as the matched user" do
       run(reaction_update)
       expect(adapter).to have_received(:react).with(
-        hash_including(message_id: 9001, user: user, emoji: "fire", action: :add),
+        a_hash_including(message_id: 9001, user: user, emoji: "fire", action: :add),
       )
     end
 
     it "removes reactions dropped from the new list" do
       run(reaction_update(old: [{ "type" => "emoji", "emoji" => "🔥" }], new: []))
-      expect(adapter).to have_received(:react).with(hash_including(emoji: "fire", action: :remove))
+      expect(adapter).to have_received(:react).with(
+        a_hash_including(emoji: "fire", action: :remove),
+      )
     end
 
     it "reacts as the bot for unmatched users" do
       run(reaction_update(user_name: "stranger"))
-      expect(adapter).to have_received(:react).with(hash_including(user: bot))
+      expect(adapter).to have_received(:react).with(a_hash_including(user: bot))
     end
 
     it "drops custom-emoji reactions" do

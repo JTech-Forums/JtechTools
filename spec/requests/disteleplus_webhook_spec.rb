@@ -57,8 +57,18 @@ RSpec.describe "Disteleplus Telegram webhook" do
     expect(response.parsed_body["ok"]).to eq(true)
   end
 
-  it "tolerates junk bodies with a 200 and no enqueue" do
+  it "rejects malformed JSON at the framework layer without enqueueing" do
+    # Rails' parameter parser raises on bad JSON before the controller runs,
+    # which Discourse renders as a 400 — Telegram never sends malformed JSON.
     expect { post_update(body: "not json{{") }.not_to change {
+      Jobs::DisteleplusProcessTelegramUpdate.jobs.size
+    }
+    expect(response.status).to eq(400)
+  end
+
+  it "tolerates non-JSON content types with a 200 and no enqueue" do
+    headers = { "CONTENT_TYPE" => "text/plain", "X-Telegram-Bot-Api-Secret-Token" => secret }
+    expect { post path, params: "not json{{", headers: headers }.not_to change {
       Jobs::DisteleplusProcessTelegramUpdate.jobs.size
     }
     expect(response.status).to eq(200)
