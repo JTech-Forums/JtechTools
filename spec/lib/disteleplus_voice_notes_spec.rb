@@ -7,7 +7,7 @@ require "rails_helper"
 # authorized_extensions repair. ffmpeg is stubbed both ways so the routing is
 # asserted regardless of what the CI image ships.
 RSpec.describe DiscourseDisteleplus::VoiceNotes do
-  subject(:voice_notes) { described_class }
+  let(:voice_notes) { described_class }
 
   let(:upload_struct) { Struct.new(:original_filename, :extension) }
 
