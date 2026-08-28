@@ -21,7 +21,9 @@ module Jobs
       return unless SiteSetting.disteleplus_enabled
 
       @api = DiscourseDisteleplus::TelegramApi.new
-      @chat_id = SiteSetting.disteleplus_telegram_chat_id
+      # Strip: a pasted trailing space in the setting makes Telegram answer
+      # "chat not found" for an otherwise-correct id.
+      @chat_id = SiteSetting.disteleplus_telegram_chat_id.to_s.strip
       return if @chat_id.blank?
 
       case args[:action]

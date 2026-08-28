@@ -27,7 +27,16 @@ module DiscourseDisteleplus
     private
 
     def handle_message(msg)
-      return unless bridge_chat?(msg.dig("chat", "id"))
+      unless bridge_chat?(msg.dig("chat", "id"))
+        # A misconfigured chat id fails silently otherwise — the #1 setup
+        # trap. Loud enough to show in /logs, cheap enough to ignore if the
+        # bot deliberately sits in other groups.
+        Rails.logger.warn(
+          "#{LOG_TAG} ignoring message from chat #{msg.dig("chat", "id")} — " \
+            "disteleplus_telegram_chat_id is #{SiteSetting.disteleplus_telegram_chat_id.inspect}",
+        )
+        return
+      end
       return if msg["from"].nil? || msg.dig("from", "is_bot")
       return if MessageLink.for_telegram(msg.dig("chat", "id"), msg["message_id"]).exists?
 
