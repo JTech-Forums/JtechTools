@@ -32,17 +32,17 @@ end
 #
 #  id                  :bigint           not null, primary key
 #  direction           :integer          not null
-#  kind                :integer          default(0), not null
-#  telegram_poll_id    :string
+#  kind                :integer          default("text"), not null
 #  created_at          :datetime         not null
 #  updated_at          :datetime         not null
 #  chat_message_id     :bigint           not null
 #  telegram_chat_id    :bigint           not null
 #  telegram_message_id :bigint           not null
+#  telegram_poll_id    :string
 #
 # Indexes
 #
-#  idx_disteleplus_links_tg                              (telegram_chat_id,telegram_message_id) UNIQUE
+#  idx_disteleplus_links_tg                             (telegram_chat_id,telegram_message_id) UNIQUE
 #  index_disteleplus_message_links_on_chat_message_id   (chat_message_id)
 #  index_disteleplus_message_links_on_telegram_poll_id  (telegram_poll_id)
 #
