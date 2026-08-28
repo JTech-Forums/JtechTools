@@ -860,7 +860,7 @@ jtech_disteleplus:
             max_length: 60
 
   # Legacy pipe-delimited form, migrated into disteleplus_user_map by
-  # db/migrate/20260828000001. Hidden rather than deleted so a rollback to
+  # db/migrate/20260828100001. Hidden rather than deleted so a rollback to
   # the previous release still finds its data. Delete in a later release.
   disteleplus_user_mappings:
     default: ''
