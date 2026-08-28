@@ -10,6 +10,7 @@ import { popupAjaxError } from "discourse/lib/ajax-error";
 import EmailGroupUserChooser from "discourse/select-kit/components/email-group-user-chooser";
 import MultiSelect from "select-kit/components/multi-select";
 import { i18n } from "discourse-i18n";
+import { setPendingWhisperEdit } from "../lib/mod-whisper-pending";
 
 // Staff-facing modal (opened from the composer toolbar eye button) for
 // picking the users, groups, AND badges a whisper reply should be visible
@@ -75,6 +76,19 @@ export default class ModWhisperTargetModal extends Component {
     this.selectedBadgeIds = (ids || []).map((n) => Number(n));
   }
 
+  // On an EDIT, changing the whisper state needs a follow-up PUT to the
+  // update_post_whisper endpoint after the edit save (core's
+  // PostsController#update drops whisper params). Record the intended
+  // state now, while the composer model and its post are live; the
+  // mod-whisper initializer flushes it on `composer:saved`. Creates need
+  // nothing here — their whisper params ride the creation payload via
+  // serializeOnCreate.
+  #recordPendingEdit(composer, state) {
+    if (composer.editingPost && composer.post?.id) {
+      setPendingWhisperEdit({ postId: composer.post.id, state });
+    }
+  }
+
   @action
   async confirm() {
     const composer = this.args.model?.composer;
@@ -82,12 +96,6 @@ export default class ModWhisperTargetModal extends Component {
       this.args.closeModal();
       return;
     }
-
-    // Mark the whisper state as dirty so model:composer#save knows to
-    // chain the update_post_whisper endpoint after an edit-save resolves
-    // (Discourse's PostsController#update drops whisper params, so an
-    // edit-only path would otherwise silently fail to toggle state).
-    composer.set("modWhisperDirty", true);
 
     const badgeIds = this.selectedBadgeIds.slice();
     const badges = this.badgeChoices.filter((b) => badgeIds.includes(b.id));
@@ -103,6 +111,12 @@ export default class ModWhisperTargetModal extends Component {
       composer.set("modWhisperTargetGroups", []);
       composer.set("modWhisperTargetBadgeIds", []);
       composer.set("modWhisperTargetBadges", []);
+      this.#recordPendingEdit(composer, {
+        mod_whisper: true,
+        mod_whisper_target_user_ids: [],
+        mod_whisper_target_group_ids: [],
+        mod_whisper_target_badge_ids: [],
+      });
       this.args.closeModal();
       return;
     }
@@ -118,6 +132,12 @@ export default class ModWhisperTargetModal extends Component {
       composer.set("modWhisperTargetGroups", []);
       composer.set("modWhisperTargetBadgeIds", badgeIds);
       composer.set("modWhisperTargetBadges", badges);
+      this.#recordPendingEdit(composer, {
+        mod_whisper: true,
+        mod_whisper_target_user_ids: [],
+        mod_whisper_target_group_ids: [],
+        mod_whisper_target_badge_ids: badgeIds,
+      });
       this.args.closeModal();
       return;
     }
@@ -189,6 +209,12 @@ export default class ModWhisperTargetModal extends Component {
       composer.set("modWhisperTargetBadgeIds", badgeIds);
       composer.set("modWhisperTargetBadges", badges);
 
+      this.#recordPendingEdit(composer, {
+        mod_whisper: true,
+        mod_whisper_target_user_ids: users.map((u) => u.id),
+        mod_whisper_target_group_ids: groups.map((g) => g.id),
+        mod_whisper_target_badge_ids: badgeIds,
+      });
       this.args.closeModal();
     } catch (e) {
       popupAjaxError(e);
@@ -201,9 +227,6 @@ export default class ModWhisperTargetModal extends Component {
   clear() {
     const composer = this.args.model?.composer;
     if (composer) {
-      // Disarm is also a whisper-state change — mark dirty so an edit
-      // save propagates the "remove whisper" intent to the server.
-      composer.set("modWhisperDirty", true);
       composer.set("modWhisperArmed", false);
       composer.set("modWhisperTargetUserIds", null);
       composer.set("modWhisperTargetUsernames", null);
@@ -213,6 +236,14 @@ export default class ModWhisperTargetModal extends Component {
       composer.set("modWhisperTargetGroups", null);
       composer.set("modWhisperTargetBadgeIds", null);
       composer.set("modWhisperTargetBadges", null);
+      // Disarm is also a whisper-state change — an edit save must
+      // propagate the "remove whisper" intent to the server.
+      this.#recordPendingEdit(composer, {
+        mod_whisper: false,
+        mod_whisper_target_user_ids: [],
+        mod_whisper_target_group_ids: [],
+        mod_whisper_target_badge_ids: [],
+      });
     }
     this.args.closeModal();
   }

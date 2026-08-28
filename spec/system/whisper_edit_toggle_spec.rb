@@ -11,11 +11,11 @@ require "rails_helper"
 #     open, modal open, post-rendered-as-whisper, non-staff no-button).
 #
 # What was missing — and what this spec covers — is the FRONTEND
-# CHAIN: that the `model:composer#save` patch in mod-whisper.js
-# actually fires the PUT after a staff edit save when the modal
-# marked the state dirty. Without this, the modal could open, the
-# composer could save, and the whisper toggle would silently drop on
-# the floor with no Ruby spec able to catch it.
+# CHAIN: that mod-whisper.js actually fires the PUT after a staff
+# edit save when the modal recorded a pending whisper edit. Without
+# this, the modal could open, the composer could save, and the
+# whisper toggle would silently drop on the floor with no Ruby spec
+# able to catch it.
 RSpec.describe "Whisper edit toggle (frontend save chain)" do
   fab!(:moderator)
   fab!(:author, :user)
@@ -76,13 +76,14 @@ RSpec.describe "Whisper edit toggle (frontend save chain)" do
     click_whisper_toolbar_button
 
     # Confirm with an empty audience — staff-only whisper-back. The
-    # modal's `confirm()` sets `modWhisperDirty = true` and arms the
-    # composer, which is the state the save patch keys off.
+    # modal's `confirm()` arms the composer and records the pending
+    # whisper edit that `composer:saved` flushes to the server.
     within(".mod-whisper-target-modal") { find(".btn-primary.mod-whisper-confirm").click }
     expect(page).to have_no_css(".mod-whisper-target-modal", wait: 5)
 
-    # Save the edit. The composer's `save()` resolves, then the
-    # patched override chains the PUT to update_post_whisper.
+    # Save the edit. `composer:saved` fires on the resolved save, and
+    # the initializer flushes the pending edit as a PUT to
+    # update_post_whisper.
     # Discourse's edit composer uses the same `.create.btn-primary` as the
     # reply composer with a different label; the legacy `.save-edits`
     # class may or may not be present depending on Discourse version, so
@@ -118,8 +119,8 @@ RSpec.describe "Whisper edit toggle (frontend save chain)" do
     open_edit_composer(whispered)
     click_whisper_toolbar_button
 
-    # The modal's Clear button — disarms and closes. Same dirty-flag
-    # mechanism as confirm, but with `modWhisperArmed = false`.
+    # The modal's Clear button — disarms and closes. Same pending-edit
+    # mechanism as confirm, but with `mod_whisper: false`.
     within(".mod-whisper-target-modal") do
       find(".btn-flat", text: I18n.t("js.discourse_mod_categories.whisper.clear")).click
     end

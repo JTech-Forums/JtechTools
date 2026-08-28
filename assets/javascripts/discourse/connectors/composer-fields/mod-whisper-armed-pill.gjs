@@ -2,6 +2,7 @@ import Component from "@glimmer/component";
 import { action, get } from "@ember/object";
 import DButton from "discourse/components/d-button";
 import { i18n } from "discourse-i18n";
+import { setPendingWhisperEdit } from "../../lib/mod-whisper-pending";
 
 // Renders a pill above the composer body whenever a whisper is armed. The
 // pill's DOM presence ALSO triggers the tint on the surrounding composer
@@ -73,12 +74,6 @@ export default class ModWhisperArmedPill extends Component {
     if (!composer) {
       return;
     }
-    // Mark the whisper state as dirty so model:composer#save knows to chain
-    // the PUT /discourse-mod-categories/post/:id/whisper request after an
-    // edit-save resolves. Without this, clicking the pill's X on an EDIT
-    // would flip the composer state but leave the post still a whisper on
-    // the server — same disarm-on-edit gap the modal's Clear button covers.
-    composer.set("modWhisperDirty", true);
     composer.set("modWhisperArmed", false);
     composer.set("modWhisperTargetUserIds", null);
     composer.set("modWhisperTargetUsernames", null);
@@ -88,6 +83,21 @@ export default class ModWhisperArmedPill extends Component {
     composer.set("modWhisperTargetGroups", null);
     composer.set("modWhisperTargetBadgeIds", null);
     composer.set("modWhisperTargetBadges", null);
+    // On an EDIT the composer state alone isn't enough — record a pending
+    // disarm so the mod-whisper initializer PUTs the "remove whisper"
+    // intent to the server once `composer:saved` confirms the edit save.
+    // Same disarm-on-edit gap the modal's Clear button covers.
+    if (composer.editingPost && composer.post?.id) {
+      setPendingWhisperEdit({
+        postId: composer.post.id,
+        state: {
+          mod_whisper: false,
+          mod_whisper_target_user_ids: [],
+          mod_whisper_target_group_ids: [],
+          mod_whisper_target_badge_ids: [],
+        },
+      });
+    }
   }
 
   <template>

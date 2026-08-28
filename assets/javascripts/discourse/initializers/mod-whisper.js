@@ -3,6 +3,10 @@ import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import { i18n } from "discourse-i18n";
 import ModWhisperTargetModal from "../components/mod-whisper-target-modal";
+import {
+  clearPendingWhisperEdit,
+  takePendingWhisperEdit,
+} from "../lib/mod-whisper-pending";
 import { computeReplyAudience } from "../lib/mod-whisper-reply-audience";
 
 // Inline eye SVG so no icon needs registering.
@@ -25,42 +29,39 @@ export default {
       // plugin's `add_permitted_post_create_param` whitelist is
       // create-only), so editing a post and changing the whisper state in
       // the modal saves the raw but the whisper state stays whatever it
-      // was. The composer service fires `composer:edited-post` right after
-      // a successful edit save, while its model is still live: if this was
-      // a STAFF edit AND the whisper state was touched in the modal
-      // (modWhisperDirty), chain a call to the dedicated
-      // update_post_whisper endpoint. Non-staff users never hit this path —
-      // the modal isn't opened for them in the first place — and the server
-      // endpoint 403s defensively even if they did.
+      // was. The whisper-target modal records the intended state in a
+      // module-level pending store at confirm/clear time (edit flow only);
+      // flush it with a PUT to the dedicated update_post_whisper endpoint
+      // once `composer:saved` confirms the edit save succeeded. Non-staff
+      // users never populate the store — the modal isn't opened for them —
+      // and the server endpoint 403s defensively even if they did.
       // (An app event, not api.modifyClass("model:composer", { save }) —
       // overriding model methods that way is deprecated,
       // id:discourse.modify-class-model.)
-      api.onAppEvent("composer:edited-post", () => {
-        const composerService = api.container.lookup("service:composer");
-        const model = composerService?.model;
-        const post = model?.post;
-        const user = api.getCurrentUser();
-
-        if (!model?.modWhisperDirty || !post || !user?.staff) {
+      api.onAppEvent("composer:saved", () => {
+        const pendingEdit = takePendingWhisperEdit();
+        if (!pendingEdit || !api.getCurrentUser()?.staff) {
           return;
         }
 
-        const state = {
-          mod_whisper: model.modWhisperArmed,
-          mod_whisper_target_user_ids: model.modWhisperTargetUserIds || [],
-          mod_whisper_target_group_ids: model.modWhisperTargetGroupIds || [],
-          mod_whisper_target_badge_ids: model.modWhisperTargetBadgeIds || [],
-        };
-        ajax(`/discourse-mod-categories/post/${post.id}/whisper`, {
+        // Grab the post reference now, while the composer model is still
+        // live (the event fires before the composer closes) — the ajax
+        // callback below runs after teardown.
+        const composerService = api.container.lookup("service:composer");
+        const modelPost = composerService?.model?.post;
+        const post =
+          modelPost?.id === pendingEdit.postId ? modelPost : undefined;
+
+        ajax(`/discourse-mod-categories/post/${pendingEdit.postId}/whisper`, {
           type: "PUT",
-          data: state,
+          data: pendingEdit.state,
         })
           .then((res) => {
-            model.set("modWhisperDirty", false);
             // Push the new state onto the post so the cooked-element
             // decorator and the post serializer's mod_is_whisper read the
-            // same source as the response.
-            if (post.set) {
+            // same source as the response. Best-effort — the server state
+            // is already committed either way.
+            if (post?.set) {
               post.set("mod_is_whisper", res?.mod_is_whisper);
               post.set(
                 "mod_whisper_target_user_ids",
@@ -294,6 +295,10 @@ export default {
       // flow; quote-reply behaviour is intentionally unchanged and not
       // special-cased here.
       api.onAppEvent("composer:opened", () => {
+        // A pending whisper edit from a cancelled (never-saved) edit must
+        // not leak into whatever save happens next.
+        clearPendingWhisperEdit();
+
         const composerService = api.container.lookup("service:composer");
         const model = composerService?.model;
         if (!model || !currentUser) {

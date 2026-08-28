@@ -23,6 +23,7 @@ end
 #
 # Indexes
 #
+#  idx_dnl_phantoms_unique_reaction                          (post_id,user_id,reaction_type) UNIQUE
 #  index_discourse_no_likes_phantoms_on_category_id          (category_id)
 #  index_discourse_no_likes_phantoms_on_post_id_and_user_id  (post_id,user_id)
 #  index_discourse_no_likes_phantoms_on_user_id              (user_id)
