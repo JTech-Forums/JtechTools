@@ -3,7 +3,9 @@
 # token can). Remove this file once the branches are gone.
 name: One-shot branch cleanup
 
-on: workflow_dispatch
+on:
+  push:
+    branches: [main]
 
 permissions:
   contents: write
