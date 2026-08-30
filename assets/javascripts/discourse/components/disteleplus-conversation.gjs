@@ -80,6 +80,7 @@ export default class DisteleplusConversation extends Component {
 
   willDestroy() {
     super.willDestroy(...arguments);
+    this.cancelOpenPin?.();
     this.teardownAutocomplete();
     this.unsubscribe?.();
     document.removeEventListener("click", this.closeContextMenu);
@@ -232,6 +233,33 @@ export default class DisteleplusConversation extends Component {
       return;
     }
     this.scrollToBottom();
+    this.pinWhileMediaSettles();
+  }
+
+  // Images, voice players and oneboxes finish layout AFTER the opening
+  // scroll has landed and push the bottom out of view — hold the pin until
+  // the layout stops moving, a few seconds pass, or the user takes over.
+  pinWhileMediaSettles() {
+    const el = this.timeline;
+    if (!el || typeof ResizeObserver === "undefined") {
+      return;
+    }
+    this.cancelOpenPin?.();
+    const observer = new ResizeObserver(() => {
+      el.scrollTop = el.scrollHeight;
+    });
+    const cancel = () => {
+      observer.disconnect();
+      el.removeEventListener("wheel", cancel);
+      el.removeEventListener("touchstart", cancel);
+      clearTimeout(timer);
+      this.cancelOpenPin = null;
+    };
+    [...el.children].forEach((child) => observer.observe(child));
+    el.addEventListener("wheel", cancel, { passive: true });
+    el.addEventListener("touchstart", cancel, { passive: true });
+    const timer = setTimeout(cancel, 3000);
+    this.cancelOpenPin = cancel;
   }
 
   @action
