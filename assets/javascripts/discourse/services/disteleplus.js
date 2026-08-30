@@ -480,8 +480,8 @@ export default class DisteleplusService extends Service {
       return;
     }
     this.listenedSent.add(messageId);
-    ajax(`${BASE}/messages/${messageId}/listened`, { type: "POST" }).catch(
-      () => this.listenedSent.delete(messageId)
+    ajax(`${BASE}/messages/${messageId}/listened`, { type: "POST" }).catch(() =>
+      this.listenedSent.delete(messageId)
     );
   }
 
