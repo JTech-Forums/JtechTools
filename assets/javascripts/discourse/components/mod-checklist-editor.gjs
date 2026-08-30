@@ -9,6 +9,7 @@ import ageWithTooltip from "discourse/helpers/age-with-tooltip";
 import icon from "discourse/helpers/d-icon";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
+import { getURLWithCDN } from "discourse/lib/get-url";
 import EmailGroupUserChooser from "discourse/select-kit/components/email-group-user-chooser";
 import { eq } from "truth-helpers";
 import { i18n } from "discourse-i18n";
@@ -68,6 +69,8 @@ export default class ModChecklistEditor extends Component {
   @tracked saving = false;
   @tracked saved = false;
   @tracked onlyCurrentVersion = false;
+  @tracked logSearch = "";
+  @tracked logKind = "all";
   @tracked logEntries = this.args.data.log || [];
   @tracked targeted = (this.args.data.targeted || []).map(
     (t) => new TargetedChecklist(t)
@@ -88,13 +91,83 @@ export default class ModChecklistEditor extends Component {
     }));
   }
 
-  // The log narrowed to the current checklist version when the staff
-  // member ticks "current version only".
+  // The log narrowed by the version checkbox, the checklist selector and
+  // the name search, in that order.
   get filteredLog() {
-    if (!this.onlyCurrentVersion) {
-      return this.log;
+    let entries = this.log;
+    if (this.onlyCurrentVersion) {
+      entries = entries.filter((entry) => entry.version === this.version);
     }
-    return this.log.filter((entry) => entry.version === this.version);
+    if (this.logKind !== "all") {
+      entries = entries.filter(
+        (entry) => this.logKindOf(entry) === this.logKind
+      );
+    }
+    const search = this.logSearch.trim().toLowerCase();
+    if (search) {
+      entries = entries.filter((entry) =>
+        [entry.username, entry.name].some((field) =>
+          (field || "").toLowerCase().includes(search)
+        )
+      );
+    }
+    return entries;
+  }
+
+  logKindOf(entry) {
+    return entry.checklist_id ? `targeted:${entry.checklist_id}` : entry.kind;
+  }
+
+  // Arrow property: the template calls this as a bare function helper,
+  // which strips the receiver.
+  logAvatar = (entry) =>
+    getURLWithCDN(entry.avatar_template.replace("{size}", "48"));
+
+  logKindLabel(entry) {
+    if (entry.checklist_name) {
+      return entry.checklist_name;
+    }
+    if (entry.kind === "topic") {
+      return i18n(
+        "discourse_mod_categories.first_post_checklist.log_kind_topic"
+      );
+    }
+    return i18n(
+      "discourse_mod_categories.first_post_checklist.log_kind_global"
+    );
+  }
+
+  // One selector entry per distinct checklist seen in the log; hidden when
+  // everything is global.
+  get logKindOptions() {
+    const seen = new Map();
+    this.log.forEach((entry) => {
+      seen.set(this.logKindOf(entry), this.logKindLabel(entry));
+    });
+    const options = [
+      {
+        id: "all",
+        name: i18n(
+          "discourse_mod_categories.first_post_checklist.log_kind_all"
+        ),
+      },
+    ];
+    seen.forEach((name, id) => options.push({ id, name }));
+    return options;
+  }
+
+  get showLogKindFilter() {
+    return this.logKindOptions.length > 2;
+  }
+
+  @action
+  updateLogSearch(event) {
+    this.logSearch = event.target.value;
+  }
+
+  @action
+  updateLogKind(value) {
+    this.logKind = value;
   }
 
   @action
@@ -467,6 +540,25 @@ export default class ModChecklistEditor extends Component {
             </label>
           {{/if}}
         </div>
+        <div class="mod-checklist-log-controls">
+          <input
+            type="search"
+            class="mod-checklist-log-search"
+            placeholder={{i18n
+              "discourse_mod_categories.first_post_checklist.log_search_placeholder"
+            }}
+            value={{this.logSearch}}
+            {{on "input" this.updateLogSearch}}
+          />
+          {{#if this.showLogKindFilter}}
+            <ComboBox
+              @value={{this.logKind}}
+              @content={{this.logKindOptions}}
+              @onChange={{this.updateLogKind}}
+              class="mod-checklist-log-kind"
+            />
+          {{/if}}
+        </div>
         {{#if this.filteredLog.length}}
           <table class="mod-checklist-log-table">
             <thead>
@@ -474,6 +566,11 @@ export default class ModChecklistEditor extends Component {
                 <th>
                   {{i18n
                     "discourse_mod_categories.first_post_checklist.log_user"
+                  }}
+                </th>
+                <th>
+                  {{i18n
+                    "discourse_mod_categories.first_post_checklist.log_checklist"
                   }}
                 </th>
                 <th>
@@ -494,9 +591,24 @@ export default class ModChecklistEditor extends Component {
                 <tr>
                   <td>
                     <a
+                      class="mod-checklist-log-user"
                       href={{concat "/u/" entry.username}}
                       data-user-card={{entry.username}}
-                    >{{entry.username}}</a>
+                    >
+                      {{#if entry.avatar_template}}
+                        <img
+                          class="mod-checklist-log-avatar"
+                          src={{this.logAvatar entry}}
+                          alt=""
+                        />
+                      {{/if}}
+                      {{entry.username}}
+                    </a>
+                  </td>
+                  <td>
+                    <span class="mod-checklist-log-kind-chip">
+                      {{this.logKindLabel entry}}
+                    </span>
                   </td>
                   <td>{{entry.version}}</td>
                   <td>{{ageWithTooltip entry.at}}</td>

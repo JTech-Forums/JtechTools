@@ -332,6 +332,7 @@ module ::DiscourseModCategories
         {
           username: user&.username,
           name: user&.name,
+          avatar_template: user&.avatar_template,
           version: entry["version"].to_i,
           accepted_at: entry["at"],
           kind: entry["kind"].presence || "global",

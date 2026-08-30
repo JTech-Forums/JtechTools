@@ -924,6 +924,41 @@
     padding-top: 1em;
   }
 
+  .mod-checklist-log-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.5em 0 0.75em;
+
+    .mod-checklist-log-search {
+      flex: 1;
+      margin: 0;
+    }
+  }
+
+  .mod-checklist-log-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
+    font-weight: 600;
+  }
+
+  .mod-checklist-log-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 100%;
+  }
+
+  .mod-checklist-log-kind-chip {
+    display: inline-block;
+    padding: 0.1em 0.6em;
+    border-radius: 1em;
+    background: var(--primary-low);
+    color: var(--primary-high);
+    font-size: var(--font-down-1);
+    white-space: nowrap;
+  }
+
   .mod-checklist-log-table {
     width: 100%;
     border-collapse: collapse;
