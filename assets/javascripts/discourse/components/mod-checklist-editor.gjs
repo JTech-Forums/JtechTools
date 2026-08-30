@@ -6,6 +6,7 @@ import { action } from "@ember/object";
 import { service } from "@ember/service";
 import DButton from "discourse/components/d-button";
 import ageWithTooltip from "discourse/helpers/age-with-tooltip";
+import icon from "discourse/helpers/d-icon";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import EmailGroupUserChooser from "discourse/select-kit/components/email-group-user-chooser";
@@ -387,44 +388,49 @@ export default class ModChecklistEditor extends Component {
         </div>
       {{/if}}
 
-      <div class="mod-checklist-field">
-        <label class="mod-checklist-field-label">
-          {{i18n
-            "discourse_mod_categories.first_post_checklist.audience_label"
-          }}
-        </label>
-        <ComboBox
-          @value={{this.maxTl}}
-          @content={{this.audienceOptions}}
-          @onChange={{this.updateMaxTl}}
-          class="mod-checklist-audience"
-        />
-      </div>
+      <button
+        type="button"
+        class="mod-checklist-add-inline"
+        {{on "click" this.addRow}}
+      >
+        {{icon "plus"}}
+        {{i18n "discourse_mod_categories.first_post_checklist.add_item"}}
+      </button>
 
-      <div class="mod-checklist-field">
-        <label class="mod-checklist-field-label">
-          {{i18n
-            "discourse_mod_categories.first_post_checklist.button_label_label"
-          }}
-        </label>
-        <input
-          type="text"
-          class="mod-checklist-button-label"
-          placeholder={{i18n
-            "discourse_mod_categories.first_post_checklist.button_label_placeholder"
-          }}
-          value={{this.buttonLabel}}
-          {{on "input" this.updateButtonLabel}}
-        />
+      <div class="mod-checklist-field-grid">
+        <div class="mod-checklist-field">
+          <label class="mod-checklist-field-label">
+            {{i18n
+              "discourse_mod_categories.first_post_checklist.audience_label"
+            }}
+          </label>
+          <ComboBox
+            @value={{this.maxTl}}
+            @content={{this.audienceOptions}}
+            @onChange={{this.updateMaxTl}}
+            class="mod-checklist-audience"
+          />
+        </div>
+
+        <div class="mod-checklist-field">
+          <label class="mod-checklist-field-label">
+            {{i18n
+              "discourse_mod_categories.first_post_checklist.button_label_label"
+            }}
+          </label>
+          <input
+            type="text"
+            class="mod-checklist-button-label"
+            placeholder={{i18n
+              "discourse_mod_categories.first_post_checklist.button_label_placeholder"
+            }}
+            value={{this.buttonLabel}}
+            {{on "input" this.updateButtonLabel}}
+          />
+        </div>
       </div>
 
       <div class="mod-checklist-editor-actions">
-        <DButton
-          @action={{this.addRow}}
-          @icon="plus"
-          @label="discourse_mod_categories.first_post_checklist.add_item"
-          class="mod-checklist-add"
-        />
         <DButton
           @action={{this.save}}
           @label="discourse_mod_categories.first_post_checklist.save"
@@ -433,6 +439,7 @@ export default class ModChecklistEditor extends Component {
         />
         {{#if this.saved}}
           <span class="mod-checklist-saved">
+            {{icon "check"}}
             {{i18n "discourse_mod_categories.first_post_checklist.saved"}}
           </span>
         {{/if}}
