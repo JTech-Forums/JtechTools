@@ -130,35 +130,6 @@ module DiscourseDisteleplus
       render json: success_json
     end
 
-    QUOTE_EXCERPT_LENGTH = 300
-
-    # Mod action on a forum post: send it into the conversation as canonical
-    # [quote] markup — PrettyText cooks it into a full quote box here, and
-    # the bridge relays it to Telegram like any other message.
-    def quote
-      raise Discourse::InvalidAccess unless current_user.staff?
-      rate_limit!("quote", 10, 1.minute)
-
-      post = Post.find_by(id: params[:post_id])
-      raise Discourse::NotFound unless post
-      guardian.ensure_can_see!(post)
-
-      excerpt = post.raw.to_s.strip
-      if excerpt.length > QUOTE_EXCERPT_LENGTH
-        excerpt = "#{excerpt[0, QUOTE_EXCERPT_LENGTH].rstrip}…"
-      end
-      raw = <<~MARKDOWN.strip
-        [quote="#{post.user&.username}, post:#{post.post_number}, topic:#{post.topic_id}"]
-        #{excerpt}
-        [/quote]
-      MARKDOWN
-
-      message = service.create!(raw: raw)
-      render_json_dump({ message_id: message.id })
-    rescue MessageService::Error, ActiveRecord::RecordInvalid => e
-      render_error(e)
-    end
-
     # First play of a voice note records a "listened" receipt for the sender.
     def listened
       raise Discourse::NotFound unless SiteSetting.disteleplus_read_receipts_enabled

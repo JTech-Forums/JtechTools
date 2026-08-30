@@ -37,7 +37,6 @@ en:
         other: "Listened by %{count}"
       quote_in_chat:
         label: Quote in chat
-        success: Quoted in the conversation
       typing_one: "%{name} is typing"
       typing_two: "%{a} and %{b} are typing"
       typing_many: "%{count} people are typing"
