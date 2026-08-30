@@ -51,6 +51,19 @@ RSpec.describe "Disteleplus conversation API" do
     end
   end
 
+  describe "routing" do
+    it "is not swallowed by the Dumbcourse catch-all and serves the Ember shell" do
+      sign_in(member)
+      get "#{base}/conversation.json"
+      expect(response.status).to eq(200)
+      expect(response.parsed_body).to have_key("messages")
+
+      get "/disteleplus"
+      expect(response.status).to eq(200)
+      expect(response.body).to include("data-discourse-setup")
+    end
+  end
+
   describe "GET /conversation and /messages" do
     before { sign_in(member) }
 

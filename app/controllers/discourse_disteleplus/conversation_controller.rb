@@ -10,6 +10,12 @@ module DiscourseDisteleplus
     PAGE_SIZE = 40
     MAX_PAGE_SIZE = 100
 
+    # Ember entry point: /disteleplus renders the application shell; the
+    # route then fetches the conversation JSON.
+    def page
+      render "default/empty"
+    end
+
     def show
       messages = page_scope.limit(PAGE_SIZE).to_a.reverse
       render_json_dump(

@@ -53,10 +53,40 @@ Discourse::Application.routes.append do
   end
 end
 
+# ── Disteleplus ────────────────────────────────────────────────────────────
+Discourse::Application.routes.append do
+  scope "/jtech-disteleplus", module: "discourse_disteleplus", as: :disteleplus do
+    # Telegram Bot API webhook receiver. No session — authenticated by the
+    # X-Telegram-Bot-Api-Secret-Token header set via setWebhook.
+    post "/telegram/webhook" => "webhook#receive"
+    # Server-rendered entry point for the Ember route, so a hard load or a
+    # shared link to /disteleplus boots the app instead of 404ing.
+    get "/conversation" => "conversation#show"
+    get "/messages" => "conversation#index"
+    post "/messages" => "conversation#create"
+    put "/messages/:id" => "conversation#update"
+    delete "/messages/:id" => "conversation#destroy"
+    put "/messages/:id/reactions/:emoji" => "conversation#add_reaction"
+    delete "/messages/:id/reactions/:emoji" => "conversation#remove_reaction"
+    post "/read" => "conversation#read"
+    get "/legacy-import" => "legacy_import#show"
+    post "/legacy-import" => "legacy_import#create"
+  end
+end
+
+Discourse::Application.routes.append do
+  get "/disteleplus" => "discourse_disteleplus/conversation#page"
+end
+
 # ── Dumbcourse ─────────────────────────────────────────────────────────────
 class DiscourseDumbcourseBasePathConstraint
+  # Request constraints run before path params are merged into req.params, so
+  # req.params[:dumbcourse_base_path] only ever saw the route default and the
+  # catch-all matched every unknown two-segment GET on the site. Read the real
+  # segment from path_parameters.
   def matches?(req)
-    req.params[:dumbcourse_base_path].to_s == DiscourseDumbcourse.base_path
+    segment = req.path_parameters[:dumbcourse_base_path] || req.params[:dumbcourse_base_path]
+    segment.to_s == DiscourseDumbcourse.base_path
   end
 end
 
@@ -98,24 +128,5 @@ Discourse::Application.routes.append do
             !req.path.start_with?("#{base}/push") && !req.path.start_with?("#{base}/ntfy")
           end
     end
-  end
-end
-
-# ── Disteleplus ────────────────────────────────────────────────────────────
-Discourse::Application.routes.append do
-  scope "/jtech-disteleplus", module: "discourse_disteleplus", as: :disteleplus do
-    # Telegram Bot API webhook receiver. No session — authenticated by the
-    # X-Telegram-Bot-Api-Secret-Token header set via setWebhook.
-    post "/telegram/webhook" => "webhook#receive"
-    get "/conversation" => "conversation#show"
-    get "/messages" => "conversation#index"
-    post "/messages" => "conversation#create"
-    put "/messages/:id" => "conversation#update"
-    delete "/messages/:id" => "conversation#destroy"
-    put "/messages/:id/reactions/:emoji" => "conversation#add_reaction"
-    delete "/messages/:id/reactions/:emoji" => "conversation#remove_reaction"
-    post "/read" => "conversation#read"
-    get "/legacy-import" => "legacy_import#show"
-    post "/legacy-import" => "legacy_import#create"
   end
 end
