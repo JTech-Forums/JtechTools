@@ -42,6 +42,7 @@ export default class DisteleplusConversation extends Component {
   @service appEvents;
   @service dialog;
   @service menu;
+  @service modal;
   @service emojiStore;
   @service composer;
   @service siteSettings;
