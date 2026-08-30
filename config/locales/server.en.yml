@@ -2,6 +2,7 @@ en:
   disteleplus:
     title: Disteleplus
     notification: "%{username} mentioned you in Disteleplus"
+    notification_with_preview: "%{username} mentioned you: %{excerpt}"
     upload_only: Sent an attachment
     test_message: "✅ <b>%{site}</b> can reach this group. The conversation is at %{url}"
     reports:
@@ -652,6 +653,10 @@ en:
     disteleplus_typing_to_telegram: Show a "typing…" status in the Telegram
       group while a Discourse member is typing. Telegram never sends typing
       events to bots, so the reverse direction is not possible.
+    disteleplus_read_receipts_enabled: Show read receipts on your own messages
+      in the conversation — a double check plus "Seen by N" once other members'
+      read cursors pass the message. Telegram exposes no read data to bots, so
+      the count reflects forum-side readers only.
     disteleplus_bridge_uploads: Copy photos, documents, video and audio across
       the bridge, in both directions, up to the size limit below. When off,
       media is replaced by a short placeholder line.

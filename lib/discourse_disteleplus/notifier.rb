@@ -22,6 +22,8 @@ module DiscourseDisteleplus
       bot_id = DiscourseDisteleplus.bot_user&.id
       recipients =
         Access.allowed_users.where(id: mentioned_ids).where.not(id: [actor&.id, bot_id].compact)
+      preview = excerpt(message)
+      sender = display_name(message)
       recipients.find_each do |recipient|
         notification =
           Notification.create!(
@@ -29,11 +31,21 @@ module DiscourseDisteleplus
             user_id: recipient.id,
             high_priority: true,
             data: {
-              message: I18n.t("disteleplus.notification", username: display_name(message)),
+              # The bell row shows the message itself, not just "mentioned
+              # you" — and the toast card reuses excerpt + avatar directly.
+              message:
+                I18n.t(
+                  "disteleplus.notification_with_preview",
+                  username: sender,
+                  excerpt: preview,
+                  default: "#{sender} mentioned you: #{preview}",
+                ),
               title: I18n.t("disteleplus.title"),
               url: message_url(message),
               username: actor&.username,
               display_username: actor&.username,
+              avatar_template: actor&.avatar_template,
+              excerpt: preview,
               disteleplus_message_id: message.id,
               disteleplus: true,
             }.to_json,
@@ -54,12 +66,23 @@ module DiscourseDisteleplus
 
       doc = Nokogiri::HTML5.fragment(message.cooked)
       # The anchor text can be a display name (prioritize_username_in_ux off);
-      # the href always carries the username / group name.
-      names = doc.css("a.mention").filter_map { |a| a["href"].to_s[%r{/u/([^/?#]+)}, 1]&.downcase }
+      # the href always carries the username / group name. Bare PrettyText
+      # cooking can also emit href-less <span class="mention"> — fall back to
+      # the element text so those mentions still notify.
+      names =
+        doc
+          .css("a.mention, span.mention")
+          .filter_map do |el|
+            el["href"].to_s[%r{/u/([^/?#]+)}, 1]&.downcase ||
+              el.text.to_s.delete_prefix("@").downcase.presence
+          end
       group_names =
         doc
-          .css("a.mention-group")
-          .filter_map { |a| a["href"].to_s[%r{/groups/([^/?#]+)}, 1]&.downcase }
+          .css("a.mention-group, span.mention-group")
+          .filter_map do |el|
+            el["href"].to_s[%r{/groups/([^/?#]+)}, 1]&.downcase ||
+              el.text.to_s.delete_prefix("@").downcase.presence
+          end
       ids = names.empty? ? [] : User.where(username_lower: names).pluck(:id)
       if group_names.any?
         group_ids = Group.where("LOWER(name) IN (?)", group_names).pluck(:id)
