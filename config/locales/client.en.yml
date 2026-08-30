@@ -60,6 +60,10 @@ en:
         voters:
           one: "%{count} voter"
           other: "%{count} voters"
+        close: Close poll
+        reopen: Reopen poll
+        stats: View stats
+        stats_title: Poll results
         builder:
           title: Create a poll
           template_yes_no: Yes / No
