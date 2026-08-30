@@ -360,14 +360,17 @@ html.has-full-page-disteleplus {
       height: 0;
     }
 
+    // The gutter is only ~42px and "12:57 PM" is wider at the normal size;
+    // shrink the hover time and clip rather than spill into the message.
     .disteleplus-message__meta {
       position: absolute;
-      top: 0.25em;
-      left: 0.75em;
+      top: 0.35em;
+      left: 0;
       display: flex;
       justify-content: center;
-      width: var(--message-left-width);
+      width: calc(var(--message-left-width) + 0.75em);
       margin: 0;
+      overflow: hidden;
       visibility: hidden;
 
       strong {
@@ -376,6 +379,8 @@ html.has-full-page-disteleplus {
 
       .disteleplus-message__time {
         color: var(--primary-high);
+        font-size: var(--font-down-2);
+        white-space: nowrap;
       }
     }
 
@@ -1566,8 +1571,11 @@ html.has-full-page-disteleplus {
 
 // ── polls (core discourse-poll engine, conversation-native widget) ─────────
 // The cooked HTML still contains core's static poll markup — the live
-// widget below replaces it.
+// widget below replaces it, and the question line gets emphasis.
 .disteleplus-message__cooked.has-poll {
+  font-weight: 600;
+  font-size: var(--font-up-1);
+
   .poll,
   .poll-container,
   div[data-poll-name] {
@@ -1575,14 +1583,29 @@ html.has-full-page-disteleplus {
   }
 }
 
+// A poll whose backing post failed still cooks core's static markup —
+// strip the dead chrome (voter counts, buttons) so it reads as a plain
+// question with options instead of a broken widget.
+.disteleplus-message__cooked:not(.has-poll) .poll {
+  margin: 0.25em 0;
+  border: none;
+
+  .poll-info,
+  .poll-buttons,
+  .poll-buttons-dropdown {
+    display: none;
+  }
+}
+
 .disteleplus-poll {
-  min-width: 260px;
-  max-width: 380px;
+  width: 34em;
+  max-width: 100%;
   margin-top: 0.35em;
-  padding: 0.6em 0.7em;
+  padding: 0.7em 0.85em;
   border: 1px solid var(--content-border-color, var(--primary-low));
   border-radius: var(--d-border-radius, 8px);
   background: var(--primary-very-low);
+  box-sizing: border-box;
 
   &__kind {
     display: flex;
@@ -1668,8 +1691,10 @@ html.has-full-page-disteleplus {
 
   &__count {
     flex-shrink: 0;
+    min-width: 3.2em;
     color: var(--primary-medium);
     font-size: var(--font-down-1);
+    text-align: right;
   }
 
   &__bar-back {
@@ -1690,6 +1715,13 @@ html.has-full-page-disteleplus {
 
   &__option.is-chosen &__bar {
     background: var(--poll-bar-color--chosen, var(--tertiary));
+  }
+
+  &__option:focus-visible,
+  &__footer-actions button:focus-visible {
+    outline: 2px solid var(--tertiary);
+    outline-offset: 2px;
+    border-radius: var(--d-border-radius, 4px);
   }
 
   // Who picked this option — overlapping avatar stack, public polls only.
