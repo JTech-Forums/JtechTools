@@ -44,6 +44,10 @@ module DiscourseDisteleplus
         uploads.each { |upload| message.message_uploads.create!(upload: upload) }
       end
 
+      if message.source_discourse? && Polls.enabled? && Polls.poll_markup?(raw)
+        Polls.create_backing_post!(message)
+      end
+
       Publisher.publish(:created, message, actor: actor)
       Notifier.notify(message, actor: actor) if notify
       enqueue_bridge("create", message) if bridge && message.source_discourse?
@@ -73,6 +77,7 @@ module DiscourseDisteleplus
 
     def delete!(message, bridge: true)
       ensure_deletable!(message)
+      Polls.destroy_backing_post(message)
       message.update!(deleted_at: Time.zone.now, raw: "", cooked: "")
       message.message_uploads.destroy_all
       message.reactions.destroy_all

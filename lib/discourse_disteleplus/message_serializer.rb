@@ -23,6 +23,7 @@ module DiscourseDisteleplus
         can_delete: viewer ? Access.can_delete?(viewer, message) : false,
         can_react: viewer ? Access.allowed?(viewer) && !message.deleted? : false,
         listened_by: message.deleted? ? [] : serialize_listens(message),
+        poll: message.deleted? ? nil : Polls.serialize(message, viewer),
       }
     end
 
