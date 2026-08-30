@@ -153,33 +153,38 @@ export default class DisteleplusPoll extends Component {
             disabled={{if this.poll.closed "disabled"}}
             {{on "click" (fn this.pick option)}}
           >
-            <span class="disteleplus-poll__bar" style={{option.barStyle}} />
             <span class="disteleplus-poll__check">
               {{#if option.chosen}}{{icon "circle-check"}}{{else}}{{icon
                   "far-circle"
                 }}{{/if}}
             </span>
-            <span class="disteleplus-poll__label">
-              {{htmlSafe option.html}}
-            </span>
-            {{#if option.voterAvatars.length}}
-              <span
-                class="disteleplus-poll__voters"
-                title={{option.voterNames}}
-              >
-                {{#each option.voterAvatars as |voter|}}
-                  <img src={{voter.url}} alt={{voter.username}} />
-                {{/each}}
-                {{#if option.extraVoters}}
-                  <span class="disteleplus-poll__voters-more">
-                    +{{option.extraVoters}}
+            <span class="disteleplus-poll__main">
+              <span class="disteleplus-poll__row">
+                <span class="disteleplus-poll__label">
+                  {{htmlSafe option.html}}
+                </span>
+                {{#if option.voterAvatars.length}}
+                  <span
+                    class="disteleplus-poll__voters"
+                    title={{option.voterNames}}
+                  >
+                    {{#each option.voterAvatars as |voter|}}
+                      <img src={{voter.url}} alt={{voter.username}} />
+                    {{/each}}
+                    {{#if option.extraVoters}}
+                      <span class="disteleplus-poll__voters-more">
+                        +{{option.extraVoters}}
+                      </span>
+                    {{/if}}
                   </span>
                 {{/if}}
+                <span class="disteleplus-poll__count">
+                  {{option.percent}}%
+                </span>
               </span>
-            {{/if}}
-            <span class="disteleplus-poll__count">
-              {{option.votes}}
-              ({{option.percent}}%)
+              <span class="disteleplus-poll__bar-back">
+                <span class="disteleplus-poll__bar" style={{option.barStyle}} />
+              </span>
             </span>
           </button>
         {{/each}}
