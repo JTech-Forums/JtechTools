@@ -1557,3 +1557,58 @@ html.has-full-page-disteleplus {
   color: var(--primary-medium);
   margin: 0.25em 0 0;
 }
+
+// ── voice recorder: pause state, permission hint, caption ───────────────────
+.disteleplus-vrec__requesting {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  color: var(--primary-medium);
+  font-size: var(--font-down-1);
+
+  .d-icon {
+    color: var(--tertiary);
+    animation: disteleplus-vrec-blink 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes disteleplus-vrec-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.disteleplus-vrec__dot.is-paused {
+  animation: none;
+  opacity: 0.45;
+}
+
+.disteleplus-vrec__pause {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.35em;
+  line-height: 0;
+  color: var(--primary-high);
+  border-radius: 100%;
+
+  &:hover {
+    background: var(--primary-low);
+  }
+}
+
+.disteleplus-vrec__caption {
+  flex: 1;
+  min-width: 8em;
+  border: 1px solid var(--primary-low-mid);
+  border-radius: 999px;
+  background: var(--secondary);
+  color: var(--primary);
+  padding: 0.3em 0.9em;
+  font-size: var(--font-down-1);
+
+  &:focus {
+    outline: none;
+    border-color: var(--tertiary);
+  }
+}
