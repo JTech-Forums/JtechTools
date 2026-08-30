@@ -53,7 +53,10 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     // Link straight to the target — note anchor on a topic, the post,
     // the user notes tab, or the review-queue entry, depending on kind.
     get linkHref() {
-      if ((this.isModNote || this.isDisteleplus) && this.notification.data?.url) {
+      if (
+        (this.isModNote || this.isDisteleplus) &&
+        this.notification.data?.url
+      ) {
         return this.notification.data.url;
       }
       return super.linkHref;
