@@ -11,6 +11,34 @@
 register_asset "stylesheets/disteleplus.scss"
 register_asset "stylesheets/disteleplus-native.scss"
 
+# Icons drawn by the header shortcut, conversation, context menu, composer and
+# voice recorder. Discourse ships only a subset of FontAwesome in its sprite;
+# an unregistered icon renders as an empty <svg>.
+%w[
+  arrow-down
+  comments
+  copy
+  download
+  ellipsis
+  face-smile
+  file
+  link
+  microphone
+  paperclip
+  paper-plane
+  pencil
+  play
+  plus
+  quote-right
+  reply
+  rotate
+  spinner
+  stop
+  trash-can
+  upload
+  xmark
+].each { |name| register_svg_icon(name) }
+
 module ::DiscourseDisteleplus
   LOG_TAG = "[jtech-tools disteleplus]"
   GENERAL_TOPIC_IDS = [0, 1].freeze
