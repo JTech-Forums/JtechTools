@@ -54,7 +54,20 @@ export default class DisteleplusService extends Service {
   @tracked drawerSize = DEFAULT_SIZE;
   // draws its unread divider after this id.
   @tracked openedAtReadId = null;
+  // Search UI open (drawer + full page share it) and results.
+  @tracked searchOpen = false;
+  @tracked searchTerm = "";
+  @tracked searchResults = null;
+  @tracked searching = false;
+  // than the live tail.
+  @tracked detached = false;
+  // [{ user_id, username, name, until }]
+  @tracked typers = [];
   store = new KeyValueStore(STORE_NAMESPACE);
+
+  // True while the timeline shows a window around a searched message rather
+
+  lastTypingSentAt = 0;
 
   latestMessageId = null;
   lastReadMessageId = null;
