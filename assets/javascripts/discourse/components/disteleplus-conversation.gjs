@@ -713,6 +713,22 @@ export default class DisteleplusConversation extends Component {
     this.contextMenu = { message, x: Math.max(8, x), y: Math.max(8, y) };
   }
 
+  // The estimates above pre-position the menu; the real box (the reactions
+  // row makes it wider than any guess) is measured once rendered and pushed
+  // back inside the conversation bounds.
+  clampContextMenu = modifier((element) => {
+    const bounds = this.element.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
+    const overRight = rect.right - (bounds.right - 8);
+    const overBottom = rect.bottom - (bounds.bottom - 8);
+    if (overRight > 0) {
+      element.style.left = `${Math.max(8, parseFloat(element.style.left) - overRight)}px`;
+    }
+    if (overBottom > 0) {
+      element.style.top = `${Math.max(8, parseFloat(element.style.top) - overBottom)}px`;
+    }
+  });
+
   @action
   closeContextMenu() {
     this.contextMenu = null;
@@ -1429,6 +1445,7 @@ export default class DisteleplusConversation extends Component {
             class="disteleplus-context-menu"
             role="menu"
             style={{this.contextMenuStyle}}
+            {{this.clampContextMenu}}
           >
             <div class="disteleplus-context-menu__reactions">
               {{#each this.quickReactions as |reaction|}}
