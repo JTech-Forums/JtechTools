@@ -26,6 +26,8 @@ import dAutocomplete from "discourse/ui-kit/modifiers/d-autocomplete";
 import { i18n } from "discourse-i18n";
 import { enhanceWithin } from "../lib/disteleplus-voice-player";
 import DisteleplusMessageInfo from "./disteleplus-message-info";
+import DisteleplusPoll from "./disteleplus-poll";
+import DisteleplusPollBuilder from "./disteleplus-poll-builder";
 import DisteleplusReactionInfo from "./disteleplus-reaction-info";
 import DisteleplusVoiceRecorder from "./disteleplus-voice-recorder";
 
@@ -954,6 +956,21 @@ export default class DisteleplusConversation extends Component {
     this.openMessageInfo(message);
   }
 
+  @action
+  openPollBuilder() {
+    this.modal.show(DisteleplusPollBuilder, {
+      model: {
+        onCreate: async (markup) => {
+          try {
+            await this.disteleplus.createMessage({ raw: markup });
+          } catch (error) {
+            popupAjaxError(error);
+          }
+        },
+      },
+    });
+  }
+
   // WhatsApp-style reactions sheet: who reacted with what and when; your own
   // rows remove on click, and "+" opens the picker for a new one.
   @action
@@ -1210,10 +1227,17 @@ export default class DisteleplusConversation extends Component {
                     {{/if}}
 
                     {{#if message.cooked}}
-                      <div class="disteleplus-message__cooked cooked">
+                      <div
+                        class="disteleplus-message__cooked cooked
+                          {{if message.poll 'has-poll'}}"
+                      >
                         {{this.safeCooked message.cooked}}
                       </div>
                     {{/if}}
+                  {{/if}}
+
+                  {{#if message.poll}}
+                    <DisteleplusPoll @message={{message}} />
                   {{/if}}
 
                   {{#if message.reactions.length}}
@@ -1507,6 +1531,17 @@ export default class DisteleplusConversation extends Component {
                   {{on "click" this.openVoiceRecorder}}
                 >
                   {{icon "microphone"}}
+                </button>
+              {{/if}}
+              {{#if this.disteleplus.pollsEnabled}}
+                <button
+                  class="disteleplus-composer__button"
+                  type="button"
+                  title={{i18n "disteleplus.poll.builder.title"}}
+                  aria-label={{i18n "disteleplus.poll.builder.title"}}
+                  {{on "click" this.openPollBuilder}}
+                >
+                  {{icon "chart-simple"}}
                 </button>
               {{/if}}
               <button

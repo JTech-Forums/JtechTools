@@ -1565,6 +1565,217 @@ html.has-full-page-disteleplus {
   margin: 0.25em 0 0;
 }
 
+// ── polls (core discourse-poll engine, conversation-native widget) ─────────
+// The cooked HTML still contains core's static poll markup — the live
+// widget below replaces it.
+.disteleplus-message__cooked.has-poll {
+  .poll,
+  .poll-container,
+  div[data-poll-name] {
+    display: none;
+  }
+}
+
+.disteleplus-poll {
+  min-width: 260px;
+  max-width: 380px;
+  margin-top: 0.35em;
+  padding: 0.6em 0.7em;
+  border: 1px solid var(--content-border-color, var(--primary-low));
+  border-radius: var(--d-border-radius, 8px);
+  background: var(--primary-very-low);
+
+  &__kind {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    margin-bottom: 0.5em;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+
+    .d-icon {
+      color: var(--tertiary);
+    }
+  }
+
+  &__options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
+  }
+
+  &__option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.5em 0.6em;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius, 6px);
+    background: var(--secondary);
+    color: var(--primary);
+    text-align: left;
+    overflow: hidden;
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--tertiary-medium, var(--tertiary));
+    }
+
+    &[disabled] {
+      cursor: default;
+      opacity: 0.85;
+    }
+
+    &.is-chosen {
+      border-color: var(--tertiary);
+    }
+  }
+
+  &__bar {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: color-mix(in srgb, var(--tertiary) 14%, transparent);
+    transition: width 0.25s ease;
+    pointer-events: none;
+  }
+
+  &__check {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+
+    .d-icon {
+      color: var(--primary-low-mid, var(--primary-medium));
+    }
+  }
+
+  &__option.is-chosen &__check .d-icon {
+    color: var(--tertiary);
+  }
+
+  &__label {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+
+    p {
+      margin: 0;
+    }
+  }
+
+  &__count {
+    position: relative;
+    flex-shrink: 0;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+
+  &__footer {
+    margin-top: 0.5em;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+
+  &.is-closed &__option {
+    cursor: default;
+  }
+}
+
+// Poll builder modal.
+.disteleplus-poll-builder {
+  &__templates {
+    display: flex;
+    gap: 0.5em;
+    margin-bottom: 0.9em;
+
+    button {
+      padding: 0.35em 0.8em;
+      border: 1px solid var(--primary-low);
+      border-radius: 1em;
+      background: var(--primary-very-low);
+      color: var(--primary-high);
+      cursor: pointer;
+
+      &:hover {
+        background: var(--primary-low);
+      }
+    }
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+    margin-bottom: 0.9em;
+    font-weight: 600;
+
+    input,
+    select {
+      margin: 0;
+      font-weight: normal;
+    }
+  }
+
+  &__label {
+    display: block;
+    margin-bottom: 0.3em;
+    font-weight: 600;
+  }
+
+  &__options {
+    margin-bottom: 0.9em;
+  }
+
+  &__option {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    margin-bottom: 0.4em;
+
+    input {
+      flex: 1;
+      margin: 0;
+    }
+
+    button {
+      display: flex;
+      padding: 0.4em;
+      border: none;
+      background: none;
+      color: var(--primary-medium);
+      cursor: pointer;
+
+      &:hover {
+        color: var(--danger);
+      }
+    }
+  }
+
+  &__add {
+    display: flex;
+    align-items: center;
+    gap: 0.35em;
+    padding: 0.3em 0;
+    border: none;
+    background: none;
+    color: var(--tertiary);
+    cursor: pointer;
+  }
+
+  &__toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 0.9em;
+    cursor: pointer;
+
+    input {
+      margin: 0;
+    }
+  }
+}
+
 // ── reactions sheet (WhatsApp-style: who reacted, with what, when) ─────────
 .disteleplus-reaction-info__bar {
   display: flex;

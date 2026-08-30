@@ -67,6 +67,9 @@ export default class DisteleplusService extends Service {
   // Powers the "Seen by" chip; replaced wholesale so getters recompute.
   @tracked readStates = {};
   @tracked readReceiptsEnabled = false;
+  @tracked pollsEnabled = false;
+  // The holder topic whose core /polls/<id> MessageBus channel carries votes.
+  pollsChannelTopicId = null;
   store = new KeyValueStore(STORE_NAMESPACE);
 
   // Message id a notification deep link (#m<id>) asked to land on. Set by
@@ -316,8 +319,12 @@ export default class DisteleplusService extends Service {
         this.lastReadMessageId = response.meta.last_read_message_id;
         this.openedAtReadId = this.lastReadMessageId;
         this.readReceiptsEnabled = !!response.meta.read_receipts_enabled;
+        this.pollsEnabled = !!response.meta.polls_enabled;
         this.loaded = true;
         this.subscribe();
+        if (response.meta.polls_topic_id) {
+          this.ensurePollChannel(response.meta.polls_topic_id);
+        }
         if (this.readReceiptsEnabled) {
           this.loadReadStates();
         }
@@ -480,8 +487,8 @@ export default class DisteleplusService extends Service {
       return;
     }
     this.listenedSent.add(messageId);
-    ajax(`${BASE}/messages/${messageId}/listened`, { type: "POST" }).catch(
-      () => this.listenedSent.delete(messageId)
+    ajax(`${BASE}/messages/${messageId}/listened`, { type: "POST" }).catch(() =>
+      this.listenedSent.delete(messageId)
     );
   }
 
@@ -542,7 +549,98 @@ export default class DisteleplusService extends Service {
       next[index] = message;
       this.messages = next;
     }
+    // The holder topic is created lazily with the FIRST poll — a message
+    // arriving with a poll may carry a channel we aren't listening to yet.
+    if (message.poll?.topic_id) {
+      this.ensurePollChannel(message.poll.topic_id);
+    }
     return message;
+  }
+
+  // ── polls ─────────────────────────────────────────────────────────────────
+  // Votes are core discourse-poll votes on the backing post; results stream
+  // over core's /polls/<holder topic id> channel.
+
+  ensurePollChannel(topicId) {
+    if (!topicId || this.pollsChannelTopicId === topicId) {
+      return;
+    }
+    if (this.pollsChannelTopicId) {
+      this.messageBus.unsubscribe(
+        `/polls/${this.pollsChannelTopicId}`,
+        this.onPollUpdate
+      );
+    }
+    this.pollsChannelTopicId = topicId;
+    this.messageBus.subscribe(`/polls/${topicId}`, this.onPollUpdate);
+  }
+
+  onPollUpdate = (payload) => {
+    const corePoll = (payload?.polls || [])[0];
+    if (!corePoll || !payload.post_id) {
+      return;
+    }
+    const message = this.messages.find(
+      (candidate) => candidate.poll?.post_id === payload.post_id
+    );
+    if (message) {
+      this.applyCorePoll(message, corePoll);
+    }
+  };
+
+  // Merge core's serialized poll into our message-local shape. `chosenSet`
+  // comes from a vote response; bus updates carry no per-user votes, so the
+  // previous chosen flags are preserved there.
+  applyCorePoll(message, corePoll, chosenSet = null) {
+    const previous = message.poll || {};
+    const chosen =
+      chosenSet ||
+      new Set(
+        (previous.options || [])
+          .filter((option) => option.chosen)
+          .map((option) => option.id)
+      );
+    const poll = {
+      ...previous,
+      status: corePoll.status || previous.status,
+      closed: (corePoll.status || previous.status) !== "open",
+      close_at: corePoll.close || previous.close_at,
+      voters: corePoll.voters ?? previous.voters,
+      options: (corePoll.options || previous.options || []).map((option) => ({
+        id: option.id,
+        html: option.html,
+        votes: option.votes ?? 0,
+        chosen: chosen.has(option.id),
+      })),
+    };
+    const next = { ...message, poll };
+    this.messages = this.messages.map((candidate) =>
+      candidate.id === next.id ? next : candidate
+    );
+  }
+
+  async votePoll(message, optionIds) {
+    const response = await ajax("/polls/vote", {
+      type: "PUT",
+      data: {
+        post_id: message.poll.post_id,
+        poll_name: message.poll.name,
+        options: optionIds,
+      },
+    });
+    this.applyCorePoll(
+      message,
+      response.poll || {},
+      new Set(response.vote || optionIds)
+    );
+  }
+
+  async retractPollVote(message) {
+    const response = await ajax("/polls/vote", {
+      type: "DELETE",
+      data: { post_id: message.poll.post_id, poll_name: message.poll.name },
+    });
+    this.applyCorePoll(message, response.poll || {}, new Set());
   }
 
   hydrate(message) {

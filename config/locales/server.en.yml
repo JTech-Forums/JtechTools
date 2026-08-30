@@ -660,6 +660,13 @@ en:
     disteleplus_quote_in_topic_enabled: Offer "Quote in new topic" in a
       message's context menu, prefilling a new forum topic with the quoted
       message.
+    disteleplus_polls_enabled: Create real Discourse polls from the
+      conversation composer — voting, results and auto-close all run on
+      core's poll engine via a hidden backing topic. Telegram members
+      receive the question with a link to vote here; bots cannot cast
+      Telegram votes, so the forum poll is the single source of truth.
+    disteleplus_polls_topic_id: Hidden holder topic for the conversation
+      polls' backing posts. Managed automatically.
     disteleplus_bridge_uploads: Copy photos, documents, video and audio across
       the bridge, in both directions, up to the size limit below. When off,
       media is replaced by a short placeholder line.

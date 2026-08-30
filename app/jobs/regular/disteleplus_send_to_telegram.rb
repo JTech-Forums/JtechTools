@@ -256,9 +256,18 @@ module Jobs
 
     def outbound_html(message)
       user = message.user
+      raw = message.raw
+      # A poll bridges as its question plus a deep link — bots cannot cast
+      # Telegram votes, so the forum poll is the only real ballot box.
+      if message.poll_post_id.present?
+        question = DiscourseDisteleplus::Polls.question_text(raw)
+        raw =
+          "📊 #{question.presence || "Poll"}\n\nVote in the conversation: " \
+            "#{Discourse.base_url}/disteleplus#m#{message.id}"
+      end
       DiscourseDisteleplus::Formatter.outbound_html(
         author_name(message),
-        message.raw,
+        raw,
         display_name: user&.name.presence || user&.username,
         profile_url: user ? "#{Discourse.base_url}/u/#{user.username_lower}" : nil,
       )
