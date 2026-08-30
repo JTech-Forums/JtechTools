@@ -82,7 +82,7 @@ RSpec.describe DiscourseDisteleplus::Access do
     expect(Guardian.new(member).can_access_disteleplus?).to eq(true)
     expect(Guardian.new(outsider).can_access_disteleplus?).to eq(false)
     expect(Guardian.new(moderator).can_moderate_disteleplus?).to eq(false)
-    SiteSetting.disteleplus_allowed_groups = Group::AUTO_GROUPS[:staff].to_s
+    team.add(moderator)
     expect(Guardian.new(moderator).can_moderate_disteleplus?).to eq(true)
 
     json = CurrentUserSerializer.new(member, scope: Guardian.new(member), root: false).as_json

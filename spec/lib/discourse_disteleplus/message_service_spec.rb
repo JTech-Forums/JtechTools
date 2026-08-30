@@ -199,8 +199,10 @@ RSpec.describe DiscourseDisteleplus::MessageService do
         raw:
           "hello @#{other.username} and @#{admin.username} and @#{bot.username} and @#{outsider.username}",
       )
+      message = DiscourseDisteleplus::Message.last
       ids = Notification.where(notification_type: Notification.types[:custom]).pluck(:user_id)
-      expect(ids).to contain_exactly(other.id, admin.id)
+      expect(ids).to contain_exactly(other.id, admin.id),
+      "cooked=#{message.cooked.inspect} mentioned=#{DiscourseDisteleplus::Notifier.mentioned_user_ids(message).inspect} allowed=#{DiscourseDisteleplus::Access.allowed_users.pluck(:id).inspect}"
       expect(Notification.where(user_id: other.id).last.data).to include("mentioned you")
     end
 

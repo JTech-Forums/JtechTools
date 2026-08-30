@@ -43,6 +43,7 @@ module DiscourseDisteleplus
         enqueue_push(recipient, message, notification)
       end
     rescue StandardError => e
+      raise if Rails.env.test?
       Rails.logger.warn(
         "#{DiscourseDisteleplus::LOG_TAG} notification fan-out failed: #{e.message}",
       )
