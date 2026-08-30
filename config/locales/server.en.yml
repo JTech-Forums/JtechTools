@@ -594,6 +594,13 @@ en:
       the table editor in {{setting:disteleplus_user_map}}. Existing values
       were migrated automatically; this setting is no longer read.'
 
+    disteleplus_encrypt_at_rest: Encrypt message text in the database (AES-256,
+      key derived from the site secret) so a database dump alone does not
+      expose the conversation. Uploads are stored as normal Discourse uploads.
+      Search decrypts server-side.
+    disteleplus_typing_to_telegram: Show a "typing…" status in the Telegram
+      group while a Discourse member is typing. Telegram never sends typing
+      events to bots, so the reverse direction is not possible.
     disteleplus_bridge_uploads: Copy photos, documents, video and audio across
       the bridge, in both directions, up to the size limit below. When off,
       media is replaced by a short placeholder line.

@@ -239,6 +239,85 @@ export default class DisteleplusConversation extends Component {
   updateDraft(event) {
     this.disteleplus.setDraft(event.target.value);
     this.autosize(event.target);
+    if (event.target.value.trim()) {
+      this.disteleplus.sendTyping();
+    }
+  }
+
+  get typingLabel() {
+    const typers = this.disteleplus.typers;
+    if (!typers.length) {
+      return null;
+    }
+    const label = (t) => t.name || t.username;
+    if (typers.length === 1) {
+      return i18n("disteleplus.typing_one", { name: label(typers[0]) });
+    }
+    if (typers.length === 2) {
+      return i18n("disteleplus.typing_two", {
+        a: label(typers[0]),
+        b: label(typers[1]),
+      });
+    }
+    return i18n("disteleplus.typing_many", { count: typers.length });
+  }
+
+  // Telegram-style double tap: react with your first quick reaction.
+  @action
+  doubleTap(message, event) {
+    if (message.deleted) {
+      return;
+    }
+    if (event.target.closest("a, button, audio, video, img, .lightbox")) {
+      return;
+    }
+    event.preventDefault();
+    const emoji = this.quickReactions[0]?.name || "heart";
+    const el = this.messageElement(message.id);
+    el?.classList.add("is-pop");
+    window.setTimeout(() => el?.classList.remove("is-pop"), 600);
+    this.react(message, emoji);
+  }
+
+  // ── search ────────────────────────────────────────────────────────────────
+
+  @action
+  toggleSearch() {
+    this.disteleplus.toggleSearch();
+    if (this.disteleplus.searchOpen) {
+      requestAnimationFrame(() =>
+        this.element?.querySelector(".disteleplus-search input")?.focus()
+      );
+    }
+  }
+
+  @action
+  onSearchInput(event) {
+    this.disteleplus.search(event.target.value).catch(popupAjaxError);
+  }
+
+  @action
+  onSearchKeydown(event) {
+    if (event.key === "Escape") {
+      this.disteleplus.toggleSearch(false);
+    }
+  }
+
+  @action
+  async openResult(result) {
+    this.disteleplus.toggleSearch(false);
+    if (!this.messageElement(result.id)) {
+      try {
+        await this.disteleplus.loadAround(result.id);
+      } catch (error) {
+        popupAjaxError(error);
+        return;
+      }
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      this.enhance(this.timeline);
+    }
+    this.jumpTo(result);
+    this.showJump = true;
   }
 
   autosize(textarea) {
@@ -679,7 +758,11 @@ export default class DisteleplusConversation extends Component {
   }
 
   @action
-  scrollToBottom() {
+  async scrollToBottom() {
+    if (this.disteleplus.detached) {
+      await this.disteleplus.reloadLatest();
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
     if (this.timeline) {
       this.timeline.scrollTop = this.timeline.scrollHeight;
       this.newBelow = 0;
@@ -786,6 +869,13 @@ export default class DisteleplusConversation extends Component {
             </div>
             <div class="disteleplus-navbar__actions">
               <DButton
+                @icon="magnifying-glass"
+                @action={{this.toggleSearch}}
+                @title="disteleplus.search"
+                class="btn-transparent no-text
+                  {{if this.disteleplus.searchOpen 'active'}}"
+              />
+              <DButton
                 @icon="discourse-compress"
                 @action={{this.openInDrawer}}
                 @title="disteleplus.open_in_drawer"
@@ -795,6 +885,46 @@ export default class DisteleplusConversation extends Component {
           </nav>
         </div>
       {{/if}}
+      {{#if this.disteleplus.searchOpen}}
+        <div class="disteleplus-search">
+          <div class="disteleplus-search__bar">
+            {{icon "magnifying-glass"}}
+            <input
+              type="search"
+              value={{this.disteleplus.searchTerm}}
+              placeholder={{i18n "disteleplus.search_placeholder"}}
+              {{on "input" this.onSearchInput}}
+              {{on "keydown" this.onSearchKeydown}}
+            />
+            <button
+              type="button"
+              title={{i18n "disteleplus.close"}}
+              {{on "click" this.toggleSearch}}
+            >{{icon "xmark"}}</button>
+          </div>
+          {{#if this.disteleplus.searchResults}}
+            <div class="disteleplus-search__results">
+              {{#each this.disteleplus.searchResults as |result|}}
+                <button
+                  type="button"
+                  class="disteleplus-search__result"
+                  {{on "click" (fn this.openResult result)}}
+                >
+                  <strong>{{this.sender result}}</strong>
+                  <time>{{this.day result.createdDate}}
+                    {{this.time result.createdDate}}</time>
+                  <span>{{this.safeCooked result.cooked}}</span>
+                </button>
+              {{else}}
+                <div class="disteleplus-search__empty">{{i18n
+                    "disteleplus.search_empty"
+                  }}</div>
+              {{/each}}
+            </div>
+          {{/if}}
+        </div>
+      {{/if}}
+
       <div class="disteleplus-timeline" {{on "scroll" this.onScroll}}>
         {{#if this.disteleplus.loadingOlder}}
           <div class="disteleplus-loading">{{i18n "disteleplus.loading"}}</div>
@@ -810,6 +940,7 @@ export default class DisteleplusConversation extends Component {
                 }}</span></div>
           {{else}}
             {{#let row.message as |message|}}
+              {{! template-lint-disable no-invalid-interactive }}
               <article
                 id="disteleplus-message-{{message.id}}"
                 class="disteleplus-message
@@ -822,6 +953,7 @@ export default class DisteleplusConversation extends Component {
                     'is-menu-open'
                   }}"
                 {{on "contextmenu" (fn this.openContextMenu message)}}
+                {{on "dblclick" (fn this.doubleTap message)}}
               >
                 <div class="disteleplus-message__avatar">
                   {{#if message.user}}
@@ -1090,6 +1222,13 @@ export default class DisteleplusConversation extends Component {
       {{/if}}
 
       <footer class="disteleplus-composer">
+        <div class="disteleplus-typing">
+          {{#if this.typingLabel}}
+            <span class="disteleplus-typing__text">{{this.typingLabel}}</span>
+            <span class="disteleplus-typing__wave"><span></span><span
+              ></span><span></span></span>
+          {{/if}}
+        </div>
         {{#if (or this.replyMessage this.editingMessage)}}
           <div class="disteleplus-composer__context">
             {{icon (if this.editingMessage "pencil" "reply")}}

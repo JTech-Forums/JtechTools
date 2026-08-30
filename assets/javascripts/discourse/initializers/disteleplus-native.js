@@ -19,6 +19,9 @@ export default {
         after: "search",
         before: "hamburger",
       });
+      // Unread conversation messages count in the browser tab title, like Chat.
+      const disteleplus = container.lookup("service:disteleplus");
+      api.addDocumentTitleCounter(() => disteleplus.unreadCount || 0);
     });
   },
 };

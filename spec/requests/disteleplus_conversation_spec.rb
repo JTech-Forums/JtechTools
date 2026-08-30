@@ -233,6 +233,55 @@ RSpec.describe "Disteleplus conversation API" do
     end
   end
 
+  describe "GET /search" do
+    it "finds messages by decrypted text, sender, and skips deleted" do
+      sign_in(member)
+      hit = create!(other, "the quarterly budget is ready")
+      create!(other, "unrelated")
+      gone = create!(other, "budget deleted")
+      DiscourseDisteleplus::MessageService.new(actor: other).delete!(gone, bridge: false)
+
+      get "#{base}/search.json", params: { q: "BUDGET" }
+      expect(response.status).to eq(200)
+      expect(response.parsed_body["results"].map { |m| m["id"] }).to eq([hit.id])
+
+      get "#{base}/search.json", params: { q: other.username[0, 4] }
+      expect(response.parsed_body["count"]).to be >= 2
+
+      get "#{base}/search.json", params: { q: "b" }
+      expect(response.status).to eq(400)
+    end
+  end
+
+  describe "GET /messages?around_id" do
+    it "returns a window around the target with both-direction flags" do
+      sign_in(member)
+      ids = 12.times.map { |i| create!(other, "m#{i}").id }
+      get "#{base}/messages.json", params: { around_id: ids[6], limit: 4 }
+      got = response.parsed_body["messages"].map { |m| m["id"] }
+      expect(got).to eq(ids[4..8])
+      expect(response.parsed_body["meta"]).to include("has_more" => true, "has_newer" => true)
+    end
+  end
+
+  describe "POST /typing" do
+    it "publishes to other allowed users and pings Telegram once per few seconds" do
+      sign_in(member)
+      SiteSetting.disteleplus_typing_to_telegram = true
+      Discourse.redis.del("disteleplus:typing-sent")
+      messages =
+        MessageBus.track_publish(DiscourseDisteleplus::Publisher::TYPING_CHANNEL) do
+          post "#{base}/typing.json"
+          post "#{base}/typing.json"
+        end
+      expect(response.status).to eq(200)
+      expect(messages.length).to eq(2)
+      expect(messages.first.user_ids).to contain_exactly(admin.id, other.id)
+      expect(messages.first.data[:username]).to eq(member.username)
+      expect(Jobs::DisteleplusTelegramTyping.jobs.size).to eq(1)
+    end
+  end
+
   describe "legacy import" do
     it "is admin-only and reports status" do
       sign_in(member)

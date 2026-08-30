@@ -33,18 +33,46 @@ module DiscourseDisteleplus
 
     enum :source, { discourse: 0, telegram: 1 }, prefix: true
 
-    validates :raw, length: { maximum: MAX_RAW_LENGTH }
+    validates :raw,
+              length: {
+                maximum: MAX_RAW_LENGTH,
+              },
+              unless: -> { Crypto.encrypted?(self[:raw]) }
     validates :source, presence: true
     validate :reply_cannot_reference_self
 
     scope :timeline, -> { order(id: :desc) }
     scope :not_deleted, -> { where(deleted_at: nil) }
 
+    before_save :encrypt_content
+
     def deleted?
       deleted_at.present?
     end
 
+    # Text is encrypted at rest (see Crypto); these accessors are transparent.
+    def raw
+      Crypto.decrypt(self[:raw])
+    end
+
+    def cooked
+      Crypto.decrypt(self[:cooked])
+    end
+
+    def raw=(value)
+      super(value.to_s)
+    end
+
+    def cooked=(value)
+      super(value.to_s)
+    end
+
     private
+
+    def encrypt_content
+      self[:raw] = Crypto.encrypt(self[:raw]) if will_save_change_to_raw?
+      self[:cooked] = Crypto.encrypt(self[:cooked]) if will_save_change_to_cooked?
+    end
 
     def reply_cannot_reference_self
       errors.add(:reply_to_id, "cannot reference itself") if id.present? && reply_to_id == id

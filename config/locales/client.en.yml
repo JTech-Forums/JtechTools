@@ -26,6 +26,12 @@ en:
         other: "%{count} new messages"
       unread_divider: New messages
       go_to_bottom: Go to bottom
+      search: Search messages
+      search_placeholder: Search…
+      search_empty: No messages match
+      typing_one: "%{name} is typing"
+      typing_two: "%{a} and %{b} are typing"
+      typing_many: "%{count} people are typing"
       expand: Expand
       collapse: Collapse
       open_full_page: Open in full page

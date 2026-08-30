@@ -614,6 +614,172 @@ html.has-full-page-disteleplus {
   }
 }
 
+// ── search (mirrors chat-search / channel filter bar) ──────────────────────
+.disteleplus-search {
+  position: relative;
+  z-index: 4;
+  border-bottom: 1px solid var(--content-border-color, var(--primary-low));
+  background: var(--secondary);
+
+  &__bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+
+    > .d-icon {
+      color: var(--primary-medium);
+    }
+
+    input {
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid var(--primary-low);
+      border-radius: var(--d-border-radius, 4px);
+      background: var(--primary-very-low);
+      font: inherit;
+
+      &:focus {
+        border-color: var(--tertiary);
+        outline: none;
+      }
+    }
+
+    button {
+      display: grid;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      color: var(--primary-medium);
+      background: none;
+      cursor: pointer;
+
+      &:hover {
+        background: var(--primary-low);
+      }
+    }
+  }
+
+  &__results {
+    position: absolute;
+    right: 0;
+    left: 0;
+    z-index: 5;
+    max-height: 60%;
+    max-height: min(24rem, 60dvh);
+    overflow-y: auto;
+    border-bottom: 1px solid var(--content-border-color, var(--primary-low));
+    background: var(--secondary);
+    box-shadow: var(--shadow-dropdown, 0 4px 10px rgb(0 0 0 / 15%));
+  }
+
+  &__result {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 0.5rem;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border: 0;
+    border-bottom: 1px solid var(--primary-low);
+    color: var(--primary);
+    background: none;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--d-hover);
+    }
+
+    strong {
+      color: var(--secondary-low, var(--primary-high));
+    }
+
+    time {
+      color: var(--primary-medium);
+      font-size: var(--font-down-1);
+    }
+
+    span {
+      grid-column: 1 / -1;
+      display: -webkit-box;
+      overflow: hidden;
+      color: var(--primary-high);
+      font-size: var(--font-down-1);
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+
+      > * {
+        display: inline;
+        margin: 0;
+      }
+    }
+  }
+
+  &__empty {
+    padding: 0.75rem 1rem;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+}
+
+// ── typing indicator (mirrors .chat-replying-indicator) ────────────────────
+.disteleplus-typing {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1em;
+  padding-inline: 1rem;
+  color: var(--primary-medium);
+  font-size: var(--font-down-2);
+  line-height: normal;
+
+  &__wave span {
+    display: inline-block;
+    width: 3px;
+    height: 3px;
+    margin-left: 2px;
+    border-radius: 50%;
+    background: currentcolor;
+    animation: disteleplus-typing-wave 1.8s linear infinite;
+
+    &:nth-child(2) {
+      animation-delay: -1.6s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: -1.4s;
+    }
+  }
+}
+
+@keyframes disteleplus-typing-wave {
+  0%,
+  60%,
+  100% {
+    transform: initial;
+  }
+
+  30% {
+    transform: translateY(-0.2em);
+  }
+}
+
+// double-tap reaction pop
+.disteleplus-message.is-pop .disteleplus-message__bubble {
+  animation: disteleplus-pop 0.5s ease;
+}
+
+@keyframes disteleplus-pop {
+  30% {
+    transform: scale(1.02);
+  }
+}
+
 // ── inline voice recorder (replaces the composer bar while recording) ──────
 .disteleplus-vrec {
   display: flex;

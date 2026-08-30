@@ -25,6 +25,7 @@ module DiscourseDisteleplus
 
     def index
       limit = params.fetch(:limit, PAGE_SIZE).to_i.clamp(1, MAX_PAGE_SIZE)
+      return render_around(params[:around_id].to_i, limit) if params[:around_id].present?
       messages = page_scope.limit(limit).to_a.reverse
       render_json_dump(
         {
@@ -81,6 +82,54 @@ module DiscourseDisteleplus
       render_error(e)
     end
 
+    # Text is encrypted at rest, so search decrypts and filters in Ruby over a
+    # bounded window — fine for one room.
+    SEARCH_WINDOW = 3000
+    SEARCH_LIMIT = 50
+
+    def search
+      rate_limit!("search", 30, 1.minute)
+      term = params[:q].to_s.strip.downcase
+      raise Discourse::InvalidParameters.new(:q) if term.length < 2
+
+      results = []
+      Message
+        .not_deleted
+        .includes(:user, :uploads)
+        .order(id: :desc)
+        .limit(SEARCH_WINDOW)
+        .find_each(batch_size: 200) do |message|
+          haystack = [
+            message.raw,
+            message.external_sender_name,
+            message.user&.username,
+            message.user&.name,
+          ]
+          next unless haystack.compact.any? { |field| field.downcase.include?(term) }
+          results << message
+          break if results.length >= SEARCH_LIMIT
+        end
+      render_json_dump(
+        {
+          results:
+            results.map do |m|
+              MessageSerializer.serialize(m, viewer: current_user, include_reply: false)
+            end,
+          count: results.length,
+        },
+      )
+    end
+
+    def typing
+      rate_limit!("typing", 60, 1.minute)
+      Publisher.publish_typing(current_user)
+      if SiteSetting.disteleplus_typing_to_telegram &&
+           Discourse.redis.set("disteleplus:typing-sent", "1", ex: 4, nx: true)
+        Jobs.enqueue(:disteleplus_telegram_typing)
+      end
+      render json: success_json
+    end
+
     def read
       rate_limit!("read", 120, 1.minute)
       state = service.mark_read!(params.require(:message_id))
@@ -101,6 +150,37 @@ module DiscourseDisteleplus
 
     def ensure_allowed
       raise Discourse::InvalidAccess unless Access.allowed?(current_user)
+    end
+
+    def render_around(id, limit)
+      half = [limit / 2, 1].max
+      before =
+        Message
+          .includes(:user, :uploads, reply_to: :user, reactions: :user)
+          .where("id < ?", id)
+          .order(id: :desc)
+          .limit(half)
+          .to_a
+          .reverse
+      target =
+        Message.includes(:user, :uploads, reply_to: :user, reactions: :user).where(id: id).to_a
+      after =
+        Message
+          .includes(:user, :uploads, reply_to: :user, reactions: :user)
+          .where("id > ?", id)
+          .order(id: :asc)
+          .limit(half)
+          .to_a
+      messages = before + target + after
+      render_json_dump(
+        {
+          messages: serialize_messages(messages),
+          meta: {
+            has_more: messages.any? && Message.where("id < ?", messages.first.id).exists?,
+            has_newer: messages.any? && Message.where("id > ?", messages.last.id).exists?,
+          },
+        },
+      )
     end
 
     def page_scope

@@ -6,6 +6,9 @@ import { emojiUrlFor } from "discourse/lib/text";
 
 const BASE = "/jtech-disteleplus";
 const CHANNEL = "/disteleplus/conversation";
+const TYPING_CHANNEL = "/disteleplus/typing";
+const TYPING_TTL = 5000;
+const TYPING_THROTTLE = 3000;
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp"]);
 const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "webm"]);
 const AUDIO_EXTENSIONS = new Set([
@@ -66,6 +69,19 @@ export default class DisteleplusService extends Service {
     if (!payload?.message) {
       return;
     }
+    if (payload.type === "created" && this.detached) {
+      this.latestMessageId = Math.max(
+        this.latestMessageId || 0,
+        payload.message.id
+      );
+      if (payload.message.user?.id !== this.currentUser.id) {
+        this.unreadCount += 1;
+      }
+      return;
+    }
+    if (payload.type === "created") {
+      this.clearTyper(payload.message.user?.id);
+    }
     const existed = this.messages.some(
       (message) => message.id === payload.message.id
     );
@@ -86,6 +102,18 @@ export default class DisteleplusService extends Service {
   };
 
   lastAppURL = null;
+
+  // ── typing ────────────────────────────────────────────────────────────────
+  onTyping = (payload) => {
+    if (!payload?.user_id || payload.user_id === this.currentUser?.id) {
+      return;
+    }
+    const until = Date.now() + TYPING_TTL;
+    const others = this.typers.filter((t) => t.user_id !== payload.user_id);
+    this.typers = [...others, { ...payload, until }];
+    clearTimeout(this.typingSweep);
+    this.typingSweep = setTimeout(() => this.sweepTypers(), TYPING_TTL + 50);
+  };
 
   constructor() {
     super(...arguments);
@@ -316,7 +344,74 @@ export default class DisteleplusService extends Service {
       return;
     }
     this.messageBus.subscribe(CHANNEL, this.onRealtime);
+    this.messageBus.subscribe(TYPING_CHANNEL, this.onTyping);
     this.subscribed = true;
+  }
+
+  sweepTypers() {
+    const now = Date.now();
+    this.typers = this.typers.filter((t) => t.until > now);
+    if (this.typers.length) {
+      this.typingSweep = setTimeout(() => this.sweepTypers(), 1000);
+    }
+  }
+
+  clearTyper(userId) {
+    this.typers = this.typers.filter((t) => t.user_id !== userId);
+  }
+
+  sendTyping() {
+    const now = Date.now();
+    if (now - this.lastTypingSentAt < TYPING_THROTTLE) {
+      return;
+    }
+    this.lastTypingSentAt = now;
+    ajax(`${BASE}/typing`, { type: "POST" }).catch(() => {});
+  }
+
+  // ── search / jump ─────────────────────────────────────────────────────────
+
+  toggleSearch(open = !this.searchOpen) {
+    this.searchOpen = open;
+    if (!open) {
+      this.searchTerm = "";
+      this.searchResults = null;
+    }
+  }
+
+  async search(term) {
+    this.searchTerm = term;
+    if (term.trim().length < 2) {
+      this.searchResults = null;
+      return;
+    }
+    this.searching = true;
+    try {
+      const response = await ajax(`${BASE}/search`, { data: { q: term } });
+      if (this.searchTerm === term) {
+        this.searchResults = response.results.map((m) => this.hydrate(m));
+      }
+    } finally {
+      this.searching = false;
+    }
+  }
+
+  // Replace the timeline with a window around `id` (search result jump).
+  async loadAround(id) {
+    const response = await ajax(`${BASE}/messages`, {
+      data: { around_id: id, limit: 40 },
+    });
+    this.messages = response.messages.map((m) => this.hydrate(m));
+    this.hasMore = response.meta.has_more;
+    this.detached = !!response.meta.has_newer;
+    return this.messages;
+  }
+
+  // Back to the live tail after a detached jump.
+  async reloadLatest() {
+    this.loaded = false;
+    this.detached = false;
+    await this.ensureLoaded();
   }
 
   upsert(rawMessage) {

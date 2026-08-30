@@ -74,8 +74,16 @@ module DiscourseDisteleplus
     # used because, unlike Markdown mode, stray underscores/asterisks in user
     # text cannot break it — everything user-supplied is escaped. Emoji
     # shortcodes (:grin: etc.) become real unicode so Telegram renders them.
-    def self.outbound_html(username, text)
+    # Legacy form: "<b>name:</b> text". With a profile URL the header becomes
+    # a bold linked display name on its own line, which Telegram renders as
+    # a proper author highlight.
+    def self.outbound_html(username, text, display_name: nil, profile_url: nil)
       body = escape_html(emojify(text.to_s))
+      if profile_url.present?
+        label = escape_html(display_name.presence || username)
+        header = "<a href=\"#{escape_html(profile_url)}\"><b>#{label}</b></a>"
+        return body.blank? ? header : "#{header}\n#{body}"
+      end
       body.blank? ? "<b>#{escape_html(username)}</b>" : "<b>#{escape_html(username)}:</b> #{body}"
     end
 

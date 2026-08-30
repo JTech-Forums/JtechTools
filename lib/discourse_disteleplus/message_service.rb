@@ -47,6 +47,7 @@ module DiscourseDisteleplus
       Publisher.publish(:created, message, actor: actor)
       Notifier.notify(message, actor: actor) if notify
       enqueue_bridge("create", message) if bridge && message.source_discourse?
+      enqueue_process(message)
       message
     end
 
@@ -58,6 +59,7 @@ module DiscourseDisteleplus
       message.update!(raw: raw, cooked: cook(raw), edited_at: Time.zone.now)
       Publisher.publish(:edited, message, actor: actor)
       enqueue_bridge("edit", message) if bridge && message.source_discourse?
+      enqueue_process(message)
       message
     end
 
@@ -145,14 +147,31 @@ module DiscourseDisteleplus
     end
 
     def cook(raw)
+      self.class.cook_with_oneboxes(raw, user_id: actor&.id)
+    end
+
+    # Cooks and inlines any already-cached oneboxes (Chat does the same); the
+    # process job fetches uncached ones afterwards and re-cooks.
+    def self.cook_with_oneboxes(raw, user_id: nil)
       return "" if raw.blank?
-      PrettyText.cook(raw, user_id: actor&.id)
+      cooked = PrettyText.cook(raw, user_id: user_id)
+      doc = Nokogiri::HTML5.fragment(cooked)
+      result = Oneboxer.apply(doc) { |url| Oneboxer.cached_onebox(url) }
+      result.changed? ? result.to_html : cooked
+    rescue StandardError => e
+      Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} onebox apply failed: #{e.message}")
+      cooked || ""
     end
 
     def normalize_emoji(emoji)
       value = emoji.to_s.delete(":").strip
       raise Error, "invalid emoji" unless value.match?(/\A[\p{L}\p{N}_+\-]{1,100}\z/u)
       value
+    end
+
+    def enqueue_process(message)
+      return if message.raw.blank? || !message.raw.match?(%r{https?://})
+      Jobs.enqueue(:disteleplus_process_message, message_id: message.id)
     end
 
     def enqueue_bridge(action, message)

@@ -26,6 +26,7 @@ register_asset "stylesheets/disteleplus-native.scss"
   face-smile
   file
   link
+  magnifying-glass
   microphone
   minus
   paperclip

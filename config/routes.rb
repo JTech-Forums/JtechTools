@@ -69,6 +69,8 @@ Discourse::Application.routes.append do
     put "/messages/:id/reactions/:emoji" => "conversation#add_reaction"
     delete "/messages/:id/reactions/:emoji" => "conversation#remove_reaction"
     post "/read" => "conversation#read"
+    get "/search" => "conversation#search"
+    post "/typing" => "conversation#typing"
     get "/legacy-import" => "legacy_import#show"
     post "/legacy-import" => "legacy_import#create"
   end

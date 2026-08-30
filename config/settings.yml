@@ -892,6 +892,19 @@ jtech_disteleplus:
     list_type: compact
     hidden: true
 
+  # Message text is AES-encrypted in the database (uploads are not).
+  disteleplus_encrypt_at_rest:
+    default: true
+    client: false
+    depends_on:
+      - "disteleplus_enabled"
+  # Discourse members typing → Telegram "typing…" status via sendChatAction.
+  disteleplus_typing_to_telegram:
+    default: true
+    client: false
+    depends_on:
+      - "disteleplus_enabled"
+
   # What crosses the bridge.
   disteleplus_bridge_uploads:
     default: true

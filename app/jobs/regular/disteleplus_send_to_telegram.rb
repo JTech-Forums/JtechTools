@@ -57,7 +57,7 @@ module Jobs
       return if message.nil?
       return if DiscourseDisteleplus::MessageLink.for_message(message.id).exists?
 
-      html = DiscourseDisteleplus::Formatter.outbound_html(author_name(message), message.raw)
+      html = outbound_html(message)
       reply_to = reply_target(message)
       uploads = message.uploads.to_a
       # The uploads toggle gates both directions — inbound is checked in
@@ -93,7 +93,7 @@ module Jobs
       message = DiscourseDisteleplus::Message.find_by(id: message_id)
       return if message.nil?
 
-      html = DiscourseDisteleplus::Formatter.outbound_html(author_name(message), message.raw)
+      html = outbound_html(message)
       payload = { chat_id: @chat_id, message_id: link.telegram_message_id, parse_mode: "HTML" }
       if link.kind_text?
         @api.call("editMessageText", payload.merge(text: html))
@@ -233,6 +233,16 @@ module Jobs
 
     def author_name(message)
       message.user&.username || "unknown"
+    end
+
+    def outbound_html(message)
+      user = message.user
+      DiscourseDisteleplus::Formatter.outbound_html(
+        author_name(message),
+        message.raw,
+        display_name: user&.name.presence || user&.username,
+        profile_url: user ? "#{Discourse.base_url}/u/#{user.username_lower}" : nil,
+      )
     end
 
     def log_send_failure(result)

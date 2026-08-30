@@ -69,6 +69,16 @@ export default class DisteleplusDrawer extends Component {
   }
 
   @action
+  toggleSearch() {
+    this.disteleplus.toggleSearch();
+    if (this.disteleplus.searchOpen) {
+      requestAnimationFrame(() =>
+        document.querySelector(".disteleplus-search input")?.focus()
+      );
+    }
+  }
+
+  @action
   close() {
     this.disteleplus.closeDrawer();
   }

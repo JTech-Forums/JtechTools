@@ -46,6 +46,20 @@ RSpec.describe DiscourseDisteleplus::Formatter do
     it "converts emoji shortcodes to unicode for Telegram" do
       expect(described_class.outbound_html("zev", "nice :grin:")).to eq("<b>zev:</b> nice 😁")
     end
+
+    it "links a bold display name on its own line when given a profile url" do
+      expect(
+        described_class.outbound_html(
+          "zev",
+          "hi <3",
+          display_name: "Zev K",
+          profile_url: "https://f/u/zev",
+        ),
+      ).to eq("<a href=\"https://f/u/zev\"><b>Zev K</b></a>\nhi &lt;3")
+      expect(described_class.outbound_html("zev", "", profile_url: "https://f/u/zev")).to eq(
+        "<a href=\"https://f/u/zev\"><b>zev</b></a>",
+      )
+    end
   end
 
   describe ".poll_markdown" do

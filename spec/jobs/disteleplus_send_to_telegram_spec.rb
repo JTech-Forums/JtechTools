@@ -5,7 +5,8 @@ require "rails_helper"
 # Outbound behavior with TelegramApi stubbed: native message/link rows drive
 # create/edit/delete/react routing, and every Telegram payload is asserted.
 RSpec.describe Jobs::DisteleplusSendToTelegram do
-  fab!(:author) { Fabricate(:user, username: "chatter") }
+  fab!(:author) { Fabricate(:user, username: "chatter", name: "Chatter Person") }
+  let(:header) { "<a href=\"#{Discourse.base_url}/u/chatter\"><b>Chatter Person</b></a>" }
 
   let(:api) { instance_double(DiscourseDisteleplus::TelegramApi) }
   let(:chat_id) { "-100555" }
@@ -49,7 +50,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       expect { run("create") }.to change { DiscourseDisteleplus::MessageLink.count }.by(1)
       expect(api).to have_received(:call).with(
         "sendMessage",
-        a_hash_including(chat_id: chat_id, parse_mode: "HTML", text: "<b>chatter:</b> hi there"),
+        a_hash_including(chat_id: chat_id, parse_mode: "HTML", text: "#{header}\nhi there"),
       )
       link = DiscourseDisteleplus::MessageLink.last
       expect(link.telegram_message_id).to eq(321)
@@ -80,7 +81,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       run("create")
       expect(api).to have_received(:call).with(
         "sendMessage",
-        a_hash_including(text: "<b>chatter:</b> &lt;script&gt;x &amp; y&lt;/script&gt;"),
+        a_hash_including(text: "#{header}\n&lt;script&gt;x &amp; y&lt;/script&gt;"),
       )
     end
 
@@ -121,7 +122,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
         run("create")
         expect(api).to have_received(:call_multipart).with(
           "sendVoice",
-          a_hash_including(chat_id: chat_id, caption: "<b>chatter:</b> hi there"),
+          a_hash_including(chat_id: chat_id, caption: "#{header}\nhi there"),
           a_hash_including(
             file_field: "voice",
             filename: "voice-note-20260828-152213.ogg",
@@ -182,7 +183,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       run("edit")
       expect(api).to have_received(:call).with(
         "editMessageText",
-        a_hash_including(message_id: 321, text: "<b>chatter:</b> hi there"),
+        a_hash_including(message_id: 321, text: "#{header}\nhi there"),
       )
     end
 
@@ -191,7 +192,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       run("edit")
       expect(api).to have_received(:call).with(
         "editMessageCaption",
-        a_hash_including(message_id: 321, caption: "<b>chatter:</b> hi there"),
+        a_hash_including(message_id: 321, caption: "#{header}\nhi there"),
       )
     end
 
