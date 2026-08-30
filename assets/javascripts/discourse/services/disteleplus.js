@@ -63,6 +63,10 @@ export default class DisteleplusService extends Service {
   @tracked detached = false;
   // [{ user_id, username, name, until }]
   @tracked typers = [];
+  // user_id → { username, name, avatar_template, last_read_message_id }.
+  // Powers the "Seen by" chip; replaced wholesale so getters recompute.
+  @tracked readStates = {};
+  @tracked readReceiptsEnabled = false;
   store = new KeyValueStore(STORE_NAMESPACE);
 
   // Message id a notification deep link (#m<id>) asked to land on. Set by
@@ -274,8 +278,12 @@ export default class DisteleplusService extends Service {
         this.latestMessageId = response.meta.latest_message_id;
         this.lastReadMessageId = response.meta.last_read_message_id;
         this.openedAtReadId = this.lastReadMessageId;
+        this.readReceiptsEnabled = !!response.meta.read_receipts_enabled;
         this.loaded = true;
         this.subscribe();
+        if (this.readReceiptsEnabled) {
+          this.loadReadStates();
+        }
         return this.messages;
       })
       .catch((error) => {

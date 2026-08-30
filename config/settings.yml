@@ -922,6 +922,11 @@ jtech_disteleplus:
     client: false
     depends_on:
       - "disteleplus_enabled"
+  disteleplus_read_receipts_enabled:
+    default: true
+    client: false
+    depends_on:
+      - "disteleplus_enabled"
 
   # What crosses the bridge.
   disteleplus_bridge_uploads:

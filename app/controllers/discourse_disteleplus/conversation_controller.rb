@@ -282,6 +282,7 @@ module DiscourseDisteleplus
         message_bus_channel: Publisher::CHANNEL,
         can_upload: true,
         voice_notes_enabled: SiteSetting.disteleplus_voice_notes_enabled,
+        read_receipts_enabled: SiteSetting.disteleplus_read_receipts_enabled,
       }
     end
 

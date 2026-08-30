@@ -1455,3 +1455,39 @@ html.has-full-page-disteleplus {
     }
   }
 }
+
+// ── read receipts — Telegram-style "seen" chip on your latest message ───────
+.disteleplus-message__receipt {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  margin-top: 0.15em;
+  font-size: var(--font-down-2);
+  color: var(--primary-medium);
+
+  .d-icon {
+    width: 0.9em;
+    height: 0.9em;
+    color: var(--primary-low-mid);
+  }
+
+  &.is-seen .d-icon {
+    color: var(--tertiary);
+  }
+}
+
+.disteleplus-message__receipt-avatars {
+  display: inline-flex;
+
+  img {
+    width: 16px;
+    height: 16px;
+    border-radius: 100%;
+    border: 1px solid var(--secondary);
+    margin-left: -4px;
+
+    &:first-child {
+      margin-left: 0;
+    }
+  }
+}
