@@ -1349,13 +1349,15 @@ export default class DisteleplusConversation extends Component {
               role="menuitem"
               {{on "click" (fn this.copyLink message)}}
             >{{icon "link"}} {{i18n "disteleplus.copy_link"}}</button>
-            {{#if message.raw}}
-              <button
-                type="button"
-                role="menuitem"
-                {{on "click" (fn this.quoteInTopic message)}}
-              >{{icon "quote-right"}}
-                {{i18n "disteleplus.quote_in_topic"}}</button>
+            {{#if this.siteSettings.disteleplus_quote_in_topic_enabled}}
+              {{#if message.raw}}
+                <button
+                  type="button"
+                  role="menuitem"
+                  {{on "click" (fn this.quoteInTopic message)}}
+                >{{icon "quote-right"}}
+                  {{i18n "disteleplus.quote_in_topic"}}</button>
+              {{/if}}
             {{/if}}
             {{#if message.can_edit}}
               <button

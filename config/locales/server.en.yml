@@ -657,6 +657,9 @@ en:
       in the conversation — a double check plus "Seen by N" once other members'
       read cursors pass the message. Telegram exposes no read data to bots, so
       the count reflects forum-side readers only.
+    disteleplus_quote_in_topic_enabled: Offer "Quote in new topic" in a
+      message's context menu, prefilling a new forum topic with the quoted
+      message.
     disteleplus_bridge_uploads: Copy photos, documents, video and audio across
       the bridge, in both directions, up to the size limit below. When off,
       media is replaced by a short placeholder line.
