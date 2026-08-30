@@ -943,6 +943,19 @@ jtech_disteleplus:
     default: 0
     client: false
     hidden: true
+  disteleplus_event_messages:
+    type: list
+    list_type: compact
+    default: "reviewable_created|user_suspended|user_silenced"
+    choices:
+      - reviewable_created
+      - topic_created
+      - user_first_logged_in
+      - user_suspended
+      - user_silenced
+    client: false
+    depends_on:
+      - "disteleplus_enabled"
 
   # What crosses the bridge.
   disteleplus_bridge_uploads:

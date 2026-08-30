@@ -138,6 +138,7 @@ require_relative "../lib/discourse_disteleplus/telegram_api"
 require_relative "../lib/discourse_disteleplus/user_matcher"
 require_relative "../lib/discourse_disteleplus/access"
 require_relative "../lib/discourse_disteleplus/polls"
+require_relative "../lib/discourse_disteleplus/event_feed"
 require_relative "../lib/discourse_disteleplus/message_serializer"
 require_relative "../lib/discourse_disteleplus/publisher"
 require_relative "../lib/discourse_disteleplus/notifier"
@@ -280,6 +281,49 @@ after_initialize do
     Rails.logger.warn(
       "#{DiscourseDisteleplus::LOG_TAG} reviewable transition hook failed: #{e.message}",
     )
+  end
+
+  # ── Event feed → conversation ─────────────────────────────────────────────
+  # Automatic system messages in the chat when selected forum events happen.
+
+  on(:reviewable_created) do |reviewable|
+    if DiscourseDisteleplus::EventFeed.on?(:reviewable_created)
+      DiscourseDisteleplus::EventFeed.reviewable_created(reviewable)
+    end
+  rescue StandardError => e
+    Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} event feed hook failed: #{e.message}")
+  end
+
+  on(:topic_created) do |topic, *_args|
+    if DiscourseDisteleplus::EventFeed.on?(:topic_created)
+      DiscourseDisteleplus::EventFeed.topic_created(topic)
+    end
+  rescue StandardError => e
+    Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} event feed hook failed: #{e.message}")
+  end
+
+  on(:user_first_logged_in) do |user|
+    if DiscourseDisteleplus::EventFeed.on?(:user_first_logged_in)
+      DiscourseDisteleplus::EventFeed.user_first_logged_in(user)
+    end
+  rescue StandardError => e
+    Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} event feed hook failed: #{e.message}")
+  end
+
+  on(:user_suspended) do |payload|
+    if DiscourseDisteleplus::EventFeed.on?(:user_suspended)
+      DiscourseDisteleplus::EventFeed.user_suspended(payload)
+    end
+  rescue StandardError => e
+    Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} event feed hook failed: #{e.message}")
+  end
+
+  on(:user_silenced) do |payload|
+    if DiscourseDisteleplus::EventFeed.on?(:user_silenced)
+      DiscourseDisteleplus::EventFeed.user_silenced(payload)
+    end
+  rescue StandardError => e
+    Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} event feed hook failed: #{e.message}")
   end
 
   # Admin-facing notifications (what's-new features, dashboard problems)
