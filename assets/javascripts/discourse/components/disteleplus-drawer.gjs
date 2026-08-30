@@ -183,6 +183,15 @@ export default class DisteleplusDrawer extends Component {
                   class="disteleplus-navbar__actions"
                   {{on "click" this.stop}}
                 >
+                  {{#if this.disteleplus.isDrawerExpanded}}
+                    <DButton
+                      @icon="magnifying-glass"
+                      @action={{this.toggleSearch}}
+                      @title="disteleplus.search"
+                      class="btn-transparent no-text
+                        {{if this.disteleplus.searchOpen 'active'}}"
+                    />
+                  {{/if}}
                   <DButton
                     @icon={{if
                       this.disteleplus.isDrawerExpanded
