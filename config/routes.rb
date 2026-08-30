@@ -90,6 +90,16 @@ Discourse::Application.routes.append do
        :defaults => {
          format: :json,
        }
+
+  # The plugin's admin tabs (/admin/plugins/jtech-tools/mod, /disteleplus, …)
+  # are Ember child routes of adminPlugins.show; core only serves the bare
+  # plugin page and /settings, so a hard load or shared link to a tab 404s
+  # without this. admin#index renders the admin app shell exactly as core
+  # does for its own admin pages. Core's earlier /settings route still wins
+  # for that path since it is drawn first.
+  namespace :admin, constraints: StaffConstraint.new do
+    get "plugins/jtech-tools/*tab" => "admin#index"
+  end
 end
 
 # ── Dumbcourse ─────────────────────────────────────────────────────────────
