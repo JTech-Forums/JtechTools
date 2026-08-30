@@ -626,9 +626,10 @@ export default class DisteleplusConversation extends Component {
 
   @action
   removeUpload(upload) {
-    this.uploads = this.uploads.filter(
-      (candidate) => candidate.id !== upload.id
-    );
+    // By object, not id: Discourse dedupes identical files to one upload id,
+    // so attaching the same picture twice gives two rows with equal ids —
+    // an id filter removed both when either X was clicked.
+    this.uploads = this.uploads.filter((candidate) => candidate !== upload);
   }
 
   @action
