@@ -32,6 +32,12 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
       return !!this.notification.data?.mod_note;
     }
 
+    // Disteleplus conversation mentions share the `custom` type; they carry
+    // the message text in data.excerpt and a #m deep link in data.url.
+    get isDisteleplus() {
+      return !!this.notification.data?.disteleplus;
+    }
+
     // "note" (default) vs "reply" / "post_deleted" / "post_approved" /
     // "post_rejected" / "user_note" / "flag_note" — every kind gets its
     // own label/title so the bell row reads accurately. Pre-`mod_note_kind`
@@ -47,13 +53,16 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     // Link straight to the target — note anchor on a topic, the post,
     // the user notes tab, or the review-queue entry, depending on kind.
     get linkHref() {
-      if (this.isModNote && this.notification.data?.url) {
+      if ((this.isModNote || this.isDisteleplus) && this.notification.data?.url) {
         return this.notification.data.url;
       }
       return super.linkHref;
     }
 
     get linkTitle() {
+      if (this.isDisteleplus) {
+        return i18n("disteleplus.mention_title");
+      }
       if (this.isModNote) {
         return i18n(`discourse_mod_categories.${this.modNoteKey}_title`);
       }
@@ -67,6 +76,9 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     // The plugin's registered shield icon, so the notification reads
     // unambiguously as a moderator/staff item.
     get icon() {
+      if (this.isDisteleplus) {
+        return "comments";
+      }
       if (this.isModNote) {
         return "shield-halved";
       }
@@ -77,6 +89,9 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     // Accurate, self-describing label naming the acting moderator —
     // e.g. "added a moderator note", "deleted a post", "added a note on a user".
     get label() {
+      if (this.isDisteleplus) {
+        return i18n("disteleplus.mention_label", { username: this.username });
+      }
       if (this.isModNote) {
         return i18n(`discourse_mod_categories.${this.modNoteKey}`, {
           username: this.username,
@@ -88,6 +103,9 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     // Second line: the excerpt (note body / post body / reply body)
     // when available, falling back to the topic title.
     get description() {
+      if (this.isDisteleplus) {
+        return this.notification.data?.excerpt;
+      }
       if (this.isModNote) {
         return (
           this.notification.data?.excerpt || this.notification.data?.topic_title
