@@ -6,6 +6,7 @@ import { action } from "@ember/object";
 import { service } from "@ember/service";
 import DButton from "discourse/components/d-button";
 import DModal from "discourse/components/d-modal";
+import ageWithTooltip from "discourse/helpers/age-with-tooltip";
 import icon from "discourse/helpers/d-icon";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
@@ -273,11 +274,19 @@ export default class ModTopicPromptChecklistModal extends Component {
           {{/if}}
 
           {{#if this.version}}
-            <p class="mod-checklist-version">
-              {{i18n
-                "discourse_mod_categories.topic_prompt_checklist.current_version"
-                count=this.version
-              }}
+            <p class="mod-checklist-meta">
+              <span class="mod-checklist-version">
+                {{i18n
+                  "discourse_mod_categories.topic_prompt_checklist.current_version"
+                  count=this.version
+                }}
+              </span>
+              {{#if this.updatedAt}}
+                <span class="mod-checklist-updated">
+                  {{icon "clock-rotate-left"}}
+                  {{ageWithTooltip this.updatedAt}}
+                </span>
+              {{/if}}
             </p>
           {{/if}}
 

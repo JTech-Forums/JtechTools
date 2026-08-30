@@ -668,6 +668,30 @@
     font-weight: 600;
   }
 
+  .mod-checklist-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+    margin: 0 0 0.5em;
+
+    .mod-checklist-version {
+      margin: 0;
+    }
+
+    .mod-checklist-updated {
+      display: flex;
+      align-items: center;
+      gap: 0.3em;
+      color: var(--primary-medium);
+      font-size: var(--font-down-1);
+
+      .d-icon {
+        width: 0.85em;
+        height: 0.85em;
+      }
+    }
+  }
+
   .mod-checklist-rows {
     counter-reset: checklist-row;
     display: flex;
@@ -874,7 +898,26 @@
   }
 }
 
+// The first-post checklist editor renders inside a modal — give it room.
+.mod-checklist-modal .d-modal__container {
+  max-width: 44rem;
+}
+
 .mod-checklist-page {
+  .mod-checklist-editor-actions {
+    align-items: center;
+
+    .mod-checklist-saved {
+      display: flex;
+      align-items: center;
+      gap: 0.3em;
+
+      .d-icon {
+        color: var(--success);
+      }
+    }
+  }
+
   .mod-checklist-log {
     margin-top: 2em;
     border-top: 1px solid var(--primary-low);
@@ -888,14 +931,33 @@
     th,
     td {
       text-align: left;
-      padding: 0.4em 0.6em;
+      padding: 0.45em 0.6em;
       border-bottom: 1px solid var(--primary-low);
     }
 
     th {
       color: var(--primary-medium);
       font-size: var(--font-down-1);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
     }
+
+    tbody tr:hover {
+      background: var(--primary-very-low);
+    }
+
+    td a {
+      font-weight: 600;
+    }
+  }
+
+  .mod-checklist-targeted-item {
+    margin-bottom: 1em;
+    padding: 0.85em 1em;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius, 6px);
+    background: var(--secondary);
   }
 
   .mod-checklist-log-empty {
