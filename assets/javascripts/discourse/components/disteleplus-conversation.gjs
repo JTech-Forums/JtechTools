@@ -352,18 +352,7 @@ export default class DisteleplusConversation extends Component {
   @action
   async openResult(result) {
     this.disteleplus.toggleSearch(false);
-    if (!this.messageElement(result.id)) {
-      try {
-        await this.disteleplus.loadAround(result.id);
-      } catch (error) {
-        popupAjaxError(error);
-        return;
-      }
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-      this.enhance(this.timeline);
-    }
-    this.jumpTo(result);
-    this.showJump = true;
+    await this.jumpToId(result.id);
   }
 
   autosize(textarea) {
@@ -820,10 +809,9 @@ export default class DisteleplusConversation extends Component {
 
   @action
   jumpTo(message) {
-    const target = this.messageElement(message.id);
-    if (target) {
-      this.highlight(target);
-    }
+    // jumpToId loads a window around out-of-view targets (old replies,
+    // deep links) instead of silently doing nothing.
+    this.jumpToId(message.id);
   }
 
   messageElement(id) {
@@ -1053,10 +1041,8 @@ export default class DisteleplusConversation extends Component {
                         <strong>{{this.sender message.reply_to}}</strong>
                         {{#if message.reply_to.deleted}}
                           <span>{{i18n "disteleplus.deleted"}}</span>
-                        {{else if message.reply_to.cooked}}
-                          <span>{{this.safeCooked
-                              message.reply_to.cooked
-                            }}</span>
+                        {{else if message.reply_to.excerpt}}
+                          <span>{{message.reply_to.excerpt}}</span>
                         {{else if message.reply_to.attachment_name}}
                           <span>{{icon "paperclip"}}
                             {{message.reply_to.attachment_name}}</span>

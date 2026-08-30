@@ -77,13 +77,29 @@ module DiscourseDisteleplus
       {
         id: message.id,
         deleted: message.deleted?,
-        cooked: message.deleted? ? "" : message.cooked,
+        # Plain-text one-liner: full cooked HTML (images, quotes, oneboxes)
+        # explodes the single-line preview the template renders.
+        excerpt: message.deleted? ? "" : reply_excerpt(message.cooked),
         external_sender_name: message.external_sender_name,
         user: serialize_user(message.user),
         upload_count: uploads.length,
         thumbnail_url: image&.url,
         attachment_name: uploads.first&.original_filename,
       }
+    end
+
+    def self.reply_excerpt(cooked)
+      return "" if cooked.blank?
+      Post.excerpt(
+        cooked,
+        120,
+        text_entities: true,
+        strip_links: true,
+        remap_emoji: true,
+        plain_hashtags: true,
+      )
+    rescue StandardError
+      ""
     end
   end
 end
