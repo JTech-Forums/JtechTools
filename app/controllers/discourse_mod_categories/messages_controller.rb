@@ -437,6 +437,49 @@ module ::DiscourseModCategories
       render json: { marked: marked }
     end
 
+    POST_VIEWERS_CAP = 200
+
+    # Staff-only: who has read a post. Core's post_timings records exactly
+    # which posts each logged-in user has had on screen; the closest per-user
+    # timestamp core keeps is their last visit to the topic, so that is the
+    # "when". Anonymous visitors leave no per-post trace and cannot appear.
+    def post_viewers
+      raise Discourse::InvalidAccess unless current_user&.staff?
+      post = Post.find_by(id: params[:id])
+      raise Discourse::NotFound unless post
+      guardian.ensure_can_see!(post)
+
+      user_ids =
+        PostTiming
+          .where(topic_id: post.topic_id, post_number: post.post_number)
+          .where("user_id > 0")
+          .pluck(:user_id)
+
+      visits =
+        TopicUser
+          .where(topic_id: post.topic_id, user_id: user_ids)
+          .pluck(:user_id, :last_visited_at)
+          .to_h
+
+      viewers =
+        User
+          .where(id: user_ids)
+          .sort_by { |user| visits[user.id] || Time.at(0) }
+          .reverse
+          .first(POST_VIEWERS_CAP)
+          .map do |user|
+            {
+              id: user.id,
+              username: user.username,
+              name: user.name,
+              avatar_template: user.avatar_template,
+              last_seen_topic_at: visits[user.id],
+            }
+          end
+
+      render json: { count: user_ids.length, viewers: viewers }
+    end
+
     # Lists moderator notes for the staff user-menu tab. Returns a UNION:
     # (1) every topic that has a private moderator note set, regardless of
     # whether a Notification fan-out happened — this preserves the
