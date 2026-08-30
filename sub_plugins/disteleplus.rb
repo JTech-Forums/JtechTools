@@ -15,8 +15,11 @@ register_asset "stylesheets/disteleplus-native.scss"
 # voice recorder. Discourse ships only a subset of FontAwesome in its sprite;
 # an unregistered icon renders as an empty <svg>.
 %w[
+  angles-up
   arrow-down
   comments
+  discourse-compress
+  discourse-expand
   copy
   download
   ellipsis
@@ -24,6 +27,7 @@ register_asset "stylesheets/disteleplus-native.scss"
   file
   link
   microphone
+  minus
   paperclip
   paper-plane
   pencil

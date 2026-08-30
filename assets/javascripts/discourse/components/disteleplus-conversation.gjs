@@ -8,6 +8,7 @@ import { service } from "@ember/service";
 import { htmlSafe } from "@ember/template";
 import { emojiSearch } from "pretty-text/emoji";
 import { eq, or } from "truth-helpers";
+import DButton from "discourse/components/d-button";
 import EmojiAutocompleteResults from "discourse/components/emoji-autocomplete-results";
 import EmojiPickerDetached from "discourse/components/emoji-picker/detached";
 import UserAutocompleteResults from "discourse/components/user-autocomplete-results";
@@ -40,6 +41,8 @@ export default class DisteleplusConversation extends Component {
   @service emojiStore;
   @service composer;
   @service siteSettings;
+  @service site;
+  @service router;
 
   @tracked uploads = [];
   @tracked uploading = false;
@@ -144,6 +147,19 @@ export default class DisteleplusConversation extends Component {
         this.contextMenu.y
       )}px`
     );
+  }
+
+  get showFullPageNavbar() {
+    return !this.args.inDrawer && !this.site.mobileView;
+  }
+
+  // Chat's navbar OpenDrawerButton: leave full page, continue in the drawer.
+  @action
+  async openInDrawer() {
+    this.disteleplus.prefersDrawer();
+    const url = this.disteleplus.lastAppURL || "/";
+    await this.router.transitionTo(url);
+    this.disteleplus.openDrawer();
   }
 
   // ── lifecycle ─────────────────────────────────────────────────────────────
@@ -684,12 +700,31 @@ export default class DisteleplusConversation extends Component {
     <section
       class="disteleplus-page
         {{if @inDrawer 'in-drawer' 'full-page'}}
+        {{if this.showFullPageNavbar 'has-navbar'}}
         {{if this.dragging 'is-dragging'}}"
       {{didInsert this.mount}}
       {{on "dragover" this.onDragOver}}
       {{on "dragleave" this.onDragLeave}}
       {{on "drop" this.onDrop}}
     >
+      {{#if this.showFullPageNavbar}}
+        <div class="disteleplus-navbar-container">
+          <nav class="disteleplus-navbar">
+            <div class="disteleplus-navbar__title">
+              {{icon "comments"}}
+              <span>{{i18n "disteleplus.title"}}</span>
+            </div>
+            <div class="disteleplus-navbar__actions">
+              <DButton
+                @icon="discourse-compress"
+                @action={{this.openInDrawer}}
+                @title="disteleplus.open_in_drawer"
+                class="btn-transparent no-text"
+              />
+            </div>
+          </nav>
+        </div>
+      {{/if}}
       <div class="disteleplus-timeline" {{on "scroll" this.onScroll}}>
         {{#if this.disteleplus.loadingOlder}}
           <div class="disteleplus-loading">{{i18n "disteleplus.loading"}}</div>

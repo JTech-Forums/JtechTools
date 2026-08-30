@@ -13,6 +13,7 @@ export default class DisteleplusRoute extends DiscourseRoute {
   }
 
   beforeModel(transition) {
+    this.disteleplus.storeAppURL();
     const fullPageReload = !transition.from;
     if (this.disteleplus.isDrawerPreferred && !fullPageReload) {
       transition.abort();

@@ -76,6 +76,8 @@ export default class DisteleplusService extends Service {
     }
   };
 
+  lastAppURL = null;
+
   constructor() {
     super(...arguments);
     try {
@@ -99,6 +101,13 @@ export default class DisteleplusService extends Service {
 
   get isFullPageActive() {
     return this.router.currentRouteName === "disteleplus";
+  }
+
+  storeAppURL() {
+    const url = this.router.currentURL;
+    if (url && !url.startsWith("/disteleplus")) {
+      this.lastAppURL = url;
+    }
   }
 
   get isActive() {

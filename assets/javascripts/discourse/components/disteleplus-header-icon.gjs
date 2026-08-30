@@ -12,6 +12,7 @@ import { i18n } from "discourse-i18n";
 export default class DisteleplusHeaderIcon extends Component {
   @service disteleplus;
   @service site;
+  @service router;
 
   constructor() {
     super(...arguments);
@@ -30,25 +31,23 @@ export default class DisteleplusHeaderIcon extends Component {
     return this.disteleplus.unreadCount > 0 && !this.disteleplus.isActive;
   }
 
+  // Mirrors Chat's header icon: full page on mobile or when the user chose
+  // it; otherwise toggle the drawer. The href stays for middle-click.
   @action
   open(event) {
+    event?.preventDefault?.();
     if (this.site.mobileView || this.disteleplus.isFullPagePreferred) {
-      if (this.disteleplus.isFullPageActive) {
-        event?.preventDefault?.();
-        return;
+      if (!this.disteleplus.isFullPageActive) {
+        this.router.transitionTo("/disteleplus");
       }
       return;
     }
-    // Desktop drawer mode: the link is a fallback for middle-click / open in
-    // new tab; a plain click toggles the drawer.
-    event?.preventDefault?.();
     if (this.disteleplus.isFullPageActive) {
       return;
     }
     if (this.disteleplus.isDrawerActive) {
       this.disteleplus.closeDrawer();
     } else {
-      this.disteleplus.prefersDrawer();
       this.disteleplus.openDrawer();
     }
   }
