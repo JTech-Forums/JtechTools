@@ -87,25 +87,56 @@ module DiscourseDisteleplus
     SEARCH_WINDOW = 3000
     SEARCH_LIMIT = 50
 
+    SEARCH_OPERATOR = /\A(from|has|before|after):(.+)\z/
+    SEARCH_IMAGE_EXTENSIONS = %w[png jpg jpeg gif webp avif].freeze
+    SEARCH_AUDIO_EXTENSIONS = %w[mp3 m4a ogg oga opus wav aac flac].freeze
+    SEARCH_VIDEO_EXTENSIONS = %w[mp4 mov mkv avi m4v].freeze
+
+    # Query operators, WhatsApp/Discourse style: from:user · has:image /
+    # voice / video / file / link / poll · before:/after:YYYY-MM-DD. The
+    # rest of the query stays a plain substring match (messages are
+    # encrypted at rest, so matching happens after decryption, in Ruby).
     def search
       rate_limit!("search", 30, 1.minute)
-      term = params[:q].to_s.strip.downcase
-      raise Discourse::InvalidParameters.new(:q) if term.length < 2
+      filters = { from: nil, has: [], before: nil, after: nil }
+      words = []
+      params[:q]
+        .to_s
+        .strip
+        .split(/\s+/)
+        .each do |token|
+          match = token.downcase.match(SEARCH_OPERATOR)
+          if match.nil?
+            words << token
+            next
+          end
+          value = match[2]
+          case match[1]
+          when "from"
+            filters[:from] = value.delete_prefix("@")
+          when "has"
+            filters[:has] << value
+          when "before"
+            filters[:before] = parse_search_date(value)
+          when "after"
+            filters[:after] = parse_search_date(value)
+          end
+        end
+      term = words.join(" ").downcase
+      filtered =
+        filters[:from].present? || filters[:has].any? || filters[:before] || filters[:after]
+      raise Discourse::InvalidParameters.new(:q) if term.length < 2 && !filtered
+
+      scope = Message.not_deleted.includes(:user, :uploads).order(id: :desc)
+      scope = scope.where("created_at < ?", filters[:before].beginning_of_day) if filters[:before]
+      scope = scope.where("created_at >= ?", filters[:after].beginning_of_day) if filters[:after]
+      scope = scope.where.not(poll_post_id: nil) if filters[:has].include?("poll")
 
       results = []
-      Message
-        .not_deleted
-        .includes(:user, :uploads)
-        .order(id: :desc)
+      scope
         .limit(SEARCH_WINDOW)
         .find_each(batch_size: 200) do |message|
-          haystack = [
-            message.raw,
-            message.external_sender_name,
-            message.user&.username,
-            message.user&.name,
-          ]
-          next unless haystack.compact.any? { |field| field.downcase.include?(term) }
+          next unless search_matches?(message, term, filters)
           results << message
           break if results.length >= SEARCH_LIMIT
         end
@@ -286,6 +317,67 @@ module DiscourseDisteleplus
 
     def render_error(error)
       render json: { errors: [error.message] }, status: :unprocessable_entity
+    end
+
+    def parse_search_date(value)
+      Date.parse(value)
+    rescue ArgumentError, TypeError
+      nil
+    end
+
+    def search_matches?(message, term, filters)
+      if filters[:from]
+        senders = [
+          message.user&.username,
+          message.user&.name,
+          message.external_sender_name,
+        ].compact.map(&:downcase)
+        return false if senders.none? { |sender| sender.include?(filters[:from]) }
+      end
+
+      filters[:has].each { |want| return false unless message_has?(message, want) }
+
+      if term.present?
+        haystack = [
+          message.raw,
+          message.external_sender_name,
+          message.user&.username,
+          message.user&.name,
+        ]
+        return false if haystack.compact.none? { |field| field.downcase.include?(term) }
+      end
+
+      true
+    end
+
+    def message_has?(message, want)
+      uploads = message.uploads.to_a
+      case want
+      when "voice", "audio"
+        uploads.any? do |upload|
+          name = upload.original_filename.to_s.downcase
+          extension = upload.extension.to_s.downcase
+          name.start_with?("voice-note") || SEARCH_AUDIO_EXTENSIONS.include?(extension) ||
+            (extension == "webm" && upload.width.to_i.zero?)
+        end
+      when "image"
+        uploads.any? { |upload| SEARCH_IMAGE_EXTENSIONS.include?(upload.extension.to_s.downcase) }
+      when "video"
+        uploads.any? do |upload|
+          extension = upload.extension.to_s.downcase
+          SEARCH_VIDEO_EXTENSIONS.include?(extension) ||
+            (extension == "webm" && upload.width.to_i.positive?)
+        end
+      when "file", "upload", "attachment"
+        uploads.any?
+      when "link"
+        message.raw.to_s.match?(%r{https?://})
+      when "poll"
+        message.poll_post_id.present?
+      else
+        # An unknown has: value matches nothing rather than everything.
+        false
+      end
     end
 
     def rate_limit!(action, limit, interval)
