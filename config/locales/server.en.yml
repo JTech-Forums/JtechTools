@@ -792,7 +792,7 @@ en:
 
     disteleplus_forum_post_notifications_enabled: Post a summary of new forum
       posts into the bridged Telegram conversation (and the native
-      conversation), the way the chat-integration plugin does. Private
+      conversation), the way the chat-integration plugin does. Personal
       messages, whispers, hidden posts and read-restricted categories are
       never sent.
     disteleplus_forum_post_categories: Only announce posts in these categories
