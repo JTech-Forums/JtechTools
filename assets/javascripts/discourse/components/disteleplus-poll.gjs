@@ -8,6 +8,7 @@ import icon from "discourse/helpers/d-icon";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import { getURLWithCDN } from "discourse/lib/get-url";
 import { i18n } from "discourse-i18n";
+import DisteleplusPollStats from "./disteleplus-poll-stats";
 
 const AVATAR_SIZE = 48;
 const VOTER_AVATARS_SHOWN = 5;
@@ -18,6 +19,17 @@ const VOTER_AVATARS_SHOWN = 5;
 // poll MessageBus channel (wired in the disteleplus service).
 export default class DisteleplusPoll extends Component {
   @service disteleplus;
+  @service currentUser;
+  @service modal;
+
+  // Close/reopen mirrors core's rule: the backing post's author or staff.
+  get canManage() {
+    return this.message.mine || !!this.currentUser?.staff;
+  }
+
+  get showStats() {
+    return !!this.poll.public && (this.poll.voters || 0) > 0;
+  }
 
   // Always read the live message from the service — bus updates replace
   // message objects wholesale.
@@ -130,6 +142,30 @@ export default class DisteleplusPoll extends Component {
     }
   }
 
+  @action
+  async toggleStatus() {
+    try {
+      await this.disteleplus.togglePollStatus(
+        this.message,
+        this.poll.closed ? "open" : "closed"
+      );
+    } catch (error) {
+      popupAjaxError(error);
+    }
+  }
+
+  @action
+  async openStats() {
+    try {
+      const response = await this.disteleplus.fetchPollVoters(this.message);
+      this.modal.show(DisteleplusPollStats, {
+        model: { poll: this.poll, voters: response.voters || {} },
+      });
+    } catch (error) {
+      popupAjaxError(error);
+    }
+  }
+
   <template>
     <div
       class="disteleplus-poll {{if this.poll.closed 'is-closed'}}"
@@ -189,7 +225,28 @@ export default class DisteleplusPoll extends Component {
           </button>
         {{/each}}
       </div>
-      <div class="disteleplus-poll__footer">{{this.footerText}}</div>
+      <div class="disteleplus-poll__footer">
+        <span class="disteleplus-poll__footer-text">{{this.footerText}}</span>
+        <span class="disteleplus-poll__footer-actions">
+          {{#if this.showStats}}
+            <button type="button" {{on "click" this.openStats}}>
+              {{icon "chart-pie"}}
+              {{i18n "disteleplus.poll.stats"}}
+            </button>
+          {{/if}}
+          {{#if this.canManage}}
+            <button type="button" {{on "click" this.toggleStatus}}>
+              {{#if this.poll.closed}}
+                {{icon "unlock"}}
+                {{i18n "disteleplus.poll.reopen"}}
+              {{else}}
+                {{icon "lock"}}
+                {{i18n "disteleplus.poll.close"}}
+              {{/if}}
+            </button>
+          {{/if}}
+        </span>
+      </div>
     </div>
   </template>
 }

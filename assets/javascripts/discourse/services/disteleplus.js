@@ -654,6 +654,33 @@ export default class DisteleplusService extends Service {
     this.applyCorePoll(message, response.poll || {}, new Set());
   }
 
+  // Close or reopen — core checks that the actor owns the backing post or
+  // is staff.
+  async togglePollStatus(message, status) {
+    const response = await ajax("/polls/toggle_status", {
+      type: "PUT",
+      data: {
+        post_id: message.poll.post_id,
+        poll_name: message.poll.name,
+        status,
+      },
+    });
+    this.applyCorePoll(message, response.poll || {});
+  }
+
+  // Full voter lists for the stats modal (the widget itself only carries
+  // the first page core preloads).
+  fetchPollVoters(message, page = 1) {
+    return ajax("/polls/voters", {
+      data: {
+        post_id: message.poll.post_id,
+        poll_name: message.poll.name,
+        limit: 50,
+        page,
+      },
+    });
+  }
+
   hydrate(message) {
     const mine = message.user?.id === this.currentUser?.id;
     const staff = this.currentUser?.admin || this.currentUser?.moderator;
