@@ -682,7 +682,9 @@ export default class DisteleplusConversation extends Component {
 
   <template>
     <section
-      class="disteleplus-page {{if this.dragging 'is-dragging'}}"
+      class="disteleplus-page
+        {{if @inDrawer 'in-drawer' 'full-page'}}
+        {{if this.dragging 'is-dragging'}}"
       {{didInsert this.mount}}
       {{on "dragover" this.onDragOver}}
       {{on "dragleave" this.onDragLeave}}

@@ -26,6 +26,10 @@ en:
         other: "%{count} new messages"
       unread_divider: New messages
       go_to_bottom: Go to bottom
+      expand: Expand
+      collapse: Collapse
+      open_full_page: Open in full page
+      close: Close
       more: More
       copy_text: Copy text
       copy_link: Copy link

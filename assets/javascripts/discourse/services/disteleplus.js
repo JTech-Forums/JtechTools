@@ -1,6 +1,7 @@
 import { tracked } from "@glimmer/tracking";
 import Service, { service } from "@ember/service";
 import { ajax } from "discourse/lib/ajax";
+import KeyValueStore from "discourse/lib/key-value-store";
 import { emojiUrlFor } from "discourse/lib/text";
 
 const BASE = "/jtech-disteleplus";
@@ -9,10 +10,20 @@ const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp"]);
 const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "webm"]);
 const AUDIO_EXTENSIONS = new Set(["mp3", "m4a", "ogg", "wav", "flac", "opus"]);
 const DRAFT_KEY = "disteleplus-draft";
+const STORE_NAMESPACE = "disteleplus_";
+const PREFERRED_MODE_KEY = "preferred_mode";
+const FULL_PAGE = "FULL_PAGE";
+const DRAWER = "DRAWER";
+const DEFAULT_SIZE = { width: 400, height: 530 };
+const MIN_WIDTH = 250;
+const MIN_HEIGHT = 300;
 
 export default class DisteleplusService extends Service {
   @service currentUser;
   @service messageBus;
+  @service site;
+  @service router;
+  @service appEvents;
 
   @tracked messages = [];
   @tracked loading = false;
@@ -25,8 +36,14 @@ export default class DisteleplusService extends Service {
   // Composer draft, restored across navigations (and reloads via localStorage).
   @tracked draft = "";
 
+  // Drawer state, modelled on core Chat's ChatStateManager / ChatDrawerSize.
+  @tracked isDrawerActive = false;
+  @tracked isDrawerExpanded = false;
+  @tracked drawerSize = DEFAULT_SIZE;
   // draws its unread divider after this id.
   @tracked openedAtReadId = null;
+  store = new KeyValueStore(STORE_NAMESPACE);
+
   latestMessageId = null;
   lastReadMessageId = null;
   subscribed = false;
@@ -66,6 +83,76 @@ export default class DisteleplusService extends Service {
     } catch {
       this.draft = "";
     }
+    this.drawerSize = {
+      width: Math.max(
+        this.store.getObject("width") || DEFAULT_SIZE.width,
+        MIN_WIDTH
+      ),
+      height: Math.max(
+        this.store.getObject("height") || DEFAULT_SIZE.height,
+        MIN_HEIGHT
+      ),
+    };
+  }
+
+  // ── drawer / full page ────────────────────────────────────────────────────
+
+  get isFullPageActive() {
+    return this.router.currentRouteName === "disteleplus";
+  }
+
+  get isActive() {
+    return this.isFullPageActive || this.isDrawerActive;
+  }
+
+  // Mobile is always full page; desktop defaults to the drawer unless the
+  // user chose "open in full page".
+  get isFullPagePreferred() {
+    return !!(
+      this.site.mobileView ||
+      this.store.getObject(PREFERRED_MODE_KEY) === FULL_PAGE
+    );
+  }
+
+  get isDrawerPreferred() {
+    return !this.isFullPagePreferred;
+  }
+
+  prefersFullPage() {
+    this.store.setObject({ key: PREFERRED_MODE_KEY, value: FULL_PAGE });
+  }
+
+  prefersDrawer() {
+    this.store.setObject({ key: PREFERRED_MODE_KEY, value: DRAWER });
+  }
+
+  openDrawer() {
+    this.isDrawerActive = true;
+    this.isDrawerExpanded = true;
+    this.ensureLoaded().catch(() => {});
+    this.appEvents.trigger("disteleplus:drawer-changed");
+  }
+
+  closeDrawer() {
+    this.isDrawerActive = false;
+    this.isDrawerExpanded = false;
+    this.appEvents.trigger("disteleplus:drawer-changed");
+  }
+
+  toggleDrawerExpanded() {
+    this.isDrawerActive = true;
+    this.isDrawerExpanded = !this.isDrawerExpanded;
+    this.appEvents.trigger("disteleplus:drawer-changed");
+  }
+
+  setDrawerSize({ width, height }) {
+    const next = {
+      width: Math.max(Math.round(width), MIN_WIDTH),
+      height: Math.max(Math.round(height), MIN_HEIGHT),
+    };
+    this.drawerSize = next;
+    this.store.setObject({ key: "width", value: next.width });
+    this.store.setObject({ key: "height", value: next.height });
   }
 
   setDraft(value) {
