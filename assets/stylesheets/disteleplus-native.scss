@@ -621,8 +621,8 @@ html.has-full-page-disteleplus {
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
-  min-height: 50px;
-  padding: 0 0.25rem 0 0.25rem;
+  min-height: 46px;
+  padding: 0 0.25rem;
   border: 1px solid var(--d-chat-input-border-color, var(--primary-low));
   border-radius: var(--d-border-radius-large, 12px);
   background: var(--d-chat-input-bg-color, var(--primary-very-low));
@@ -633,10 +633,11 @@ html.has-full-page-disteleplus {
   &__primary {
     display: grid;
     flex: 0 0 auto;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     padding: 0;
-    padding-inline: 0.75rem;
     place-items: center;
+    border-radius: 50%;
     border: 0;
     color: var(--primary-medium);
     background: none;
@@ -1007,7 +1008,8 @@ html.has-full-page-disteleplus {
   --d-chat-input-border-color: var(--primary-low);
   --d-chat-input-bg-color: rgb(var(--primary-very-low-rgb) / 50%);
   z-index: 3;
-  padding: var(--space-1, 0.25rem) 0 env(safe-area-inset-bottom) 0;
+  padding: var(--space-1, 0.25rem) 0
+    calc(0.75rem + env(safe-area-inset-bottom, 0px)) 0;
   background: var(--secondary);
 
   &__row {
@@ -1022,9 +1024,11 @@ html.has-full-page-disteleplus {
     display: flex;
     flex: 1;
     align-items: center;
+    gap: 0.15rem;
     box-sizing: border-box;
     min-width: 0;
-    min-height: 50px;
+    min-height: 46px;
+    padding: 0 0.25rem;
     overflow: hidden;
     border: 1px solid var(--d-chat-input-border-color);
     border-radius: var(--d-border-radius-large, 12px);
@@ -1041,8 +1045,8 @@ html.has-full-page-disteleplus {
     height: auto;
     min-width: 20px;
     max-height: 25dvh;
-    margin: 5px 0;
-    padding: 0;
+    margin: 0;
+    padding: 0 0.25rem;
     resize: none;
     border: 0;
     background: none;
@@ -1063,34 +1067,40 @@ html.has-full-page-disteleplus {
     }
   }
 
-  // Mirrors .chat-composer-button
+  // Mirrors .chat-composer-button, but every control shares one centerline.
   &__button {
-    display: grid;
+    display: inline-flex;
     flex: 0 0 auto;
-    align-self: flex-end;
-    height: 50px;
+    align-self: center;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     padding: 0;
-    padding-inline: 0.75rem;
-    place-items: center;
     border: 0;
+    border-radius: 50%;
     color: var(--primary-medium);
     background: none;
     box-sizing: border-box;
+    line-height: 0;
     cursor: pointer;
 
     .d-icon {
+      width: 1em;
+      height: 1em;
       color: var(--primary-medium);
     }
 
     input {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      opacity: 0;
+      display: none;
     }
 
-    &:hover .d-icon {
-      color: var(--primary-high);
+    &:hover {
+      background: var(--primary-low);
+
+      .d-icon {
+        color: var(--primary-high);
+      }
     }
 
     &.is-send {
@@ -1107,6 +1117,7 @@ html.has-full-page-disteleplus {
 
       &:disabled {
         cursor: default;
+        background: none;
 
         .d-icon {
           color: var(--primary-low-mid);
@@ -1120,7 +1131,8 @@ html.has-full-page-disteleplus {
     flex-shrink: 0;
     align-self: center;
     width: 1px;
-    height: 1.75rem;
+    height: 1.5rem;
+    margin: 0 0.15rem;
     background: var(--primary-low-mid);
   }
 
