@@ -314,6 +314,8 @@ export default class DisteleplusConversation extends Component {
       groupIdentifier: "emoji-picker",
       component: EmojiPickerDetached,
       modalForMobile: true,
+      placement: "top-end",
+      fallbackPlacements: ["top-start", "bottom-end"],
       data: {
         context: EMOJI_CONTEXT,
         didSelectEmoji: (emoji) => this.insertText(`:${emoji}: `),
@@ -497,11 +499,17 @@ export default class DisteleplusConversation extends Component {
   pickReaction(message, event) {
     event.stopPropagation();
     this.closeContextMenu();
-    this.menu.show(event.currentTarget, {
+    // Anchor to the message row, not the button: the hover toolbar is
+    // invisible when the pointer leaves it and the context menu is removed
+    // from the DOM the moment it closes — both make useless anchors.
+    const anchor = this.messageElement(message.id) || event.currentTarget;
+    this.menu.show(anchor, {
       identifier: "disteleplus-reaction-picker",
       groupIdentifier: "emoji-picker",
       component: EmojiPickerDetached,
       modalForMobile: true,
+      placement: "top-start",
+      fallbackPlacements: ["bottom-start", "top-end", "bottom-end"],
       data: {
         context: EMOJI_CONTEXT,
         didSelectEmoji: (emoji) => this.react(message, emoji),

@@ -26,13 +26,33 @@
   }
 }
 
+// While the route is active the body carries this class (see the route) so
+// the outlet's own padding stops eating into the viewport math.
+body.disteleplus-full-page {
+  #main-outlet-wrapper,
+  #main-outlet {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  #main-outlet {
+    min-height: 0;
+  }
+}
+
 .disteleplus-page {
   position: relative;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   width: 100%;
-  height: calc(100dvh - var(--header-offset, 3.75rem));
+  max-width: 56rem;
+  height: calc(
+    100dvh - var(--header-offset, 3.75rem) - var(--footer-nav-height, 0px)
+  );
+  margin: 0 auto;
   overflow: hidden;
+  border-right: 1px solid var(--primary-low);
+  border-left: 1px solid var(--primary-low);
   background: var(--secondary);
 
   &.is-dragging .disteleplus-timeline {
@@ -775,7 +795,12 @@
 
 @media (width <= 700px) {
   .disteleplus-page {
-    height: calc(100dvh - var(--header-offset, 3.75rem));
+    max-width: none;
+    border: 0;
+  }
+
+  .disteleplus-composer {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
   }
 
   .disteleplus-message {
