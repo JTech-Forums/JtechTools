@@ -6,6 +6,7 @@ import { action } from "@ember/object";
 import { service } from "@ember/service";
 import DButton from "discourse/components/d-button";
 import DModal from "discourse/components/d-modal";
+import icon from "discourse/helpers/d-icon";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import { i18n } from "discourse-i18n";
@@ -44,21 +45,6 @@ export default class ModTopicPromptChecklistModal extends Component {
   @tracked fromLegacy = false;
   @tracked loading = true;
   @tracked saving = false;
-
-  modeOptions = [
-    {
-      id: "statement",
-      name: i18n(
-        "discourse_mod_categories.topic_prompt_checklist.mode_statement"
-      ),
-    },
-    {
-      id: "checklist",
-      name: i18n(
-        "discourse_mod_categories.topic_prompt_checklist.mode_checklist"
-      ),
-    },
-  ];
 
   frequencyOptions = [
     {
@@ -301,12 +287,42 @@ export default class ModTopicPromptChecklistModal extends Component {
                 "discourse_mod_categories.topic_prompt_checklist.mode_label"
               }}
             </label>
-            <ComboBox
-              @value={{this.mode}}
-              @content={{this.modeOptions}}
-              @onChange={{this.updateMode}}
-              class="mod-topic-prompt-checklist-mode"
-            />
+            <div class="mod-checklist-mode-toggle">
+              <button
+                type="button"
+                class={{if this.isStatementMode "is-active"}}
+                {{on "click" (fn this.updateMode "statement")}}
+              >
+                {{icon "align-left"}}
+                <span class="mod-checklist-mode-toggle__title">
+                  {{i18n
+                    "discourse_mod_categories.topic_prompt_checklist.mode_title_statement"
+                  }}
+                </span>
+                <span class="mod-checklist-mode-toggle__desc">
+                  {{i18n
+                    "discourse_mod_categories.topic_prompt_checklist.mode_desc_statement"
+                  }}
+                </span>
+              </button>
+              <button
+                type="button"
+                class={{if this.isChecklistMode "is-active"}}
+                {{on "click" (fn this.updateMode "checklist")}}
+              >
+                {{icon "list-check"}}
+                <span class="mod-checklist-mode-toggle__title">
+                  {{i18n
+                    "discourse_mod_categories.topic_prompt_checklist.mode_title_checklist"
+                  }}
+                </span>
+                <span class="mod-checklist-mode-toggle__desc">
+                  {{i18n
+                    "discourse_mod_categories.topic_prompt_checklist.mode_desc_checklist"
+                  }}
+                </span>
+              </button>
+            </div>
           </div>
 
           {{#if this.isStatementMode}}
@@ -367,34 +383,46 @@ export default class ModTopicPromptChecklistModal extends Component {
                 {{/each}}
               </div>
             {{/if}}
+            <button
+              type="button"
+              class="mod-checklist-add-inline"
+              {{on "click" this.addRow}}
+            >
+              {{icon "plus"}}
+              {{i18n
+                "discourse_mod_categories.topic_prompt_checklist.add_item"
+              }}
+            </button>
           {{/if}}
 
-          <div class="mod-checklist-field">
-            <label class="mod-checklist-field-label">
-              {{i18n
-                "discourse_mod_categories.topic_prompt_checklist.frequency_label"
-              }}
-            </label>
-            <ComboBox
-              @value={{this.frequency}}
-              @content={{this.frequencyOptions}}
-              @onChange={{this.updateFrequency}}
-              class="mod-topic-prompt-checklist-frequency"
-            />
-          </div>
+          <div class="mod-checklist-field-grid">
+            <div class="mod-checklist-field">
+              <label class="mod-checklist-field-label">
+                {{i18n
+                  "discourse_mod_categories.topic_prompt_checklist.frequency_label"
+                }}
+              </label>
+              <ComboBox
+                @value={{this.frequency}}
+                @content={{this.frequencyOptions}}
+                @onChange={{this.updateFrequency}}
+                class="mod-topic-prompt-checklist-frequency"
+              />
+            </div>
 
-          <div class="mod-checklist-field">
-            <label class="mod-checklist-field-label">
-              {{i18n
-                "discourse_mod_categories.topic_prompt_checklist.max_tl_label"
-              }}
-            </label>
-            <ComboBox
-              @value={{this.maxTl}}
-              @content={{this.maxTlOptions}}
-              @onChange={{this.updateMaxTl}}
-              class="mod-topic-prompt-checklist-max-tl"
-            />
+            <div class="mod-checklist-field">
+              <label class="mod-checklist-field-label">
+                {{i18n
+                  "discourse_mod_categories.topic_prompt_checklist.max_tl_label"
+                }}
+              </label>
+              <ComboBox
+                @value={{this.maxTl}}
+                @content={{this.maxTlOptions}}
+                @onChange={{this.updateMaxTl}}
+                class="mod-topic-prompt-checklist-max-tl"
+              />
+            </div>
           </div>
 
           <div class="mod-checklist-field">
@@ -417,14 +445,6 @@ export default class ModTopicPromptChecklistModal extends Component {
       </:body>
 
       <:footer>
-        {{#if this.isChecklistMode}}
-          <DButton
-            @action={{this.addRow}}
-            @icon="plus"
-            @label="discourse_mod_categories.topic_prompt_checklist.add_item"
-            class="mod-topic-prompt-checklist-add"
-          />
-        {{/if}}
         <DButton
           @action={{this.save}}
           @label="discourse_mod_categories.topic_prompt_checklist.save"
