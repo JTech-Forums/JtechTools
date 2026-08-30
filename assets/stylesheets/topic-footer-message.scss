@@ -634,23 +634,6 @@
     color: var(--primary-medium);
   }
 
-  .mod-checklist-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    margin-bottom: 0.5em;
-  }
-
-  .mod-checklist-row-label {
-    flex: 2;
-    margin: 0;
-  }
-
-  .mod-checklist-row-url {
-    flex: 3;
-    margin: 0;
-  }
-
   .mod-checklist-empty {
     color: var(--primary-medium);
     font-style: italic;
@@ -665,6 +648,213 @@
 
   .mod-checklist-saved {
     color: var(--success);
+  }
+}
+
+// Shared editor look for checklist item rows — the global first-post
+// editor page and the per-topic Prompt Checklist modal use the same
+// classes; both get numbered card rows, styled fields, and a pill for
+// the version.
+.mod-checklist-page,
+.mod-topic-prompt-checklist-modal {
+  .mod-checklist-version {
+    display: inline-block;
+    margin: 0 0 0.5em;
+    padding: 0.15em 0.7em;
+    border-radius: 1em;
+    background: var(--tertiary-low);
+    color: var(--tertiary-hover, var(--tertiary));
+    font-size: var(--font-down-1);
+    font-weight: 600;
+  }
+
+  .mod-checklist-rows {
+    counter-reset: checklist-row;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+    margin: 0.75em 0;
+  }
+
+  .mod-checklist-row {
+    counter-increment: checklist-row;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0;
+    padding: 0.5em 0.6em 0.5em 0.5em;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius, 6px);
+    background: var(--secondary);
+
+    &::before {
+      content: counter(checklist-row);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.6em;
+      height: 1.6em;
+      flex-shrink: 0;
+      border-radius: 100%;
+      background: var(--tertiary-low);
+      color: var(--tertiary-hover, var(--tertiary));
+      font-size: var(--font-down-1);
+      font-weight: 700;
+    }
+
+    &:focus-within {
+      border-color: var(--tertiary);
+    }
+
+    input {
+      margin: 0;
+      border-color: var(--primary-low);
+    }
+  }
+
+  .mod-checklist-row-label {
+    flex: 2;
+    min-width: 0;
+  }
+
+  .mod-checklist-row-url {
+    flex: 3;
+    min-width: 0;
+  }
+
+  .mod-checklist-row-controls {
+    display: flex;
+    flex-shrink: 0;
+  }
+
+  .mod-checklist-field {
+    margin-top: 1em;
+  }
+
+  .mod-checklist-field-label {
+    display: block;
+    margin-bottom: 0.3em;
+    color: var(--primary-high);
+    font-weight: 700;
+  }
+
+  .mod-checklist-field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1em;
+
+    .select-kit {
+      width: 100%;
+    }
+  }
+
+  .mod-checklist-add-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4em;
+    width: 100%;
+    padding: 0.55em;
+    border: 1px dashed var(--primary-low-mid, var(--primary-low));
+    border-radius: var(--d-border-radius, 6px);
+    background: none;
+    color: var(--tertiary);
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--tertiary);
+      background: var(--primary-very-low);
+    }
+  }
+
+  .mod-checklist-inactive,
+  .mod-topic-prompt-checklist-inactive {
+    margin: 0.75em 0;
+    padding: 0.85em 1em;
+    border: 1px dashed var(--primary-low-mid, var(--primary-low));
+    border-radius: var(--d-border-radius, 6px);
+    color: var(--primary-medium);
+  }
+}
+
+// Modal-only pieces: segmented mode toggle, statement textarea, notices.
+.mod-topic-prompt-checklist-modal {
+  .d-modal__container {
+    max-width: 40rem;
+  }
+
+  .mod-topic-prompt-checklist-intro {
+    color: var(--primary-medium);
+  }
+
+  .mod-topic-prompt-checklist-legacy-notice {
+    margin: 0.75em 0;
+    padding: 0.75em 1em;
+    border-left: 3px solid var(--highlight-medium, var(--highlight));
+    border-radius: 0 var(--d-border-radius, 6px) var(--d-border-radius, 6px) 0;
+    background: var(
+      --highlight-bg,
+      var(--highlight-low, var(--primary-very-low))
+    );
+  }
+
+  .mod-checklist-mode-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5em;
+
+    button {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.15em;
+      padding: 0.7em 0.85em;
+      border: 1px solid var(--primary-low);
+      border-radius: var(--d-border-radius, 6px);
+      background: var(--secondary);
+      color: var(--primary);
+      text-align: left;
+      cursor: pointer;
+
+      .d-icon {
+        color: var(--primary-medium);
+        margin-bottom: 0.2em;
+      }
+
+      &:hover {
+        border-color: var(--tertiary-medium, var(--tertiary));
+      }
+
+      &.is-active {
+        border-color: var(--tertiary);
+        background: color-mix(in srgb, var(--tertiary) 7%, transparent);
+
+        .d-icon {
+          color: var(--tertiary);
+        }
+      }
+    }
+
+    &__title {
+      font-weight: 700;
+    }
+
+    &__desc {
+      color: var(--primary-medium);
+      font-size: var(--font-down-1);
+    }
+  }
+
+  .mod-topic-prompt-checklist-statement {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+  }
+
+  .mod-topic-prompt-checklist-button-label {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
   }
 }
 

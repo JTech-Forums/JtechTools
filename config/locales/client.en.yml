@@ -210,6 +210,10 @@ en:
         mode_label: Mode
         mode_statement: Statement — one message, single accept button
         mode_checklist: Checklist — multiple items, all must be ticked
+        mode_title_statement: Statement
+        mode_desc_statement: One message, single accept button
+        mode_title_checklist: Checklist
+        mode_desc_checklist: Multiple items, all must be ticked
         statement_label: Statement text
         statement_placeholder: Write the confirmation message users see before their
           reply is allowed through. Markdown is supported.
