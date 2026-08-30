@@ -40,6 +40,8 @@ en:
         seen: Seen by
         listened: Listened by
         nobody_yet: Nobody yet
+      mention_title: Mentioned you in the conversation
+      mention_label: "%{username} mentioned you"
       quote_in_chat:
         label: Quote in chat
       typing_one: "%{name} is typing"
