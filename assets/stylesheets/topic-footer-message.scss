@@ -429,8 +429,55 @@
 
 // First-post checklist modal shown to new users before their first post.
 .mod-first-post-checklist-modal {
+  .d-modal__container {
+    max-width: 34rem;
+  }
+
   .mod-checklist-intro {
-    color: var(--primary-medium);
+    margin: 0 0 0.75em;
+    color: var(--primary-high);
+  }
+
+  // Slim progress bar + "n of m confirmed" counter.
+  .mod-checklist-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+    margin-bottom: 1em;
+
+    &__bar {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--primary-low);
+      overflow: hidden;
+
+      span {
+        display: block;
+        height: 100%;
+        border-radius: 3px;
+        background: var(--tertiary);
+        transition: width 0.25s ease;
+      }
+    }
+
+    &__count {
+      display: flex;
+      align-items: center;
+      gap: 0.3em;
+      flex-shrink: 0;
+      color: var(--primary-medium);
+      font-size: var(--font-down-1);
+    }
+
+    &.is-done &__bar span {
+      background: var(--success);
+    }
+
+    &.is-done &__count {
+      color: var(--success);
+      font-weight: 600;
+    }
   }
 
   .mod-checklist-items {
@@ -439,28 +486,141 @@
     padding: 0;
   }
 
+  // Each item is a card; the whole card toggles via its label.
   .mod-checklist-item {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 0.5em;
-    padding: 0.4em 0;
-    border-bottom: 1px solid var(--primary-low);
+    margin-bottom: 0.5em;
+    padding: 0.65em 0.75em;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius, 6px);
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
 
-    &:last-child {
-      border-bottom: none;
+    &:hover {
+      background: var(--primary-very-low);
+    }
+
+    &.is-checked {
+      background: color-mix(in srgb, var(--tertiary) 8%, transparent);
+      border-color: var(--tertiary-medium, var(--tertiary));
     }
   }
 
   .mod-checklist-item-label {
     display: flex;
-    align-items: baseline;
-    gap: 0.5em;
+    align-items: center;
+    gap: 0.65em;
     flex: 1;
+    margin: 0;
     cursor: pointer;
   }
 
+  // The native checkbox stays for keyboard/screen-reader access; the round
+  // indicator is what sighted users see.
+  .mod-checklist-checkbox {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+
+    &:focus-visible + .mod-checklist-indicator {
+      outline: 2px solid var(--tertiary);
+      outline-offset: 2px;
+    }
+  }
+
+  .mod-checklist-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5em;
+    height: 1.5em;
+    flex-shrink: 0;
+    border: 2px solid var(--primary-low-mid, var(--primary-low));
+    border-radius: 100%;
+    background: var(--secondary);
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
+
+    .d-icon {
+      width: 0.75em;
+      height: 0.75em;
+      color: var(--secondary);
+      transform: scale(0);
+      transition: transform 0.15s ease;
+    }
+  }
+
+  .mod-checklist-item.is-checked .mod-checklist-indicator {
+    border-color: var(--tertiary);
+    background: var(--tertiary);
+
+    .d-icon {
+      transform: scale(1);
+    }
+  }
+
+  .mod-checklist-item.is-checked .mod-checklist-text {
+    color: var(--primary-high);
+  }
+
   .mod-checklist-link {
+    display: flex;
+    align-items: center;
+    gap: 0.35em;
+    flex-shrink: 0;
+    padding: 0.25em 0.6em;
+    border-radius: 1em;
+    background: var(--primary-very-low);
+    color: var(--tertiary);
+    font-size: var(--font-down-1);
     white-space: nowrap;
+
+    &:hover {
+      background: var(--primary-low);
+      color: var(--tertiary-hover, var(--tertiary));
+    }
+
+    .d-icon {
+      width: 0.8em;
+      height: 0.8em;
+    }
+  }
+
+  // Statement mode: the staff message as an accented card.
+  .mod-checklist-statement {
+    padding: 0.85em 1em;
+    border-left: 3px solid var(--tertiary);
+    border-radius: 0 var(--d-border-radius, 6px) var(--d-border-radius, 6px) 0;
+    background: var(--primary-very-low);
+
+    > :first-child {
+      margin-top: 0;
+    }
+
+    > :last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .mod-checklist-updated-at {
+    display: flex;
+    align-items: center;
+    gap: 0.35em;
+    margin: 0.75em 0 0;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+
+    .d-icon {
+      width: 0.85em;
+      height: 0.85em;
+    }
   }
 }
 

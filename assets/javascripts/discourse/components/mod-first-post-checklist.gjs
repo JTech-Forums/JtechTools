@@ -8,6 +8,7 @@ import { service } from "@ember/service";
 import DButton from "discourse/components/d-button";
 import DModal from "discourse/components/d-modal";
 import ageWithTooltip from "discourse/helpers/age-with-tooltip";
+import icon from "discourse/helpers/d-icon";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import { cook } from "discourse/lib/text";
@@ -55,6 +56,22 @@ export default class ModFirstPostChecklist extends Component {
       return true;
     }
     return this.checkedKeys.size >= this.items.length;
+  }
+
+  get progressLabel() {
+    if (this.checkedKeys.size >= this.items.length) {
+      return i18n("discourse_mod_categories.first_post_checklist.all_done");
+    }
+    return i18n("discourse_mod_categories.first_post_checklist.progress", {
+      checked: this.checkedKeys.size,
+      total: this.items.length,
+    });
+  }
+
+  get progressStyle() {
+    const total = this.items.length || 1;
+    const percent = Math.round((this.checkedKeys.size / total) * 100);
+    return htmlSafe(`width:${percent}%`);
   }
 
   get disableConfirm() {
@@ -140,14 +157,6 @@ export default class ModFirstPostChecklist extends Component {
     >
       <:body>
         {{#if this.isStatementMode}}
-          {{#if this.checklist.updated_at}}
-            <p class="mod-checklist-updated-at">
-              {{i18n
-                "discourse_mod_categories.first_post_checklist.last_updated"
-              }}
-              {{ageWithTooltip this.checklist.updated_at}}
-            </p>
-          {{/if}}
           {{#if this.cookedStatement}}
             <div class="mod-checklist-statement cooked">
               {{htmlSafe this.cookedStatement}}
@@ -157,21 +166,34 @@ export default class ModFirstPostChecklist extends Component {
               {{this.checklist.statement}}
             </div>
           {{/if}}
-        {{else}}
-          <p class="mod-checklist-intro">
-            {{i18n "discourse_mod_categories.first_post_checklist.intro"}}
-          </p>
           {{#if this.checklist.updated_at}}
             <p class="mod-checklist-updated-at">
+              {{icon "clock-rotate-left"}}
               {{i18n
                 "discourse_mod_categories.first_post_checklist.last_updated"
               }}
               {{ageWithTooltip this.checklist.updated_at}}
             </p>
           {{/if}}
+        {{else}}
+          <p class="mod-checklist-intro">
+            {{i18n "discourse_mod_categories.first_post_checklist.intro"}}
+          </p>
+          <div class="mod-checklist-progress {{if this.allChecked 'is-done'}}">
+            <div class="mod-checklist-progress__bar">
+              <span style={{this.progressStyle}}></span>
+            </div>
+            <span class="mod-checklist-progress__count">
+              {{#if this.allChecked}}{{icon "check"}}{{/if}}
+              {{this.progressLabel}}
+            </span>
+          </div>
           <ul class="mod-checklist-items">
             {{#each this.items as |item index|}}
-              <li class="mod-checklist-item">
+              <li
+                class="mod-checklist-item
+                  {{if (this.isChecked index) 'is-checked'}}"
+              >
                 <label class="mod-checklist-item-label">
                   <input
                     type="checkbox"
@@ -179,6 +201,9 @@ export default class ModFirstPostChecklist extends Component {
                     checked={{this.isChecked index}}
                     {{on "change" (fn this.toggle index)}}
                   />
+                  <span class="mod-checklist-indicator" aria-hidden="true">
+                    {{icon "check"}}
+                  </span>
                   <span class="mod-checklist-text">{{item.label}}</span>
                 </label>
                 {{#if item.url}}
@@ -188,6 +213,7 @@ export default class ModFirstPostChecklist extends Component {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
+                    {{icon "up-right-from-square"}}
                     {{i18n
                       "discourse_mod_categories.first_post_checklist.open_link"
                     }}
@@ -196,6 +222,15 @@ export default class ModFirstPostChecklist extends Component {
               </li>
             {{/each}}
           </ul>
+          {{#if this.checklist.updated_at}}
+            <p class="mod-checklist-updated-at">
+              {{icon "clock-rotate-left"}}
+              {{i18n
+                "discourse_mod_categories.first_post_checklist.last_updated"
+              }}
+              {{ageWithTooltip this.checklist.updated_at}}
+            </p>
+          {{/if}}
         {{/if}}
       </:body>
 
