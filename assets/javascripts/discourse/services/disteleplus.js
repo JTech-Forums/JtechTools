@@ -8,7 +8,16 @@ const BASE = "/jtech-disteleplus";
 const CHANNEL = "/disteleplus/conversation";
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp"]);
 const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "webm"]);
-const AUDIO_EXTENSIONS = new Set(["mp3", "m4a", "ogg", "wav", "flac", "opus"]);
+const AUDIO_EXTENSIONS = new Set([
+  "mp3",
+  "m4a",
+  "ogg",
+  "oga",
+  "wav",
+  "flac",
+  "opus",
+  "aac",
+]);
 const DRAFT_KEY = "disteleplus-draft";
 const STORE_NAMESPACE = "disteleplus_";
 const PREFERRED_MODE_KEY = "preferred_mode";
@@ -352,13 +361,22 @@ export default class DisteleplusService extends Service {
 
   hydrateUpload(upload) {
     const extension = (upload.extension || "").toLowerCase();
+    const name = (upload.original_filename || "").toLowerCase();
+    // Browser recorders produce voice-note-*.webm / .m4a; webm without pixel
+    // dimensions is audio, not video.
+    const voiceNote = name.startsWith("voice-note") || name === "voice.ogg";
+    const dimensionless = !upload.width && !upload.height;
     let kind = "document";
     if (IMAGE_EXTENSIONS.has(extension)) {
       kind = "image";
+    } else if (
+      voiceNote ||
+      AUDIO_EXTENSIONS.has(extension) ||
+      (extension === "webm" && dimensionless)
+    ) {
+      kind = "audio";
     } else if (VIDEO_EXTENSIONS.has(extension)) {
       kind = "video";
-    } else if (AUDIO_EXTENSIONS.has(extension)) {
-      kind = "audio";
     }
     return { ...upload, kind };
   }
