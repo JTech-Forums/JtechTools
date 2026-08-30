@@ -793,8 +793,7 @@ html.has-full-page-disteleplus {
   }
 
   // Mirrors .chat-composer-button
-  &__tool,
-  &__main {
+  &__button {
     display: grid;
     flex: 0 0 auto;
     align-self: flex-end;
@@ -805,6 +804,7 @@ html.has-full-page-disteleplus {
     border: 0;
     color: var(--primary-medium);
     background: none;
+    box-sizing: border-box;
     cursor: pointer;
 
     .d-icon {
@@ -817,32 +817,40 @@ html.has-full-page-disteleplus {
       height: 1px;
       opacity: 0;
     }
-  }
 
-  &__tool:hover {
-    .d-icon {
+    &:hover .d-icon {
       color: var(--primary-high);
     }
-  }
 
-  &__main {
-    &.is-send .d-icon {
-      color: var(--tertiary);
+    &.is-send {
       will-change: scale;
-      transition: transform 0.15s ease;
-    }
 
-    &.is-send:hover .d-icon {
-      transform: scale(1.2);
-    }
+      .is-send-enabled & .d-icon {
+        color: var(--tertiary);
+        transition: transform 0.15s ease;
+      }
 
-    &:disabled {
-      cursor: default;
+      .is-send-enabled &:hover .d-icon {
+        transform: scale(1.2);
+      }
 
-      .d-icon {
-        color: var(--primary-low-mid);
+      &:disabled {
+        cursor: default;
+
+        .d-icon {
+          color: var(--primary-low-mid);
+        }
       }
     }
+  }
+
+  // Mirrors .chat-composer-separator
+  &__separator {
+    flex-shrink: 0;
+    align-self: center;
+    width: 1px;
+    height: 1.75rem;
+    background: var(--primary-low-mid);
   }
 
   // Mirrors .chat-composer-message-details
@@ -978,14 +986,14 @@ html.has-full-page-disteleplus {
       background: var(--primary-very-low);
     }
 
-    &__main {
+    &__button.is-send {
       height: auto;
       margin: 0 0.35rem 0.3em;
       padding: 0.5rem;
       border-radius: 100%;
       line-height: 0;
 
-      &.is-send {
+      .is-send-enabled & {
         background: var(--tertiary-high, var(--tertiary));
 
         .d-icon {

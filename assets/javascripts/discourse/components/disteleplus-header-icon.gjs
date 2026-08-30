@@ -42,17 +42,17 @@ export default class DisteleplusHeaderIcon extends Component {
     if (this.disteleplus.isFullPageActive) {
       const back = this.disteleplus.lastAppURL || "/";
       if (this.site.mobileView) {
-        this.router.transitionTo(back);
+        this.router.transitionTo(back).catch(() => {});
         return;
       }
       this.disteleplus.prefersDrawer();
-      await this.router.transitionTo(back);
+      await this.router.transitionTo(back).catch(() => {});
       this.disteleplus.openDrawer();
       return;
     }
 
     if (this.site.mobileView || this.disteleplus.isFullPagePreferred) {
-      this.router.transitionTo("/disteleplus");
+      this.router.transitionTo("/disteleplus").catch(() => {});
       return;
     }
 

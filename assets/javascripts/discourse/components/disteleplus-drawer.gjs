@@ -78,7 +78,11 @@ export default class DisteleplusDrawer extends Component {
     this.disteleplus.prefersFullPage();
     this.disteleplus.closeDrawer();
     await new Promise((resolve) => next(resolve));
-    DiscourseURL.routeTo("/disteleplus");
+    try {
+      await DiscourseURL.routeTo("/disteleplus");
+    } catch {
+      // TransitionAborted is expected when another transition supersedes it.
+    }
   }
 
   @action

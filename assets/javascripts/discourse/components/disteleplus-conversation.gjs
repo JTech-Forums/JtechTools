@@ -158,7 +158,11 @@ export default class DisteleplusConversation extends Component {
   async openInDrawer() {
     this.disteleplus.prefersDrawer();
     const url = this.disteleplus.lastAppURL || "/";
-    await this.router.transitionTo(url);
+    try {
+      await this.router.transitionTo(url);
+    } catch {
+      // TransitionAborted is expected when another transition supersedes it.
+    }
     this.disteleplus.openDrawer();
   }
 
@@ -1053,12 +1057,15 @@ export default class DisteleplusConversation extends Component {
         {{/if}}
 
         <div class="disteleplus-composer__row">
-          <div class="disteleplus-composer__input">
+          <div
+            class="disteleplus-composer__input
+              {{if this.cannotSend 'is-send-disabled' 'is-send-enabled'}}"
+          >
             <label
-              class="disteleplus-composer__tool"
+              class="disteleplus-composer__button"
               title={{i18n "disteleplus.attach"}}
             >
-              {{icon "paperclip"}}
+              {{icon "plus"}}
               <input type="file" multiple {{on "change" this.pickFiles}} />
             </label>
             <textarea
@@ -1073,40 +1080,39 @@ export default class DisteleplusConversation extends Component {
               {{dAutocomplete this.emojiAutocomplete}}
             ></textarea>
             <button
-              class="disteleplus-composer__tool"
+              class="disteleplus-composer__button"
+              type="button"
+              title={{i18n "disteleplus.voice.button"}}
+              aria-label={{i18n "disteleplus.voice.button"}}
+              {{on "click" this.openVoiceRecorder}}
+            >
+              {{icon "microphone"}}
+            </button>
+            <button
+              class="disteleplus-composer__button"
               type="button"
               title={{i18n "disteleplus.emoji"}}
+              aria-label={{i18n "disteleplus.emoji"}}
               {{on "click" this.insertEmoji}}
             >
               {{icon "face-smile"}}
             </button>
-          </div>
-          {{#if this.cannotSend}}
+            <div class="disteleplus-composer__separator"></div>
             <button
-              class="disteleplus-composer__main"
+              class="disteleplus-composer__button is-send"
               type="button"
-              title={{i18n "disteleplus.voice.button"}}
-              aria-label={{i18n "disteleplus.voice.button"}}
-              disabled={{or this.disteleplus.sending this.uploading}}
-              {{on "click" this.openVoiceRecorder}}
+              title={{i18n "disteleplus.send"}}
+              aria-label={{i18n "disteleplus.send"}}
+              disabled={{this.cannotSend}}
+              {{on "click" this.send}}
             >
               {{#if (or this.disteleplus.sending this.uploading)}}
                 {{icon "spinner" class="fa-spin"}}
               {{else}}
-                {{icon "microphone"}}
+                {{icon "paper-plane"}}
               {{/if}}
             </button>
-          {{else}}
-            <button
-              class="disteleplus-composer__main is-send"
-              type="button"
-              title={{i18n "disteleplus.send"}}
-              aria-label={{i18n "disteleplus.send"}}
-              {{on "click" this.send}}
-            >
-              {{icon "paper-plane"}}
-            </button>
-          {{/if}}
+          </div>
         </div>
       </footer>
     </section>
