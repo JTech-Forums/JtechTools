@@ -25,6 +25,10 @@ module DiscourseDisteleplus
              class_name: "DiscourseDisteleplus::Reaction",
              inverse_of: :message,
              dependent: :destroy
+    has_many :listens,
+             class_name: "DiscourseDisteleplus::MessageListen",
+             inverse_of: :message,
+             dependent: :destroy
     has_many :message_links,
              class_name: "DiscourseDisteleplus::MessageLink",
              foreign_key: :disteleplus_message_id,

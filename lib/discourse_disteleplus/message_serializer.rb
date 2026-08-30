@@ -22,7 +22,20 @@ module DiscourseDisteleplus
         can_edit: viewer ? Access.can_edit?(viewer, message) : false,
         can_delete: viewer ? Access.can_delete?(viewer, message) : false,
         can_react: viewer ? Access.allowed?(viewer) && !message.deleted? : false,
+        listened_by: message.deleted? ? [] : serialize_listens(message),
       }
+    end
+
+    LISTENED_BY_CAP = 20
+
+    # Who has played this voice note. Only voice notes ever record listens,
+    # so this stays an empty array for ordinary messages.
+    def self.serialize_listens(message)
+      message
+        .listens
+        .includes(:user)
+        .limit(LISTENED_BY_CAP)
+        .filter_map { |listen| serialize_user(listen.user) }
     end
 
     def self.serialize_user(user)

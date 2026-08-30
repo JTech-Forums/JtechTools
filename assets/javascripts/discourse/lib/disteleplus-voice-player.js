@@ -303,6 +303,15 @@ class VoicePlayer {
       current = this;
       this.root.classList.add("disteleplus-audio--playing");
       this.setPlayIcon("pause");
+      // First play of a voice note = "listened" — announced once via a
+      // bubbling event so the conversation can record the receipt without
+      // the player knowing anything about messages or ajax.
+      if (this.voice && !this.announcedListen) {
+        this.announcedListen = true;
+        this.root.dispatchEvent(
+          new CustomEvent("disteleplus:voice-played", { bubbles: true })
+        );
+      }
     });
     this.audio.addEventListener("pause", () => {
       this.root.classList.remove("disteleplus-audio--playing");

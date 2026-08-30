@@ -87,6 +87,41 @@ export default class DisteleplusService extends Service {
   listeners = new Set();
 
   onRealtime = (payload) => {
+    if (payload?.type === "listened" && payload.message_id) {
+      const message = this.messages.find((m) => m.id === payload.message_id);
+      if (
+        message &&
+        !(message.listened_by || []).some((u) => u.id === payload.user_id)
+      ) {
+        this.upsert({
+          ...message,
+          listened_by: [
+            ...(message.listened_by || []),
+            {
+              id: payload.user_id,
+              username: payload.username,
+              name: payload.name,
+              avatar_template: payload.avatar_template,
+            },
+          ],
+        });
+      }
+      return;
+    }
+    if (payload?.type === "read" && payload.user_id) {
+      if (payload.user_id !== this.currentUser?.id) {
+        this.readStates = {
+          ...this.readStates,
+          [payload.user_id]: {
+            username: payload.username,
+            name: payload.name,
+            avatar_template: payload.avatar_template,
+            last_read_message_id: payload.last_read_message_id,
+          },
+        };
+      }
+      return;
+    }
     if (!payload?.message) {
       return;
     }
@@ -410,6 +445,42 @@ export default class DisteleplusService extends Service {
     }
     this.lastTypingSentAt = now;
     ajax(`${BASE}/typing`, { type: "POST" }).catch(() => {});
+  }
+
+  // ── read receipts ─────────────────────────────────────────────────────────
+
+  async loadReadStates() {
+    try {
+      const response = await ajax(`${BASE}/read-states`);
+      const map = {};
+      (response.read_states || []).forEach((state) => {
+        map[state.user_id] = state;
+      });
+      this.readStates = map;
+    } catch {
+      // Receipts are decoration — the conversation works without them.
+    }
+  }
+
+  // Everyone (other than self) whose read cursor has passed `messageId`.
+  seenBy(messageId) {
+    return Object.values(this.readStates).filter(
+      (state) => state.last_read_message_id >= messageId
+    );
+  }
+
+  // First play of a voice note — record the sender's "listened" receipt.
+  // One shot per message per session; the server dedupes across sessions.
+  listenedSent = new Set();
+
+  markListened(messageId) {
+    if (!this.readReceiptsEnabled || this.listenedSent.has(messageId)) {
+      return;
+    }
+    this.listenedSent.add(messageId);
+    ajax(`${BASE}/messages/${messageId}/listened`, { type: "POST" }).catch(
+      () => this.listenedSent.delete(messageId)
+    );
   }
 
   // ── search / jump ─────────────────────────────────────────────────────────
