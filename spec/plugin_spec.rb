@@ -70,7 +70,9 @@ RSpec.describe "DiscourseModCategories plugin.rb" do
 
   describe "settings registration" do
     it "registers mod_categories_enabled with the correct default" do
-      expect(SiteSetting.defaults[:mod_categories_enabled]).to eq(false)
+      # Defaulted ON in 2026-08 — the dark master toggle was silently hiding
+      # pinned posts and the shield feed on deployed sites.
+      expect(SiteSetting.defaults[:mod_categories_enabled]).to eq(true)
     end
 
     it "registers precheck_new_topic_enabled defaulting to true" do
