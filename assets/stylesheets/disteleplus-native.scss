@@ -64,6 +64,13 @@ html.has-full-page-disteleplus {
   overflow: hidden;
   background: var(--secondary);
 
+  // With the navbar the grid holds three children; without its own row the
+  // navbar collapsed to ~0 height and its buttons overflowed under the
+  // timeline, which then swallowed their clicks.
+  &.has-navbar {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
   &.full-page {
     height: calc(
       var(--composer-vh, 1vh) * 100 - var(--main-outlet-offset, 0px) -
