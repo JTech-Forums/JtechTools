@@ -42,6 +42,11 @@ RSpec.describe DiscourseDisteleplus::SetupCommandHandler do
       "sendMessage",
       a_hash_including(chat_id: -100_555),
     ).and_return(sent_result)
+    # /disteleplus_status now checks whether Telegram delivers button presses
+    # (callback_delivery_state); an empty allowed_updates means "everything".
+    allow(api).to receive(:call).with("getWebhookInfo").and_return(
+      DiscourseDisteleplus::TelegramApi::Result.new(ok: true, result: { "allowed_updates" => [] }),
+    )
   end
 
   def process(payload = message)
