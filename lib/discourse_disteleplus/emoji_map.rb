@@ -14,7 +14,9 @@ module DiscourseDisteleplus
     # Discourse emoji name (no colons) → Telegram reaction char. Every value
     # must be in Telegram's allowed reaction set. Aliases share a value; the
     # first name per char is the canonical inbound mapping (see
-    # TG_TO_DISCOURSE below).
+    # TG_TO_DISCOURSE below), so it MUST be a name Discourse's emoji set
+    # actually contains — an invented alias there gets stored on inbound
+    # reactions and renders as literal ":name:" text in the conversation.
     DISCOURSE_TO_TG = {
       "+1" => "👍",
       "thumbsup" => "👍",
@@ -54,7 +56,6 @@ module DiscourseDisteleplus
       "smiling_face_with_three_hearts" => "🥰",
       "neutral_face" => "😐",
       "sunglasses" => "😎",
-      "salute" => "🫡",
       "saluting_face" => "🫡",
       "broken_heart" => "💔",
       "poop" => "💩",
@@ -89,12 +90,11 @@ module DiscourseDisteleplus
       "woozy_face" => "🥴",
       "smiling_imp" => "😈",
       "innocent" => "😇",
-      "whisper" => "🤫",
       "shushing_face" => "🤫",
       "writing_hand" => "✍",
       "man_shrugging" => "🤷‍♂",
       "woman_shrugging" => "🤷‍♀",
-      "shrug" => "🤷",
+      "person_shrugging" => "🤷",
       "electric_plug" => "🔌",
       "kiss" => "💋",
     }.freeze
