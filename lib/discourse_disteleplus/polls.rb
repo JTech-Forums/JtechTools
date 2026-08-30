@@ -20,8 +20,10 @@ module DiscourseDisteleplus
     STRIP_POLL = %r{\[poll(\s[^\]]*)?\].*?\[/poll\]}m
 
     def self.enabled?
-      SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_polls_enabled &&
-        defined?(::DiscoursePoll)
+      !!(
+        SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_polls_enabled &&
+          defined?(::DiscoursePoll)
+      )
     end
 
     def self.poll_markup?(raw)
@@ -34,6 +36,17 @@ module DiscourseDisteleplus
       create_holder_topic
     end
 
+    # Uncategorized is frequently disallowed (TopicCreator rejects it even
+    # under skip_validations), so the holder lands in the first public
+    # category — it is unlisted either way.
+    def self.holder_category_id
+      Category
+        .where(read_restricted: false)
+        .where.not(id: SiteSetting.uncategorized_category_id)
+        .order(:id)
+        .pick(:id) || SiteSetting.uncategorized_category_id
+    end
+
     def self.create_holder_topic
       post =
         PostCreator.create!(
@@ -42,7 +55,7 @@ module DiscourseDisteleplus
           raw:
             "Backing posts for polls created in the /disteleplus conversation. " \
               "Votes live on these posts; the conversation renders them.",
-          category: SiteSetting.uncategorized_category_id,
+          category: holder_category_id,
           skip_validations: true,
         )
       topic = post.topic
