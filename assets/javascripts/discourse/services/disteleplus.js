@@ -589,6 +589,7 @@ export default class DisteleplusService extends Service {
     } else if (VIDEO_EXTENSIONS.has(extension)) {
       kind = "video";
     }
-    return { ...upload, kind };
+    // The served URL is a sha name — voice-ness must ride along explicitly.
+    return { ...upload, kind, voice: voiceNote };
   }
 }

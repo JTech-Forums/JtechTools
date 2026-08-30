@@ -1159,6 +1159,7 @@ export default class DisteleplusConversation extends Component {
                                 controls
                                 preload="metadata"
                                 src={{upload.url}}
+                                data-voice={{if upload.voice "1"}}
                               ></audio>
                             </div>
                           {{else}}
