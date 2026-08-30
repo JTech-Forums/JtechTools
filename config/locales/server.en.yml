@@ -667,6 +667,11 @@ en:
       Telegram votes, so the forum poll is the single source of truth.
     disteleplus_polls_topic_id: Hidden holder topic for the conversation
       polls' backing posts. Managed automatically.
+    disteleplus_event_messages: Forum events that post an automatic system
+      message into the conversation — new review-queue items, new topics,
+      first logins, suspensions, silences. These stay in the conversation
+      (no bell notifications, no Telegram mirror — Telegram has its own
+      reports pipeline).
     disteleplus_bridge_uploads: Copy photos, documents, video and audio across
       the bridge, in both directions, up to the size limit below. When off,
       media is replaced by a short placeholder line.
