@@ -948,7 +948,62 @@ html.has-full-page-disteleplus {
     max-height: 250px;
     max-width: calc(250px / 9 * 16);
   }
+}
 
+// Video with an explicit fullscreen button in the corner — the native
+// control bar's toggle is tiny and sometimes hidden behind an overflow
+// menu.
+.disteleplus-video-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+
+  .disteleplus-video-fullscreen {
+    position: absolute;
+    top: 0.4em;
+    right: 0.4em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9em;
+    height: 1.9em;
+    padding: 0;
+    border: none;
+    border-radius: var(--d-border-radius, 4px);
+    background: rgb(0 0 0 / 55%);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+
+    .d-icon {
+      width: 1em;
+      height: 1em;
+      color: #fff;
+    }
+
+    &:hover {
+      background: rgb(0 0 0 / 75%);
+    }
+
+    &:focus-visible {
+      opacity: 1;
+      outline: 2px solid var(--tertiary);
+    }
+  }
+
+  &:hover .disteleplus-video-fullscreen {
+    opacity: 1;
+  }
+
+  // Touch screens have no hover — keep the button visible there.
+  @media (hover: none) {
+    .disteleplus-video-fullscreen {
+      opacity: 1;
+    }
+  }
+}
+
+.disteleplus-upload {
   &.is-audio {
     flex-basis: 100%;
     max-width: 28rem;

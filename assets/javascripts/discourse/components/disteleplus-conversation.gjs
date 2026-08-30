@@ -985,6 +985,26 @@ export default class DisteleplusConversation extends Component {
     this.openMessageInfo(message);
   }
 
+  // The native control bar has a fullscreen toggle too, but it is tiny and
+  // some browsers tuck it behind an overflow menu — an explicit corner
+  // button is discoverable. webkitEnterFullscreen covers iPhone Safari,
+  // where element fullscreen only exists on the video itself.
+  @action
+  videoFullscreen(event) {
+    event.stopPropagation();
+    const video = event.currentTarget
+      .closest(".disteleplus-video-wrap")
+      ?.querySelector("video");
+    if (!video) {
+      return;
+    }
+    if (video.requestFullscreen) {
+      video.requestFullscreen();
+    } else if (video.webkitEnterFullscreen) {
+      video.webkitEnterFullscreen();
+    }
+  }
+
   @action
   openPollBuilder() {
     this.modal.show(DisteleplusPollBuilder, {
@@ -1220,13 +1240,26 @@ export default class DisteleplusConversation extends Component {
                               tabindex="0"
                             />
                           {{else if (eq upload.kind "video")}}
-                            <video
-                              class="disteleplus-upload is-video"
-                              controls
-                              preload="metadata"
-                            >
-                              <source src={{upload.url}} />
-                            </video>
+                            <span class="disteleplus-video-wrap">
+                              <video
+                                class="disteleplus-upload is-video"
+                                controls
+                                preload="metadata"
+                              >
+                                <source src={{upload.url}} />
+                              </video>
+                              <button
+                                type="button"
+                                class="disteleplus-video-fullscreen"
+                                title={{i18n "disteleplus.player.fullscreen"}}
+                                aria-label={{i18n
+                                  "disteleplus.player.fullscreen"
+                                }}
+                                {{on "click" this.videoFullscreen}}
+                              >
+                                {{icon "discourse-expand"}}
+                              </button>
+                            </span>
                           {{else if (eq upload.kind "audio")}}
                             <div class="disteleplus-upload is-audio">
                               <audio
