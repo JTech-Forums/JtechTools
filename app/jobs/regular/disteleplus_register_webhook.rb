@@ -10,11 +10,15 @@ module Jobs
     # stops receiving traffic it would discard; re-run the register button
     # after changing the polls/reactions toggles.
     def allowed_updates
-      updates = %w[message edited_message]
+      # callback_query (report action buttons) is ALWAYS listed. Telegram
+      # stores allowed_updates until the next setWebhook call, so making it
+      # conditional meant a press could sit spinning forever on installs whose
+      # webhook was registered before reports were enabled. An unwanted
+      # callback update costs one discarded job; an absent one costs the
+      # feature.
+      updates = %w[message edited_message callback_query]
       updates << "poll" if SiteSetting.disteleplus_bridge_polls
       updates << "message_reaction" if SiteSetting.disteleplus_bridge_reactions
-      # Report action buttons arrive as callback queries.
-      updates << "callback_query" if SiteSetting.disteleplus_reports_enabled
       updates
     end
 

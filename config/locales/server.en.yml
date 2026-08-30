@@ -15,9 +15,14 @@ en:
       status: Status
       resolved: "Resolved (%{status})"
       resolved_by: "Resolved (%{status}) by @%{username}"
-      not_authorized: You are not authorized to act on reports.
+      not_authorized: Not authorized. An admin must add your numeric Telegram
+        ID to your row in disteleplus_user_map (get it from @userinfobot).
       rate_limited: Slow down — too many actions in a row.
       unknown_action: Unknown action.
+      disabled: Reports are disabled in Discourse admin settings.
+      topic_broken: "Could not deliver a moderation report to Telegram topic
+        %{topic}: %{error}. Fix disteleplus_reports_topic_id in Discourse
+        admin, or run /disteleplus_bind_reports inside the right topic."
       gone: This report no longer exists.
       already_resolved: Already resolved — updating the message.
       details_sent: Details posted below.

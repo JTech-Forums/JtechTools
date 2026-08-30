@@ -94,6 +94,42 @@ RSpec.describe DiscourseDisteleplus::Reports do
         DiscourseDisteleplus::ReportLink.count
       }
     end
+
+    it "announces an already-resolved reviewable without action buttons" do
+      reviewable = flag!
+      reviewable.perform(admin, :agree_and_keep)
+
+      described_class.notify_reviewable(reviewable.reload)
+
+      expect(api).to have_received(:call).with(
+        "sendMessage",
+        satisfy do |payload|
+          payload[:reply_markup][:inline_keyboard].flatten.none? { |b| b.key?(:callback_data) } &&
+            payload[:text].include?("bigboss")
+        end,
+      )
+      expect(DiscourseDisteleplus::ReportLink.last).to be_status_resolved
+    end
+
+    it "warns into the chat when the reports topic id is broken" do
+      failed =
+        DiscourseDisteleplus::TelegramApi::Result.new(
+          ok: false,
+          description: "Bad Request: message thread not found",
+        )
+      calls = []
+      allow(api).to receive(:call) do |method, payload|
+        calls << [method, payload]
+        payload&.dig(:message_thread_id) ? failed : ok_result
+      end
+
+      described_class.notify_reviewable(flag!)
+
+      warning = calls.find { |m, p| m == "sendMessage" && !p.key?(:message_thread_id) }
+      expect(warning).to be_present
+      expect(warning.last[:text]).to include("disteleplus_reports_topic_id")
+      expect(DiscourseDisteleplus::ReportLink.count).to eq(0)
+    end
   end
 
   describe ".handle_callback" do
