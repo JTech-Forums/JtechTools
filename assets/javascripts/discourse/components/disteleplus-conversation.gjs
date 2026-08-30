@@ -26,6 +26,7 @@ import dAutocomplete from "discourse/ui-kit/modifiers/d-autocomplete";
 import { i18n } from "discourse-i18n";
 import { enhanceWithin } from "../lib/disteleplus-voice-player";
 import DisteleplusMessageInfo from "./disteleplus-message-info";
+import DisteleplusReactionInfo from "./disteleplus-reaction-info";
 import DisteleplusVoiceRecorder from "./disteleplus-voice-recorder";
 
 const EMOJI_CONTEXT = "disteleplus";
@@ -947,6 +948,31 @@ export default class DisteleplusConversation extends Component {
     this.modal.show(DisteleplusMessageInfo, { model: { message } });
   }
 
+  @action
+  menuMessageInfo(message) {
+    this.closeContextMenu();
+    this.openMessageInfo(message);
+  }
+
+  // WhatsApp-style reactions sheet: who reacted with what and when; your own
+  // rows remove on click, and "+" opens the picker for a new one.
+  @action
+  openReactionInfo(message) {
+    // Resolve the message fresh on every action: bus updates replace the
+    // objects wholesale, and toggleReaction decides add-vs-remove from the
+    // reactions on the object it is handed — a stale capture would keep
+    // adding forever.
+    const current = () =>
+      this.disteleplus.messages.find((m) => m.id === message.id) || message;
+    this.modal.show(DisteleplusReactionInfo, {
+      model: {
+        message,
+        react: (emoji) => this.react(current(), emoji),
+        pick: (event) => this.pickReaction(current(), event),
+      },
+    });
+  }
+
   // Bubbled from the voice player on first play — record the receipt.
   @action
   onVoicePlayed(event) {
@@ -1197,7 +1223,7 @@ export default class DisteleplusConversation extends Component {
                           type="button"
                           class={{if reaction.reacted "is-reacted"}}
                           title={{this.reactionTitle reaction}}
-                          {{on "click" (fn this.react message reaction.emoji)}}
+                          {{on "click" (fn this.openReactionInfo message)}}
                         >
                           {{#if reaction.url}}
                             <img
@@ -1349,6 +1375,14 @@ export default class DisteleplusConversation extends Component {
               role="menuitem"
               {{on "click" (fn this.copyLink message)}}
             >{{icon "link"}} {{i18n "disteleplus.copy_link"}}</button>
+            {{#if message.mine}}
+              <button
+                type="button"
+                role="menuitem"
+                {{on "click" (fn this.menuMessageInfo message)}}
+              >{{icon "circle-info"}}
+                {{i18n "disteleplus.message_info.title"}}</button>
+            {{/if}}
             {{#if this.siteSettings.disteleplus_quote_in_topic_enabled}}
               {{#if message.raw}}
                 <button
