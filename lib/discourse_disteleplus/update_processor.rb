@@ -57,13 +57,9 @@ module DiscourseDisteleplus
       text =
         if msg["poll"]
           poll_body = Formatter.poll_markdown(msg["poll"])
-          if sender
-            poll_body
-          else
-            Formatter.prefixed(Formatter.sender_display_name(msg["from"]), "\n#{poll_body}")
-          end
+          poll_body
         else
-          Formatter.inbound_text(msg, matched: sender.present?)
+          Formatter.inbound_text(msg, matched: true)
         end
       text = [text, media_note].compact_blank.join("\n")
       return if text.blank? && upload_ids.blank?
@@ -76,22 +72,23 @@ module DiscourseDisteleplus
           ).first
         end
 
-      ChatAdapter.ensure_membership(channel_id: channel_id, user: poster)
-      chat_message =
-        create_with_bot_fallback(
-          poster: poster,
-          sender: sender,
-          from: msg["from"],
-          text: text,
-          upload_ids: upload_ids,
-          in_reply_to_id: reply_link&.chat_message_id,
-        )
-      return if chat_message.nil?
+      message =
+        MessageService
+          .new(actor: poster, bypass_access: true)
+          .create!(
+            raw: text,
+            upload_ids: upload_ids,
+            reply_to_id: reply_link&.disteleplus_message_id,
+            source: :telegram,
+            external_sender_name:
+              sender ? nil : Formatter.sender_display_name(msg["from"]),
+            bridge: false,
+          )
 
       MessageLink.create!(
         telegram_chat_id: msg.dig("chat", "id"),
         telegram_message_id: msg["message_id"],
-        chat_message_id: chat_message.id,
+        disteleplus_message_id: message.id,
         direction: :tg_to_discourse,
         kind: msg["poll"] ? :poll : (upload_ids.present? ? :media : :text),
         telegram_poll_id: msg.dig("poll", "id"),
@@ -106,14 +103,17 @@ module DiscourseDisteleplus
         MessageLink.for_telegram(msg.dig("chat", "id"), msg["message_id"]).tg_to_discourse.first
       return if link.nil?
 
-      editor = chat_message_author(link.chat_message_id) || DiscourseDisteleplus.bot_user
+      message = link.message
+      return if message.nil?
+      editor = message.user || DiscourseDisteleplus.bot_user
       return if editor.nil?
 
-      matched = UserMatcher.match(msg["from"]).present?
-      text = Formatter.inbound_text(msg, matched: matched)
+      text = Formatter.inbound_text(msg, matched: true)
       return if text.blank?
 
-      ChatAdapter.update_message(message_id: link.chat_message_id, user: editor, text: text)
+      MessageService
+        .new(actor: editor, bypass_access: true)
+        .update_from_telegram!(message, raw: text)
     end
 
     def handle_poll_state(poll)
@@ -122,14 +122,14 @@ module DiscourseDisteleplus
       link = MessageLink.where(telegram_poll_id: poll["id"].to_s).first
       return if link.nil?
 
-      editor = chat_message_author(link.chat_message_id) || DiscourseDisteleplus.bot_user
+      message = link.message
+      return if message.nil?
+      editor = message.user || DiscourseDisteleplus.bot_user
       return if editor.nil?
 
-      ChatAdapter.update_message(
-        message_id: link.chat_message_id,
-        user: editor,
-        text: Formatter.poll_markdown(poll),
-      )
+      MessageService
+        .new(actor: editor, bypass_access: true)
+        .update_from_telegram!(message, raw: Formatter.poll_markdown(poll))
     end
 
     def handle_reaction(reaction)
@@ -148,20 +148,24 @@ module DiscourseDisteleplus
       new_chars = reaction_chars(reaction["new_reaction"])
 
       (new_chars - old_chars).each do |char|
-        ChatAdapter.react(
-          message_id: link.chat_message_id,
-          user: actor,
-          emoji: EmojiMap.tg_to_discourse(char),
-          action: :add,
-        )
+        MessageService
+          .new(actor: actor, bypass_access: true)
+          .react!(
+            link.message,
+            emoji: EmojiMap.tg_to_discourse(char),
+            action: :add,
+            bridge: false,
+          ) if link.message
       end
       (old_chars - new_chars).each do |char|
-        ChatAdapter.react(
-          message_id: link.chat_message_id,
-          user: actor,
-          emoji: EmojiMap.tg_to_discourse(char),
-          action: :remove,
-        )
+        MessageService
+          .new(actor: actor, bypass_access: true)
+          .react!(
+            link.message,
+            emoji: EmojiMap.tg_to_discourse(char),
+            action: :remove,
+            bridge: false,
+          ) if link.message
       end
     end
 
@@ -188,48 +192,6 @@ module DiscourseDisteleplus
       return actual_topic_id == chat_topic_id if chat_topic_id.positive?
 
       true
-    end
-
-    def channel_id
-      SiteSetting.disteleplus_chat_channel_id
-    end
-
-    def chat_message_author(chat_message_id)
-      ChatAdapter.find_message(chat_message_id)&.user
-    end
-
-    # Matched users can still be rejected by channel policy (e.g. trust level
-    # below the channel restriction); retry once as the bridge bot with the
-    # author prefix so the message isn't lost.
-    def create_with_bot_fallback(poster:, sender:, from:, text:, upload_ids:, in_reply_to_id:)
-      ChatAdapter.create_message(
-        channel_id: channel_id,
-        user: poster,
-        text: text,
-        upload_ids: upload_ids,
-        in_reply_to_id: in_reply_to_id,
-      )
-    rescue ChatAdapter::BridgeError => e
-      bot = DiscourseDisteleplus.bot_user
-      if sender.nil? || bot.nil? || poster.id == bot.id
-        Rails.logger.warn("#{LOG_TAG} chat create failed: #{e.message}")
-        return nil
-      end
-
-      Rails.logger.warn(
-        "#{LOG_TAG} chat create as #{poster.username} failed (#{e.message}); retrying as bot",
-      )
-      ChatAdapter.ensure_membership(channel_id: channel_id, user: bot)
-      ChatAdapter.create_message(
-        channel_id: channel_id,
-        user: bot,
-        text: Formatter.prefixed(Formatter.sender_display_name(from), text),
-        upload_ids: upload_ids,
-        in_reply_to_id: in_reply_to_id,
-      )
-    rescue StandardError => e
-      Rails.logger.warn("#{LOG_TAG} chat create failed: #{e.class}: #{e.message}")
-      nil
     end
 
     # Returns [upload_ids, note]. Either can be nil; a note replaces media we

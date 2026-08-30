@@ -2,19 +2,24 @@
 
 require "rails_helper"
 
-# Outbound behavior with TelegramApi and ChatAdapter stubbed: link rows drive
+# Outbound behavior with TelegramApi stubbed: native message/link rows drive
 # create/edit/delete/react routing, and every Telegram payload is asserted.
 RSpec.describe Jobs::DisteleplusSendToTelegram do
   fab!(:author) { Fabricate(:user, username: "chatter") }
 
-  let(:adapter) { DiscourseDisteleplus::ChatAdapter }
   let(:api) { instance_double(DiscourseDisteleplus::TelegramApi) }
   let(:chat_id) { "-100555" }
   let(:ok_result) do
     DiscourseDisteleplus::TelegramApi::Result.new(ok: true, result: { "message_id" => 321 })
   end
-  let(:chat_message_struct) { Struct.new(:id, :message, :user, :in_reply_to_id) }
-  let(:chat_message) { chat_message_struct.new(9001, "hi there", author, nil) }
+  let!(:message) do
+    DiscourseDisteleplus::Message.create!(
+      user: author,
+      raw: "hi there",
+      cooked: "<p>hi there</p>",
+      source: :discourse,
+    )
+  end
 
   before do
     SiteSetting.jtech_enabled = true
@@ -23,23 +28,20 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
 
     allow(DiscourseDisteleplus::TelegramApi).to receive(:new).and_return(api)
     allow(api).to receive(:call).and_return(ok_result)
-    allow(adapter).to receive(:find_message).and_return(chat_message)
-    allow(adapter).to receive(:message_uploads).and_return([])
-    allow(adapter).to receive(:current_reaction_emojis).and_return([])
   end
 
-  def link!(direction: :discourse_to_tg, kind: :text, tg_id: 321, chat_message_id: 9001)
+  def link!(direction: :discourse_to_tg, kind: :text, tg_id: 321, message_id: message.id)
     DiscourseDisteleplus::MessageLink.create!(
       telegram_chat_id: chat_id.to_i,
       telegram_message_id: tg_id,
-      chat_message_id: chat_message_id,
+      disteleplus_message_id: message_id,
       direction: direction,
       kind: kind,
     )
   end
 
-  def run(action)
-    described_class.new.execute(action: action, chat_message_id: 9001)
+  def run(action, id = message.id)
+    described_class.new.execute(action: action, message_id: id)
   end
 
   describe "create" do
@@ -51,10 +53,11 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       )
       link = DiscourseDisteleplus::MessageLink.last
       expect(link.telegram_message_id).to eq(321)
+      expect(link.disteleplus_message_id).to eq(message.id)
       expect(link).to be_discourse_to_tg
     end
 
-    it "routes chat messages into the configured Telegram topic" do
+    it "routes messages into the configured Telegram topic" do
       SiteSetting.disteleplus_chat_topic_id = 88
       run("create")
       expect(api).to have_received(:call).with(
@@ -73,7 +76,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
     end
 
     it "escapes HTML in the message body" do
-      allow(chat_message).to receive(:message).and_return("<script>x & y</script>")
+      message.update!(raw: "<script>x & y</script>")
       run("create")
       expect(api).to have_received(:call).with(
         "sendMessage",
@@ -87,17 +90,27 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       expect(api).not_to have_received(:call)
     end
 
+    it "ignores unknown message ids" do
+      run("create", 0)
+      expect(api).not_to have_received(:call)
+    end
+
     context "with a voice note upload" do
-      let(:upload_struct) { Struct.new(:id, :original_filename, :extension, :filesize, :url) }
       let(:voice_upload) do
-        upload_struct.new(5, "voice-note-20260828-152213.ogg", "ogg", 40_000, "/x")
+        Fabricate(
+          :upload,
+          user: author,
+          original_filename: "voice-note-20260828-152213.ogg",
+          extension: "ogg",
+          filesize: 40_000,
+        )
       end
       let(:media_result) do
         DiscourseDisteleplus::TelegramApi::Result.new(ok: true, result: { "message_id" => 777 })
       end
 
       before do
-        allow(adapter).to receive(:message_uploads).and_return([voice_upload])
+        message.message_uploads.create!(upload: voice_upload)
         allow_any_instance_of(described_class).to receive(:upload_io).and_return(
           StringIO.new("ogg"),
         )
@@ -115,12 +128,22 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
             mime: "audio/ogg",
           ),
         )
-        expect(DiscourseDisteleplus::MessageLink.last.telegram_message_id).to eq(777)
+        link = DiscourseDisteleplus::MessageLink.last
+        expect(link.telegram_message_id).to eq(777)
+        expect(link).to be_kind_media
       end
 
       it "still routes plain audio through sendAudio" do
-        allow(adapter).to receive(:message_uploads).and_return(
-          [upload_struct.new(6, "song.mp3", "mp3", 40_000, "/y")],
+        message.message_uploads.destroy_all
+        message.message_uploads.create!(
+          upload:
+            Fabricate(
+              :upload,
+              user: author,
+              original_filename: "song.mp3",
+              extension: "mp3",
+              filesize: 40_000,
+            ),
         )
         run("create")
         # Not `anything` — that resolves to Mocha's matcher under Discourse's
@@ -131,11 +154,20 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
           a_hash_including(file_field: "audio", filename: "song.mp3"),
         )
       end
+
+      it "sends only text when upload bridging is off" do
+        SiteSetting.disteleplus_bridge_uploads = false
+        run("create")
+        expect(api).not_to have_received(:call_multipart)
+        expect(api).to have_received(:call).with("sendMessage", a_hash_including(chat_id: chat_id))
+      end
     end
 
     it "threads Telegram replies via the link table" do
-      link!(tg_id: 42, chat_message_id: 8000)
-      allow(chat_message).to receive(:in_reply_to_id).and_return(8000)
+      parent =
+        DiscourseDisteleplus::Message.create!(user: author, raw: "parent", cooked: "<p>parent</p>")
+      link!(tg_id: 42, message_id: parent.id, direction: :tg_to_discourse)
+      message.update!(reply_to: parent)
       run("create")
       expect(api).to have_received(:call).with(
         "sendMessage",
@@ -188,8 +220,19 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
   describe "react" do
     before { link! }
 
+    def react!(user, emoji, at:)
+      DiscourseDisteleplus::Reaction.create!(
+        message: message,
+        user: user,
+        emoji: emoji,
+        created_at: at,
+        updated_at: at,
+      )
+    end
+
     it "mirrors the most recent Discourse reaction" do
-      allow(adapter).to receive(:current_reaction_emojis).and_return(%w[+1 fire])
+      react!(author, "+1", at: 2.minutes.ago)
+      react!(Fabricate(:user), "fire", at: 1.minute.ago)
       run("react")
       expect(api).to have_received(:call).with(
         "setMessageReaction",
@@ -198,7 +241,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
     end
 
     it "falls back to 👍 for unmapped emoji" do
-      allow(adapter).to receive(:current_reaction_emojis).and_return(%w[some_exotic_emoji])
+      react!(author, "some_exotic_emoji", at: 1.minute.ago)
       run("react")
       expect(api).to have_received(:call).with(
         "setMessageReaction",
@@ -210,6 +253,15 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       run("react")
       expect(api).to have_received(:call).with("setMessageReaction", a_hash_including(reaction: []))
     end
+  end
+
+  it "re-enqueues itself when Telegram rate-limits" do
+    allow(api).to receive(:call).and_raise(
+      DiscourseDisteleplus::TelegramApi::RateLimited.new(7),
+    )
+    expect { run("create") }.to change { Jobs::DisteleplusSendToTelegram.jobs.size }.by(1)
+    job = Jobs::DisteleplusSendToTelegram.jobs.last
+    expect(job["args"].first).to include("action" => "create", "message_id" => message.id)
   end
 
   it "does nothing when the module is disabled" do

@@ -1,6 +1,41 @@
 en:
   js:
     disteleplus:
+      title: Disteleplus
+      subtitle: Telegram bridge · native JTech conversation
+      live: Live
+      loading: Loading earlier messages…
+      telegram_user: Telegram user
+      edited: edited
+      deleted: This message was deleted
+      reply: Reply
+      react: React
+      edit: Edit
+      delete: Delete
+      delete_confirm: Delete this message here and from Telegram where possible?
+      editing: Editing message
+      replying_to: Replying to
+      attach: Attach files
+      placeholder: Write a message…
+      send: Send
+      composer_hint: Enter to send · Shift+Enter for a new line
+      empty_title: Start the conversation
+      empty_body: Messages sent here appear in the connected Telegram conversation.
+      new_messages:
+        one: "%{count} new message"
+        other: "%{count} new messages"
+      unread_divider: New messages
+      go_to_bottom: Go to bottom
+      more: More
+      copy_text: Copy text
+      copy_link: Copy link
+      quote_in_topic: Quote in new topic
+      emoji: Emoji
+      cancel: Cancel
+      remove: Remove
+      drop_files: Drop files to attach
+      today: Today
+      yesterday: Yesterday
       voice:
         button: Record a voice note
         title: Voice note

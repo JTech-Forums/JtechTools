@@ -107,5 +107,15 @@ Discourse::Application.routes.append do
     # Telegram Bot API webhook receiver. No session — authenticated by the
     # X-Telegram-Bot-Api-Secret-Token header set via setWebhook.
     post "/telegram/webhook" => "webhook#receive"
+    get "/conversation" => "conversation#show"
+    get "/messages" => "conversation#index"
+    post "/messages" => "conversation#create"
+    put "/messages/:id" => "conversation#update"
+    delete "/messages/:id" => "conversation#destroy"
+    put "/messages/:id/reactions/:emoji" => "conversation#add_reaction"
+    delete "/messages/:id/reactions/:emoji" => "conversation#remove_reaction"
+    post "/read" => "conversation#read"
+    get "/legacy-import" => "legacy_import#show"
+    post "/legacy-import" => "legacy_import#create"
   end
 end

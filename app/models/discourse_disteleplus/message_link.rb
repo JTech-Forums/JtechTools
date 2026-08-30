@@ -12,6 +12,12 @@ module DiscourseDisteleplus
   class MessageLink < ActiveRecord::Base
     self.table_name = "disteleplus_message_links"
 
+    belongs_to :message,
+               class_name: "DiscourseDisteleplus::Message",
+               foreign_key: :disteleplus_message_id,
+               inverse_of: :message_links,
+               optional: true
+
     enum :direction, { tg_to_discourse: 0, discourse_to_tg: 1 }, scopes: true
     enum :kind, { text: 0, media: 1, poll: 2 }, prefix: true
 
@@ -22,6 +28,10 @@ module DiscourseDisteleplus
     scope :for_chat_message,
           ->(chat_message_id) do
             where(chat_message_id: chat_message_id).order(:telegram_message_id)
+          end
+    scope :for_message,
+          ->(message_id) do
+            where(disteleplus_message_id: message_id).order(:telegram_message_id)
           end
   end
 end

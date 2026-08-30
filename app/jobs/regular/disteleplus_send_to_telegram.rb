@@ -30,19 +30,19 @@ module Jobs
 
       case args[:action]
       when "create"
-        handle_create(args[:chat_message_id])
+        handle_create(args[:message_id])
       when "edit"
-        handle_edit(args[:chat_message_id])
+        handle_edit(args[:message_id])
       when "delete"
-        handle_delete(args[:chat_message_id])
+        handle_delete(args[:message_id])
       when "react"
-        handle_react(args[:chat_message_id])
+        handle_react(args[:message_id])
       end
     rescue DiscourseDisteleplus::TelegramApi::RateLimited => e
       Jobs.enqueue_in(
         e.retry_after.seconds,
         :disteleplus_send_to_telegram,
-        args.slice(:action, :chat_message_id),
+        args.slice(:action, :message_id),
       )
     rescue StandardError => e
       Rails.logger.warn(
@@ -52,14 +52,14 @@ module Jobs
 
     private
 
-    def handle_create(chat_message_id)
-      message = DiscourseDisteleplus::ChatAdapter.find_message(chat_message_id)
+    def handle_create(message_id)
+      message = DiscourseDisteleplus::Message.find_by(id: message_id)
       return if message.nil?
-      return if DiscourseDisteleplus::MessageLink.for_chat_message(message.id).exists?
+      return if DiscourseDisteleplus::MessageLink.for_message(message.id).exists?
 
-      html = DiscourseDisteleplus::Formatter.outbound_html(author_name(message), message.message)
+      html = DiscourseDisteleplus::Formatter.outbound_html(author_name(message), message.raw)
       reply_to = reply_target(message)
-      uploads = DiscourseDisteleplus::ChatAdapter.message_uploads(message)
+      uploads = message.uploads.to_a
       # The uploads toggle gates both directions — inbound is checked in
       # UpdateProcessor#process_media.
       uploads = [] unless SiteSetting.disteleplus_bridge_uploads
@@ -79,22 +79,22 @@ module Jobs
         DiscourseDisteleplus::MessageLink.create!(
           telegram_chat_id: @chat_id,
           telegram_message_id: tg_message["message_id"],
-          chat_message_id: message.id,
+          disteleplus_message_id: message.id,
           direction: :discourse_to_tg,
           kind: kind,
         )
       end
     end
 
-    def handle_edit(chat_message_id)
+    def handle_edit(message_id)
       link =
-        DiscourseDisteleplus::MessageLink.for_chat_message(chat_message_id).discourse_to_tg.first
+        DiscourseDisteleplus::MessageLink.for_message(message_id).discourse_to_tg.first
       return if link.nil?
 
-      message = DiscourseDisteleplus::ChatAdapter.find_message(chat_message_id)
+      message = DiscourseDisteleplus::Message.find_by(id: message_id)
       return if message.nil?
 
-      html = DiscourseDisteleplus::Formatter.outbound_html(author_name(message), message.message)
+      html = DiscourseDisteleplus::Formatter.outbound_html(author_name(message), message.raw)
       payload = { chat_id: @chat_id, message_id: link.telegram_message_id, parse_mode: "HTML" }
       if link.kind_text?
         @api.call("editMessageText", payload.merge(text: html))
@@ -103,9 +103,9 @@ module Jobs
       end
     end
 
-    def handle_delete(chat_message_id)
+    def handle_delete(message_id)
       DiscourseDisteleplus::MessageLink
-        .for_chat_message(chat_message_id)
+        .for_message(message_id)
         .discourse_to_tg
         .find_each do |link|
           result =
@@ -122,11 +122,15 @@ module Jobs
 
     # Mirrors the message's most recent Discourse reaction as the bot's ONE
     # allowed Telegram reaction; an empty reaction list clears it.
-    def handle_react(chat_message_id)
-      link = DiscourseDisteleplus::MessageLink.for_chat_message(chat_message_id).first
+    def handle_react(message_id)
+      link = DiscourseDisteleplus::MessageLink.for_message(message_id).first
       return if link.nil?
 
-      emojis = DiscourseDisteleplus::ChatAdapter.current_reaction_emojis(chat_message_id)
+      emojis =
+        DiscourseDisteleplus::Reaction
+          .where(message_id: message_id)
+          .order(:created_at)
+          .pluck(:emoji)
       reaction =
         if emojis.any?
           [{ type: "emoji", emoji: DiscourseDisteleplus::EmojiMap.discourse_to_tg(emojis.last) }]
@@ -223,9 +227,9 @@ module Jobs
     end
 
     def reply_target(message)
-      in_reply_to_id = message.try(:in_reply_to_id)
+      in_reply_to_id = message.reply_to_id
       return nil if in_reply_to_id.blank?
-      DiscourseDisteleplus::MessageLink.for_chat_message(in_reply_to_id).first&.telegram_message_id
+      DiscourseDisteleplus::MessageLink.for_message(in_reply_to_id).first&.telegram_message_id
     end
 
     def author_name(message)
@@ -234,6 +238,7 @@ module Jobs
 
     def log_send_failure(result)
       Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} send failed: #{result.description}")
+      DiscourseDisteleplus::Health.record_error(result.description, context: "outbound")
       nil
     end
   end

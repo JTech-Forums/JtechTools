@@ -14,7 +14,7 @@ One combined Discourse plugin. Bundles previously-separate plugins under a singl
 | Translator-tweaks | *(patches `DiscourseTranslator`)* | `translator_tweaks_*` | `translator_tweaks_enabled` + `translator_enabled` (upstream) |
 | Smart search | `DiscourseSmartSearch` | `smart_search_*` | `smart_search_enabled` |
 | Desktop pop-ups | `DiscoursePopupNotifications` | `popup_notifications_*` | `popup_notifications_enabled` |
-| Disteleplus (Telegram ⇄ chat bridge) | `DiscourseDisteleplus` | `disteleplus_*` | `disteleplus_enabled` |
+| Disteleplus (Telegram ⇄ native conversation) | `DiscourseDisteleplus` | `disteleplus_*` | `disteleplus_enabled` |
 
 The bundle is gated by `jtech_enabled`; each sub-plugin is independently gated by its own setting above.
 
@@ -89,39 +89,47 @@ Every right the mini-mod and mod-categories modules hand to moderators (or TL4 u
 
 Serializer exposures (footer texts, pinned-post HTML, reply-approval flags, note bodies, whisper participant lists, unread counters) also now respect the module master switch and their feature toggles instead of leaking whenever the plugin bundle was enabled.
 
-### Disteleplus — Telegram ⇄ Discourse Chat bridge
+### Disteleplus — Telegram ⇄ Discourse conversation
 
-Bridges exactly **one Telegram group** with exactly **one Discourse Chat channel**, two-way, so an admin without Telegram can participate in the team's Telegram group from a chat channel (and everyone on Telegram sees their messages). Requires the official `chat` plugin to be enabled; everything no-ops gracefully when it isn't.
+Bridges exactly **one Telegram group** with exactly **one native Discourse conversation** at `/disteleplus`, two-way, so an admin without Telegram can participate in the team's Telegram group from inside Discourse (and everyone on Telegram sees their messages). Disteleplus owns its own messages, uploads, reactions, unread state, realtime channel, notifications and UI — **the official `chat` plugin is not required** and may be disabled. It is deliberately a single-room messenger: no channels, direct messages, threads, presence or calls.
 
 **What bridges, and how far** (Bot API limits are real — the bridge documents them instead of faking around them):
 
-- **Text, both ways.** Telegram messages post into the channel **as the matching Discourse user** when the Telegram username matches a Discourse username (the `disteleplus_user_map` table setting — edited via a proper row editor in admin — takes precedence; the legacy pipe-delimited `disteleplus_user_mappings` value is migrated automatically); unmatched senders post via the bridge-bot user with a `**Name (TG):**` prefix. Discourse messages appear in Telegram from the bot, prefixed **username:** — bots cannot impersonate people.
-- **Media, both ways,** up to `disteleplus_max_upload_mb` (hard ceiling 20 MB — the Bot API refuses larger bot downloads; bot sends cap at 50 MB). Oversized media becomes a placeholder (inbound) or a forum link (outbound; login-gated if secure uploads are on). Voice messages come in as `voice-note-*.ogg` uploads and get the voice-note player (see below). Animated stickers degrade to `[sticker 😀]` text.
-- **Edits, both ways** — with one asymmetry: a Discourse-side edit of a Telegram-originated message stays local (bots cannot edit other people's Telegram messages).
-- **Deletes, Discourse → Telegram only.** Telegram never notifies bots about deletions, so Telegram-side deletions leave the Discourse copy in place — that's a Bot API fact, not a setting.
-- **Replies, both ways,** threaded via the message-link table.
-- **Reactions, both ways, asymmetric.** Telegram reactions land per-user on the chat message (as the matched user, else the bot). Discourse reactions collapse to the bot's single allowed Telegram reaction (most recent wins) from Telegram's fixed emoji set. Requires the bot to be a **group admin** or Telegram never delivers reaction updates.
-- **Telegram polls → markdown snapshot** in chat, vote counts refreshed best-effort. No voting from Discourse (chat has no polls).
-- **Not bridged:** pins, typing indicators, join/leave notices, and muting (a Telegram mute is a moderation action; a Discourse channel mute is a private notification preference — semantically unrelated).
+- **Text, both ways.** Telegram messages post **as the matching Discourse user** when the Telegram username matches a Discourse username (the `disteleplus_user_map` table setting — edited via a proper row editor in admin — takes precedence; the legacy pipe-delimited `disteleplus_user_mappings` value is migrated automatically); unmatched senders post via the bridge-bot user with their Telegram name shown as the sender and a **Telegram** marker. Discourse messages appear in Telegram from the bot, prefixed **username:** — bots cannot impersonate people.
+- **Media, both ways,** up to `disteleplus_max_upload_mb` (hard ceiling 20 MB — the Bot API refuses larger bot downloads; bot sends cap at 50 MB). Oversized media becomes a placeholder (inbound) or a forum link (outbound; login-gated if secure uploads are on). Images and video render inline, documents as download cards, voice messages come in as `voice-note-*.ogg` uploads and get the voice-note player (see below). Animated stickers degrade to `[sticker 😀]` text.
+- **Edits, both ways** — with one asymmetry: Telegram-originated messages cannot be edited or deleted from Discourse (bots cannot edit other people's Telegram messages), so the UI never offers it.
+- **Deletes, Discourse → Telegram only.** Telegram never notifies bots about deletions, so Telegram-side deletions leave the Discourse copy in place — that's a Bot API fact, not a setting. Discourse deletes are soft: replies keep their structure and a *deleted* placeholder remains.
+- **Replies, both ways,** threaded via the message-link table, with a jump-to-message preview.
+- **Reactions, both ways, asymmetric.** Telegram reactions land per-user on the message (as the matched user, else the bot). Discourse reactions collapse to the bot's single allowed Telegram reaction (most recent wins) from Telegram's fixed emoji set. Requires the bot to be a **group admin** or Telegram never delivers reaction updates.
+- **Telegram polls → markdown snapshot**, vote counts refreshed best-effort. No voting from Discourse.
+- **Not bridged:** pins, typing indicators, join/leave notices, and muting.
 
-**Chat lock (optional, `disteleplus_lock_chat_ui`):** the header chat button opens the bridged conversation directly (not the drawer/index), all chat hub routes redirect there, and creating channels, DMs **and threads** is hidden client-side and refused server-side — for **everyone, admins included**; there is no creation exemption (turn the lock off to create something, then back on). Enforcement is a Guardian prepend for channels/DMs and a `Chat::Channel#threading_enabled` prepend for threads, so the block holds against the API, not just the UI. `disteleplus_lock_chat_exempt_admins` (default on) only lets admins still *browse* the hub pages instead of being redirected.
+**In the conversation:** the UI follows Discourse Chat's own look (flat rows, avatar · name · time, hover toolbar) and adds what a messenger needs — right-click / ⋮ context menu (react · reply · copy text · copy link · quote in new topic · edit · delete), quick reactions from your recently used emoji plus the full core emoji picker, reaction pills that list who reacted, `@mention` and `:emoji:` autocomplete, paste and drag-and-drop uploads, an emoji button, a draft that survives navigation, ↑ in an empty composer to edit your last message, images in the core lightbox, and deep links (`/disteleplus#m<id>`). Opening the page lands on the *New messages* divider.
 
-**Forced channel notifications (`disteleplus_force_channel_notifications`, default on):** every user allowed into chat is enrolled in the bridge channel at notification level **always** (desktop + web push), chat is re-enabled for anyone who had switched it off, and the level is pinned — a `before_save` on the membership snaps changes back, a scheduled sync runs every 30 minutes, and new/approved/group-added users are enrolled within seconds. `/disteleplus_sync_notifications` (Telegram) or `disteleplus_notification_sync_now` (admin) forces a run; `/disteleplus_status` reports how many members are at "always" and whether site-wide push is on. This deliberately overrides personal mute choices for this one channel. Web push additionally needs core's `push_notifications_prompt` (so people get asked) and each person to have accepted push on a device — the plugin cannot do that for them, and the sync log counts members without a push subscription.
+**Forum post announcements (`disteleplus_forum_post_notifications_enabled`, default off):** the one feature borrowed from discourse-chat-integration — new public forum posts are announced in the bridged Telegram conversation as `<b>user</b> posted in <a>title</a>` plus an excerpt, and mirrored into the native conversation as the bridge bot. Filter by `disteleplus_forum_post_categories` (subcategories count) and `disteleplus_forum_post_tags`; `disteleplus_forum_post_first_post_only` (default on) limits it to new topics; `disteleplus_forum_post_excerpt_length` and `disteleplus_forum_post_link_preview` shape the message. Private messages, whispers, hidden posts and read-restricted categories are never sent.
 
-**Voice notes (`disteleplus_voice_notes_enabled`, default on):** a microphone button in the chat composer (bridge channel only by default) records in-browser with a live level meter and a countdown to `disteleplus_voice_note_max_seconds`, previews, and sends the note as its own message. Every audio in chat gets a compact waveform player (play, click/drag scrub, elapsed/total, 1×/1.5×/2× speed remembered per browser, download) instead of the browser default; `disteleplus_voice_player_all_audio` limits it to voice notes only. Voice notes travel to Telegram as real **voice bubbles** (`sendVoice`) — Firefox records OGG/OPUS natively; Chrome/Edge WebM is transcoded server-side when `ffmpeg` is present (it is in the standard Discourse image), otherwise the note arrives as an audio file. Telegram voice messages arrive as `voice-note-<n>s.ogg` and get the same player. The recorder uploads through core, so enabling the feature adds `ogg|webm|m4a|opus` to `authorized_extensions` if missing.
+**Diagnostics:** flip `disteleplus_send_test_message_now` to send a test message to the group (verifies token, chat id and topic together). Any Telegram delivery failure in the last 24 hours — outbound message, announcement or test — appears on the admin dashboard as a problem with a hint keyed on Telegram's error (`chat not found`, `Forbidden`, missing topic).
+
+**Access (`disteleplus_allowed_groups`, default staff):** members of the listed groups — and always administrators — see a **Disteleplus** header icon with a server-derived unread badge that opens `/disteleplus`. Every API action checks the same Guardian predicate, MessageBus updates are published only to authorized user IDs, authors edit/delete their own messages, staff moderate all of them, and create/edit/react/read endpoints are rate limited. Message text is cooked server-side; uploads must exist and belong to the poster.
+
+**Forced notifications (`disteleplus_force_channel_notifications`, default on):** every allowed user is enrolled at notification level **always**: each new message (excluding the author and the bridge bot) creates a Discourse notification and a web-push delivery through core's normal gates (do-not-disturb, push filters, time window). Notifications are marked read as the reader's cursor advances. A scheduled sync runs every 30 minutes and new/approved/group-added users are enrolled within seconds. `/disteleplus_sync_notifications` (Telegram) or `disteleplus_notification_sync_now` (admin) forces a run; `/disteleplus_status` reports enrolment counts and whether site-wide push is on. Web push additionally needs core's `push_notifications_prompt` and each person to have accepted push on a device — the plugin cannot do that for them, and the sync log counts members without a push subscription.
+
+**Voice notes (`disteleplus_voice_notes_enabled`, default on):** a microphone button in the composer records in-browser with a live level meter and a countdown to `disteleplus_voice_note_max_seconds`, previews, and sends the note as its own message. Every audio in the conversation gets a compact waveform player (play, click/drag scrub, elapsed/total, 1×/1.5×/2× speed remembered per browser, download) instead of the browser default; `disteleplus_voice_player_all_audio` limits it to voice notes only. Voice notes travel to Telegram as real **voice bubbles** (`sendVoice`) — Firefox records OGG/OPUS natively; Chrome/Edge WebM is transcoded server-side when `ffmpeg` is present (it is in the standard Discourse image), otherwise the note arrives as an audio file. Telegram voice messages arrive as `voice-note-<n>s.ogg` and get the same player. The recorder uploads through core, so enabling the feature adds `ogg|webm|m4a|opus` to `authorized_extensions` if missing.
 
 **Setup (once, ~5 minutes):**
 
 1. **BotFather:** `/newbot` → copy the token. Then `/setprivacy` → **Disable** — *mandatory*, otherwise the bot cannot see ordinary group messages (this is the #1 troubleshooting item).
 2. **Telegram group:** add the bot and promote it to **admin**. Grant manage-topics if the bot should create the Uploads topic, delete-messages for delete bridging, and keep admin status for reaction updates.
-3. **Discourse (Admin → Settings → Jtech — Disteleplus):** paste `disteleplus_bot_token`, set `disteleplus_chat_channel_id` (the number in `/chat/c/-/<id>`), and turn on `disteleplus_enabled`.
+3. **Discourse (Admin → Settings → Jtech — Disteleplus):** paste `disteleplus_bot_token`, choose `disteleplus_allowed_groups`, and turn on `disteleplus_enabled`.
 4. Flip `disteleplus_register_webhook_now` — it generates the webhook secret, calls `setWebhook`, installs an admin-only Telegram command menu, and resets itself. Check `/logs` for warnings.
 5. In the Telegram group, run `/disteleplus_setup`. Bind General, then either enter an existing upload topic and run `/disteleplus_bind_uploads`, or run `/disteleplus_create_uploads Uploads` from General. The bot reads and saves the group/thread IDs automatically.
-6. Run `/disteleplus_status`, then send a normal message in Telegram and reply from Discourse Chat to test both directions.
+6. Run `/disteleplus_status`, then send a normal message in Telegram and reply from `/disteleplus` to test both directions.
+
+**Migrating from the old Chat-based bridge:** the schema change is additive and never deletes Chat records. While the `chat` plugin is still enabled, keep `disteleplus_chat_channel_id` pointing at the old channel, then `GET /jtech-disteleplus/legacy-import` (admin) for a dry-run audit and `POST /jtech-disteleplus/legacy-import` to start the resumable, idempotent import. It preserves users, text, timestamps, replies, uploads and reactions, translates the `**Name (TG):**` prefix into a structured sender name, and re-points existing Telegram link rows at the native message IDs (their `chat_message_id` values are kept for rollback). Once `GET /legacy-import` reports `complete: true` and the live bridge has been verified, Discourse Chat can be disabled. Rolling back is redeploying the previous plugin version with Chat re-enabled.
 
 **Honest limitations** (also inline in the settings descriptions): Telegram username changes silently break the automatic match (fix with a mapping entry); anyone controlling a mapped Telegram account posts as that Discourse user — map people you trust; the bot's messages older than 48 h can't be deleted from Telegram; a group→supergroup migration changes the chat id (update the setting); formatting is flattened to plain text in both directions in v1.
 
-Internals: webhook receiver at `/jtech-disteleplus/telegram/webhook` (secret-header auth, enqueue-and-200), Sidekiq jobs for both directions, echo suppression via a thread-local flag + the `disteleplus_message_links` table, and every chat-plugin API touchpoint isolated in `lib/discourse_disteleplus/chat_adapter.rb`.
+Internals: webhook receiver at `/jtech-disteleplus/telegram/webhook` (secret-header auth, enqueue-and-200); every mutation — Telegram inbound, the authenticated `/jtech-disteleplus` API, and the voice recorder — passes through `DiscourseDisteleplus::MessageService`, which persists to the `disteleplus_messages` / `_message_uploads` / `_reactions` / `_user_states` tables, publishes to the private `/disteleplus/conversation` MessageBus channel, fans out notifications and enqueues the outbound Telegram job; echo suppression lives in the `disteleplus_message_links` table. The only remaining Chat touchpoint is the optional, admin-only `lib/discourse_disteleplus/legacy_chat_importer.rb`.
 
 #### Forum upload archive topic
 
@@ -139,20 +147,20 @@ administrators get these commands in the bot command menu:
 
 - `/disteleplus_setup` — a short guided checklist.
 - `/disteleplus_bind_general` — run in General; saves the group and keeps the
-  existing Chat bridge in General.
+  bridged conversation in General.
 - `/disteleplus_bind_uploads [name]` — run inside an existing destination
   topic; saves that thread as the upload archive.
 - `/disteleplus_create_uploads [name]` — run in General; creates and binds the
   topic (the bot needs manage-topics permission).
 - `/disteleplus_status` — confirms the human topic name, saved destination,
-  whether the live mirror is enabled, the chat lock state, channel
-  notification enrolment counts, and voice-note capability.
+  whether the live mirror is enabled, notification enrolment counts, and
+  voice-note capability.
 - `/disteleplus_sync_notifications` — re-enrols every eligible Discourse
-  member in the bridge channel at notification level "always".
+  member in the native conversation at notification level "always".
 
 Every setup command verifies the sender through Telegram's `getChatMember` and
 accepts only a group creator/administrator. Commands are consumed before the
-Chat bridge, so neither successful nor rejected setup attempts appear in
+message bridge, so neither successful nor rejected setup attempts appear in
 Discourse. Binding a destination never starts the historical archive: measure
 and start it explicitly in Discourse admin settings.
 
@@ -180,9 +188,9 @@ batch size does not accidentally increase the send rate. Telegram 429 replies
 remain independently retryable as a safety net.
 
 When Telegram topics are in use, set `disteleplus_chat_topic_id` for the
-existing two-way Chat bridge and `disteleplus_forum_upload_topic_id` for the
+two-way conversation bridge and `disteleplus_forum_upload_topic_id` for the
 archive. Human messages in the archive topic are explicitly excluded from the
-inbound Chat bridge.
+inbound conversation bridge.
 
 ## Layout
 

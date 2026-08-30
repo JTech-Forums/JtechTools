@@ -3,7 +3,7 @@
 module DiscourseDisteleplus
   # Everything the server needs to know about voice notes.
   #
-  # A voice note is an ordinary chat Upload whose filename starts with
+  # A voice note is an ordinary Upload whose filename starts with
   # VOICE_PREFIX — the composer's recorder names its files that way, and
   # inbound Telegram voice messages are renamed to match — so detection is
   # cheap, needs no extra column, and survives the file being downloaded and
@@ -171,8 +171,6 @@ module DiscourseDisteleplus
 
     def self.status_summary
       return "off" unless SiteSetting.disteleplus_voice_notes_enabled
-      scope =
-        SiteSetting.disteleplus_voice_notes_bridge_channel_only ? "bridge channel" : "all channels"
       bubbles =
         (
           if ffmpeg_available?
@@ -181,7 +179,7 @@ module DiscourseDisteleplus
             "no ffmpeg — WebM notes arrive as audio files"
           end
         )
-      "on — #{scope}, up to #{SiteSetting.disteleplus_voice_note_max_seconds}s, #{bubbles}"
+      "on — native conversation, up to #{SiteSetting.disteleplus_voice_note_max_seconds}s, #{bubbles}"
     end
   end
 end

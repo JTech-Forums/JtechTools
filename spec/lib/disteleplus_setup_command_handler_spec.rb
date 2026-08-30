@@ -121,13 +121,11 @@ RSpec.describe DiscourseDisteleplus::SetupCommandHandler do
     )
   end
 
-  it "reports lock, notification and voice-note state in /disteleplus_status" do
+  it "reports the native conversation, notification and voice-note state in /disteleplus_status" do
     SiteSetting.disteleplus_enabled = true
     SiteSetting.disteleplus_telegram_chat_id = "-100555"
-    SiteSetting.disteleplus_chat_channel_id = 42
-    SiteSetting.disteleplus_lock_chat_ui = true
     allow(DiscourseDisteleplus::ChannelNotifications).to receive(:status_summary).and_return(
-      "on — 3/3 members at always, push on",
+      "on — 3/3 native members at always, push on",
     )
     allow(DiscourseDisteleplus::VoiceNotes).to receive(:ffmpeg_available?).and_return(true)
     message["text"] = "/disteleplus_status"
@@ -139,17 +137,17 @@ RSpec.describe DiscourseDisteleplus::SetupCommandHandler do
       a_hash_including(
         text:
           a_string_including(
-            "Chat lock: on — no new channels, DMs or threads for anyone; admins may browse",
-            "Channel notifications: on — 3/3 members at always, push on",
-            "Voice notes: on — bridge channel",
+            "Native conversation: /disteleplus",
+            "Telegram conversation: General",
+            "Notifications: on — 3/3 native members at always, push on",
+            "Voice notes: on — native conversation",
           ),
       ),
     )
   end
 
   it "queues a notification sync from /disteleplus_sync_notifications" do
-    SiteSetting.disteleplus_chat_channel_id = 42
-    allow(DiscourseDisteleplus::ChannelNotifications).to receive(:active?).and_return(true)
+    SiteSetting.disteleplus_force_channel_notifications = true
     message["text"] = "/disteleplus_sync_notifications"
 
     expect_enqueued_with(job: :disteleplus_sync_channel_notifications) { process }
@@ -167,7 +165,7 @@ RSpec.describe DiscourseDisteleplus::SetupCommandHandler do
 
     expect(api).to have_received(:call).with(
       "sendMessage",
-      a_hash_including(text: a_string_including("Forced channel notifications are off")),
+      a_hash_including(text: a_string_including("Forced notifications are off")),
     )
   end
 

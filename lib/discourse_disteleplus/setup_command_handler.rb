@@ -22,7 +22,7 @@ module DiscourseDisteleplus
     end
 
     # Returns true whenever the message is a Disteleplus command—even on
-    # failure—so setup chatter can never cross into the Discourse Chat bridge.
+    # failure—so setup chatter can never cross into the native conversation.
     def process?
       match = @message["text"].to_s.strip.match(COMMAND)
       return false if match.nil?
@@ -74,10 +74,10 @@ module DiscourseDisteleplus
         Or create and bind it automatically from General:
         <code>/disteleplus_create_uploads Uploads</code>
 
-        Check the saved destinations, lock, notifications and voice notes:
+        Check the saved destinations, notifications and voice notes:
         <code>/disteleplus_status</code>
 
-        Re-enrol every Discourse member for channel notifications now:
+        Re-enrol every eligible Discourse member for notifications now:
         <code>/disteleplus_sync_notifications</code>
 
         Binding does not start history automatically.
@@ -103,29 +103,14 @@ module DiscourseDisteleplus
           "not bound"
         end
       mirror_state = SiteSetting.disteleplus_forum_uploads_enabled ? "enabled" : "disabled"
-      lock_state =
-        if DiscourseDisteleplus.creation_locked?
-          admins =
-            (
-              if SiteSetting.disteleplus_lock_chat_exempt_admins
-                "admins may browse"
-              else
-                "admins locked too"
-              end
-            )
-          "on — no new channels, DMs or threads for anyone; #{admins}"
-        else
-          "off"
-        end
-
       reply(<<~HTML.strip)
         <b>Disteleplus status</b>
         Group: #{escape(chat_title)} — #{group_state}
-        Chat bridge: General
+        Native conversation: /disteleplus
+        Telegram conversation: #{SiteSetting.disteleplus_chat_topic_id.to_i.positive? ? "topic #{SiteSetting.disteleplus_chat_topic_id}" : "General"}
         Upload archive: #{upload_state}
         Live upload mirror: #{mirror_state}
-        Chat lock: #{escape(lock_state)}
-        Channel notifications: #{escape(ChannelNotifications.status_summary)}
+        Notifications: #{escape(ChannelNotifications.status_summary)}
         Voice notes: #{escape(VoiceNotes.status_summary)}
       HTML
     end
@@ -133,20 +118,15 @@ module DiscourseDisteleplus
     def handle_sync_notifications(_topic_name)
       unless SiteSetting.disteleplus_force_channel_notifications
         reply(
-          "Forced channel notifications are off. Enable " \
+          "Forced notifications are off. Enable " \
             "<code>disteleplus_force_channel_notifications</code> in Discourse admin first.",
         )
         return
       end
-      unless ChannelNotifications.active?
-        reply("Set <code>disteleplus_chat_channel_id</code> in Discourse admin first.")
-        return
-      end
-
       Jobs.enqueue(:disteleplus_sync_channel_notifications)
       reply(<<~HTML.strip)
         🔔 <b>Notification sync queued</b>
-        Every eligible Discourse member is being enrolled in the bridge channel
+        Every eligible Discourse member is being enrolled in the native conversation
         at notification level <i>always</i>. Run <code>/disteleplus_status</code>
         in a minute to see the count.
       HTML
@@ -166,7 +146,7 @@ module DiscourseDisteleplus
       reply(<<~HTML.strip)
         ✅ <b>General bound</b>
         Group: #{escape(chat_title)}
-        Discourse Chat will continue using General.
+        The native Disteleplus conversation will use General.
 
         Next, enter the Uploads topic and send:
         <code>/disteleplus_bind_uploads</code>
@@ -182,7 +162,7 @@ module DiscourseDisteleplus
         return
       end
       if thread_id == SiteSetting.disteleplus_chat_topic_id.to_i
-        reply("The upload archive and Discourse Chat cannot use the same Telegram topic.")
+        reply("The upload archive and Disteleplus conversation cannot use the same Telegram topic.")
         return
       end
 

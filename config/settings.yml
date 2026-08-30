@@ -788,7 +788,7 @@ jtech_dumbcourse:
     depends_behavior: "hidden"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Jtech — Disteleplus (Telegram ⇄ Discourse Chat bridge)
+# Jtech — Disteleplus (Telegram ⇄ native conversation bridge)
 # ─────────────────────────────────────────────────────────────────────────────
 jtech_disteleplus:
   # Master switch for the bridge module.
@@ -829,13 +829,22 @@ jtech_disteleplus:
     depends_on:
       - "disteleplus_enabled"
 
-  # Discourse side. Core has no chat-channel setting type, so this is an
-  # integer; the id is the number at the end of the channel URL.
+  # Legacy source channel used only by the optional one-time history importer.
+  # Normal operation never reads or writes Discourse Chat.
   disteleplus_chat_channel_id:
     default: 0
-    client: true
+    client: false
     min: 0
     max: 2000000000
+    depends_on:
+      - "disteleplus_enabled"
+  # Users allowed into the native Disteleplus conversation. Staff is the safe
+  # default; administrators are always allowed even when omitted here.
+  disteleplus_allowed_groups:
+    default: "3"
+    type: group_list
+    client: false
+    allow_any: false
     depends_on:
       - "disteleplus_enabled"
   disteleplus_bridge_bot_username:
@@ -917,6 +926,43 @@ jtech_disteleplus:
     depends_on:
       - "disteleplus_enabled"
 
+  # Forum post summaries -> the Telegram conversation (chat-integration style).
+  disteleplus_forum_post_notifications_enabled:
+    default: false
+    client: false
+    depends_on:
+      - "disteleplus_enabled"
+  # Empty means every public category.
+  disteleplus_forum_post_categories:
+    default: ''
+    client: false
+    type: category_list
+    depends_on:
+      - "disteleplus_forum_post_notifications_enabled"
+  disteleplus_forum_post_tags:
+    default: ''
+    client: false
+    type: tag_list
+    depends_on:
+      - "disteleplus_forum_post_notifications_enabled"
+  disteleplus_forum_post_first_post_only:
+    default: true
+    client: false
+    depends_on:
+      - "disteleplus_forum_post_notifications_enabled"
+  disteleplus_forum_post_excerpt_length:
+    default: 300
+    client: false
+    min: 0
+    max: 2000
+    depends_on:
+      - "disteleplus_forum_post_notifications_enabled"
+  disteleplus_forum_post_link_preview:
+    default: false
+    client: false
+    depends_on:
+      - "disteleplus_forum_post_notifications_enabled"
+
   # Ordinary forum Post uploads -> a separate Telegram Forum Topic.
   disteleplus_forum_uploads_enabled:
     default: false
@@ -988,35 +1034,31 @@ jtech_disteleplus:
     depends_on:
       - "disteleplus_forum_uploads_enabled"
 
-  # Landing — the header chat button (and bare /chat) opens the bridge
-  # conversation directly, for everyone, independent of the full lock below.
+  # Removed legacy Chat-UI settings, retained hidden for rollback compatibility.
   disteleplus_chat_button_opens_bridge:
     default: true
-    client: true
+    client: false
+    hidden: true
     depends_on:
       - "disteleplus_enabled"
 
-  # Chat UI lock — creating channels, DMs and threads is blocked for EVERYONE
-  # (admins included; Guardian + Chat::Channel prepends) and hidden in the
-  # client; hub pages redirect to the bridge channel.
   disteleplus_lock_chat_ui:
     default: false
-    client: true
+    client: false
+    hidden: true
     depends_on:
       - "disteleplus_enabled"
-  # Admins may still browse hub pages (channel list, DMs, browse) while the
-  # lock is on. Creation stays blocked for them regardless.
   disteleplus_lock_chat_exempt_admins:
     default: true
-    client: true
+    client: false
+    hidden: true
     depends_on:
       - "disteleplus_lock_chat_ui"
 
-  # Channel notifications — every eligible user is enrolled in the bridge
-  # channel at notification level "always" (desktop + push), and kept there.
+  # Native conversation notifications — eligible users are kept at always.
   disteleplus_force_channel_notifications:
     default: true
-    client: true
+    client: false
     depends_on:
       - "disteleplus_enabled"
   disteleplus_notification_sync_now:
@@ -1025,6 +1067,7 @@ jtech_disteleplus:
     requires_confirmation: "simple_on_enable"
     depends_on:
       - "disteleplus_force_channel_notifications"
+    hidden: true
 
   # Voice notes — mic button in the chat composer, custom player, and
   # Telegram voice-bubble delivery.
@@ -1042,7 +1085,8 @@ jtech_disteleplus:
       - "disteleplus_voice_notes_enabled"
   disteleplus_voice_notes_bridge_channel_only:
     default: true
-    client: true
+    client: false
+    hidden: true
     depends_on:
       - "disteleplus_voice_notes_enabled"
   disteleplus_voice_player_all_audio:
@@ -1054,6 +1098,14 @@ jtech_disteleplus:
   # Maintenance — flip on to (re)register the Telegram webhook; enqueues
   # setWebhook and resets itself.
   disteleplus_register_webhook_now:
+    default: false
+    client: false
+    requires_confirmation: "simple_on_enable"
+    depends_on:
+      - "disteleplus_enabled"
+  # Flip on to send a test message to the bridged group; resets itself. A
+  # failure shows up on the admin dashboard as a problem.
+  disteleplus_send_test_message_now:
     default: false
     client: false
     requires_confirmation: "simple_on_enable"

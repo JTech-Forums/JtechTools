@@ -18,15 +18,15 @@ import {
   paintBars,
 } from "../lib/disteleplus-voice-player";
 
-// Voice-note recorder modal for the chat composer.
+// Voice-note recorder modal for the native Disteleplus composer.
 //
 // One big round button is the whole interface: tap to record (it turns red
 // and pulses, a live waveform scrolls across the stage, a ring around the
 // button fills toward the length limit), tap again to stop. The preview is
 // the same waveform — built from the levels captured WHILE recording, so it
 // is the real shape of what was said — with a play button and scrubbing, so
-// what you hear back looks exactly like the bubble that will land in chat.
-// Send uploads the blob through core's /uploads.json as a `chat-composer`
+// what you hear back looks exactly like the bubble that will land in the conversation.
+// Send uploads the blob through core's /uploads.json as a composer
 // upload and posts a message carrying only that upload.
 //
 // Codec choice, in order: OGG/OPUS (Firefox; what Telegram natively speaks),
@@ -530,7 +530,7 @@ export default class DisteleplusVoiceRecorder extends Component {
     this.state = "uploading";
     const filename = `voice-note-${stamp()}.${this.type.ext}`;
     const form = new FormData();
-    form.append("type", "chat-composer");
+    form.append("type", "composer");
     form.append("file", this.blob, filename);
 
     try {
@@ -544,11 +544,8 @@ export default class DisteleplusVoiceRecorder extends Component {
         throw new Error(upload?.errors?.join(", ") || "upload failed");
       }
 
-      const payload = { message: "", upload_ids: [upload.id] };
-      if (this.args.model.threadId) {
-        payload.thread_id = this.args.model.threadId;
-      }
-      await ajax(`/chat/api/channels/${this.args.model.channelId}/messages`, {
+      const payload = { raw: "", upload_ids: [upload.id] };
+      await ajax("/jtech-disteleplus/messages", {
         type: "POST",
         data: payload,
       });

@@ -1,84 +1,7 @@
-// Disteleplus chat styles — four concerns:
-//   1. Telegram-bridged message cards (bot-posted, "**Name (TG):**" prefix).
-//   2. The chat lock's cosmetic half (the Guardian/Chat::Channel prepends in
-//      sub_plugins/disteleplus.rb are the enforcement).
-//   3. The voice-note / audio player that replaces <audio controls> in chat.
-//   4. The recorder modal.
-// Everything resolves through theme variables so dark mode works for free.
+// Native Disteleplus voice player and recorder. The conversation layout lives
+// in disteleplus-native.scss.
 
-// ── 1. Bridged messages ──────────────────────────────────────────────────────
-.chat-message .disteleplus-bridged {
-  background: var(--primary-very-low);
-  border-left: 3px solid var(--tertiary);
-  border-radius: var(--d-border-radius, 8px);
-  padding: 0.35em 0.65em 0.45em;
-  margin: 0.15em 0;
-
-  .disteleplus-bridged__sender {
-    display: block;
-    margin-bottom: 0.15em;
-    font-size: var(--font-down-1);
-    line-height: 1.2;
-    color: var(--tertiary);
-
-    &::after {
-      content: "Telegram";
-      display: inline-block;
-      margin-left: 0.5em;
-      padding: 0 0.45em;
-      border-radius: 1em;
-      font-size: var(--font-down-2);
-      font-weight: normal;
-      letter-spacing: 0.02em;
-      color: var(--primary-medium);
-      background: var(--primary-low);
-      vertical-align: 0.1em;
-    }
-  }
-}
-
-// ── 2. Chat lock ─────────────────────────────────────────────────────────────
-// Creation affordances go for EVERYONE (admins included) whenever the lock
-// is on. If an upstream rename makes a selector miss, the server-side block
-// still holds.
-body.disteleplus-chat-locked {
-  .sidebar-section[data-section-name="chat-channels"]
-    .sidebar-section-header-button,
-  .sidebar-section[data-section-name="chat-dms"] .sidebar-section-header-button,
-  .c-navbar__new-dm-button,
-  .c-navbar__open-browse-page-button,
-  .c-navbar__new-channel-button,
-  .open-browse-page-btn,
-  .new-channel-btn,
-  .chat-channel-row__new-dm,
-  .channels-list .open-browse-page-btn,
-  .direct-message-creator,
-  .c-footer__item[data-route="chat.direct-messages"] .new-dm,
-  .chat-message-actions .chat-message-thread-btn,
-  .chat-message-actions__thread,
-  .chat-message-actions [data-id="openThread"],
-  .chat-message-thread-indicator,
-  .c-navbar__threads-list-button,
-  .open-thread-list-btn,
-  .chat-composer__thread-btn {
-    display: none !important;
-  }
-}
-
-// Forced notifications: the level picker in channel settings would only
-// snap back, so hide it.
-body.disteleplus-notifications-forced {
-  .c-channel-settings__notifications-list,
-  .c-channel-settings__notification-level,
-  .chat-channel-settings .notifications-level-selector,
-  .c-channel-settings [data-setting="notification_level"],
-  .channel-settings-view__notification-level {
-    display: none !important;
-  }
-}
-
-// ── 3. Shared waveform track ─────────────────────────────────────────────────
-// Used by the chat player and the recorder preview. Bars are flex items
+// Shared waveform track used by the message player and recorder preview. Bars are flex items
 // sized by --peak; played bars pick up the accent colour.
 .disteleplus-wave {
   --wave-height: 2.25em;
@@ -115,7 +38,7 @@ body.disteleplus-notifications-forced {
   }
 }
 
-// ── 3. Chat player ───────────────────────────────────────────────────────────
+// Message audio player.
 // Layout: [play] [ waveform          ]
 //                [ mic 0:09 / 0:25  1×  ↓ ]
 // A two-row body next to a round play button — the WhatsApp/Telegram shape.
@@ -325,16 +248,8 @@ body.disteleplus-notifications-forced {
   }
 }
 
-// Chat wraps each upload in a collapser whose header is the raw filename
-// with a chevron — noise for a voice note, whose whole identity is the bubble.
-.chat-message-collapser.disteleplus-has-voice-note {
-  > .chat-message-collapser-header {
-    display: none;
-  }
-
-  .chat-uploads {
-    margin-top: 0;
-  }
+.disteleplus-upload.disteleplus-has-voice-note > span {
+  display: none;
 }
 
 // Small screens: let the bubble take the full width and drop the download.
@@ -615,6 +530,6 @@ body.disteleplus-notifications-forced {
 }
 
 // Composer button: tint it so it reads as "record", not "attach".
-.chat-composer .disteleplus-voice-note-btn .d-icon {
+.disteleplus-composer .disteleplus-voice-note-btn .d-icon {
   color: var(--tertiary);
 }

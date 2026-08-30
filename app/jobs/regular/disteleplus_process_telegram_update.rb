@@ -8,7 +8,6 @@ module Jobs
   class DisteleplusProcessTelegramUpdate < ::Jobs::Base
     def execute(args)
       return unless SiteSetting.disteleplus_enabled
-      return unless DiscourseDisteleplus.chat_available?
 
       update = args[:update]
       return if update.blank?

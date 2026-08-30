@@ -1,4 +1,19 @@
 en:
+  disteleplus:
+    title: Disteleplus
+    notification: "%{username} sent a Disteleplus message"
+    upload_only: Sent an attachment
+    test_message: "✅ <b>%{site}</b> can reach this group. The conversation is at %{url}"
+    telegram_error_hints:
+      chat_not_found: "Telegram does not know this chat id. Re-check disteleplus_telegram_chat_id, or run /disteleplus_bind_general in the group (a group→supergroup migration changes the id)."
+      forbidden: "The bot was removed from the group or lost permissions. Re-add it as an administrator."
+      topic_not_found: "The configured Telegram topic no longer exists. Re-bind it with /disteleplus_bind_general or /disteleplus_bind_uploads."
+      generic: "See /logs for the full response and check the bot token."
+
+  dashboard:
+    problem:
+      disteleplus_telegram: "Disteleplus could not deliver to Telegram (%{at}): <code>%{description}</code> — %{hint}"
+
   site_settings:
     # NOTE: core renders `site_settings.<name>` as the setting's DESCRIPTION;
     # the label is derived from the setting name and is not translatable.
@@ -520,9 +535,9 @@ en:
       LanguageTool reject the request.
 
     # ── Jtech — Disteleplus ────────────────────────────────────────────────
-    disteleplus_enabled: Two-way bridge between one Telegram group and one
-      Discourse chat channel. Everything below is inactive until this is on.
-      Requires the Chat plugin.
+    disteleplus_enabled: Two-way bridge between one Telegram group and the
+      native /disteleplus conversation. Everything below is inactive until
+      this is on. The official Discourse Chat plugin is not required.
 
     disteleplus_bot_token: Token from @BotFather (/newbot). The bot must be a
       member of the bridged group, be a group admin, and have privacy mode
@@ -541,9 +556,9 @@ en:
       after setup if Telegram-side reconfiguration is not wanted.
 
     disteleplus_chat_topic_id: Optional Telegram Forum Topic ID for the
-      existing Discourse Chat bridge. Set this when the group uses topics so
-      chat traffic stays in one topic. Zero preserves the legacy whole-group
-      behavior, except that the forum-upload archive topic is always excluded.
+      two-way conversation bridge. Set this when the group uses topics so
+      conversation traffic stays in one topic. Zero uses General (the whole
+      group), except that the forum-upload archive topic is always excluded.
 
     disteleplus_webhook_secret: Shared secret that Telegram sends back in the
       X-Telegram-Bot-Api-Secret-Token header; it is the only thing
@@ -553,9 +568,13 @@ en:
       run that button again — until you do, every inbound message is
       rejected.
 
-    disteleplus_chat_channel_id: The bridged chat channel's numeric ID — the
-      last part of its URL, /chat/c/channel-name/<id>. Only messages in this
-      one channel are bridged.
+    disteleplus_chat_channel_id: The legacy bridged channel's numeric ID — the
+      last part of its old URL. This is read only by the optional administrator
+      history importer and is never used for live messages.
+
+    disteleplus_allowed_groups: Groups allowed to open and participate in the
+      native Disteleplus conversation. Staff is the safe default.
+      Administrators are always allowed.
 
     disteleplus_bridge_bot_username: The Discourse account that posts Telegram
       messages from senders who are not mapped to a Discourse user. If no
@@ -683,13 +702,10 @@ en:
       creating channels, DMs or threads stays blocked for admins exactly like
       everyone else. Moderators are never exempt.
 
-    disteleplus_force_channel_notifications: Enrol every user who is allowed
-      into chat as a member of the bridge channel at notification level
-      "always" (desktop alerts and web push), re-enable chat for anyone who
-      had turned it off, and keep it that way — changes in channel settings
-      snap back, and a sync runs every 30 minutes plus whenever someone is
-      created, approved or added to a group. This overrides personal mute
-      choices for this one channel; that is the point. Web push still needs
+    disteleplus_force_channel_notifications: Enrol every user in the allowed
+      groups into the native conversation at notification level "always"
+      (desktop alerts and web push). A sync runs every 30 minutes plus whenever
+      someone is created, approved or added to a group. Web push still needs
       {{setting:push_notifications_prompt}} and each person to have accepted
       push on at least one device. /disteleplus_status in Telegram reports how
       many members are at "always".
@@ -699,10 +715,10 @@ en:
       save; it queues the job and switches itself back off. Results are logged
       to /logs as "notification sync".
 
-    disteleplus_voice_notes_enabled: Adds a microphone button to the chat
+    disteleplus_voice_notes_enabled: Adds a microphone button to the native
       composer that records a voice note in the browser and sends it as its
-      own message, and replaces the browser's default audio controls in chat
-      with a compact waveform player (play, scrub, speed, download). Voice
+      own message, and replaces the browser's default audio controls with a
+      compact waveform player (play, scrub, speed, download). Voice
       notes reach Telegram as real voice bubbles; Telegram voice messages
       arrive here the same way. Enabling this adds ogg, webm, m4a and opus to
       {{setting:authorized_extensions}} if they are missing. Telegram voice
@@ -721,6 +737,25 @@ en:
       audio file in chat, not just voice notes. Turn off to keep the browser's
       default controls for ordinary music/audio uploads.
 
+    disteleplus_forum_post_notifications_enabled: Post a summary of new forum
+      posts into the bridged Telegram conversation (and the native
+      conversation), the way the chat-integration plugin does. Private
+      messages, whispers, hidden posts and read-restricted categories are
+      never sent.
+    disteleplus_forum_post_categories: Only announce posts in these categories
+      (subcategories of a listed category count). Empty means every public
+      category.
+    disteleplus_forum_post_tags: Only announce topics carrying at least one of
+      these tags. Empty means any tag.
+    disteleplus_forum_post_first_post_only: Announce only the first post of a
+      topic. Turn off to announce every reply as well.
+    disteleplus_forum_post_excerpt_length: Characters of the post to include
+      under the title. Zero sends the title only.
+    disteleplus_forum_post_link_preview: Let Telegram render its link preview
+      card under the announcement.
+    disteleplus_send_test_message_now: Send a test message to the bridged
+      group now to verify the token, chat id and topic. The switch resets
+      itself; a failure appears on the admin dashboard.
     disteleplus_register_webhook_now: Tells Telegram where to deliver this
       group's messages. Turn on and save; it generates the webhook secret if
       it is still blank, calls setWebhook, installs the admin-only

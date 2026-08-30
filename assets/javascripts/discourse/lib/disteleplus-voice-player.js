@@ -1,11 +1,10 @@
 // Disteleplus voice-note player.
 //
-// Replaces the browser's default <audio controls> in chat messages with a
+// Replaces the browser's default <audio controls> in native messages with a
 // messenger-style player: round play button, a waveform you can click or
 // drag to seek, "elapsed / total", a speed toggle and a download link.
 //
-// Chat renders uploads inside a Glimmer-owned collapser that it re-renders
-// freely, so this NEVER moves or re-parents the <audio>. The native element
+// Glimmer re-renders uploads freely, so this NEVER moves or re-parents the <audio>. The native element
 // stays exactly where Glimmer put it (visually hidden) and the player is
 // inserted as its next sibling; a registry keyed on the audio node, plus the
 // observer's removedNodes, tears the player down the moment Glimmer drops
@@ -471,16 +470,15 @@ export function enhanceAudio(audio, { allAudio }) {
   audio.classList.add(ENHANCED_CLASS);
   const player = new VoicePlayer(audio, { voice });
   players.set(audio, player);
-  // Lets CSS hide the collapser's filename header for voice notes.
   audio
-    .closest(".chat-message-collapser")
+    .closest(".disteleplus-upload")
     ?.classList.add(
       voice ? "disteleplus-has-voice-note" : "disteleplus-has-audio"
     );
   return true;
 }
 
-// Finds every not-yet-enhanced chat audio element under `root`.
+// Finds every not-yet-enhanced native conversation audio element under `root`.
 export function enhanceWithin(root, options) {
   if (!root?.querySelectorAll) {
     return 0;
@@ -489,9 +487,7 @@ export function enhanceWithin(root, options) {
   const nodes =
     root instanceof HTMLAudioElement ? [root] : root.querySelectorAll("audio");
   nodes.forEach((audio) => {
-    if (
-      !audio.closest(".chat-message, .chat-message-container, .chat-thread")
-    ) {
+    if (!audio.closest(".disteleplus-message, .disteleplus-voice-modal")) {
       return;
     }
     if (enhanceAudio(audio, options)) {
