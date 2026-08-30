@@ -5,9 +5,7 @@ module DiscourseDisteleplus
     self.table_name = "disteleplus_user_states"
 
     belongs_to :user
-    belongs_to :last_read_message,
-               class_name: "DiscourseDisteleplus::Message",
-               optional: true
+    belongs_to :last_read_message, class_name: "DiscourseDisteleplus::Message", optional: true
 
     enum :notification_level, { never: 0, always: 1 }, prefix: true
 

@@ -16,32 +16,29 @@ module DiscourseDisteleplus
             user_id: recipient.id,
             post_number: message.id,
             high_priority: true,
-            data:
-              {
-                message: I18n.t("disteleplus.notification", username: display_name(message)),
-                title: I18n.t("disteleplus.title"),
-                url: PATH,
-                username: actor&.username,
-                display_username: actor&.username,
-                disteleplus_message_id: message.id,
-                disteleplus: true,
-              }.to_json,
+            data: {
+              message: I18n.t("disteleplus.notification", username: display_name(message)),
+              title: I18n.t("disteleplus.title"),
+              url: PATH,
+              username: actor&.username,
+              display_username: actor&.username,
+              disteleplus_message_id: message.id,
+              disteleplus: true,
+            }.to_json,
           )
         recipient.publish_notifications_state
         enqueue_push(recipient, message, notification)
       end
     rescue StandardError => e
-      Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} notification fan-out failed: #{e.message}")
+      Rails.logger.warn(
+        "#{DiscourseDisteleplus::LOG_TAG} notification fan-out failed: #{e.message}",
+      )
     end
 
     def self.mark_read(user, through_id)
       marker = '%"disteleplus":true%'
       Notification
-        .where(
-          user_id: user.id,
-          notification_type: Notification.types[:custom],
-          read: false,
-        )
+        .where(user_id: user.id, notification_type: Notification.types[:custom], read: false)
         .where("post_number <= ?", through_id.to_i)
         .where("data LIKE ?", marker)
         .update_all(read: true)

@@ -22,7 +22,7 @@ RSpec.describe DiscourseDisteleplus::LegacyChatImporter do
   end
 
   describe "with Discourse Chat" do
-    fab!(:author) { Fabricate(:user) }
+    fab!(:author, :user)
     fab!(:bot) { Fabricate(:user, username: "telegram_bridge") }
 
     before do
@@ -65,7 +65,13 @@ RSpec.describe DiscourseDisteleplus::LegacyChatImporter do
       expect(DiscourseDisteleplus::Message.count).to eq(3)
 
       status = described_class.status
-      expect(status).to include(source: 3, imported: 3, remaining: 0, complete: true, linked_telegram: 1)
+      expect(status).to include(
+        source: 3,
+        imported: 3,
+        remaining: 0,
+        complete: true,
+        linked_telegram: 1,
+      )
     end
   end
 end

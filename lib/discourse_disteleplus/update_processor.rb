@@ -73,17 +73,14 @@ module DiscourseDisteleplus
         end
 
       message =
-        MessageService
-          .new(actor: poster, bypass_access: true)
-          .create!(
-            raw: text,
-            upload_ids: upload_ids,
-            reply_to_id: reply_link&.disteleplus_message_id,
-            source: :telegram,
-            external_sender_name:
-              sender ? nil : Formatter.sender_display_name(msg["from"]),
-            bridge: false,
-          )
+        MessageService.new(actor: poster, bypass_access: true).create!(
+          raw: text,
+          upload_ids: upload_ids,
+          reply_to_id: reply_link&.disteleplus_message_id,
+          source: :telegram,
+          external_sender_name: sender ? nil : Formatter.sender_display_name(msg["from"]),
+          bridge: false,
+        )
 
       MessageLink.create!(
         telegram_chat_id: msg.dig("chat", "id"),
@@ -111,9 +108,10 @@ module DiscourseDisteleplus
       text = Formatter.inbound_text(msg, matched: true)
       return if text.blank?
 
-      MessageService
-        .new(actor: editor, bypass_access: true)
-        .update_from_telegram!(message, raw: text)
+      MessageService.new(actor: editor, bypass_access: true).update_from_telegram!(
+        message,
+        raw: text,
+      )
     end
 
     def handle_poll_state(poll)
@@ -127,9 +125,10 @@ module DiscourseDisteleplus
       editor = message.user || DiscourseDisteleplus.bot_user
       return if editor.nil?
 
-      MessageService
-        .new(actor: editor, bypass_access: true)
-        .update_from_telegram!(message, raw: Formatter.poll_markdown(poll))
+      MessageService.new(actor: editor, bypass_access: true).update_from_telegram!(
+        message,
+        raw: Formatter.poll_markdown(poll),
+      )
     end
 
     def handle_reaction(reaction)
@@ -148,24 +147,24 @@ module DiscourseDisteleplus
       new_chars = reaction_chars(reaction["new_reaction"])
 
       (new_chars - old_chars).each do |char|
-        MessageService
-          .new(actor: actor, bypass_access: true)
-          .react!(
+        if link.message
+          MessageService.new(actor: actor, bypass_access: true).react!(
             link.message,
             emoji: EmojiMap.tg_to_discourse(char),
             action: :add,
             bridge: false,
-          ) if link.message
+          )
+        end
       end
       (old_chars - new_chars).each do |char|
-        MessageService
-          .new(actor: actor, bypass_access: true)
-          .react!(
+        if link.message
+          MessageService.new(actor: actor, bypass_access: true).react!(
             link.message,
             emoji: EmojiMap.tg_to_discourse(char),
             action: :remove,
             bridge: false,
-          ) if link.message
+          )
+        end
       end
     end
 

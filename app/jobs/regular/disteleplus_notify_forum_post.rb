@@ -28,21 +28,24 @@ module Jobs
       payload[:message_thread_id] = thread_id if thread_id
       result = api.call("sendMessage", payload)
       unless result.ok
-        DiscourseDisteleplus::Health.record_error(result.description, context: "forum post #{post.id}")
-        Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} forum post notify failed: #{result.description}")
+        DiscourseDisteleplus::Health.record_error(
+          result.description,
+          context: "forum post #{post.id}",
+        )
+        Rails.logger.warn(
+          "#{DiscourseDisteleplus::LOG_TAG} forum post notify failed: #{result.description}",
+        )
         return
       end
 
       message =
-        DiscourseDisteleplus::MessageService
-          .new(actor: bot, bypass_access: true)
-          .create!(
-            raw: DiscourseDisteleplus::ForumPostNotifier.native_markdown(post),
-            source: :discourse,
-            external_sender_name: marker,
-            bridge: false,
-            notify: false,
-          )
+        DiscourseDisteleplus::MessageService.new(actor: bot, bypass_access: true).create!(
+          raw: DiscourseDisteleplus::ForumPostNotifier.native_markdown(post),
+          source: :discourse,
+          external_sender_name: marker,
+          bridge: false,
+          notify: false,
+        )
       DiscourseDisteleplus::MessageLink.create!(
         telegram_chat_id: chat_id,
         telegram_message_id: result.result["message_id"],
@@ -51,7 +54,11 @@ module Jobs
         kind: :text,
       )
     rescue DiscourseDisteleplus::TelegramApi::RateLimited => e
-      Jobs.enqueue_in(e.retry_after.seconds, :disteleplus_notify_forum_post, post_id: args[:post_id])
+      Jobs.enqueue_in(
+        e.retry_after.seconds,
+        :disteleplus_notify_forum_post,
+        post_id: args[:post_id],
+      )
     end
   end
 end

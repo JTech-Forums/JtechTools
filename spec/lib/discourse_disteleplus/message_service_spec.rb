@@ -27,9 +27,10 @@ RSpec.describe DiscourseDisteleplus::MessageService do
 
   describe "#create!" do
     it "cooks server-side, publishes, notifies and enqueues the outbound job" do
-      published = MessageBus.track_publish(DiscourseDisteleplus::Publisher::CHANNEL) do
-        @message = service.create!(raw: "**hi** <script>x</script>")
-      end
+      published =
+        MessageBus.track_publish(DiscourseDisteleplus::Publisher::CHANNEL) do
+          @message = service.create!(raw: "**hi** <script>x</script>")
+        end
       expect(@message).to be_source_discourse
       expect(@message.cooked).to include("<strong>hi</strong>")
       expect(@message.cooked).not_to include("<script>")
@@ -39,9 +40,13 @@ RSpec.describe DiscourseDisteleplus::MessageService do
       expect(published.first.user_ids).to contain_exactly(admin.id, member.id, other.id)
 
       expect(outbound.size).to eq(1)
-      expect(outbound.last["args"].first).to include("action" => "create", "message_id" => @message.id)
+      expect(outbound.last["args"].first).to include(
+        "action" => "create",
+        "message_id" => @message.id,
+      )
 
-      recipients = Notification.where(notification_type: Notification.types[:custom]).pluck(:user_id)
+      recipients =
+        Notification.where(notification_type: Notification.types[:custom]).pluck(:user_id)
       expect(recipients).to contain_exactly(admin.id, other.id)
     end
 
@@ -76,7 +81,9 @@ RSpec.describe DiscourseDisteleplus::MessageService do
       parent = service.create!(raw: "parent")
       reply = service.create!(raw: "child", reply_to_id: parent.id)
       expect(reply.reply_to).to eq(parent)
-      expect { service.create!(raw: "x", reply_to_id: 999_999) }.to raise_error(described_class::Error)
+      expect { service.create!(raw: "x", reply_to_id: 999_999) }.to raise_error(
+        described_class::Error,
+      )
     end
 
     it "does not bridge or notify Telegram-origin messages" do
@@ -105,7 +112,9 @@ RSpec.describe DiscourseDisteleplus::MessageService do
     end
 
     it "lets staff edit, refuses other members" do
-      expect { service(other).update!(message, raw: "nope") }.to raise_error(Discourse::InvalidAccess)
+      expect { service(other).update!(message, raw: "nope") }.to raise_error(
+        Discourse::InvalidAccess,
+      )
       service(admin).update!(message, raw: "mod edit")
       expect(message.reload.raw).to eq("mod edit")
     end
@@ -117,7 +126,9 @@ RSpec.describe DiscourseDisteleplus::MessageService do
   end
 
   describe "#delete!" do
-    let!(:message) { service.create!(raw: "bye", upload_ids: [Fabricate(:upload, user: member).id]) }
+    let!(:message) do
+      service.create!(raw: "bye", upload_ids: [Fabricate(:upload, user: member).id])
+    end
 
     it "soft-deletes, strips content, and bridges the delete" do
       service.react!(message, emoji: "heart", action: :add)

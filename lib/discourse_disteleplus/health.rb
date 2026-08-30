@@ -12,10 +12,16 @@ module DiscourseDisteleplus
       PluginStore.set(
         STORE,
         KEY,
-        { "description" => description.to_s.first(500), "context" => context.to_s, "at" => Time.zone.now.iso8601 },
+        {
+          "description" => description.to_s.first(500),
+          "context" => context.to_s,
+          "at" => Time.zone.now.iso8601,
+        },
       )
     rescue StandardError => e
-      Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} could not record health error: #{e.message}")
+      Rails.logger.warn(
+        "#{DiscourseDisteleplus::LOG_TAG} could not record health error: #{e.message}",
+      )
     end
 
     def self.clear!
@@ -25,7 +31,12 @@ module DiscourseDisteleplus
     def self.last_error
       value = PluginStore.get(STORE, KEY)
       return nil if value.blank?
-      at = Time.zone.parse(value["at"].to_s) rescue nil
+      at =
+        begin
+          Time.zone.parse(value["at"].to_s)
+        rescue StandardError
+          nil
+        end
       return nil if at.nil? || at < WINDOW.ago
       value
     end

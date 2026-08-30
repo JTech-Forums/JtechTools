@@ -13,8 +13,16 @@ module DiscourseDisteleplus
       ensure_access!
     end
 
-    def create!(raw: "", upload_ids: nil, reply_to_id: nil, source: :discourse,
-                external_sender_name: nil, bridge: true, notify: true, created_at: nil)
+    def create!(
+      raw: "",
+      upload_ids: nil,
+      reply_to_id: nil,
+      source: :discourse,
+      external_sender_name: nil,
+      bridge: true,
+      notify: true,
+      created_at: nil
+    )
       raw = raw.to_s
       uploads = resolve_uploads(upload_ids)
       raise Error, "message or upload required" if raw.blank? && uploads.empty?
@@ -124,7 +132,8 @@ module DiscourseDisteleplus
 
       uploads = Upload.where(id: ids).to_a
       raise Error, "upload not found" unless uploads.length == ids.length
-      unless @bypass_access || actor&.admin? || uploads.all? { |upload| upload.user_id == actor&.id }
+      unless @bypass_access || actor&.admin? ||
+               uploads.all? { |upload| upload.user_id == actor&.id }
         raise Discourse::InvalidAccess
       end
       uploads.index_by(&:id).values_at(*ids)

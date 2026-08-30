@@ -68,8 +68,7 @@ module DiscourseDisteleplus
       {
         enrolled: enrolled,
         updated: updated,
-        has_push:
-          defined?(::PushSubscription) && PushSubscription.exists?(user_id: user.id),
+        has_push: defined?(::PushSubscription) && PushSubscription.exists?(user_id: user.id),
       }
     rescue StandardError => e
       Rails.logger.warn(

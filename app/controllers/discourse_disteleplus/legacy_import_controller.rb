@@ -2,6 +2,7 @@
 
 module DiscourseDisteleplus
   class LegacyImportController < ::ApplicationController
+    requires_plugin "jtech-tools"
     requires_login
     before_action :ensure_admin
 

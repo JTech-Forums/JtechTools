@@ -98,11 +98,12 @@ require_relative "../lib/discourse_disteleplus/legacy_chat_importer"
 require_relative "../lib/discourse_disteleplus/health"
 require_relative "../lib/discourse_disteleplus/forum_post_notifier"
 
-add_to_serializer(:current_user, :can_access_disteleplus) do
-  ::DiscourseDisteleplus::Access.allowed?(object)
-end
-
 after_initialize do
+  # Serializer classes only exist once the app has booted.
+  add_to_serializer(:current_user, :can_access_disteleplus) do
+    ::DiscourseDisteleplus::Access.allowed?(object)
+  end
+
   on(:site_setting_changed) do |name, _old_val, new_val|
     case name.to_s
     when "disteleplus_register_webhook_now"
@@ -173,7 +174,9 @@ after_initialize do
     next unless DiscourseDisteleplus::ForumPostNotifier.eligible?(post)
     Jobs.enqueue_in(10.seconds, :disteleplus_notify_forum_post, post_id: post.id)
   rescue StandardError => e
-    Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} forum post notify hook failed: #{e.message}")
+    Rails.logger.warn(
+      "#{DiscourseDisteleplus::LOG_TAG} forum post notify hook failed: #{e.message}",
+    )
   end
 
   register_problem_check ::ProblemCheck::DisteleplusTelegram if respond_to?(:register_problem_check)

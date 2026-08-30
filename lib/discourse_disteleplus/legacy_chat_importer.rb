@@ -18,10 +18,8 @@ module DiscourseDisteleplus
         available: available? ? true : false,
         channel_id: SiteSetting.disteleplus_chat_channel_id.to_i,
         imported: native.count,
-        imported_uploads:
-          MessageUpload.where(message_id: native.select(:id)).count,
-        imported_reactions:
-          Reaction.where(message_id: native.select(:id)).count,
+        imported_uploads: MessageUpload.where(message_id: native.select(:id)).count,
+        imported_reactions: Reaction.where(message_id: native.select(:id)).count,
         linked_telegram:
           MessageLink.where.not(disteleplus_message_id: nil).where.not(chat_message_id: nil).count,
       }
@@ -48,7 +46,11 @@ module DiscourseDisteleplus
         last_id = legacy.id
         imported += 1 if import_one(legacy)
       end
-      { imported: imported, last_id: last_id, more: source_scope.where("chat_messages.id > ?", last_id).exists? }
+      {
+        imported: imported,
+        last_id: last_id,
+        more: source_scope.where("chat_messages.id > ?", last_id).exists?,
+      }
     end
 
     def self.import_one(legacy)
@@ -87,11 +89,9 @@ module DiscourseDisteleplus
             created_at: legacy.created_at,
             updated_at: legacy.updated_at,
           )
-        Array(legacy.try(:uploads)).each do |upload|
-          native.message_uploads.create!(upload: upload)
-        end
+        Array(legacy.try(:uploads)).each { |upload| native.message_uploads.create!(upload: upload) }
         Array(legacy.try(:reactions)).each do |reaction|
-          next unless reaction.try(:user_id).present? && reaction.try(:emoji).present?
+          next if reaction.try(:user_id).blank? || reaction.try(:emoji).blank?
           native.reactions.find_or_create_by!(user_id: reaction.user_id, emoji: reaction.emoji)
         end
         links.update_all(disteleplus_message_id: native.id)
@@ -108,9 +108,7 @@ module DiscourseDisteleplus
     end
 
     def self.source_scope
-      ::Chat::Message
-        .where(chat_channel_id: SiteSetting.disteleplus_chat_channel_id)
-        .order(:id)
+      ::Chat::Message.where(chat_channel_id: SiteSetting.disteleplus_chat_channel_id).order(:id)
     end
 
     def self.relink(native, legacy_id)

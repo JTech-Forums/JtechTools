@@ -21,7 +21,12 @@ RSpec.describe "Disteleplus conversation API" do
   end
 
   def create!(user, raw, **opts)
-    DiscourseDisteleplus::MessageService.new(actor: user).create!(raw: raw, bridge: false, notify: false, **opts)
+    DiscourseDisteleplus::MessageService.new(actor: user).create!(
+      raw: raw,
+      bridge: false,
+      notify: false,
+      **opts,
+    )
   end
 
   describe "access" do
@@ -75,9 +80,13 @@ RSpec.describe "Disteleplus conversation API" do
 
     it "serializes author, permissions and Telegram sender" do
       message =
-        DiscourseDisteleplus::MessageService
-          .new(actor: admin, bypass_access: true)
-          .create!(raw: "hi", source: :telegram, external_sender_name: "Zev", bridge: false, notify: false)
+        DiscourseDisteleplus::MessageService.new(actor: admin, bypass_access: true).create!(
+          raw: "hi",
+          source: :telegram,
+          external_sender_name: "Zev",
+          bridge: false,
+          notify: false,
+        )
       get "#{base}/conversation.json"
       json = response.parsed_body["messages"].first
       expect(json).to include(
@@ -118,7 +127,11 @@ RSpec.describe "Disteleplus conversation API" do
       expect(response.status).to eq(422)
       expect(response.parsed_body["errors"]).to be_present
 
-      post "#{base}/messages.json", params: { raw: "x", upload_ids: [Fabricate(:upload, user: other).id] }
+      post "#{base}/messages.json",
+           params: {
+             raw: "x",
+             upload_ids: [Fabricate(:upload, user: other).id],
+           }
       expect(response.status).to eq(403)
     end
 
@@ -194,7 +207,10 @@ RSpec.describe "Disteleplus conversation API" do
 
       post "#{base}/read.json", params: { message_id: first.id }
       expect(response.status).to eq(200)
-      expect(response.parsed_body).to include("last_read_message_id" => first.id, "unread_count" => 1)
+      expect(response.parsed_body).to include(
+        "last_read_message_id" => first.id,
+        "unread_count" => 1,
+      )
 
       post "#{base}/read.json", params: { message_id: second.id }
       expect(response.parsed_body["unread_count"]).to eq(0)

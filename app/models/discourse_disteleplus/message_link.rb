@@ -30,9 +30,7 @@ module DiscourseDisteleplus
             where(chat_message_id: chat_message_id).order(:telegram_message_id)
           end
     scope :for_message,
-          ->(message_id) do
-            where(disteleplus_message_id: message_id).order(:telegram_message_id)
-          end
+          ->(message_id) { where(disteleplus_message_id: message_id).order(:telegram_message_id) }
   end
 end
 

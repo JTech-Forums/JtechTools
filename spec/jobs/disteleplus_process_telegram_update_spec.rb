@@ -76,7 +76,8 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
     allow_any_instance_of(DiscourseDisteleplus::TelegramApi).to receive(:download_file).and_return(
       tempfile,
     )
-    upload = Fabricate(:upload, user: bot, original_filename: "voice-note-25s.ogg", extension: "ogg")
+    upload =
+      Fabricate(:upload, user: bot, original_filename: "voice-note-25s.ogg", extension: "ogg")
     creator = instance_double(UploadCreator, create_for: upload)
     allow(UploadCreator).to receive(:new).and_return(creator)
 
@@ -92,7 +93,11 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
       ),
     )
 
-    expect(UploadCreator).to have_received(:new).with(tempfile, "voice-note-25s.ogg", type: "composer")
+    expect(UploadCreator).to have_received(:new).with(
+      tempfile,
+      "voice-note-25s.ogg",
+      type: "composer",
+    )
     expect(messages.last.uploads).to eq([upload])
     expect(links.last).to be_kind_media
   end
@@ -179,7 +184,9 @@ RSpec.describe Jobs::DisteleplusProcessTelegramUpdate do
 
   it "drops polls when poll bridging is off" do
     SiteSetting.disteleplus_bridge_polls = false
-    run(message_update("text" => nil, "poll" => { "id" => "1", "question" => "?", "options" => [] }))
+    run(
+      message_update("text" => nil, "poll" => { "id" => "1", "question" => "?", "options" => [] }),
+    )
     expect(messages.count).to eq(0)
   end
 

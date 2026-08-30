@@ -87,8 +87,7 @@ module Jobs
     end
 
     def handle_edit(message_id)
-      link =
-        DiscourseDisteleplus::MessageLink.for_message(message_id).discourse_to_tg.first
+      link = DiscourseDisteleplus::MessageLink.for_message(message_id).discourse_to_tg.first
       return if link.nil?
 
       message = DiscourseDisteleplus::Message.find_by(id: message_id)

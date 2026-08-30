@@ -79,8 +79,15 @@ RSpec.describe DiscourseDisteleplus::ForumPostNotifier do
 
   describe Jobs::DisteleplusNotifyForumPost do
     let(:api) { instance_double(DiscourseDisteleplus::TelegramApi) }
-    let(:ok) { DiscourseDisteleplus::TelegramApi::Result.new(ok: true, result: { "message_id" => 77 }) }
-    let(:failed) { DiscourseDisteleplus::TelegramApi::Result.new(ok: false, description: "Bad Request: chat not found") }
+    let(:ok) do
+      DiscourseDisteleplus::TelegramApi::Result.new(ok: true, result: { "message_id" => 77 })
+    end
+    let(:failed) do
+      DiscourseDisteleplus::TelegramApi::Result.new(
+        ok: false,
+        description: "Bad Request: chat not found",
+      )
+    end
 
     before { allow(DiscourseDisteleplus::TelegramApi).to receive(:new).and_return(api) }
 
@@ -93,7 +100,12 @@ RSpec.describe DiscourseDisteleplus::ForumPostNotifier do
 
       expect(api).to have_received(:call).once.with(
         "sendMessage",
-        a_hash_including(chat_id: "-100555", message_thread_id: 42, parse_mode: "HTML", disable_web_page_preview: true),
+        a_hash_including(
+          chat_id: "-100555",
+          message_thread_id: 42,
+          parse_mode: "HTML",
+          disable_web_page_preview: true,
+        ),
       )
       message = DiscourseDisteleplus::Message.last
       expect(message.user).to eq(DiscourseDisteleplus.bot_user)
@@ -123,7 +135,9 @@ RSpec.describe DiscourseDisteleplus::ForumPostNotifier do
     it "keeps the last error for a day and maps hints" do
       described_class.record_error("Forbidden: bot was kicked from the supergroup chat")
       expect(described_class.last_error["description"]).to include("Forbidden")
-      expect(described_class.error_key_for(described_class.last_error["description"])).to eq("forbidden")
+      expect(described_class.error_key_for(described_class.last_error["description"])).to eq(
+        "forbidden",
+      )
       expect(described_class.error_key_for("Bad Request: chat not found")).to eq("chat_not_found")
       described_class.clear!
       expect(described_class.last_error).to be_nil
@@ -157,7 +171,10 @@ RSpec.describe DiscourseDisteleplus::ForumPostNotifier do
 
     it "records the failure" do
       allow(api).to receive(:call).and_return(
-        DiscourseDisteleplus::TelegramApi::Result.new(ok: false, description: "Forbidden: bot is not a member"),
+        DiscourseDisteleplus::TelegramApi::Result.new(
+          ok: false,
+          description: "Forbidden: bot is not a member",
+        ),
       )
       described_class.new.execute({})
       expect(DiscourseDisteleplus::Health.last_error["description"]).to include("Forbidden")

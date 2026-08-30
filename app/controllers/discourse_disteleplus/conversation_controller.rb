@@ -2,6 +2,7 @@
 
 module DiscourseDisteleplus
   class ConversationController < ::ApplicationController
+    requires_plugin "jtech-tools"
     requires_login
     before_action :ensure_enabled
     before_action :ensure_allowed
@@ -12,10 +13,7 @@ module DiscourseDisteleplus
     def show
       messages = page_scope.limit(PAGE_SIZE).to_a.reverse
       render_json_dump(
-        {
-          messages: serialize_messages(messages),
-          meta: conversation_meta(messages),
-        },
+        { messages: serialize_messages(messages), meta: conversation_meta(messages) },
       )
     end
 
@@ -100,10 +98,7 @@ module DiscourseDisteleplus
     end
 
     def page_scope
-      scope =
-        Message
-          .includes(:user, :uploads, reply_to: :user, reactions: :user)
-          .order(id: :desc)
+      scope = Message.includes(:user, :uploads, reply_to: :user, reactions: :user).order(id: :desc)
       before_id = params[:before_id].to_i
       scope = scope.where("disteleplus_messages.id < ?", before_id) if before_id.positive?
       scope

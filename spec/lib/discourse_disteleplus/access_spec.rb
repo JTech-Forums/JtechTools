@@ -48,17 +48,22 @@ RSpec.describe DiscourseDisteleplus::Access do
   end
 
   describe "edit/delete" do
-    let(:mine) do
-      DiscourseDisteleplus::Message.create!(user: member, raw: "x", cooked: "<p>x</p>")
-    end
+    let(:mine) { DiscourseDisteleplus::Message.create!(user: member, raw: "x", cooked: "<p>x</p>") }
     let(:telegram) do
-      DiscourseDisteleplus::Message.create!(user: admin, raw: "x", cooked: "<p>x</p>", source: :telegram)
+      DiscourseDisteleplus::Message.create!(
+        user: admin,
+        raw: "x",
+        cooked: "<p>x</p>",
+        source: :telegram,
+      )
     end
 
     it "lets authors and staff edit Discourse messages, nobody else" do
       expect(described_class.can_edit?(member, mine)).to eq(true)
       expect(described_class.can_edit?(admin, mine)).to eq(true)
-      expect(described_class.can_edit?(Fabricate(:user, trust_level: TrustLevel[1]), mine)).to eq(false)
+      expect(described_class.can_edit?(Fabricate(:user, trust_level: TrustLevel[1]), mine)).to eq(
+        false,
+      )
     end
 
     it "never edits Telegram-origin messages from Discourse" do

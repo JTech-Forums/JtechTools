@@ -256,9 +256,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
   end
 
   it "re-enqueues itself when Telegram rate-limits" do
-    allow(api).to receive(:call).and_raise(
-      DiscourseDisteleplus::TelegramApi::RateLimited.new(7),
-    )
+    allow(api).to receive(:call).and_raise(DiscourseDisteleplus::TelegramApi::RateLimited.new(7))
     expect { run("create") }.to change { Jobs::DisteleplusSendToTelegram.jobs.size }.by(1)
     job = Jobs::DisteleplusSendToTelegram.jobs.last
     expect(job["args"].first).to include("action" => "create", "message_id" => message.id)
