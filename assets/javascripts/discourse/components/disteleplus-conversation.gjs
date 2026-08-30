@@ -51,6 +51,7 @@ export default class DisteleplusConversation extends Component {
   @service siteSettings;
   @service site;
   @service router;
+  @service currentUser;
 
   @tracked uploads = [];
   @tracked uploading = false;
@@ -1427,7 +1428,8 @@ export default class DisteleplusConversation extends Component {
               role="menuitem"
               {{on "click" (fn this.copyLink message)}}
             >{{icon "link"}} {{i18n "disteleplus.copy_link"}}</button>
-            {{#if message.mine}}
+            {{! Staff can inspect any message's views; others only their own. }}
+            {{#if (or message.mine this.currentUser.staff)}}
               <button
                 type="button"
                 role="menuitem"
