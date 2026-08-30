@@ -3,6 +3,7 @@ import { tracked } from "@glimmer/tracking";
 import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
+import { getOwner } from "@ember/owner";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import { service } from "@ember/service";
 import { htmlSafe } from "@ember/template";
@@ -19,7 +20,8 @@ import { popupAjaxError } from "discourse/lib/ajax-error";
 import { getAbsoluteURL } from "discourse/lib/get-url";
 import lightbox from "discourse/lib/lightbox";
 import { emojiUrlFor } from "discourse/lib/text";
-import userSearch from "discourse/lib/user-search";
+import { TextareaAutocompleteHandler } from "discourse/lib/textarea-text-manipulation";
+import userSearch, { validateSearchResult } from "discourse/lib/user-search";
 import dAutocomplete from "discourse/ui-kit/modifiers/d-autocomplete";
 import { i18n } from "discourse-i18n";
 import { enhanceWithin } from "../lib/disteleplus-voice-player";
@@ -67,8 +69,12 @@ export default class DisteleplusConversation extends Component {
     }
   });
 
+  // imperatively on insert rather than as a template modifier.
+  autocompletes = [];
+
   willDestroy() {
     super.willDestroy(...arguments);
+    this.teardownAutocomplete();
     this.unsubscribe?.();
     document.removeEventListener("click", this.closeContextMenu);
     document.removeEventListener("keydown", this.onDocumentKeydown);
@@ -180,7 +186,6 @@ export default class DisteleplusConversation extends Component {
   mount(element) {
     this.element = element;
     this.timeline = element.querySelector(".disteleplus-timeline");
-    this.textarea = element.querySelector(".disteleplus-composer textarea");
     this.disteleplus.setViewing(true);
     this.unsubscribe = this.disteleplus.onNewMessage(this.onNewMessage);
     document.addEventListener("click", this.closeContextMenu);
@@ -245,7 +250,7 @@ export default class DisteleplusConversation extends Component {
   composerKeydown(event) {
     if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
       // Let an open autocomplete menu take the Enter key.
-      if (document.querySelector(".autocomplete.d-autocomplete")) {
+      if (document.querySelector('[data-identifier="d-autocomplete"]')) {
         return;
       }
       event.preventDefault();
@@ -365,37 +370,77 @@ export default class DisteleplusConversation extends Component {
     });
   }
 
-  // Autocomplete — same data sources core's composer uses.
-  get mentionAutocomplete() {
-    return {
-      key: "@",
-      component: UserAutocompleteResults,
-      dataSource: (term) =>
-        userSearch({ term, includeGroups: true, allowedUsers: false }),
-      transformComplete: (result) => result.username || result.name,
-      afterComplete: (value) => this.disteleplus.setDraft(value),
-    };
+  // Autocomplete — wired exactly like Chat's composer: the modifier needs a
+  // TextareaAutocompleteHandler as its textHandler, so it is set up
+
+  @action
+  setupComposerTextarea(textarea) {
+    this.textarea = textarea;
+    this.autosize(textarea);
+    const handler = new TextareaAutocompleteHandler(textarea);
+    const apply = (options) =>
+      dAutocomplete.setupAutocomplete(getOwner(this), textarea, handler, {
+        treatAsTextarea: true,
+        fixedTextareaPosition: true,
+        ...options,
+      });
+
+    if (this.siteSettings.enable_mentions) {
+      this.autocompletes.push(
+        apply({
+          component: UserAutocompleteResults,
+          key: UserAutocompleteResults.TRIGGER_KEY,
+          width: "100%",
+          autoSelectFirstSuggestion: true,
+          transformComplete: (result) => {
+            validateSearchResult(result);
+            return result.username || result.name;
+          },
+          dataSource: (term) => userSearch({ term, includeGroups: true }),
+          afterComplete: (text, event) => {
+            event?.preventDefault?.();
+            this.disteleplus.setDraft(text);
+            textarea.focus();
+          },
+        })
+      );
+    }
+
+    if (this.siteSettings.enable_emoji) {
+      this.autocompletes.push(
+        apply({
+          component: EmojiAutocompleteResults,
+          key: EmojiAutocompleteResults.TRIGGER_KEY,
+          onKeyUp: (text, caret) => {
+            const matches =
+              /(?:^|[\s.?,@/#!%&*;:[\]{}=\-_()+])(:(?!:).?[\w-]*:?(?!:)(?:t\d?)?:?)$/gi.exec(
+                text.substring(0, caret)
+              );
+            return matches?.[1] ? [matches[1]] : undefined;
+          },
+          transformComplete: (result) => `${result.code}:`,
+          dataSource: (term) => {
+            if (!term || term.length < 2) {
+              return [];
+            }
+            return emojiSearch(term, {
+              maxResults: 6,
+              diversity: this.emojiStore?.diversity,
+            }).map((code) => ({ code, src: emojiUrlFor(code) }));
+          },
+          afterComplete: (text, event) => {
+            event?.preventDefault?.();
+            this.disteleplus.setDraft(text);
+            textarea.focus();
+          },
+        })
+      );
+    }
   }
 
-  get emojiAutocomplete() {
-    return {
-      key: ":",
-      component: EmojiAutocompleteResults,
-      transformComplete: (result) => `${result.code}:`,
-      afterComplete: (value) => this.disteleplus.setDraft(value),
-      triggerRule: async (textarea) =>
-        !textarea.value.slice(0, textarea.selectionStart).match(/:\w*$/) ||
-        true,
-      dataSource: (term) => {
-        if (term.length < 2) {
-          return [];
-        }
-        return emojiSearch(term, {
-          maxResults: 6,
-          diversity: this.emojiStore?.diversity,
-        }).map((code) => ({ code, src: emojiUrlFor(code) }));
-      },
-    };
+  teardownAutocomplete() {
+    this.autocompletes.forEach((instance) => instance.cleanup?.());
+    this.autocompletes = [];
   }
 
   // ── uploads ───────────────────────────────────────────────────────────────
@@ -472,6 +517,7 @@ export default class DisteleplusConversation extends Component {
 
   @action
   openVoiceRecorder() {
+    this.teardownAutocomplete();
     this.recordingVoice = true;
   }
 
