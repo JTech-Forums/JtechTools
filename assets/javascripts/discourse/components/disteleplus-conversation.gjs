@@ -1148,8 +1148,7 @@ export default class DisteleplusConversation extends Component {
                 {{on "input" this.updateDraft}}
                 {{on "keydown" this.composerKeydown}}
                 {{on "paste" this.onPaste}}
-                {{dAutocomplete this.mentionAutocomplete}}
-                {{dAutocomplete this.emojiAutocomplete}}
+                {{didInsert this.setupComposerTextarea}}
               ></textarea>
               <button
                 class="disteleplus-composer__button"
