@@ -79,7 +79,10 @@ module DiscourseDisteleplus
             emoji: emoji,
             count: reactions.length,
             reacted: viewer ? reactions.any? { |reaction| reaction.user_id == viewer.id } : false,
-            users: reactions.map { |reaction| serialize_user(reaction.user) },
+            users:
+              reactions.map do |reaction|
+                serialize_user(reaction.user)&.merge(reacted_at: reaction.created_at)
+              end,
           }
         end
         .sort_by { |reaction| reaction[:emoji] }

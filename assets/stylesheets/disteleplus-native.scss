@@ -1565,6 +1565,136 @@ html.has-full-page-disteleplus {
   margin: 0.25em 0 0;
 }
 
+// ── reactions sheet (WhatsApp-style: who reacted, with what, when) ─────────
+.disteleplus-reaction-info__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  margin-bottom: 0.75em;
+  padding-bottom: 0.75em;
+  border-bottom: 1px solid var(--content-border-color, var(--primary-low));
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3em;
+    height: 2.2em;
+    padding: 0 0.7em;
+    border: none;
+    border-radius: 1.1em;
+    background: var(--primary-very-low);
+    color: var(--primary);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--primary-low);
+    }
+
+    &.is-reacted {
+      background: var(--tertiary-low);
+      outline: 1px solid var(--tertiary);
+    }
+
+    img.emoji {
+      width: 1.3em;
+      height: 1.3em;
+    }
+
+    // WhatsApp's smiley-plus: a face with a small plus tucked beside it.
+    &.is-more {
+      .d-icon {
+        color: var(--primary-medium);
+      }
+
+      .d-icon-plus {
+        width: 0.6em;
+        height: 0.6em;
+        margin-left: -0.2em;
+        align-self: flex-start;
+        margin-top: 0.35em;
+      }
+    }
+  }
+}
+
+.disteleplus-reaction-info__chip-count {
+  font-size: var(--font-down-1);
+  color: var(--primary-high);
+}
+
+.disteleplus-reaction-info__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li > button {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    width: 100%;
+    padding: 0.35em 0.25em;
+    border: none;
+    background: none;
+    text-align: left;
+    color: var(--primary);
+
+    &[disabled] {
+      cursor: default;
+      opacity: 1;
+    }
+
+    &.is-mine {
+      cursor: pointer;
+      border-radius: var(--d-border-radius, 4px);
+
+      &:hover {
+        background: var(--primary-very-low);
+      }
+    }
+
+    img.avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 100%;
+    }
+
+    img.emoji {
+      width: 22px;
+      height: 22px;
+    }
+  }
+}
+
+.disteleplus-reaction-info__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.disteleplus-reaction-info__name {
+  font-weight: 600;
+}
+
+.disteleplus-reaction-info__hint {
+  color: var(--primary-medium);
+  font-size: var(--font-down-2);
+}
+
+.disteleplus-reaction-info__when {
+  margin-left: auto;
+  color: var(--primary-medium);
+  font-size: var(--font-down-1);
+}
+
+.disteleplus-reaction-info__add {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  margin-top: 0.5em;
+  color: var(--tertiary);
+}
+
 // ── voice recorder: pause state, permission hint, caption ───────────────────
 .disteleplus-vrec__requesting {
   display: flex;
