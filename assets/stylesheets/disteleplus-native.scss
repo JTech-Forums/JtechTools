@@ -1671,6 +1671,33 @@ html.has-full-page-disteleplus {
     font-size: var(--font-down-1);
   }
 
+  // Who picked this option — overlapping avatar stack, public polls only.
+  &__voters {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+
+    img {
+      width: 20px;
+      height: 20px;
+      border-radius: 100%;
+      background: var(--secondary);
+      box-shadow: 0 0 0 1.5px var(--secondary);
+
+      + img {
+        margin-left: -0.45em;
+      }
+    }
+  }
+
+  &__voters-more {
+    margin-left: 0.25em;
+    color: var(--primary-medium);
+    font-size: var(--font-down-2);
+    font-weight: 600;
+  }
+
   &__footer {
     margin-top: 0.5em;
     color: var(--primary-medium);

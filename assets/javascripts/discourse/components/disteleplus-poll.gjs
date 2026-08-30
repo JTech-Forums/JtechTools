@@ -6,7 +6,11 @@ import { service } from "@ember/service";
 import { htmlSafe } from "@ember/template";
 import icon from "discourse/helpers/d-icon";
 import { popupAjaxError } from "discourse/lib/ajax-error";
+import { getURLWithCDN } from "discourse/lib/get-url";
 import { i18n } from "discourse-i18n";
+
+const AVATAR_SIZE = 48;
+const VOTER_AVATARS_SHOWN = 5;
 
 // Poll widget inside a conversation message. The data is a real core
 // discourse-poll on the hidden backing post; voting goes through core's
@@ -41,13 +45,32 @@ export default class DisteleplusPoll extends Component {
 
   get options() {
     const total = this.totalVotes;
-    return (this.poll.options || []).map((option) => ({
-      ...option,
-      percent: total ? Math.round((option.votes * 100) / total) : 0,
-      barStyle: htmlSafe(
-        `width:${total ? Math.round((option.votes * 100) / total) : 0}%`
-      ),
-    }));
+    return (this.poll.options || []).map((option) => {
+      const shown = (option.voters || [])
+        .slice(0, VOTER_AVATARS_SHOWN)
+        .map((voter) => ({
+          username: voter.username,
+          name: voter.name || voter.username,
+          url: voter.avatar_template
+            ? getURLWithCDN(
+                voter.avatar_template.replace("{size}", AVATAR_SIZE)
+              )
+            : null,
+        }))
+        .filter((voter) => voter.url);
+      return {
+        ...option,
+        percent: total ? Math.round((option.votes * 100) / total) : 0,
+        barStyle: htmlSafe(
+          `width:${total ? Math.round((option.votes * 100) / total) : 0}%`
+        ),
+        voterAvatars: shown,
+        extraVoters: Math.max(0, (option.votes || 0) - shown.length),
+        voterNames: (option.voters || [])
+          .map((voter) => voter.name || voter.username)
+          .join(", "),
+      };
+    });
   }
 
   get footerText() {
@@ -139,6 +162,21 @@ export default class DisteleplusPoll extends Component {
             <span class="disteleplus-poll__label">
               {{htmlSafe option.html}}
             </span>
+            {{#if option.voterAvatars.length}}
+              <span
+                class="disteleplus-poll__voters"
+                title={{option.voterNames}}
+              >
+                {{#each option.voterAvatars as |voter|}}
+                  <img src={{voter.url}} alt={{voter.username}} />
+                {{/each}}
+                {{#if option.extraVoters}}
+                  <span class="disteleplus-poll__voters-more">
+                    +{{option.extraVoters}}
+                  </span>
+                {{/if}}
+              </span>
+            {{/if}}
             <span class="disteleplus-poll__count">
               {{option.votes}}
               ({{option.percent}}%)
