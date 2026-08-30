@@ -129,6 +129,10 @@ module DiscourseDisteleplus
       my_option_ids =
         (viewer ? ::PollVote.where(poll: poll, user_id: viewer.id).pluck(:poll_option_id) : [])
 
+      # Who picked what — public polls only (the builder always sets
+      # public=true; a hand-written secret poll stays secret).
+      voters_by_digest = (poll.everyone? ? ::DiscoursePoll::Poll.serialized_voters(poll) || {} : {})
+
       {
         post_id: post.id,
         topic_id: post.topic_id,
@@ -137,6 +141,7 @@ module DiscourseDisteleplus
         status: poll.status.to_s,
         closed: !poll.open?,
         close_at: poll.close_at&.iso8601,
+        public: poll.everyone?,
         voters: ::PollVote.where(poll: poll).distinct.count(:user_id),
         options:
           poll.poll_options.map do |option|
@@ -145,9 +150,22 @@ module DiscourseDisteleplus
               html: option.html,
               votes: counts[option.id].to_i,
               chosen: my_option_ids.include?(option.id),
+              voters: serialize_option_voters(voters_by_digest[option.digest]),
             }
           end,
       }
+    end
+
+    def self.serialize_option_voters(voters)
+      Array(voters).map do |voter|
+        voter = voter.with_indifferent_access if voter.respond_to?(:with_indifferent_access)
+        {
+          id: voter[:id],
+          username: voter[:username],
+          name: voter[:name],
+          avatar_template: voter[:avatar_template],
+        }
+      end
     end
 
     # Markdown results summary for the close announcement message.

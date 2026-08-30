@@ -600,6 +600,13 @@ export default class DisteleplusService extends Service {
           .filter((option) => option.chosen)
           .map((option) => option.id)
       );
+    const previousById = {};
+    (previous.options || []).forEach((option) => {
+      previousById[option.id] = option;
+    });
+    // Public polls carry per-option voters (core's preloaded_voters, keyed
+    // by option digest); keep the last known list when a payload lacks it.
+    const preloadedVoters = corePoll.preloaded_voters || null;
     const poll = {
       ...previous,
       status: corePoll.status || previous.status,
@@ -611,6 +618,10 @@ export default class DisteleplusService extends Service {
         html: option.html,
         votes: option.votes ?? 0,
         chosen: chosen.has(option.id),
+        voters:
+          (preloadedVoters
+            ? preloadedVoters[option.id]
+            : previousById[option.id]?.voters) || [],
       })),
     };
     const next = { ...message, poll };
