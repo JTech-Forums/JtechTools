@@ -136,6 +136,9 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       end
 
       it "still routes plain audio through sendAudio" do
+        # mp3 is not among the extensions the voice-note module authorizes
+        # (it only adds recorder outputs), and Upload validates on fabricate.
+        SiteSetting.authorized_extensions = "#{SiteSetting.authorized_extensions}|mp3"
         message.message_uploads.destroy_all
         message.message_uploads.create!(
           upload:
