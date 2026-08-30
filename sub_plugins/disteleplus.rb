@@ -19,8 +19,12 @@ register_asset "stylesheets/disteleplus-native.scss"
   arrow-down
   bell
   chart-bar
+  chart-pie
+  chart-simple
   check
   check-double
+  circle-check
+  circle-info
   comments
   headphones
   discourse-compress
@@ -28,6 +32,9 @@ register_asset "stylesheets/disteleplus-native.scss"
   copy
   download
   ellipsis
+  far-circle
+  lock
+  unlock
   face-smile
   file
   link
