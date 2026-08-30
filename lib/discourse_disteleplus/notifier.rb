@@ -4,6 +4,13 @@ module DiscourseDisteleplus
   module Notifier
     PATH = "/disteleplus"
 
+    # Deep link straight to the message; the conversation reads the #m<id>
+    # hash on open and scrolls/highlights (fetching a window around it when
+    # it is no longer in the freshly-loaded tail).
+    def self.message_url(message)
+      "#{PATH}#m#{message.id}"
+    end
+
     # Notifications are for @mentions only. Every message already bumps the
     # unread badge; a notification per message was noise.
     def self.notify(message, actor:)
@@ -25,7 +32,7 @@ module DiscourseDisteleplus
             data: {
               message: I18n.t("disteleplus.notification", username: display_name(message)),
               title: I18n.t("disteleplus.title"),
-              url: PATH,
+              url: message_url(message),
               username: actor&.username,
               display_username: actor&.username,
               disteleplus_message_id: message.id,
@@ -80,7 +87,7 @@ module DiscourseDisteleplus
           topic_title: I18n.t("disteleplus.title"),
           excerpt: excerpt(message),
           username: display_name(message),
-          post_url: PATH,
+          post_url: message_url(message),
         },
       )
     rescue StandardError => e

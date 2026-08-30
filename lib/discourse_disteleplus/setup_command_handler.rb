@@ -8,7 +8,7 @@ module DiscourseDisteleplus
     COMMAND =
       %r{
       \A/disteleplus_
-      (setup|help|status|bind_general|bind_uploads|create_uploads|sync_notifications)
+      (setup|help|status|bind_general|bind_uploads|create_uploads|sync_notifications|bind_reports)
       (?:@\w+)?
       (?:\s+(.+))?
       \z
@@ -39,6 +39,18 @@ module DiscourseDisteleplus
         reply("Only a Telegram group administrator can configure Disteleplus.")
         return true
       end
+
+      command = match[1].downcase
+
+      # Reports may live in a different (private, staff-only) group than the
+      # bridged conversation, so the "already bound elsewhere" guard does not
+      # apply — instead the sender must prove Discourse-admin identity via an
+      # explicit telegram_id mapping row.
+      if command == "bind_reports"
+        handle_bind_reports(normalized_topic_name(match[2]))
+        return true
+      end
+
       unless authorized_group?
         reply(
           "Disteleplus is already bound to another group. " \
@@ -47,7 +59,6 @@ module DiscourseDisteleplus
         return true
       end
 
-      command = match[1].downcase
       topic_name = normalized_topic_name(match[2])
       send("handle_#{command}", topic_name)
       true
@@ -73,6 +84,9 @@ module DiscourseDisteleplus
 
         Or create and bind it automatically from General:
         <code>/disteleplus_create_uploads Uploads</code>
+
+        Inside the topic (or group) that should receive moderation reports:
+        <code>/disteleplus_bind_reports</code>
 
         Check the saved destinations, notifications and voice notes:
         <code>/disteleplus_status</code>
@@ -110,6 +124,7 @@ module DiscourseDisteleplus
         Telegram conversation: #{SiteSetting.disteleplus_chat_topic_id.to_i.positive? ? "topic #{SiteSetting.disteleplus_chat_topic_id}" : "General"}
         Upload archive: #{upload_state}
         Live upload mirror: #{mirror_state}
+        Moderation reports: #{reports_state}
         Notifications: #{escape(ChannelNotifications.status_summary)}
         Voice notes: #{escape(VoiceNotes.status_summary)}
       HTML
@@ -180,6 +195,43 @@ module DiscourseDisteleplus
       HTML
     end
 
+    # Binds THIS chat (and, when sent inside a Telegram forum topic, this
+    # topic) as the moderation-reports destination and enables the feature.
+    # Gated on an explicit telegram_id → Discourse-admin mapping: report
+    # traffic includes flagged content and the buttons perform real
+    # moderation, so a mere Telegram group admin is not enough.
+    def handle_bind_reports(_topic_name)
+      admin = UserMatcher.privileged_match(@message["from"])
+      unless admin&.admin?
+        reply(
+          "Binding reports requires a Discourse admin. Add your Telegram " \
+            "<b>numeric ID</b> to a row of <code>disteleplus_user_map</code> " \
+            "pointing at your admin account, then retry.",
+        )
+        return
+      end
+      if thread_id == SiteSetting.disteleplus_chat_topic_id.to_i &&
+           chat_id.to_s == SiteSetting.disteleplus_telegram_chat_id.to_s.strip
+        reply("Reports cannot share the Telegram topic used by the bridged conversation.")
+        return
+      end
+
+      SiteSetting.set_and_log(:disteleplus_reports_chat_id, chat_id.to_s, admin)
+      SiteSetting.set_and_log(:disteleplus_reports_topic_id, [thread_id, 0].max, admin)
+      SiteSetting.set_and_log(:disteleplus_reports_enabled, true, admin)
+      # Re-register so Telegram starts delivering callback_query updates.
+      Jobs.enqueue(:disteleplus_register_webhook)
+      reply(<<~HTML.strip)
+        ✅ <b>Reports bound</b>
+        Group: #{escape(chat_title)}
+        Topic: #{thread_id.positive? ? "<code>#{thread_id}</code>" : "General"}
+
+        New flags, queued posts and user reviews will appear here with
+        Approve / Deny / More buttons. Only staff mapped by Telegram numeric ID
+        in <code>disteleplus_user_map</code> can use them.
+      HTML
+    end
+
     def handle_create_uploads(topic_name)
       if thread_id.positive?
         reply(
@@ -218,6 +270,15 @@ module DiscourseDisteleplus
         Enable the live mirror, measure the archive, and start history from
         Discourse admin settings.
       HTML
+    end
+
+    def reports_state
+      return "disabled" unless SiteSetting.disteleplus_reports_enabled
+      target_chat = Reports.chat_id
+      topic = SiteSetting.disteleplus_reports_topic_id.to_i
+      where =
+        target_chat == chat_id.to_s ? "this group" : "chat <code>#{escape(target_chat)}</code>"
+      "enabled — #{where}, #{topic.positive? ? "topic <code>#{topic}</code>" : "General"}"
     end
 
     def telegram_admin?

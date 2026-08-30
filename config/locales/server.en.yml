@@ -4,11 +4,45 @@ en:
     notification: "%{username} mentioned you in Disteleplus"
     upload_only: Sent an attachment
     test_message: "✅ <b>%{site}</b> can reach this group. The conversation is at %{url}"
+    reports:
+      approve: Approve
+      deny: Deny
+      more: More
+      open_in_discourse: Open in Discourse
+      about: About
+      reported_by: Reported by
+      reason: Reason
+      status: Status
+      resolved: "Resolved (%{status})"
+      resolved_by: "Resolved (%{status}) by @%{username}"
+      not_authorized: You are not authorized to act on reports.
+      rate_limited: Slow down — too many actions in a row.
+      unknown_action: Unknown action.
+      gone: This report no longer exists.
+      already_resolved: Already resolved — updating the message.
+      details_sent: Details posted below.
+      no_action: No matching action is available on this report.
+      action_done: "Done: %{action}."
+      action_failed: The action failed. Check Discourse /logs.
+      new_features: New Discourse features are available
+      new_features_link: Open “What's new”
+      admin_problems: The admin dashboard is reporting problems
+      admin_problems_link: Open the dashboard
+      official_warning: An official warning was issued
+      types:
+        flagged_post: Flagged post
+        queued_post: Post awaiting approval
+        user: User review
+        post: Post review
     telegram_error_hints:
       chat_not_found: "Telegram does not know this chat id. Re-check disteleplus_telegram_chat_id, or run /disteleplus_bind_general in the group (a group→supergroup migration changes the id)."
       forbidden: "The bot was removed from the group or lost permissions. Re-add it as an administrator."
       topic_not_found: "The configured Telegram topic no longer exists. Re-bind it with /disteleplus_bind_general or /disteleplus_bind_uploads."
       generic: "See /logs for the full response and check the bot token."
+
+  jtech_tools:
+    admin_actions:
+      disabled: "The feature this action belongs to is disabled — enable its settings first."
 
   dashboard:
     problem:
@@ -551,9 +585,12 @@ en:
 
     disteleplus_setup_commands_enabled: Allow Telegram group administrators
       to bind General, bind an existing upload topic, create the upload topic,
-      and inspect setup through /disteleplus_* commands. Commands are consumed
-      by the setup wizard and never copied into Discourse Chat. Turn this off
-      after setup if Telegram-side reconfiguration is not wanted.
+      bind the moderation-reports topic, and inspect setup through
+      /disteleplus_* commands. Commands are consumed by the setup wizard and
+      never copied into the conversation. Binding reports additionally
+      requires the sender to be mapped (by Telegram numeric ID) to a Discourse
+      admin. Turn this off after setup if Telegram-side reconfiguration is not
+      wanted.
 
     disteleplus_chat_topic_id: Optional Telegram Forum Topic ID for the
       two-way conversation bridge. Set this when the group uses topics so
@@ -563,10 +600,9 @@ en:
     disteleplus_webhook_secret: Shared secret that Telegram sends back in the
       X-Telegram-Bot-Api-Secret-Token header; it is the only thing
       authenticating the inbound webhook. Leave this blank and it is
-      generated for you the first time you use
-      {{setting:disteleplus_register_webhook_now}}. If you change it by hand,
-      run that button again — until you do, every inbound message is
-      rejected.
+      generated for you the first time you press the "Register Telegram
+      webhook" button on this tab. If you change it by hand, press the button
+      again — until you do, every inbound message is rejected.
 
     disteleplus_chat_channel_id: The legacy bridged channel's numeric ID — the
       last part of its old URL. This is read only by the optional administrator
@@ -588,7 +624,17 @@ en:
       mapping here overrides that. Everyone else posts through the bridge bot
       with their Telegram name as a prefix. Security note — anyone who
       controls a mapped Telegram account can post as that Discourse user, so
-      only map people you trust.
+      only map people you trust, and fill in the Telegram numeric ID for
+      staff — moderation buttons in the reports topic only honor rows with a
+      numeric ID, because usernames can be released and re-claimed by
+      strangers.
+
+    disteleplus_auto_match_usernames: Match Telegram senders to Discourse
+      accounts automatically when the Telegram @username is identical to a
+      Discourse username. Staff accounts are never auto-matched — posting as
+      a moderator or admin always requires an explicit row in
+      {{setting:disteleplus_user_map}}. Turn this off to require an explicit
+      mapping for everyone.
 
     disteleplus_user_mappings: 'Legacy pipe-delimited mappings, replaced by
       the table editor in {{setting:disteleplus_user_map}}. Existing values
@@ -758,6 +804,29 @@ en:
       topic. Turn off to announce every reply as well.
     disteleplus_forum_post_excerpt_length: Characters of the post to include
       under the title. Zero sends the title only.
+    disteleplus_reports_enabled: Mirror the Discourse review queue into a
+      Telegram topic. Every new flag, post awaiting approval and user review
+      appears as a message with Approve / Deny / More buttons; resolving a
+      report (from Telegram or from Discourse) edits the message to show who
+      handled it. Buttons only work for staff mapped by Telegram numeric ID
+      in {{setting:disteleplus_user_map}}. Bind the destination by sending
+      /disteleplus_bind_reports inside the desired Telegram topic.
+    disteleplus_reports_chat_id: Numeric Telegram chat ID that receives
+      moderation reports. Leave blank to use the bridged group from
+      {{setting:disteleplus_telegram_chat_id}}. Point it at a separate
+      private staff group to keep flagged content away from members — the
+      bot must be an administrator there too.
+    disteleplus_reports_topic_id: Telegram Forum Topic ID (message_thread_id)
+      inside the reports chat. Zero posts into General. When the reports
+      topic lives inside the bridged group, messages written in it are
+      excluded from the member conversation automatically.
+    disteleplus_reports_excerpt_length: Characters of the flagged/queued
+      content shown in the report message. Zero hides the excerpt entirely
+      (the More button still shows details on demand).
+    disteleplus_reports_admin_notices: Also post admin notices into the
+      reports topic — new-feature announcements ("What's new"), admin
+      dashboard problem alerts, and a who→whom note when an official warning
+      is issued (the warning's text stays private).
     disteleplus_forum_post_link_preview: Let Telegram render its link preview
       card under the announcement.
     disteleplus_send_test_message_now: Send a test message to the bridged
@@ -804,6 +873,10 @@ en:
       dumbcourse_languagetool_secret: grammar|spellcheck|token
       disteleplus_user_map: telegram|mapping|identity|impersonate
       disteleplus_chat_channel_id: telegram|bridge|channel
+      disteleplus_reports_enabled: reports|flags|review queue|moderation|approve|deny
+      disteleplus_reports_chat_id: reports|admin group|moderation
+      disteleplus_reports_admin_notices: what's new|dashboard|problems|warnings
+      disteleplus_auto_match_usernames: identity|impersonate|spoof|security
 
     errors:
       translator_tweaks_invalid_worker_url: must be a full https:// URL with

@@ -47,6 +47,32 @@ RSpec.describe DiscourseDisteleplus::Formatter do
       expect(described_class.outbound_html("zev", "nice :grin:")).to eq("<b>zev:</b> nice 😁")
     end
 
+    it "collapses quote blocks to a username attribution" do
+      raw = "[quote=\"Zev K, post:3, topic:9, username:zev\"]their\nbio and stuff[/quote]\nagreed"
+      expect(described_class.outbound_html("bob", raw)).to eq("<b>bob:</b> ↩︎ Zev K\nagreed")
+    end
+
+    it "collapses nested and bare quote blocks" do
+      raw = "[quote][quote=\"a\"]x[/quote]y[/quote]\nz"
+      expect(described_class.outbound_html("bob", raw)).to eq("<b>bob:</b> ↩︎\nz")
+    end
+
+    it "converts basic markdown to Telegram HTML entities" do
+      expect(described_class.outbound_html("z", "**b** *i* `c` [l](https://x.y)")).to eq(
+        "<b>z:</b> <b>b</b> <i>i</i> <code>c</code> <a href=\"https://x.y\">l</a>",
+      )
+    end
+
+    it "leaves ambiguous asterisks alone" do
+      expect(described_class.outbound_html("z", "2 * 3 * 4")).to eq("<b>z:</b> 2 * 3 * 4")
+    end
+
+    it "names inline uploads instead of leaking upload:// markdown" do
+      expect(described_class.outbound_html("z", "![pic.png](upload://abc.png)")).to eq(
+        "<b>z:</b> 📎 pic.png",
+      )
+    end
+
     it "links a bold display name on its own line when given a profile url" do
       expect(
         described_class.outbound_html(

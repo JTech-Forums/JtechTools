@@ -20,6 +20,15 @@ module DiscourseDisteleplus
       secret = SiteSetting.disteleplus_webhook_secret.to_s
       header = request.headers["X-Telegram-Bot-Api-Secret-Token"].to_s
       unless secret.present? && ActiveSupport::SecurityUtils.secure_compare(header, secret)
+        # Constant-time compare stops timing attacks; this stops online
+        # brute-forcing of the secret. Real Telegram traffic always carries
+        # the right token, so genuine deliveries never hit the limiter.
+        RateLimiter.new(
+          nil,
+          "disteleplus-webhook-bad-auth-#{request.remote_ip}",
+          10,
+          1.minute,
+        ).performed!
         return render json: { ok: false }, status: :forbidden
       end
 

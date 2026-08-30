@@ -17,6 +17,8 @@ register_asset "stylesheets/disteleplus-native.scss"
 %w[
   angles-up
   arrow-down
+  bell
+  chart-bar
   comments
   discourse-compress
   discourse-expand
@@ -48,11 +50,18 @@ register_asset "stylesheets/disteleplus-native.scss"
 module ::DiscourseDisteleplus
   LOG_TAG = "[jtech-tools disteleplus]"
   GENERAL_TOPIC_IDS = [0, 1].freeze
+  # Members of this group are excluded from the /about page's "Our admins" /
+  # "Our moderators" lists via core's about_page_hidden_groups setting, so the
+  # bridge account stays a silent worker even when an admin grants it
+  # moderator rights.
+  HIDDEN_BOTS_GROUP = "jtech_bridge_bots"
 
   def self.bot_user
     username = SiteSetting.disteleplus_bridge_bot_username.to_s.strip
     return nil if username.blank?
-    User.find_by_username(username) || create_bot_user!(username)
+    user = User.find_by_username(username) || create_bot_user!(username)
+    ensure_bot_hidden!(user)
+    user
   end
 
   def self.create_bot_user!(username)
@@ -71,6 +80,40 @@ module ::DiscourseDisteleplus
   rescue StandardError => e
     Rails.logger.warn("#{LOG_TAG} bot user create failed: #{e.class}: #{e.message}")
     nil
+  end
+
+  # Idempotent and memoized per process: puts the bot in a hidden group and
+  # registers that group in about_page_hidden_groups so the bot never shows
+  # up under "meet our team" even as a moderator/admin.
+  def self.ensure_bot_hidden!(user)
+    return if user.nil?
+    @hidden_bot_ids ||= {}
+    return if @hidden_bot_ids[user.id]
+    return unless SiteSetting.respond_to?(:about_page_hidden_groups)
+
+    group =
+      Group.find_by(name: HIDDEN_BOTS_GROUP) ||
+        Group.create!(
+          name: HIDDEN_BOTS_GROUP,
+          full_name: "JTech bridge bots",
+          visibility_level: Group.visibility_levels[:staff],
+          members_visibility_level: Group.visibility_levels[:staff],
+          public_admission: false,
+          allow_membership_requests: false,
+        )
+    group.add(user) unless GroupUser.exists?(group_id: group.id, user_id: user.id)
+
+    hidden = SiteSetting.about_page_hidden_groups.to_s.split("|")
+    if hidden.exclude?(group.id.to_s)
+      SiteSetting.set_and_log(
+        :about_page_hidden_groups,
+        (hidden + [group.id.to_s]).join("|"),
+        Discourse.system_user,
+      )
+    end
+    @hidden_bot_ids[user.id] = true
+  rescue StandardError => e
+    Rails.logger.warn("#{LOG_TAG} could not hide bot from /about: #{e.class}: #{e.message}")
   end
 
   def self.telegram_thread_id(value)
@@ -103,6 +146,7 @@ require_relative "../lib/discourse_disteleplus/voice_notes"
 require_relative "../lib/discourse_disteleplus/legacy_chat_importer"
 require_relative "../lib/discourse_disteleplus/health"
 require_relative "../lib/discourse_disteleplus/forum_post_notifier"
+require_relative "../lib/discourse_disteleplus/reports"
 
 after_initialize do
   # Serializer classes only exist once the app has booted.
@@ -160,6 +204,9 @@ after_initialize do
       if new_val == true && SiteSetting.disteleplus_enabled
         DiscourseDisteleplus::VoiceNotes.ensure_extensions_authorized!
       end
+    when "disteleplus_reports_enabled"
+      # callback_query must be (de)listed in the webhook's allowed_updates.
+      Jobs.enqueue(:disteleplus_register_webhook) if SiteSetting.disteleplus_enabled
     end
   end
 
@@ -183,6 +230,37 @@ after_initialize do
     Rails.logger.warn(
       "#{DiscourseDisteleplus::LOG_TAG} forum post notify hook failed: #{e.message}",
     )
+  end
+
+  # ── Moderation reports → Telegram ─────────────────────────────────────────
+
+  on(:reviewable_created) do |reviewable|
+    next unless DiscourseDisteleplus::Reports.enabled?
+    # Small delay so scores/payload settle before the announcement renders.
+    Jobs.enqueue_in(3.seconds, :disteleplus_notify_reviewable, reviewable_id: reviewable.id)
+  rescue StandardError => e
+    Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} reviewable hook failed: #{e.message}")
+  end
+
+  on(:reviewable_transitioned_to) do |status, reviewable|
+    next unless DiscourseDisteleplus::Reports.enabled?
+    next if status.to_s == "pending"
+    Jobs.enqueue(:disteleplus_report_resolved, reviewable_id: reviewable.id, status: status.to_s)
+  rescue StandardError => e
+    Rails.logger.warn(
+      "#{DiscourseDisteleplus::LOG_TAG} reviewable transition hook failed: #{e.message}",
+    )
+  end
+
+  # Admin-facing notifications (what's-new features, dashboard problems)
+  # mirror into the reports topic. The per-admin fan-out is deduped inside.
+  on(:notification_created) do |notification|
+    DiscourseDisteleplus::Reports.maybe_bridge_admin_notification(notification)
+  end
+
+  # Official warnings: who → whom only; the PM's content stays private.
+  on(:topic_created) do |topic, *_args|
+    DiscourseDisteleplus::Reports.maybe_bridge_official_warning(topic)
   end
 
   register_problem_check ::ProblemCheck::DisteleplusTelegram if respond_to?(:register_problem_check)

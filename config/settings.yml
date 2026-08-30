@@ -84,10 +84,13 @@ jtech_dislike:
     client: false
     depends_on:
       - "discourse_no_likes_enabled"
-  # Run-now toggle: flips itself back off once the job is enqueued.
+  # Legacy run-now toggle, superseded by the Purge button on the Dislike tab.
+  # Hidden but still functional (flips itself back off once the job is
+  # enqueued) so API/console callers keep working.
   purge_phantom_likes_now:
     default: false
     client: false
+    hidden: true
     requires_confirmation: "simple_on_enable"
     depends_on:
       - "discourse_no_likes_enabled"
@@ -881,6 +884,21 @@ jtech_disteleplus:
           description: "An existing Discourse username. Messages from the Telegram account above are posted into chat as this user."
           validations:
             max_length: 60
+        telegram_id:
+          type: string
+          required: false
+          label: "Telegram numeric ID (recommended for staff)"
+          description: "The account's permanent numeric Telegram ID (get it from @userinfobot). Usernames can be released and re-claimed by strangers; the numeric ID cannot. Rows without it are ignored for moderation actions from Telegram."
+          validations:
+            max_length: 20
+  # Same-username auto-matching (Telegram @name == Discourse username) for
+  # regular members. Staff accounts are NEVER auto-matched — impersonating a
+  # moderator must require an explicit row above.
+  disteleplus_auto_match_usernames:
+    default: true
+    client: false
+    depends_on:
+      - "disteleplus_enabled"
 
   # Legacy pipe-delimited form, migrated into disteleplus_user_map by
   # db/migrate/20260828100001. Hidden rather than deleted so a rollback to
@@ -976,6 +994,42 @@ jtech_disteleplus:
     depends_on:
       - "disteleplus_forum_post_notifications_enabled"
 
+  # Moderation reports (flags, queued posts, user reviews) -> a Telegram
+  # "Reports" topic with Approve / Deny / More buttons under each message.
+  disteleplus_reports_enabled:
+    default: false
+    client: false
+    depends_on:
+      - "disteleplus_enabled"
+  # Blank inherits the bridged group. Set a different (private, admin-only)
+  # group id to keep moderation traffic away from the community chat.
+  disteleplus_reports_chat_id:
+    default: ''
+    client: false
+    depends_on:
+      - "disteleplus_reports_enabled"
+  disteleplus_reports_topic_id:
+    default: 0
+    client: false
+    min: 0
+    max: 2000000000
+    depends_on:
+      - "disteleplus_reports_enabled"
+  disteleplus_reports_excerpt_length:
+    default: 300
+    client: false
+    min: 0
+    max: 2000
+    depends_on:
+      - "disteleplus_reports_enabled"
+  # Also mirror admin notices (dashboard problems, "what's new" feature
+  # announcements, official warnings issued) into the reports topic.
+  disteleplus_reports_admin_notices:
+    default: true
+    client: false
+    depends_on:
+      - "disteleplus_reports_enabled"
+
   # Ordinary forum Post uploads -> a separate Telegram Forum Topic.
   disteleplus_forum_uploads_enabled:
     default: false
@@ -1034,15 +1088,19 @@ jtech_disteleplus:
     max: 60
     depends_on:
       - "disteleplus_forum_uploads_enabled"
+  # Legacy run-now toggles, superseded by the buttons on the Disteleplus
+  # admin tab. Hidden but still functional for API/console callers.
   disteleplus_forum_upload_measure_now:
     default: false
     client: false
+    hidden: true
     requires_confirmation: "simple_on_enable"
     depends_on:
       - "disteleplus_forum_uploads_enabled"
   disteleplus_forum_upload_backfill_now:
     default: false
     client: false
+    hidden: true
     requires_confirmation: "simple_on_enable"
     depends_on:
       - "disteleplus_forum_uploads_enabled"
@@ -1108,19 +1166,20 @@ jtech_disteleplus:
     depends_on:
       - "disteleplus_voice_notes_enabled"
 
-  # Maintenance — flip on to (re)register the Telegram webhook; enqueues
-  # setWebhook and resets itself.
+  # Legacy maintenance toggles, superseded by the "Register webhook" and
+  # "Send test message" buttons on the Disteleplus admin tab. Hidden but
+  # still functional for API/console callers; each resets itself.
   disteleplus_register_webhook_now:
     default: false
     client: false
+    hidden: true
     requires_confirmation: "simple_on_enable"
     depends_on:
       - "disteleplus_enabled"
-  # Flip on to send a test message to the bridged group; resets itself. A
-  # failure shows up on the admin dashboard as a problem.
   disteleplus_send_test_message_now:
     default: false
     client: false
+    hidden: true
     requires_confirmation: "simple_on_enable"
     depends_on:
       - "disteleplus_enabled"

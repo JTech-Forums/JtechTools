@@ -19,6 +19,40 @@ RSpec.describe DiscourseDisteleplus::UserMatcher do
     expect(described_class.match(from("alice"))).to eq(alice)
   end
 
+  it "never auto-matches staff by bare username" do
+    mod = Fabricate(:moderator, username: "modface")
+    expect(described_class.match(from("modface"))).to be_nil
+    SiteSetting.disteleplus_user_map = [
+      { "telegram_username" => "modface", "discourse_username" => "modface" },
+    ].to_json
+    expect(described_class.match(from("modface"))).to eq(mod)
+  end
+
+  it "respects disteleplus_auto_match_usernames = false" do
+    SiteSetting.disteleplus_auto_match_usernames = false
+    expect(described_class.match(from("alice"))).to be_nil
+  end
+
+  it "prefers a numeric telegram_id row over everything" do
+    SiteSetting.disteleplus_user_map = [
+      { "telegram_username" => "whatever", "discourse_username" => "bob", "telegram_id" => "1" },
+    ].to_json
+    expect(described_class.match(from("alice"))).to eq(bob)
+  end
+
+  describe ".privileged_match" do
+    it "only honors explicit numeric telegram_id rows" do
+      map!(%w[alice alice])
+      expect(described_class.privileged_match(from("alice"))).to be_nil
+
+      SiteSetting.disteleplus_user_map = [
+        { "telegram_username" => "alice", "discourse_username" => "alice", "telegram_id" => "1" },
+      ].to_json
+      expect(described_class.privileged_match(from("alice"))).to eq(alice)
+      expect(described_class.privileged_match({ "id" => 2, "username" => "alice" })).to be_nil
+    end
+  end
+
   it "matches case-insensitively" do
     expect(described_class.match(from("ALICE"))).to eq(alice)
   end

@@ -21,6 +21,10 @@ module DiscourseDisteleplus
         handle_poll_state(poll)
       elsif (reaction = @update["message_reaction"])
         handle_reaction(reaction)
+      elsif (callback = @update["callback_query"])
+        # Report action buttons. All authorization (reports chat, explicit
+        # telegram_id staff mapping, rate limits) happens inside Reports.
+        Reports.handle_callback(callback)
       end
     end
 
@@ -186,6 +190,10 @@ module DiscourseDisteleplus
       if SiteSetting.disteleplus_forum_uploads_enabled && upload_topic_id.positive?
         return false if actual_topic_id == upload_topic_id
       end
+
+      # Same for the moderation reports topic: flag discussions between
+      # staff must never mirror into the member-facing conversation.
+      return false if Reports.reports_thread_in_bridge_chat?(actual_topic_id)
 
       chat_topic_id = SiteSetting.disteleplus_chat_topic_id.to_i
       return actual_topic_id == chat_topic_id if chat_topic_id.positive?

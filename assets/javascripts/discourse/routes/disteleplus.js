@@ -14,6 +14,15 @@ export default class DisteleplusRoute extends DiscourseRoute {
 
   beforeModel(transition) {
     this.disteleplus.storeAppURL();
+    // Deep link (#m<id>) from a notification or a copied message link. The
+    // Ember router drops the hash, so read it off the transition/URL here
+    // and stash it for whichever surface (drawer or full page) opens.
+    const hash =
+      transition.intent?.url?.match(/#m(\d+)/) ||
+      window.location.hash.match(/^#m(\d+)$/);
+    if (hash) {
+      this.disteleplus.requestJump(Number(hash[1]));
+    }
     const fullPageReload = !transition.from;
     if (this.disteleplus.isDrawerPreferred && !fullPageReload) {
       transition.abort();

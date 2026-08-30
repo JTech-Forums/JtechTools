@@ -66,7 +66,7 @@ module Jobs
 
       sent = [] # [[telegram_message, kind], ...]
       if uploads.blank?
-        sent << [send_text(html, reply_to), :text]
+        sent << [send_text(html, reply_to, preview: preview_options(message.raw)), :text]
       else
         uploads.each_with_index do |upload, index|
           caption = index.zero? ? html : nil
@@ -87,6 +87,9 @@ module Jobs
     end
 
     def handle_edit(message_id)
+      # The toggle gates both directions — inbound is checked in
+      # UpdateProcessor#handle_edit.
+      return unless SiteSetting.disteleplus_bridge_edits
       link = DiscourseDisteleplus::MessageLink.for_message(message_id).discourse_to_tg.first
       return if link.nil?
 
@@ -96,13 +99,19 @@ module Jobs
       html = outbound_html(message)
       payload = { chat_id: @chat_id, message_id: link.telegram_message_id, parse_mode: "HTML" }
       if link.kind_text?
-        @api.call("editMessageText", payload.merge(text: html))
+        @api.call(
+          "editMessageText",
+          payload.merge(text: html, link_preview_options: preview_options(message.raw)),
+        )
       else
         @api.call("editMessageCaption", payload.merge(caption: html))
       end
     end
 
     def handle_delete(message_id)
+      # Honor the toggle: with it off, the Discourse-side delete stands but
+      # the Telegram copy is left alone (and stays linked for the record).
+      return unless SiteSetting.disteleplus_bridge_deletes
       DiscourseDisteleplus::MessageLink
         .for_message(message_id)
         .discourse_to_tg
@@ -147,12 +156,22 @@ module Jobs
 
     # ── send helpers ─────────────────────────────────────────────────────────
 
-    def send_text(html, reply_to)
-      payload = { chat_id: @chat_id, text: html, parse_mode: "HTML" }
+    def send_text(html, reply_to, preview: { is_disabled: true })
+      payload = { chat_id: @chat_id, text: html, parse_mode: "HTML", link_preview_options: preview }
       payload[:message_thread_id] = @thread_id if @thread_id
       payload[:reply_to_message_id] = reply_to if reply_to
       result = @api.call("sendMessage", payload)
       result.ok ? result.result : log_send_failure(result)
+    end
+
+    # The author header is a link to the sender's Discourse profile; without
+    # this Telegram picks that first URL for its preview card and renders the
+    # user's profile page — avatar, bio and all — under every message. Point
+    # the preview at the first URL in the body instead, or turn it off when
+    # the body has none.
+    def preview_options(raw)
+      url = raw.to_s[%r{https?://[^\s)\]>]+}]
+      url ? { url: url } : { is_disabled: true }
     end
 
     # → [telegram_message, kind] (either may be nil on failure).

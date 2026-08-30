@@ -13,6 +13,8 @@ module Jobs
       updates = %w[message edited_message]
       updates << "poll" if SiteSetting.disteleplus_bridge_polls
       updates << "message_reaction" if SiteSetting.disteleplus_bridge_reactions
+      # Report action buttons arrive as callback queries.
+      updates << "callback_query" if SiteSetting.disteleplus_reports_enabled
       updates
     end
 
@@ -62,6 +64,10 @@ module Jobs
               { command: "disteleplus_bind_general", description: "Bind this group and General" },
               { command: "disteleplus_bind_uploads", description: "Bind this topic for uploads" },
               { command: "disteleplus_create_uploads", description: "Create the upload topic" },
+              {
+                command: "disteleplus_bind_reports",
+                description: "Bind this topic for moderation reports",
+              },
               {
                 command: "disteleplus_sync_notifications",
                 description: "Re-enrol members for channel notifications",

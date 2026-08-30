@@ -80,6 +80,15 @@ Discourse::Application.routes.append do
   get "/disteleplus" => "discourse_disteleplus/conversation#page"
 end
 
+# ── Jtech admin maintenance actions (buttons on the plugin tabs) ───────────
+Discourse::Application.routes.append do
+  post "/admin/plugins/jtech-tools/actions/:id" => "jtech/admin_actions#run",
+       :constraints => AdminConstraint.new,
+       :defaults => {
+         format: :json,
+       }
+end
+
 # ── Dumbcourse ─────────────────────────────────────────────────────────────
 class DiscourseDumbcourseBasePathConstraint
   # Request constraints run before path params are merged into req.params, so
