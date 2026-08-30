@@ -172,6 +172,150 @@ html.has-full-page-disteleplus {
   }
 }
 
+// ── drawer (desktop) — mirrors chat-drawer.scss ────────────────────────────
+.disteleplus-drawer-outlet-container {
+  position: fixed;
+  right: 20px;
+  bottom: 0;
+  left: 0;
+  z-index: 250; // above the topic timeline, below composer/dropdowns/user card
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100% - var(--header-offset, 60px) - 15px);
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  pointer-events: none !important;
+  transition:
+    bottom 100ms ease-in,
+    padding-bottom 100ms ease-in;
+
+  &.above-composer {
+    padding-bottom: var(--composer-height, 0);
+  }
+}
+
+.disteleplus-drawer {
+  align-self: flex-end;
+  width: 400px;
+  min-width: 250px !important; // overrides inline size
+  max-width: calc(100% - 20px);
+  min-height: 300px !important;
+  pointer-events: auto;
+  container-type: inline-size;
+
+  &__container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
+    border: 1px solid var(--content-border-color, var(--primary-low));
+    border-bottom: 0;
+    border-top-left-radius: var(--d-border-radius-large, 12px);
+    border-top-right-radius: var(--d-border-radius-large, 12px);
+    background: var(--secondary);
+    box-shadow: 0 0 4px rgb(0 0 0 / 12.5%);
+  }
+
+  &.is-expanded &__container {
+    height: 100%;
+  }
+
+  &.is-collapsed {
+    min-height: 0 !important;
+    height: auto !important;
+    max-width: 25vw;
+
+    .disteleplus-drawer__resizer {
+      display: none;
+    }
+  }
+
+  &__resizer {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    z-index: 2;
+    width: 15px;
+    height: 15px;
+    cursor: nwse-resize;
+  }
+
+  &__content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 1px;
+    overflow: hidden;
+  }
+}
+
+// Drawer / full-page navbar — mirrors .c-navbar
+.disteleplus-navbar-container {
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  padding: 0 0.67em;
+  border-bottom: 1px solid var(--content-border-color, var(--primary-low));
+  background: var(--secondary);
+
+  .disteleplus-drawer & {
+    cursor: pointer;
+  }
+}
+
+.disteleplus-navbar {
+  --disteleplus-navbar-height: 45px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: var(--disteleplus-navbar-height);
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow: hidden;
+    font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    .d-icon {
+      color: var(--primary-medium);
+    }
+  }
+
+  &__unread {
+    min-width: 1.25rem;
+    padding: 0 0.35rem;
+    border-radius: 0.625rem;
+    color: var(--secondary);
+    background: var(--tertiary);
+    font-size: var(--font-down-2);
+    font-weight: 700;
+    line-height: 1.25rem;
+    text-align: center;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+
+    .btn {
+      color: var(--primary-medium);
+
+      &:hover {
+        color: var(--primary);
+      }
+    }
+  }
+}
+
 // ── message row — mirrors .chat-message-container / .chat-message ──────────
 .disteleplus-message {
   position: relative;
