@@ -35,15 +35,51 @@ module Jobs
       raw = DiscourseDisteleplus::Polls.results_markdown(message)
       return if raw.blank?
 
-      DiscourseDisteleplus::MessageService.new(actor: Discourse.system_user).create!(
-        raw: raw,
-        reply_to_id: message.id,
-        notify: false,
-      )
+      announcement =
+        DiscourseDisteleplus::MessageService.new(actor: Discourse.system_user).create!(
+          raw: raw,
+          reply_to_id: message.id,
+          notify: false,
+        )
+      notify_author(message, announcement)
     rescue StandardError => e
       Rails.logger.warn(
         "#{DiscourseDisteleplus::LOG_TAG} poll close announcement failed: #{e.message}",
       )
+    end
+
+    private
+
+    # The poll's author gets a bell (and toast) pointing at the results.
+    def notify_author(poll_message, announcement)
+      author = poll_message.user
+      return if author.nil? || author.bot?
+
+      question = DiscourseDisteleplus::Polls.question_text(poll_message.raw).presence
+      notification =
+        Notification.create!(
+          notification_type: Notification.types[:custom],
+          user_id: author.id,
+          high_priority: true,
+          data: {
+            message:
+              I18n.t(
+                "disteleplus.poll_closed_notification",
+                question: question,
+                default: "Your poll closed: #{question}",
+              ),
+            title: I18n.t("disteleplus.title", default: "Disteleplus"),
+            url: "/disteleplus#m#{announcement.id}",
+            excerpt: question,
+            disteleplus_message_id: announcement.id,
+            disteleplus: true,
+            disteleplus_kind: "poll_closed",
+          }.to_json,
+        )
+      author.publish_notifications_state
+      notification
+    rescue StandardError => e
+      Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} poll close notify failed: #{e.message}")
     end
   end
 end

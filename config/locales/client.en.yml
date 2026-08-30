@@ -64,6 +64,8 @@ en:
         reopen: Reopen poll
         stats: View stats
         stats_title: Poll results
+        closed_label: Your poll closed
+        closed_title: Poll results are in
         builder:
           title: Create a poll
           template_yes_no: Yes / No
@@ -166,6 +168,7 @@ en:
         note: Added a moderator note
         chat_mentioned: Mentioned you in chat
         chat_message: Sent a chat message
+        poll_closed: Your poll closed
         # NB: this key must never be "one" or "other" — Discourse's i18n
         # linter would then treat the whole action map as a pluralized
         # string and reject the other keys.
