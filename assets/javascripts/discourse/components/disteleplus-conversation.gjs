@@ -18,7 +18,7 @@ import { getAbsoluteURL } from "discourse/lib/get-url";
 import lightbox from "discourse/lib/lightbox";
 import { emojiUrlFor } from "discourse/lib/text";
 import userSearch from "discourse/lib/user-search";
-import dAutocomplete from "discourse/modifiers/d-autocomplete";
+import dAutocomplete from "discourse/ui-kit/modifiers/d-autocomplete";
 import { i18n } from "discourse-i18n";
 import { enhanceWithin } from "../lib/disteleplus-voice-player";
 import DisteleplusVoiceRecorder from "./disteleplus-voice-recorder";
