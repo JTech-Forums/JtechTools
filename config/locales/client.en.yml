@@ -301,6 +301,8 @@ en:
       first_post_checklist:
         modal_title: Before you post
         intro: Please confirm each item below before posting for the first time.
+        progress: "%{checked} of %{total} confirmed"
+        all_done: All set — you're good to go!
         last_updated: 'Last updated:'
         confirm: I agree, post
         cancel: Cancel
