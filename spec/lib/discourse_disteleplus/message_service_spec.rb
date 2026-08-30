@@ -230,7 +230,8 @@ RSpec.describe DiscourseDisteleplus::MessageService do
         Jobs::DeliverPushNotification.jobs.size
       }.by(1)
       payload = Jobs::DeliverPushNotification.jobs.last["args"].first["payload"]
-      expect(payload).to include("post_url" => "/disteleplus", "username" => member.username)
+      expect(payload["post_url"]).to start_with("/disteleplus#m")
+      expect(payload).to include("username" => member.username)
     end
   end
 end
