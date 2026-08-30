@@ -138,6 +138,14 @@ en:
         "on": "On"
         "off": "Off"
     discourse_mod_categories:
+      post_viewers:
+        label: See message viewers
+        title: Viewed by
+        count:
+          one: "%{count} reader"
+          other: "%{count} readers"
+        nobody: No logged-in readers yet
+        anon_note: Logged-in readers only — anonymous visitors leave no per-post trace.
       precheck:
         title: Before you post
         confirm: Post anyway

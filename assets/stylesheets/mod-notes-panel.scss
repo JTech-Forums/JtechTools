@@ -29,3 +29,54 @@
     }
   }
 }
+
+// ── staff "See message viewers" modal ──────────────────────────────────────
+.mod-post-viewers__count {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  margin: 0 0 0.5em;
+  color: var(--primary-high);
+  font-weight: 600;
+
+  .d-icon {
+    color: var(--tertiary);
+  }
+}
+
+.mod-post-viewers__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    padding: 0.35em 0;
+
+    img {
+      width: 28px;
+      height: 28px;
+      border-radius: 100%;
+    }
+  }
+}
+
+.mod-post-viewers__name {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.mod-post-viewers__when {
+  margin-left: auto;
+  color: var(--primary-medium);
+  font-size: var(--font-down-1);
+}
+
+.mod-post-viewers__empty,
+.mod-post-viewers__note {
+  color: var(--primary-medium);
+  margin: 0.25em 0 0;
+  font-size: var(--font-down-1);
+}

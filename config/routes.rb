@@ -40,6 +40,7 @@ Discourse::Application.routes.append do
     post "/review/notifications/seen" => "messages#mark_review_notifications_seen"
     post "/topic/:topic_id/note-view" => "messages#record_note_view"
     put "/post/:id/whisper" => "messages#update_post_whisper"
+    get "/post/:id/viewers" => "messages#post_viewers"
     get "/checklist" => "checklist#show"
     get "/checklist/owed" => "checklist#owed"
     put "/checklist" => "checklist#update"
