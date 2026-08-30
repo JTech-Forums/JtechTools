@@ -393,6 +393,11 @@ export default class DisteleplusConversation extends Component {
   autosize(textarea) {
     textarea.style.height = "auto";
     textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    // The scrollbar only exists once content outgrows the cap — otherwise a
+    // fractional overflow paints Windows' arrow buttons in the 22px resting
+    // composer (CSS keeps overflow-y hidden by default).
+    textarea.style.overflowY =
+      textarea.scrollHeight > textarea.clientHeight + 1 ? "auto" : "hidden";
   }
 
   @action
