@@ -142,6 +142,7 @@ en:
         speed: Playback speed
         speed_value: "Playback speed %{speed}×"
         download: Download
+        fullscreen: Full screen
         unavailable: This audio could not be loaded.
     jtech_popup_notifications:
       someone: Someone
