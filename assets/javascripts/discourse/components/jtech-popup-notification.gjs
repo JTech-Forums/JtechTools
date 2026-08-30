@@ -145,6 +145,9 @@ export default class JtechPopupNotification extends Component {
     const data = notification.data || {};
     if (notification.notification_type === CUSTOM_TYPE) {
       if (data.disteleplus) {
+        if (data.disteleplus_kind === "poll_closed") {
+          return { icon: "chart-simple", action: "poll_closed" };
+        }
         return { icon: "comments", action: "chat_mentioned" };
       }
       if (data.mod_whisper) {

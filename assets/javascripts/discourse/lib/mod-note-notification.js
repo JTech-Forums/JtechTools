@@ -38,6 +38,11 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
       return !!this.notification.data?.disteleplus;
     }
 
+    // "mention" (default) or "poll_closed" — each gets its own bell text.
+    get disteleplusKind() {
+      return this.notification.data?.disteleplus_kind || "mention";
+    }
+
     // "note" (default) vs "reply" / "post_deleted" / "post_approved" /
     // "post_rejected" / "user_note" / "flag_note" — every kind gets its
     // own label/title so the bell row reads accurately. Pre-`mod_note_kind`
@@ -53,7 +58,10 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     // Link straight to the target — note anchor on a topic, the post,
     // the user notes tab, or the review-queue entry, depending on kind.
     get linkHref() {
-      if ((this.isModNote || this.isDisteleplus) && this.notification.data?.url) {
+      if (
+        (this.isModNote || this.isDisteleplus) &&
+        this.notification.data?.url
+      ) {
         return this.notification.data.url;
       }
       return super.linkHref;
@@ -61,6 +69,9 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
 
     get linkTitle() {
       if (this.isDisteleplus) {
+        if (this.disteleplusKind === "poll_closed") {
+          return i18n("disteleplus.poll.closed_title");
+        }
         return i18n("disteleplus.mention_title");
       }
       if (this.isModNote) {
@@ -77,7 +88,9 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     // unambiguously as a moderator/staff item.
     get icon() {
       if (this.isDisteleplus) {
-        return "comments";
+        return this.disteleplusKind === "poll_closed"
+          ? "chart-simple"
+          : "comments";
       }
       if (this.isModNote) {
         return "shield-halved";
@@ -90,6 +103,9 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     // e.g. "added a moderator note", "deleted a post", "added a note on a user".
     get label() {
       if (this.isDisteleplus) {
+        if (this.disteleplusKind === "poll_closed") {
+          return i18n("disteleplus.poll.closed_label");
+        }
         return i18n("disteleplus.mention_label", { username: this.username });
       }
       if (this.isModNote) {
