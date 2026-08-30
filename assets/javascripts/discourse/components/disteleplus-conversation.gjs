@@ -932,12 +932,14 @@ export default class DisteleplusConversation extends Component {
       .join(", ");
   }
 
-  listenAvatars(message) {
+  // Arrow property: the template calls this as a bare function helper, which
+  // strips the receiver — a plain method would crash on this.avatarUrl.
+  listenAvatars = (message) => {
     return (message.listened_by || []).slice(0, 8).map((user) => ({
       username: user.username,
       url: this.avatarUrl(user.avatar_template),
     }));
-  }
+  };
 
   // WhatsApp-style message info: who saw / listened, and when.
   @action
