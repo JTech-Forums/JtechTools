@@ -1,5 +1,6 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
+import { getOwner } from "@ember/application";
 import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
@@ -78,15 +79,22 @@ const MOD_NOTE_KINDS = {
 // would make the i18n linter treat the action map as a pluralized string.)
 const FALLBACK = { icon: "bell", action: "generic" };
 
+// Disteleplus native conversation: its MessageBus channel is user-scoped by
+// the server-side Publisher, so subscribing here only ever yields messages
+// this user may see.
+const DISTELEPLUS_CHANNEL = "/disteleplus/conversation";
+
 export default class JtechPopupNotification extends Component {
   @service currentUser;
   @service siteSettings;
   @service site;
   @service messageBus;
+  @service router;
 
   @tracked toasts = [];
 
   channel = null;
+  disteleplusSubscribed = false;
   seen = new Set();
   listening = false;
 
@@ -103,6 +111,10 @@ export default class JtechPopupNotification extends Component {
     this.channel = `/notification/${this.currentUser.id}`;
     this.onDocumentClick = this.onDocumentClick.bind(this);
     this.messageBus.subscribe(this.channel, this.onMessage);
+    if (this.siteSettings.disteleplus_enabled) {
+      this.messageBus.subscribe(DISTELEPLUS_CHANNEL, this.onConversationEvent);
+      this.disteleplusSubscribed = true;
+    }
   }
 
   willDestroy() {
@@ -110,6 +122,12 @@ export default class JtechPopupNotification extends Component {
     this.dismissAll();
     if (this.channel) {
       this.messageBus.unsubscribe(this.channel, this.onMessage);
+    }
+    if (this.disteleplusSubscribed) {
+      this.messageBus.unsubscribe(
+        DISTELEPLUS_CHANNEL,
+        this.onConversationEvent
+      );
     }
   }
 
@@ -126,6 +144,9 @@ export default class JtechPopupNotification extends Component {
   metaFor(notification) {
     const data = notification.data || {};
     if (notification.notification_type === CUSTOM_TYPE) {
+      if (data.disteleplus) {
+        return { icon: "comments", action: "chat_mentioned" };
+      }
       if (data.mod_whisper) {
         return { icon: "eye", action: "whispered" };
       }
@@ -135,6 +156,89 @@ export default class JtechPopupNotification extends Component {
       return FALLBACK;
     }
     return CORE_TYPES[notification.notification_type] || FALLBACK;
+  }
+
+  // Every native-conversation message pops a card (not only @mentions).
+  // The payload is the serialized message straight off the conversation
+  // channel — no enrichment fetch needed.
+  @action
+  onConversationEvent(payload) {
+    try {
+      if (!this.siteSettings.popup_notifications_enabled || !this.prefEnabled) {
+        return;
+      }
+      if (payload?.type !== "created" || !payload.message?.id) {
+        return;
+      }
+      const message = payload.message;
+      if (message.user?.id === this.currentUser.id) {
+        return;
+      }
+      const excluded = (
+        this.siteSettings.popup_notifications_excluded_types || ""
+      ).split("|");
+      if (excluded.includes("chat_message")) {
+        return;
+      }
+      // One card per conversation message: the @mention notification path
+      // claims the same key, so whichever arrives first wins.
+      const key = `dp-${message.id}`;
+      if (this.seen.has(key)) {
+        return;
+      }
+      const createdAt = Date.parse(message.created_at);
+      if (createdAt && createdAt < this.mountedAt - STALE_MS) {
+        return;
+      }
+      if (this.conversationVisible) {
+        return;
+      }
+      this.seen.add(key);
+
+      const name =
+        message.user?.name ||
+        message.user?.username ||
+        message.external_sender_name ||
+        i18n("jtech_popup_notifications.someone");
+      let avatarUrl = null;
+      if (message.user?.avatar_template) {
+        avatarUrl = getURLWithCDN(
+          message.user.avatar_template.replace("{size}", AVATAR_SIZE)
+        );
+      }
+      let excerpt = (message.raw || "").replace(/\s+/g, " ").trim();
+      if (excerpt.length > EXCERPT_LENGTH) {
+        excerpt = `${excerpt.slice(0, EXCERPT_LENGTH)}…`;
+      }
+      this.addToast({
+        key,
+        name,
+        action: i18n("jtech_popup_notifications.action.chat_message"),
+        icon: "comments",
+        title: "",
+        excerpt,
+        avatarUrl,
+        url: `/disteleplus#m${message.id}`,
+        timer: null,
+      });
+    } catch {
+      // A malformed payload must never break the page.
+    }
+  }
+
+  // True while the user is already looking at the conversation — full page
+  // route, or the drawer open and expanded (service looked up lazily so this
+  // component keeps working if the disteleplus module is disabled).
+  get conversationVisible() {
+    if (this.router.currentRouteName === "disteleplus") {
+      return true;
+    }
+    try {
+      const disteleplus = getOwner(this).lookup("service:disteleplus");
+      return !!(disteleplus?.isDrawerActive && disteleplus?.isDrawerExpanded);
+    } catch {
+      return false;
+    }
   }
 
   @action
@@ -166,6 +270,15 @@ export default class JtechPopupNotification extends Component {
       if (createdAt && createdAt < this.mountedAt - STALE_MS) {
         return;
       }
+      // A conversation @mention also travels the chat_message path — claim
+      // the shared per-message key so only one card shows for it.
+      if (notification.data?.disteleplus_message_id) {
+        const dpKey = `dp-${notification.data.disteleplus_message_id}`;
+        if (this.seen.has(dpKey)) {
+          return;
+        }
+        this.seen.add(dpKey);
+      }
       this.seen.add(notification.id);
       await this.present(notification);
     } catch {
@@ -192,6 +305,18 @@ export default class JtechPopupNotification extends Component {
       url: this.urlFor(notification),
       timer: null,
     };
+
+    // Notifications that carry the acting user's avatar directly (the
+    // conversation notifier does) skip the post fetch — there is no post.
+    if (data.avatar_template) {
+      toast.avatarUrl = getURLWithCDN(
+        data.avatar_template.replace("{size}", AVATAR_SIZE)
+      );
+      if (this.prefEnabled) {
+        this.addToast(toast);
+      }
+      return;
+    }
 
     // Enrich with the acting user's avatar + a preview of their message from
     // the source post. Best-effort: the card still shows without it (custom
