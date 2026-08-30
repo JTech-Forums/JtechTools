@@ -180,8 +180,8 @@ RSpec.describe DiscourseDisteleplus::MessageService do
 
   describe "#mark_read!" do
     it "advances monotonically and clears matching notifications" do
-      first = service(other).create!(raw: "one")
-      second = service(other).create!(raw: "two")
+      first = service(other).create!(raw: "one @#{member.username}")
+      second = service(other).create!(raw: "two @#{member.username}")
       expect(Notification.where(user_id: member.id, read: false).count).to eq(2)
 
       state = service.mark_read!(second.id)
@@ -194,23 +194,38 @@ RSpec.describe DiscourseDisteleplus::MessageService do
   end
 
   describe "notifications" do
-    it "skips the author and the bridge bot, and respects the toggle" do
+    it "notifies only @mentioned allowed users, never the author or the bot" do
       bot = DiscourseDisteleplus.bot_user
-      bot.groups << Group.find(Group::AUTO_GROUPS[:trust_level_1]) unless bot.admin?
-      service.create!(raw: "hello")
+      service.create!(
+        raw:
+          "hello @#{other.username} and @#{admin.username} and @#{bot.username} and @#{outsider.username}",
+      )
       ids = Notification.where(notification_type: Notification.types[:custom]).pluck(:user_id)
-      expect(ids).not_to include(member.id, bot.id)
-      expect(ids).to include(admin.id, other.id)
+      expect(ids).to contain_exactly(other.id, admin.id)
+      expect(Notification.where(user_id: other.id).last.data).to include("mentioned you")
+    end
 
-      Notification.delete_all
+    it "expands @group mentions to allowed members" do
+      group = Fabricate(:group, name: "ops", mentionable_level: Group::ALIAS_LEVELS[:everyone])
+      group.add(other)
+      group.add(outsider)
+      service.create!(raw: "heads up @ops")
+      ids = Notification.where(notification_type: Notification.types[:custom]).pluck(:user_id)
+      expect(ids).to contain_exactly(other.id)
+    end
+
+    it "respects the master toggle" do
       SiteSetting.disteleplus_force_channel_notifications = false
-      service.create!(raw: "quiet")
+      service.create!(raw: "quiet @#{other.username}")
       expect(Notification.where(notification_type: Notification.types[:custom]).count).to eq(0)
     end
 
-    it "queues web push for subscribed recipients" do
+    it "queues web push only for mentioned, subscribed recipients" do
       PushSubscription.create!(user: other, data: { endpoint: "https://push.example/x" }.to_json)
-      expect { service.create!(raw: "push me") }.to change {
+      expect { service.create!(raw: "no mention here") }.not_to change {
+        Jobs::SendPushNotification.jobs.size
+      }
+      expect { service.create!(raw: "push @#{other.username}") }.to change {
         Jobs::SendPushNotification.jobs.size
       }.by(1)
       payload = Jobs::SendPushNotification.jobs.last["args"].first["payload"]

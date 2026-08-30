@@ -4,11 +4,17 @@ module DiscourseDisteleplus
   module Notifier
     PATH = "/disteleplus"
 
+    # Notifications are for @mentions only. Every message already bumps the
+    # unread badge; a notification per message was noise.
     def self.notify(message, actor:)
       return unless SiteSetting.disteleplus_force_channel_notifications
 
+      mentioned_ids = mentioned_user_ids(message)
+      return if mentioned_ids.empty?
+
       bot_id = DiscourseDisteleplus.bot_user&.id
-      recipients = Access.allowed_users.where.not(id: [actor&.id, bot_id].compact)
+      recipients =
+        Access.allowed_users.where(id: mentioned_ids).where.not(id: [actor&.id, bot_id].compact)
       recipients.find_each do |recipient|
         notification =
           Notification.create!(
@@ -33,6 +39,21 @@ module DiscourseDisteleplus
       Rails.logger.warn(
         "#{DiscourseDisteleplus::LOG_TAG} notification fan-out failed: #{e.message}",
       )
+    end
+
+    # User ids addressed by @user and @group mentions in the cooked message.
+    def self.mentioned_user_ids(message)
+      return [] if message.cooked.blank?
+
+      doc = Nokogiri::HTML5.fragment(message.cooked)
+      names = doc.css("a.mention").map { |a| a.text.to_s.delete_prefix("@").downcase }
+      group_names = doc.css("a.mention-group").map { |a| a.text.to_s.delete_prefix("@").downcase }
+      ids = names.empty? ? [] : User.where(username_lower: names).pluck(:id)
+      if group_names.any?
+        group_ids = Group.where("LOWER(name) IN (?)", group_names).pluck(:id)
+        ids |= GroupUser.where(group_id: group_ids).pluck(:user_id) if group_ids.any?
+      end
+      ids.uniq
     end
 
     def self.mark_read(user, through_id)

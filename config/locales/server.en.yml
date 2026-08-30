@@ -1,7 +1,7 @@
 en:
   disteleplus:
     title: Disteleplus
-    notification: "%{username} sent a Disteleplus message"
+    notification: "%{username} mentioned you in Disteleplus"
     upload_only: Sent an attachment
     test_message: "✅ <b>%{site}</b> can reach this group. The conversation is at %{url}"
     telegram_error_hints:
