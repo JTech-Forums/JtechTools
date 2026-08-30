@@ -45,6 +45,7 @@ module DiscourseDisteleplus
           name: user.name,
           avatar_template: user.avatar_template,
           last_read_message_id: last_read_message_id,
+          updated_at: Time.zone.now.iso8601,
         },
         user_ids: user_ids,
         max_backlog_age: 5,

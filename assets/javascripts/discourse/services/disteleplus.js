@@ -102,6 +102,7 @@ export default class DisteleplusService extends Service {
               username: payload.username,
               name: payload.name,
               avatar_template: payload.avatar_template,
+              listened_at: new Date().toISOString(),
             },
           ],
         });
@@ -117,6 +118,7 @@ export default class DisteleplusService extends Service {
             name: payload.name,
             avatar_template: payload.avatar_template,
             last_read_message_id: payload.last_read_message_id,
+            updated_at: payload.updated_at,
           },
         };
       }

@@ -35,6 +35,11 @@ en:
       listened_by:
         one: "Listened by %{count}"
         other: "Listened by %{count}"
+      message_info:
+        title: Message info
+        seen: Seen by
+        listened: Listened by
+        nobody_yet: Nobody yet
       quote_in_chat:
         label: Quote in chat
       typing_one: "%{name} is typing"
