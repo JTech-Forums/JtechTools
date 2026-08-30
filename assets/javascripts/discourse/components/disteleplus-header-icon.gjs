@@ -34,17 +34,28 @@ export default class DisteleplusHeaderIcon extends Component {
   // Mirrors Chat's header icon: full page on mobile or when the user chose
   // it; otherwise toggle the drawer. The href stays for middle-click.
   @action
-  open(event) {
+  async open(event) {
     event?.preventDefault?.();
-    if (this.site.mobileView || this.disteleplus.isFullPagePreferred) {
-      if (!this.disteleplus.isFullPageActive) {
-        this.router.transitionTo("/disteleplus");
-      }
-      return;
-    }
+
+    // On the full page: leave it. Desktop goes back to the previous page with
+    // the drawer open (Chat's "exit" behaviour); mobile just goes back.
     if (this.disteleplus.isFullPageActive) {
+      const back = this.disteleplus.lastAppURL || "/";
+      if (this.site.mobileView) {
+        this.router.transitionTo(back);
+        return;
+      }
+      this.disteleplus.prefersDrawer();
+      await this.router.transitionTo(back);
+      this.disteleplus.openDrawer();
       return;
     }
+
+    if (this.site.mobileView || this.disteleplus.isFullPagePreferred) {
+      this.router.transitionTo("/disteleplus");
+      return;
+    }
+
     if (this.disteleplus.isDrawerActive) {
       this.disteleplus.closeDrawer();
     } else {
@@ -65,7 +76,7 @@ export default class DisteleplusHeaderIcon extends Component {
         @translatedAriaLabel={{i18n "disteleplus.title"}}
         class="icon btn-flat {{if this.isActive 'active'}}"
       >
-        {{icon "comments"}}
+        {{icon (if this.disteleplus.isFullPageActive "shuffle" "comments")}}
         {{#if this.showBadge}}
           <span class="disteleplus-header-icon__badge">
             {{this.disteleplus.unreadCount}}

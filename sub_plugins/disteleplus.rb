@@ -36,6 +36,7 @@ register_asset "stylesheets/disteleplus-native.scss"
   quote-right
   reply
   rotate
+  shuffle
   spinner
   stop
   trash-can
