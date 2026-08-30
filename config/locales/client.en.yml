@@ -43,6 +43,7 @@ en:
       yesterday: Yesterday
       voice:
         button: Record a voice note
+        stop: Stop recording
         title: Voice note
         start: Start recording
         stop: Stop

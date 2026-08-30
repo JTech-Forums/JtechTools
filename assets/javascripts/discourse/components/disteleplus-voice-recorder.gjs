@@ -4,8 +4,7 @@ import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import { service } from "@ember/service";
-import DButton from "discourse/components/d-button";
-import DModal from "discourse/components/d-modal";
+import { or } from "truth-helpers";
 import icon from "discourse/helpers/d-icon";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
@@ -18,16 +17,13 @@ import {
   paintBars,
 } from "../lib/disteleplus-voice-player";
 
-// Voice-note recorder modal for the native Disteleplus composer.
-//
-// One big round button is the whole interface: tap to record (it turns red
-// and pulses, a live waveform scrolls across the stage, a ring around the
-// button fills toward the length limit), tap again to stop. The preview is
-// the same waveform — built from the levels captured WHILE recording, so it
-// is the real shape of what was said — with a play button and scrubbing, so
-// what you hear back looks exactly like the bubble that will land in the conversation.
-// Send uploads the blob through core's /uploads.json as a composer
-// upload and posts a message carrying only that upload.
+// Inline voice-note recorder that takes the place of the composer bar
+// (Telegram-style): recording starts as soon as it appears, a live waveform
+// scrolls beside a red dot and timer, stop turns it into a playable preview
+// with scrubbing, and send uploads the blob through core's /uploads.json and
+// posts a message carrying only that upload. The preview waveform is built
+// from the levels captured WHILE recording, so it is the real shape of what
+// was said and matches the bubble that lands in the conversation.
 //
 // Codec choice, in order: OGG/OPUS (Firefox; what Telegram natively speaks),
 // WebM/OPUS (Chromium; transcoded server-side for Telegram when ffmpeg is
@@ -259,6 +255,13 @@ export default class DisteleplusVoiceRecorder extends Component {
       this.liveBars.push(bar);
     }
     this.liveIndex = 0;
+  }
+
+  @action
+  autoStart() {
+    if (this.isIdle) {
+      this.start();
+    }
   }
 
   @action
@@ -519,6 +522,17 @@ export default class DisteleplusVoiceRecorder extends Component {
     this.elapsed = 0;
     this.errorKey = null;
     this.state = "idle";
+    this.args.onClose?.();
+  }
+
+  // Stop while recording, send once previewing — one primary button.
+  @action
+  primary() {
+    if (this.isRecording) {
+      this.stop();
+    } else if (this.isPreview) {
+      this.send();
+    }
   }
 
   @action
@@ -545,11 +559,12 @@ export default class DisteleplusVoiceRecorder extends Component {
       }
 
       const payload = { raw: "", upload_ids: [upload.id] };
-      await ajax("/jtech-disteleplus/messages", {
+      const response = await ajax("/jtech-disteleplus/messages", {
         type: "POST",
         data: payload,
       });
-      this.args.closeModal();
+      this.teardownPreview();
+      this.args.onSent?.(response.message);
     } catch (e) {
       this.state = "preview";
       popupAjaxError(e);
@@ -557,138 +572,78 @@ export default class DisteleplusVoiceRecorder extends Component {
   }
 
   <template>
-    <DModal
-      @title={{this.title}}
-      @closeModal={{@closeModal}}
-      class="disteleplus-voice-modal
+    <div
+      class="disteleplus-vrec
         {{if this.isRecording 'is-recording'}}
         {{if this.nearLimit 'is-near-limit'}}
-        {{if this.isPreview 'is-preview'}}"
+        {{if this.isPreview 'is-preview'}}
+        {{if this.isUploading 'is-uploading'}}
+        {{if this.isError 'is-error'}}"
+      {{didInsert this.autoStart}}
     >
-      <:body>
-        {{#if this.isError}}
-          <div class="disteleplus-rec disteleplus-rec--error">
-            <div class="disteleplus-rec__glyph">{{icon
-                "microphone-slash"
-              }}</div>
-            <p class="disteleplus-rec__hint">{{this.errorMessage}}</p>
-          </div>
+      <button
+        type="button"
+        class="disteleplus-vrec__cancel"
+        title={{i18n "disteleplus.cancel"}}
+        aria-label={{i18n "disteleplus.cancel"}}
+        disabled={{this.isUploading}}
+        {{on "click" this.discard}}
+      >{{icon "trash-can"}}</button>
 
-        {{else if this.isPreview}}
-          <div class="disteleplus-rec disteleplus-rec--preview">
-            <div class="disteleplus-rec__player">
-              <button
-                type="button"
-                class="disteleplus-rec__play"
-                aria-label={{this.previewToggleLabel}}
-                {{on "click" this.togglePreview}}
-              >
-                {{icon (if this.previewPlaying "pause" "play")}}
-              </button>
-              <div class="disteleplus-rec__player-body">
-                <div
-                  class="disteleplus-rec__preview-wave"
-                  {{didInsert this.mountPreviewWave}}
-                ></div>
-                <div class="disteleplus-rec__player-meta">
-                  <span
-                    class="disteleplus-rec__time"
-                  >{{this.previewPositionLabel}}</span>
-                  <span class="disteleplus-rec__sep">/</span>
-                  <span
-                    class="disteleplus-rec__time"
-                  >{{this.elapsedLabel}}</span>
-                </div>
-              </div>
-            </div>
-            <p class="disteleplus-rec__hint">{{i18n
-                "disteleplus.voice.preview_hint"
-              }}</p>
-          </div>
+      {{#if this.isError}}
+        <span class="disteleplus-vrec__error">{{icon "microphone-slash"}}
+          {{this.errorMessage}}</span>
+      {{else if this.isPreview}}
+        <button
+          type="button"
+          class="disteleplus-vrec__play"
+          aria-label={{this.previewToggleLabel}}
+          {{on "click" this.togglePreview}}
+        >{{icon (if this.previewPlaying "pause" "play")}}</button>
+        <div
+          class="disteleplus-vrec__wave is-preview"
+          {{didInsert this.mountPreviewWave}}
+        ></div>
+        <span class="disteleplus-vrec__time">
+          {{this.previewPositionLabel}}
+          /
+          {{this.elapsedLabel}}</span>
+      {{else}}
+        <span class="disteleplus-vrec__dot"></span>
+        <span class="disteleplus-vrec__time">{{this.elapsedLabel}}</span>
+        <div
+          class="disteleplus-vrec__wave"
+          {{didInsert this.mountLiveWave}}
+        ></div>
+      {{/if}}
 
-        {{else if this.isUploading}}
-          <div class="disteleplus-rec disteleplus-rec--uploading">
-            <div class="disteleplus-rec__glyph">{{icon
-                "spinner"
-                class="loading-icon"
-              }}</div>
-            <p class="disteleplus-rec__hint">{{i18n
-                "disteleplus.voice.sending"
-              }}</p>
-          </div>
-
-        {{else}}
-          <div class="disteleplus-rec disteleplus-rec--stage">
-            <div
-              class="disteleplus-rec__wave"
-              aria-hidden="true"
-              {{didInsert this.mountLiveWave}}
-            ></div>
-
-            <div class="disteleplus-rec__clock">
-              <span
-                class="disteleplus-rec__elapsed"
-              >{{this.elapsedLabel}}</span>
-              <span class="disteleplus-rec__max">{{this.maxLabel}}</span>
-            </div>
-
-            <button
-              type="button"
-              class="disteleplus-rec__button"
-              style={{this.ringStyle}}
-              disabled={{this.isRequesting}}
-              aria-label={{this.recordButtonLabel}}
-              aria-pressed={{if this.isRecording "true" "false"}}
-              {{on "click" this.toggleRecording}}
-            >
-              <span class="disteleplus-rec__ring"></span>
-              <span class="disteleplus-rec__core">
-                {{#if this.isRecording}}
-                  <span class="disteleplus-rec__stop-glyph"></span>
-                {{else}}
-                  {{icon "microphone"}}
-                {{/if}}
-              </span>
-            </button>
-
-            <p class="disteleplus-rec__hint">{{this.stageHint}}</p>
-          </div>
-        {{/if}}
-      </:body>
-
-      <:footer>
-        {{#if this.isError}}
-          <DButton
-            @action={{this.discard}}
-            @label="disteleplus.voice.try_again"
-            @icon="rotate"
-            class="btn-primary"
-          />
-          <DButton @action={{@closeModal}} @label="cancel" class="btn-flat" />
-        {{else if this.isPreview}}
-          <DButton
-            @action={{this.send}}
-            @label="disteleplus.voice.send"
-            @icon="paper-plane"
-            class="btn-primary disteleplus-rec__send"
-          />
-          <DButton
-            @action={{this.discard}}
-            @label="disteleplus.voice.rerecord"
-            @icon="rotate"
-            class="btn-flat"
-          />
-          <DButton @action={{@closeModal}} @label="cancel" class="btn-flat" />
-        {{else if this.isUploading}}
-          <DButton
-            @label="disteleplus.voice.sending"
-            @disabled={{true}}
-            class="btn-primary"
-          />
-        {{else}}
-          <DButton @action={{@closeModal}} @label="cancel" class="btn-flat" />
-        {{/if}}
-      </:footer>
-    </DModal>
+      {{#unless this.isError}}
+        <button
+          type="button"
+          class="disteleplus-vrec__primary
+            {{if this.isRecording 'is-stop' 'is-send'}}"
+          title={{if
+            this.isRecording
+            (i18n "disteleplus.voice.stop")
+            (i18n "disteleplus.send")
+          }}
+          aria-label={{if
+            this.isRecording
+            (i18n "disteleplus.voice.stop")
+            (i18n "disteleplus.send")
+          }}
+          disabled={{or this.isRequesting this.isUploading}}
+          {{on "click" this.primary}}
+        >
+          {{#if this.isUploading}}
+            {{icon "spinner" class="fa-spin"}}
+          {{else if this.isRecording}}
+            {{icon "stop"}}
+          {{else}}
+            {{icon "paper-plane"}}
+          {{/if}}
+        </button>
+      {{/unless}}
+    </div>
   </template>
 }

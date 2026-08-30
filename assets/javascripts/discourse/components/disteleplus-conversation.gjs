@@ -6,6 +6,7 @@ import { action } from "@ember/object";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import { service } from "@ember/service";
 import { htmlSafe } from "@ember/template";
+import { modifier } from "ember-modifier";
 import { emojiSearch } from "pretty-text/emoji";
 import { eq, or } from "truth-helpers";
 import DButton from "discourse/components/d-button";
@@ -36,7 +37,6 @@ const MAX_UPLOADS = 10;
 export default class DisteleplusConversation extends Component {
   @service disteleplus;
   @service dialog;
-  @service modal;
   @service menu;
   @service emojiStore;
   @service composer;
@@ -51,6 +51,7 @@ export default class DisteleplusConversation extends Component {
   @tracked newBelow = 0;
   @tracked showJump = false;
   @tracked dragging = false;
+  @tracked recordingVoice = false;
   // { message, x, y } while a context menu is open.
   @tracked contextMenu = null;
 
@@ -58,6 +59,13 @@ export default class DisteleplusConversation extends Component {
   timeline = null;
   textarea = null;
   unsubscribe = null;
+
+  // images rendered later (realtime, older pages) get handlers too.
+  lightboxUploads = modifier((element) => {
+    if (element.querySelector(".lightbox")) {
+      lightbox(element, this.siteSettings);
+    }
+  });
 
   willDestroy() {
     super.willDestroy(...arguments);
@@ -208,11 +216,6 @@ export default class DisteleplusConversation extends Component {
 
   enhance(root) {
     enhanceWithin(root, { allAudio: true });
-    try {
-      lightbox(root, this.siteSettings);
-    } catch {
-      // Lightbox is progressive enhancement; plain links still work.
-    }
   }
 
   @action
@@ -469,8 +472,25 @@ export default class DisteleplusConversation extends Component {
 
   @action
   openVoiceRecorder() {
-    this.modal.show(DisteleplusVoiceRecorder, { model: { native: true } });
+    this.recordingVoice = true;
   }
+
+  @action
+  closeVoiceRecorder() {
+    this.recordingVoice = false;
+    requestAnimationFrame(() => this.textarea?.focus());
+  }
+
+  @action
+  voiceNoteSent(message) {
+    this.recordingVoice = false;
+    if (message) {
+      this.disteleplus.upsert(message);
+    }
+    requestAnimationFrame(() => this.scrollToBottom());
+  }
+
+  // Same as Chat's message collapser: init the lightbox per uploads block so
 
   // ── message actions ───────────────────────────────────────────────────────
 
@@ -819,23 +839,23 @@ export default class DisteleplusConversation extends Component {
                       {{i18n "disteleplus.deleted"}}</p>
                   {{else}}
                     {{#if message.uploads.length}}
-                      <div class="disteleplus-uploads">
+                      <div class="disteleplus-uploads" {{this.lightboxUploads}}>
                         {{#each message.uploads as |upload|}}
                           {{#if (eq upload.kind "image")}}
-                            <a
-                              href={{upload.url}}
+                            <img
                               class="disteleplus-upload is-image lightbox"
-                              data-download-href={{upload.url}}
+                              src={{upload.url}}
+                              alt={{upload.original_filename}}
                               title={{upload.original_filename}}
-                            >
-                              <img
-                                src={{upload.url}}
-                                alt={{upload.original_filename}}
-                                width={{upload.width}}
-                                height={{upload.height}}
-                                loading="lazy"
-                              />
-                            </a>
+                              data-large-src={{upload.url}}
+                              data-download-href={{upload.url}}
+                              data-target-width={{upload.width}}
+                              data-target-height={{upload.height}}
+                              width={{upload.width}}
+                              height={{upload.height}}
+                              loading="lazy"
+                              tabindex="0"
+                            />
                           {{else if (eq upload.kind "video")}}
                             <video
                               class="disteleplus-upload is-video"
@@ -1057,62 +1077,69 @@ export default class DisteleplusConversation extends Component {
         {{/if}}
 
         <div class="disteleplus-composer__row">
-          <div
-            class="disteleplus-composer__input
-              {{if this.cannotSend 'is-send-disabled' 'is-send-enabled'}}"
-          >
-            <label
-              class="disteleplus-composer__button"
-              title={{i18n "disteleplus.attach"}}
+          {{#if this.recordingVoice}}
+            <DisteleplusVoiceRecorder
+              @onClose={{this.closeVoiceRecorder}}
+              @onSent={{this.voiceNoteSent}}
+            />
+          {{else}}
+            <div
+              class="disteleplus-composer__input
+                {{if this.cannotSend 'is-send-disabled' 'is-send-enabled'}}"
             >
-              {{icon "plus"}}
-              <input type="file" multiple {{on "change" this.pickFiles}} />
-            </label>
-            <textarea
-              value={{this.draft}}
-              rows="1"
-              maxlength="20000"
-              placeholder={{i18n "disteleplus.placeholder"}}
-              {{on "input" this.updateDraft}}
-              {{on "keydown" this.composerKeydown}}
-              {{on "paste" this.onPaste}}
-              {{dAutocomplete this.mentionAutocomplete}}
-              {{dAutocomplete this.emojiAutocomplete}}
-            ></textarea>
-            <button
-              class="disteleplus-composer__button"
-              type="button"
-              title={{i18n "disteleplus.voice.button"}}
-              aria-label={{i18n "disteleplus.voice.button"}}
-              {{on "click" this.openVoiceRecorder}}
-            >
-              {{icon "microphone"}}
-            </button>
-            <button
-              class="disteleplus-composer__button"
-              type="button"
-              title={{i18n "disteleplus.emoji"}}
-              aria-label={{i18n "disteleplus.emoji"}}
-              {{on "click" this.insertEmoji}}
-            >
-              {{icon "face-smile"}}
-            </button>
-            <div class="disteleplus-composer__separator"></div>
-            <button
-              class="disteleplus-composer__button is-send"
-              type="button"
-              title={{i18n "disteleplus.send"}}
-              aria-label={{i18n "disteleplus.send"}}
-              disabled={{this.cannotSend}}
-              {{on "click" this.send}}
-            >
-              {{#if (or this.disteleplus.sending this.uploading)}}
-                {{icon "spinner" class="fa-spin"}}
-              {{else}}
-                {{icon "paper-plane"}}
-              {{/if}}
-            </button>
-          </div>
+              <label
+                class="disteleplus-composer__button"
+                title={{i18n "disteleplus.attach"}}
+              >
+                {{icon "plus"}}
+                <input type="file" multiple {{on "change" this.pickFiles}} />
+              </label>
+              <textarea
+                value={{this.draft}}
+                rows="1"
+                maxlength="20000"
+                placeholder={{i18n "disteleplus.placeholder"}}
+                {{on "input" this.updateDraft}}
+                {{on "keydown" this.composerKeydown}}
+                {{on "paste" this.onPaste}}
+                {{dAutocomplete this.mentionAutocomplete}}
+                {{dAutocomplete this.emojiAutocomplete}}
+              ></textarea>
+              <button
+                class="disteleplus-composer__button"
+                type="button"
+                title={{i18n "disteleplus.voice.button"}}
+                aria-label={{i18n "disteleplus.voice.button"}}
+                {{on "click" this.openVoiceRecorder}}
+              >
+                {{icon "microphone"}}
+              </button>
+              <button
+                class="disteleplus-composer__button"
+                type="button"
+                title={{i18n "disteleplus.emoji"}}
+                aria-label={{i18n "disteleplus.emoji"}}
+                {{on "click" this.insertEmoji}}
+              >
+                {{icon "face-smile"}}
+              </button>
+              <div class="disteleplus-composer__separator"></div>
+              <button
+                class="disteleplus-composer__button is-send"
+                type="button"
+                title={{i18n "disteleplus.send"}}
+                aria-label={{i18n "disteleplus.send"}}
+                disabled={{this.cannotSend}}
+                {{on "click" this.send}}
+              >
+                {{#if (or this.disteleplus.sending this.uploading)}}
+                  {{icon "spinner" class="fa-spin"}}
+                {{else}}
+                  {{icon "paper-plane"}}
+                {{/if}}
+              </button>
+            </div>
+          {{/if}}
         </div>
       </footer>
     </section>
