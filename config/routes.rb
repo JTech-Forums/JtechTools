@@ -71,6 +71,9 @@ Discourse::Application.routes.append do
     post "/read" => "conversation#read"
     get "/search" => "conversation#search"
     post "/typing" => "conversation#typing"
+    post "/quote" => "conversation#quote"
+    get "/read-states" => "conversation#read_states"
+    post "/messages/:id/listened" => "conversation#listened"
     get "/legacy-import" => "legacy_import#show"
     post "/legacy-import" => "legacy_import#create"
   end
