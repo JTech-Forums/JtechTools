@@ -500,54 +500,53 @@ html.has-full-page-disteleplus {
     }
   }
 
-  // Mirrors .chat-reply (direct reply header)
+  // Telegram-style quoted reply: accent bar, sender in accent color, a
+  // one-line excerpt on a subtle tint — the whole card jumps to the
+  // original message.
   &__reply-preview {
     display: flex;
     align-items: center;
-    gap: 0.5em;
-    width: 100%;
+    gap: 0.55em;
+    width: fit-content;
+    max-width: 100%;
     min-width: 0;
-    margin: 0 0 0.25em;
-    padding: 0;
+    margin: 0 0 0.35em;
+    padding: 0.3em 0.75em 0.3em 0.55em;
     overflow: hidden;
     border: 0;
-    color: var(--primary-high);
-    background: transparent;
+    border-left: 3px solid var(--tertiary);
+    border-radius: var(--d-border-radius, 6px);
+    background: color-mix(in srgb, var(--tertiary) 7%, transparent);
     font-size: var(--font-down-1);
     text-align: left;
     cursor: pointer;
+    transition: background 0.15s ease;
 
-    &::before {
-      content: "";
-      flex: 0 0 auto;
-      width: 0.9em;
-      height: 0.9em;
-      mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path d='M205 34.8c11.5 5.1 19 16.6 19 29.2v64H336c97.2 0 176 78.8 176 176c0 113.3-81.5 163.9-100.2 174.1c-2.5 1.4-5.3 1.9-8.1 1.9c-10.9 0-19.7-8.9-19.7-19.7c0-7.5 4.3-14.4 9.8-19.5c9.4-8.8 22.2-26.4 22.2-56.7c0-53-43-96-96-96H224v64c0 12.6-7.4 24.1-19 29.2s-25 3-34.4-5.4l-160-144C3.9 225.7 0 217.1 0 208s3.9-17.7 10.6-23.8l160-144c9.4-8.5 22.9-10.6 34.4-5.4z'/></svg>")
-        center / contain no-repeat;
-      background: var(--primary-low-mid);
-    }
-
-    strong {
-      flex: 0 0 auto;
-      overflow: hidden;
-      font-weight: 700;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    &:hover {
+      background: color-mix(in srgb, var(--tertiary) 13%, transparent);
     }
 
     .disteleplus-message__reply-thumb {
       flex: 0 0 auto;
-      width: 20px;
-      height: 20px;
+      width: 30px;
+      height: 30px;
       border-radius: var(--d-border-radius, 4px);
       object-fit: cover;
     }
 
     .disteleplus-message__reply-text {
       display: flex;
-      gap: 0.5em;
+      flex-direction: column;
       min-width: 0;
       overflow: hidden;
+
+      strong {
+        overflow: hidden;
+        color: var(--tertiary);
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
 
     .disteleplus-message__reply-text > span {
@@ -1721,13 +1720,122 @@ html.has-full-page-disteleplus {
   }
 
   &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75em;
     margin-top: 0.5em;
     color: var(--primary-medium);
     font-size: var(--font-down-1);
   }
 
+  &__footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 0.3em;
+      padding: 0;
+      border: none;
+      background: none;
+      color: var(--primary-medium);
+      font-size: inherit;
+      cursor: pointer;
+
+      &:hover {
+        color: var(--tertiary);
+
+        .d-icon {
+          color: var(--tertiary);
+        }
+      }
+
+      .d-icon {
+        width: 0.85em;
+        height: 0.85em;
+        color: var(--primary-medium);
+      }
+    }
+  }
+
   &.is-closed &__option {
     cursor: default;
+  }
+}
+
+// "View stats" modal.
+.disteleplus-poll-stats {
+  &__subtitle {
+    margin: 0 0 0.75em;
+    color: var(--primary-medium);
+  }
+
+  &__option {
+    margin-bottom: 1em;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 0.3em;
+  }
+
+  &__label {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+
+    p {
+      margin: 0;
+    }
+  }
+
+  &__count {
+    flex-shrink: 0;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+
+  &__bar-back {
+    display: block;
+    height: 0.55em;
+    border-radius: 0.3em;
+    background: var(--poll-bar-background, var(--primary-low));
+    overflow: hidden;
+  }
+
+  &__bar {
+    display: block;
+    height: 100%;
+    border-radius: 0.3em;
+    background: var(--poll-bar-color--chosen, var(--tertiary));
+  }
+
+  &__voters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35em 0.75em;
+    list-style: none;
+    margin: 0.4em 0 0;
+    padding: 0;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 0.35em;
+      color: var(--primary-high);
+      font-size: var(--font-down-1);
+
+      img {
+        width: 20px;
+        height: 20px;
+        border-radius: 100%;
+      }
+    }
   }
 }
 
