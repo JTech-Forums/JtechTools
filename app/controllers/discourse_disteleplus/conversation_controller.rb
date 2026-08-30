@@ -171,6 +171,9 @@ module DiscourseDisteleplus
               name: user.name,
               avatar_template: user.avatar_template,
               last_read_message_id: state.last_read_message_id,
+              # When the cursor last advanced — for the newest message this
+              # IS the moment it was read, which is where the info UI opens.
+              updated_at: state.updated_at&.iso8601,
             }
           end
       render_json_dump({ read_states: states })

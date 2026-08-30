@@ -28,14 +28,17 @@ module DiscourseDisteleplus
 
     LISTENED_BY_CAP = 20
 
-    # Who has played this voice note. Only voice notes ever record listens,
-    # so this stays an empty array for ordinary messages.
+    # Who has played this voice note, and when. Only voice notes ever record
+    # listens, so this stays an empty array for ordinary messages.
     def self.serialize_listens(message)
       message
         .listens
         .includes(:user)
         .limit(LISTENED_BY_CAP)
-        .filter_map { |listen| serialize_user(listen.user) }
+        .filter_map do |listen|
+          user = serialize_user(listen.user)
+          user&.merge(listened_at: listen.created_at&.iso8601)
+        end
     end
 
     def self.serialize_user(user)

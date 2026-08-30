@@ -25,6 +25,7 @@ import userSearch, { validateSearchResult } from "discourse/lib/user-search";
 import dAutocomplete from "discourse/ui-kit/modifiers/d-autocomplete";
 import { i18n } from "discourse-i18n";
 import { enhanceWithin } from "../lib/disteleplus-voice-player";
+import DisteleplusMessageInfo from "./disteleplus-message-info";
 import DisteleplusVoiceRecorder from "./disteleplus-voice-recorder";
 
 const EMOJI_CONTEXT = "disteleplus";
@@ -936,6 +937,12 @@ export default class DisteleplusConversation extends Component {
     }));
   }
 
+  // WhatsApp-style message info: who saw / listened, and when.
+  @action
+  openMessageInfo(message) {
+    this.modal.show(DisteleplusMessageInfo, { model: { message } });
+  }
+
   // Bubbled from the voice player on first play — record the receipt.
   @action
   onVoicePlayed(event) {
@@ -1203,10 +1210,12 @@ export default class DisteleplusConversation extends Component {
                   {{/if}}
 
                   {{#if (eq message.id this.receiptMessageId)}}
-                    <div
+                    <button
+                      type="button"
                       class="disteleplus-message__receipt
                         {{if this.receiptSeenBy.length 'is-seen'}}"
                       title={{this.receiptTitle}}
+                      {{on "click" (fn this.openMessageInfo message)}}
                     >
                       {{#if this.receiptSeenBy.length}}
                         {{icon "check-double"}}
@@ -1228,14 +1237,16 @@ export default class DisteleplusConversation extends Component {
                       {{else}}
                         {{icon "check"}}
                       {{/if}}
-                    </div>
+                    </button>
                   {{/if}}
 
                   {{#if message.mine}}
                     {{#if message.listened_by.length}}
-                      <div
+                      <button
+                        type="button"
                         class="disteleplus-message__receipt is-seen"
                         title={{this.listenTitle message}}
+                        {{on "click" (fn this.openMessageInfo message)}}
                       >
                         {{icon "headphones"}}
                         <span class="disteleplus-message__receipt-label">
@@ -1253,7 +1264,7 @@ export default class DisteleplusConversation extends Component {
                             />
                           {{/each}}
                         </span>
-                      </div>
+                      </button>
                     {{/if}}
                   {{/if}}
                 </div>

@@ -38,6 +38,7 @@ RSpec.describe "Disteleplus read states" do
       expect(row["last_read_message_id"]).to eq(message.id)
       expect(row["username"]).to eq(reader.username)
       expect(row["avatar_template"]).to be_present
+      expect(row["updated_at"]).to be_present
     end
 
     it "404s when receipts are disabled" do
@@ -73,6 +74,7 @@ RSpec.describe "Disteleplus read states" do
 
       serialized = DiscourseDisteleplus::MessageSerializer.serialize(message.reload, viewer: member)
       expect(serialized[:listened_by].map { |u| u[:id] }).to eq([reader.id])
+      expect(serialized[:listened_by].first[:listened_at]).to be_present
     end
 
     it "ignores the author's own plays" do
