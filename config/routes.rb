@@ -92,13 +92,14 @@ end
 
 # ── Dumbcourse ─────────────────────────────────────────────────────────────
 class DiscourseDumbcourseBasePathConstraint
-  # Request constraints run before path params are merged into req.params, so
-  # req.params[:dumbcourse_base_path] only ever saw the route default and the
-  # catch-all matched every unknown two-segment GET on the site. Read the real
-  # segment from path_parameters.
+  # Rails has NOT extracted path params when request constraints run — both
+  # req.path_parameters and req.params carry only the route default here, so
+  # comparing either to base_path was always true and the catch-all swallowed
+  # every unknown multi-segment GET on the site (proven by
+  # /admin/plugins/jtech-tools/mod being served by Dumbcourse's AppController).
+  # The request path itself is the only trustworthy source at this stage.
   def matches?(req)
-    segment = req.path_parameters[:dumbcourse_base_path] || req.params[:dumbcourse_base_path]
-    segment.to_s == DiscourseDumbcourse.base_path
+    req.path.split("/")[1].to_s == DiscourseDumbcourse.base_path
   end
 end
 
