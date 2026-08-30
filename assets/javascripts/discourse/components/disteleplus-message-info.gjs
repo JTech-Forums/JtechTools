@@ -18,14 +18,19 @@ export default class DisteleplusMessageInfo extends Component {
     return this.args.model.message;
   }
 
-  // Live: recomputed from the service so rows appear while the modal is open.
+  // Live: recomputed from the service so rows appear while the modal is
+  // open. The author trivially saw their own message — leave them out.
   get seenBy() {
-    return this.disteleplus.seenBy(this.message.id).map((state) => ({
-      username: state.username,
-      name: state.name || state.username,
-      avatarUrl: this.avatar(state.avatar_template),
-      at: state.updated_at ? new Date(state.updated_at) : null,
-    }));
+    const authorId = this.message.user?.id;
+    return this.disteleplus
+      .seenBy(this.message.id)
+      .filter((state) => state.user_id !== authorId)
+      .map((state) => ({
+        username: state.username,
+        name: state.name || state.username,
+        avatarUrl: this.avatar(state.avatar_template),
+        at: state.updated_at ? new Date(state.updated_at) : null,
+      }));
   }
 
   get listenedBy() {
