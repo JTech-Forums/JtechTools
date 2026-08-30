@@ -28,6 +28,7 @@ Discourse::Application.routes.append do
     put "/topic/:topic_id" => "messages#update_topic"
     put "/category/:category_id" => "messages#update_category"
     post "/topic/:topic_id/note-reply" => "messages#add_note_reply"
+    get "/notification-types" => "notification_types#index"
     put "/topic/:topic_id/note-reply" => "messages#update_note_reply"
     delete "/topic/:topic_id/note-reply" => "messages#delete_note_reply"
     delete "/topic/:topic_id/note" => "messages#delete_note"

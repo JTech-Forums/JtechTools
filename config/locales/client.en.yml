@@ -199,6 +199,50 @@ en:
         label: Type
         all: All types
         mod_notes: Moderator notes
+        # Curated English names for the type dropdown. Anything not listed
+        # falls back to core's notifications.titles.X, then to a humanized
+        # form of the raw type name.
+        types:
+          mentioned: Mentions
+          group_mentioned: Group mentions
+          replied: Replies
+          posted: New posts
+          quoted: Quotes
+          edited: Edits
+          liked: Likes
+          liked_consolidated: Like summaries
+          reaction: Reactions
+          private_message: Personal messages
+          invited_to_private_message: Message invitations
+          group_message_summary: Group inbox summaries
+          invited_to_topic: Topic invitations
+          invitee_accepted: Accepted invitations
+          moved_post: Moved posts
+          linked: Links to your posts
+          linked_consolidated: Link summaries
+          granted_badge: Badges earned
+          watching_first_post: New topics you watch
+          watching_category_or_tag: Watched categories & tags
+          topic_reminder: Topic reminders
+          bookmark_reminder: Bookmark reminders
+          post_approved: Approved posts
+          membership_request_accepted: Group memberships
+          membership_request_consolidated: Group join requests
+          chat_mention: Chat mentions
+          chat_message: Chat messages
+          chat_invitation: Chat invitations
+          chat_group_mention: Chat group mentions
+          chat_quoted: Chat quotes
+          chat_watched_thread: Watched chat threads
+          following: New followers
+          following_created_topic: Topics from people you follow
+          following_replied: Replies from people you follow
+          votes_released: Released votes
+          event_reminder: Event reminders
+          event_invitation: Event invitations
+          new_features: New site features
+          admin_problems: Admin alerts
+          custom: Staff & plugin alerts
       note_notification: '%{username} added a moderator note'
       note_notification_title: Moderator note
       note_reply_notification: '%{username} replied to a moderator note'
