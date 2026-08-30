@@ -24,7 +24,8 @@ module DiscourseDisteleplus
     end
 
     def self.reviewable_created(reviewable)
-      kind = reviewable.type.to_s.demodulize.underscore.humanize.downcase
+      kind =
+        reviewable.type.to_s.demodulize.underscore.humanize.downcase.delete_prefix("reviewable ")
       post!("🚩 **New review item** (#{kind}) — [open the queue](#{Discourse.base_url}/review)")
     end
 
