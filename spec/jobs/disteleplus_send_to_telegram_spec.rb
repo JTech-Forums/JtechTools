@@ -164,6 +164,23 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       end
     end
 
+    it "disables the link preview so the profile header never renders a bio card" do
+      run("create")
+      expect(api).to have_received(:call).with(
+        "sendMessage",
+        a_hash_including(link_preview_options: { is_disabled: true }),
+      )
+    end
+
+    it "points the link preview at the first body URL instead of the profile" do
+      message.update!(raw: "look https://example.com/a and https://example.com/b")
+      run("create")
+      expect(api).to have_received(:call).with(
+        "sendMessage",
+        a_hash_including(link_preview_options: { url: "https://example.com/a" }),
+      )
+    end
+
     it "threads Telegram replies via the link table" do
       parent =
         DiscourseDisteleplus::Message.create!(user: author, raw: "parent", cooked: "<p>parent</p>")
@@ -200,6 +217,13 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
       run("edit")
       expect(api).not_to have_received(:call)
     end
+
+    it "honors the disteleplus_bridge_edits toggle" do
+      SiteSetting.disteleplus_bridge_edits = false
+      link!(kind: :text)
+      run("edit")
+      expect(api).not_to have_received(:call)
+    end
   end
 
   describe "delete" do
@@ -214,6 +238,13 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
     it "never touches tg_to_discourse links (the humans' own messages)" do
       link!(direction: :tg_to_discourse)
       run("delete")
+      expect(api).not_to have_received(:call)
+    end
+
+    it "honors the disteleplus_bridge_deletes toggle" do
+      SiteSetting.disteleplus_bridge_deletes = false
+      link!(tg_id: 321)
+      expect { run("delete") }.not_to change { DiscourseDisteleplus::MessageLink.count }
       expect(api).not_to have_received(:call)
     end
   end

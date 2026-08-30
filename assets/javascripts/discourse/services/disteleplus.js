@@ -65,6 +65,10 @@ export default class DisteleplusService extends Service {
   @tracked typers = [];
   store = new KeyValueStore(STORE_NAMESPACE);
 
+  // Message id a notification deep link (#m<id>) asked to land on. Set by
+  // the route/drawer opener, consumed once by the conversation component.
+  pendingJumpId = null;
+
   // True while the timeline shows a window around a searched message rather
 
   lastTypingSentAt = 0;
@@ -230,6 +234,24 @@ export default class DisteleplusService extends Service {
   onNewMessage(callback) {
     this.listeners.add(callback);
     return () => this.listeners.delete(callback);
+  }
+
+  // Ask whichever conversation is (or becomes) visible to jump to a message.
+  // A mounted conversation reacts to the app event immediately; one mounted
+  // later picks the id up from pendingJumpId in its open sequence.
+  requestJump(messageId) {
+    const id = parseInt(messageId, 10);
+    if (!id) {
+      return;
+    }
+    this.pendingJumpId = id;
+    this.appEvents.trigger("disteleplus:jump-to-message", id);
+  }
+
+  consumePendingJump() {
+    const id = this.pendingJumpId;
+    this.pendingJumpId = null;
+    return id;
   }
 
   ensureLoaded() {

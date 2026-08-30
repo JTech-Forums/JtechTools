@@ -2,7 +2,7 @@
 
 # name: jtech-tools
 # about: Jtech Tools — the JTech Forums all-in-one plugin. Reaction controls, alternate SMTP relay, mini-mod and moderator tooling, the Dumbcourse app, translator tweaks, smart search, desktop pop-ups, and the Telegram chat bridge.
-# version: 0.3.0
+# version: 0.4.0
 # authors: TripleU, Shalom_Karr, Ars18
 # url: https://github.com/JTech-Forums/JtechTools
 # required_version: 3.0.0

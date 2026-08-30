@@ -342,6 +342,42 @@ en:
           all_settings: All settings
   admin_js:
     admin:
+      jtech_tools:
+        actions:
+          title: Maintenance actions
+          hint: These run immediately as background jobs. Progress and results
+            appear in /logs under the [jtech-tools] tags; delivery failures
+            also surface on the admin dashboard.
+          register_webhook:
+            label: Register Telegram webhook
+            confirm: This calls Telegram's setWebhook with this forum's webhook
+              address (generating the secret first if blank) and refreshes the
+              /disteleplus_* command menu. Register now?
+            done: Webhook registration queued.
+          send_test_message:
+            label: Send test message
+            done: Test message queued — check the bridged Telegram group.
+          sync_notifications:
+            label: Sync channel notifications
+            done: Notification enrolment queued for every eligible member.
+          measure_forum_uploads:
+            label: Measure upload archive
+            confirm: This scans every eligible post for attachments and writes
+              the totals to /logs. It sends nothing to Telegram. Run the
+              measurement now?
+            done: Measurement queued — results land in /logs.
+          backfill_forum_uploads:
+            label: Start upload backfill
+            confirm: This starts (or restarts from the beginning) copying
+              historical forum attachments into the Telegram upload topic,
+              paced by the backfill settings. Start now?
+            done: Backfill queued.
+          purge_phantom_likes:
+            label: Purge phantom likes
+            confirm: This rewrites likes_given and likes_received for every
+              user who has liked in a restricted category, and deletes their
+              like history rows. It cannot be undone. Run the purge now?
+            done: Purge queued.
       site_settings:
         categories:
           jtech: Jtech

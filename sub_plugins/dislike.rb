@@ -7,6 +7,10 @@
 # — replaced by the runtime DiscourseNoLikes.enabled? gate below, which every
 # code path reaches through restricted_category_ids/restricted?.
 
+# Shared styling for the maintenance-action buttons on the plugin admin tabs
+# (registered here because dislike is the first sub-plugin loaded).
+register_asset "stylesheets/jtech-admin.scss"
+
 module ::DiscourseNoLikes
   PLUGIN_NAME = "dislike"
 
