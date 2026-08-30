@@ -1604,46 +1604,35 @@ html.has-full-page-disteleplus {
     gap: 0.4em;
   }
 
+  // Core poll look: option text with the percentage on the right, a thin
+  // result bar underneath — grey normally, tertiary for your own choice
+  // (reusing core's --poll-bar-* custom properties).
   &__option {
-    position: relative;
     display: flex;
-    align-items: center;
-    gap: 0.5em;
-    padding: 0.5em 0.6em;
-    border: 1px solid var(--primary-low);
+    align-items: flex-start;
+    gap: 0.55em;
+    width: 100%;
+    padding: 0.45em 0.35em;
+    border: none;
     border-radius: var(--d-border-radius, 6px);
-    background: var(--secondary);
+    background: none;
     color: var(--primary);
     text-align: left;
-    overflow: hidden;
     cursor: pointer;
 
     &:hover {
-      border-color: var(--tertiary-medium, var(--tertiary));
+      background: var(--primary-very-low);
     }
 
     &[disabled] {
       cursor: default;
-      opacity: 0.85;
     }
-
-    &.is-chosen {
-      border-color: var(--tertiary);
-    }
-  }
-
-  &__bar {
-    position: absolute;
-    inset: 0 auto 0 0;
-    background: color-mix(in srgb, var(--tertiary) 14%, transparent);
-    transition: width 0.25s ease;
-    pointer-events: none;
   }
 
   &__check {
-    position: relative;
     display: flex;
     flex-shrink: 0;
+    margin-top: 0.15em;
 
     .d-icon {
       color: var(--primary-low-mid, var(--primary-medium));
@@ -1651,13 +1640,27 @@ html.has-full-page-disteleplus {
   }
 
   &__option.is-chosen &__check .d-icon {
-    color: var(--tertiary);
+    color: var(--poll-bar-color--chosen, var(--tertiary));
+  }
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
   }
 
   &__label {
-    position: relative;
     flex: 1;
     min-width: 0;
+    word-break: break-word;
 
     p {
       margin: 0;
@@ -1665,10 +1668,29 @@ html.has-full-page-disteleplus {
   }
 
   &__count {
-    position: relative;
     flex-shrink: 0;
     color: var(--primary-medium);
     font-size: var(--font-down-1);
+  }
+
+  &__bar-back {
+    display: block;
+    height: 0.55em;
+    border-radius: 0.3em;
+    background: var(--poll-bar-background, var(--primary-low));
+    overflow: hidden;
+  }
+
+  &__bar {
+    display: block;
+    height: 100%;
+    border-radius: 0.3em;
+    background: var(--poll-bar-color, var(--primary-medium));
+    transition: width 0.25s ease;
+  }
+
+  &__option.is-chosen &__bar {
+    background: var(--poll-bar-color--chosen, var(--tertiary));
   }
 
   // Who picked this option — overlapping avatar stack, public polls only.
