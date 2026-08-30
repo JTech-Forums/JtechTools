@@ -259,7 +259,10 @@ module DiscourseDisteleplus
     end
 
     def page_scope
-      scope = Message.includes(:user, :uploads, reply_to: :user, reactions: :user).order(id: :desc)
+      scope =
+        Message.includes(:user, :uploads, reply_to: :user, reactions: :user, listens: :user).order(
+          id: :desc,
+        )
       before_id = params[:before_id].to_i
       scope = scope.where("disteleplus_messages.id < ?", before_id) if before_id.positive?
       scope

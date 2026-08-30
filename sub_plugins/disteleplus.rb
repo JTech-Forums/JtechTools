@@ -19,7 +19,10 @@ register_asset "stylesheets/disteleplus-native.scss"
   arrow-down
   bell
   chart-bar
+  check
+  check-double
   comments
+  headphones
   discourse-compress
   discourse-expand
   copy

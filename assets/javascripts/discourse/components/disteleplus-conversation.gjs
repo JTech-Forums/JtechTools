@@ -201,6 +201,7 @@ export default class DisteleplusConversation extends Component {
     // changes the hash / fires the jump event — no remount happens.
     window.addEventListener("hashchange", this.onHashChange);
     this.appEvents.on("disteleplus:jump-to-message", this, this.jumpToId);
+    element.addEventListener("disteleplus:voice-played", this.onVoicePlayed);
     requestAnimationFrame(() => {
       this.openAtStart();
       this.enhance(element);
@@ -883,6 +884,68 @@ export default class DisteleplusConversation extends Component {
     return names.length ? `:${reaction.emoji}: — ${names.join(", ")}` : "";
   }
 
+  // ── read receipts ─────────────────────────────────────────────────────────
+  // Telegram-style: the chip lives on the current user's latest message
+  // only — once a reader's cursor passes it, everything above is seen by
+  // definition.
+
+  get receiptMessageId() {
+    if (!this.disteleplus.readReceiptsEnabled) {
+      return null;
+    }
+    const messages = this.disteleplus.messages;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].mine && !messages[i].deleted) {
+        return messages[i].id;
+      }
+    }
+    return null;
+  }
+
+  get receiptSeenBy() {
+    const id = this.receiptMessageId;
+    return id ? this.disteleplus.seenBy(id) : [];
+  }
+
+  get receiptAvatars() {
+    return this.receiptSeenBy.slice(0, 8).map((state) => ({
+      username: state.username,
+      title: state.name || state.username,
+      url: this.avatarUrl(state.avatar_template),
+    }));
+  }
+
+  get receiptTitle() {
+    const names = this.receiptSeenBy.map(
+      (state) => state.name || state.username
+    );
+    return names.join(", ");
+  }
+
+  // "Listened by" tooltip for a voice-note message's receipt chip.
+  listenTitle(message) {
+    return (message.listened_by || [])
+      .map((user) => user.name || user.username)
+      .join(", ");
+  }
+
+  listenAvatars(message) {
+    return (message.listened_by || []).slice(0, 8).map((user) => ({
+      username: user.username,
+      url: this.avatarUrl(user.avatar_template),
+    }));
+  }
+
+  // Bubbled from the voice player on first play — record the receipt.
+  @action
+  onVoicePlayed(event) {
+    const wrapper = event.target.closest("[id^='disteleplus-message-']");
+    const id = Number(wrapper?.id?.replace("disteleplus-message-", ""));
+    if (id) {
+      this.disteleplus.markListened(id);
+    }
+  }
+
   <template>
     <section
       class="disteleplus-page
@@ -1137,6 +1200,61 @@ export default class DisteleplusConversation extends Component {
                         </button>
                       {{/each}}
                     </div>
+                  {{/if}}
+
+                  {{#if (eq message.id this.receiptMessageId)}}
+                    <div
+                      class="disteleplus-message__receipt
+                        {{if this.receiptSeenBy.length 'is-seen'}}"
+                      title={{this.receiptTitle}}
+                    >
+                      {{#if this.receiptSeenBy.length}}
+                        {{icon "check-double"}}
+                        <span class="disteleplus-message__receipt-label">
+                          {{i18n
+                            "disteleplus.seen_by"
+                            count=this.receiptSeenBy.length
+                          }}
+                        </span>
+                        <span class="disteleplus-message__receipt-avatars">
+                          {{#each this.receiptAvatars as |reader|}}
+                            <img
+                              src={{reader.url}}
+                              alt={{reader.username}}
+                              title={{reader.title}}
+                            />
+                          {{/each}}
+                        </span>
+                      {{else}}
+                        {{icon "check"}}
+                      {{/if}}
+                    </div>
+                  {{/if}}
+
+                  {{#if message.mine}}
+                    {{#if message.listened_by.length}}
+                      <div
+                        class="disteleplus-message__receipt is-seen"
+                        title={{this.listenTitle message}}
+                      >
+                        {{icon "headphones"}}
+                        <span class="disteleplus-message__receipt-label">
+                          {{i18n
+                            "disteleplus.listened_by"
+                            count=message.listened_by.length
+                          }}
+                        </span>
+                        <span class="disteleplus-message__receipt-avatars">
+                          {{#each (this.listenAvatars message) as |listener|}}
+                            <img
+                              src={{listener.url}}
+                              alt={{listener.username}}
+                              title={{listener.username}}
+                            />
+                          {{/each}}
+                        </span>
+                      </div>
+                    {{/if}}
                   {{/if}}
                 </div>
 
