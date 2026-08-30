@@ -105,8 +105,12 @@ module DiscourseDisteleplus
       return nil if message.nil?
 
       state = UserState.find_or_create_by!(user: actor)
+      previous = state.last_read_message_id.to_i
       state.advance_to!(message.id)
       Notifier.mark_read(actor, message.id)
+      if state.last_read_message_id.to_i > previous
+        Publisher.publish_read_state(actor, state.last_read_message_id)
+      end
       state
     end
 
