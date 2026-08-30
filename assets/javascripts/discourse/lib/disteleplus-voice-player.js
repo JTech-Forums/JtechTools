@@ -472,7 +472,9 @@ export function enhanceAudio(audio, { allAudio }) {
   if (!src) {
     return false;
   }
-  const voice = isVoiceNoteSource(src);
+  // Served upload URLs are sha-named, so the filename test never matches
+  // them — the template stamps data-voice from the original filename.
+  const voice = audio.dataset.voice === "1" || isVoiceNoteSource(src);
   if (!voice && !allAudio) {
     return false;
   }
