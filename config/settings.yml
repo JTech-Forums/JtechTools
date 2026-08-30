@@ -929,6 +929,11 @@ jtech_disteleplus:
     client: false
     depends_on:
       - "disteleplus_enabled"
+  disteleplus_quote_in_topic_enabled:
+    default: false
+    client: true
+    depends_on:
+      - "disteleplus_enabled"
 
   # What crosses the bridge.
   disteleplus_bridge_uploads:
