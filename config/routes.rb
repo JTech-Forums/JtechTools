@@ -135,12 +135,17 @@ Discourse::Application.routes.append do
       # LanguageTool proxy endpoint
       post "/languagetool/check" => "languagetool#check"
 
-      # Main app routes (catch-all) — exclude push and ntfy paths
+      # Main app routes (catch-all) — exclude push and ntfy paths.
+      # The lambda re-checks the base path itself: a route-level non-hash
+      # :constraints REPLACES the scope-level constraint object in Rails'
+      # scope merging, so without the start_with? guard this catch-all
+      # matched every unknown multi-segment GET on the site.
       get "/" => "app#show"
       get "/*path" => "app#show",
           :constraints => ->(req) do
             base = DiscourseDumbcourse.base_path_with_slash
-            !req.path.start_with?("#{base}/push") && !req.path.start_with?("#{base}/ntfy")
+            req.path.start_with?("#{base}/") && !req.path.start_with?("#{base}/push") &&
+              !req.path.start_with?("#{base}/ntfy")
           end
     end
   end
