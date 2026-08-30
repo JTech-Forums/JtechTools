@@ -303,7 +303,7 @@ jtech_mini_mod:
 # ───────────────────────────────────────────────────────────────────────────
 jtech_mod:
   mod_categories_enabled:
-    default: false
+    default: true
     client: true
 
   # Guardian grants: these change what EVERY moderator can do, site-wide,
@@ -934,6 +934,15 @@ jtech_disteleplus:
     client: true
     depends_on:
       - "disteleplus_enabled"
+  disteleplus_polls_enabled:
+    default: true
+    client: true
+    depends_on:
+      - "disteleplus_enabled"
+  disteleplus_polls_topic_id:
+    default: 0
+    client: false
+    hidden: true
 
   # What crosses the bridge.
   disteleplus_bridge_uploads:
