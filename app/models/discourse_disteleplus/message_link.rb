@@ -38,19 +38,25 @@ end
 #
 # Table name: disteleplus_message_links
 #
-#  id                  :bigint           not null, primary key
-#  direction           :integer          not null
-#  kind                :integer          default("text"), not null
-#  created_at          :datetime         not null
-#  updated_at          :datetime         not null
-#  chat_message_id     :bigint           not null
-#  telegram_chat_id    :bigint           not null
-#  telegram_message_id :bigint           not null
-#  telegram_poll_id    :string
+#  id                     :bigint           not null, primary key
+#  direction              :integer          not null
+#  kind                   :integer          default("text"), not null
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  chat_message_id        :bigint
+#  disteleplus_message_id :bigint
+#  telegram_chat_id       :bigint           not null
+#  telegram_message_id    :bigint           not null
+#  telegram_poll_id       :string
 #
 # Indexes
 #
-#  idx_disteleplus_links_tg                             (telegram_chat_id,telegram_message_id) UNIQUE
-#  index_disteleplus_message_links_on_chat_message_id   (chat_message_id)
-#  index_disteleplus_message_links_on_telegram_poll_id  (telegram_poll_id)
+#  idx_disteleplus_links_tg                                   (telegram_chat_id,telegram_message_id) UNIQUE
+#  index_disteleplus_message_links_on_chat_message_id         (chat_message_id)
+#  index_disteleplus_message_links_on_disteleplus_message_id  (disteleplus_message_id)
+#  index_disteleplus_message_links_on_telegram_poll_id        (telegram_poll_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (disteleplus_message_id => disteleplus_messages.id) ON DELETE => cascade
 #

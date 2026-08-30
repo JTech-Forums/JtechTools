@@ -20,3 +20,25 @@ module DiscourseDisteleplus
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: disteleplus_user_states
+#
+#  id                   :bigint           not null, primary key
+#  notification_level   :integer          default("always"), not null
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  last_read_message_id :bigint
+#  user_id              :bigint           not null
+#
+# Indexes
+#
+#  index_disteleplus_user_states_on_last_read_message_id  (last_read_message_id)
+#  index_disteleplus_user_states_on_user_id               (user_id) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (last_read_message_id => disteleplus_messages.id) ON DELETE => nullify
+#  fk_rails_...  (user_id => users.id) ON DELETE => cascade
+#

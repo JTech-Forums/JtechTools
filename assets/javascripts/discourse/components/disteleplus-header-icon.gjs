@@ -1,11 +1,13 @@
 import Component from "@glimmer/component";
-import { action } from "@ember/object";
 import { service } from "@ember/service";
+import DButton from "discourse/components/d-button";
+import icon from "discourse/helpers/d-icon";
 import getURL from "discourse/lib/get-url";
-import DButton from "discourse/ui-kit/d-button";
-import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 
+// Header shortcut to /disteleplus with the server-derived unread badge. Only
+// rendered for users the server says may access the conversation (see the
+// disteleplus-native initializer).
 export default class DisteleplusHeaderIcon extends Component {
   @service disteleplus;
   @service router;
@@ -23,21 +25,18 @@ export default class DisteleplusHeaderIcon extends Component {
     return this.router.currentRouteName === "disteleplus";
   }
 
-  @action
-  open() {
-    this.router.transitionTo("disteleplus");
-  }
-
   <template>
-    <li class="header-dropdown-toggle disteleplus-header-icon">
+    <li
+      class="header-dropdown-toggle disteleplus-header-icon
+        {{if this.active 'active'}}"
+    >
       <DButton
-        @action={{this.open}}
         @href={{this.href}}
+        @translatedTitle={{i18n "disteleplus.title"}}
+        @translatedAriaLabel={{i18n "disteleplus.title"}}
         class="icon btn-flat"
-        title={{i18n "disteleplus.title"}}
-        aria-label={{i18n "disteleplus.title"}}
       >
-        {{dIcon "comments"}}
+        {{icon "comments"}}
         {{#if this.disteleplus.unreadCount}}
           <span class="disteleplus-header-icon__badge">
             {{this.disteleplus.unreadCount}}

@@ -51,3 +51,33 @@ module DiscourseDisteleplus
     end
   end
 end
+
+# == Schema Information
+#
+# Table name: disteleplus_messages
+#
+#  id                     :bigint           not null, primary key
+#  cooked                 :text             default(""), not null
+#  deleted_at             :datetime
+#  edited_at              :datetime
+#  external_sender_name   :string
+#  raw                    :text             default(""), not null
+#  source                 :integer          default("discourse"), not null
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  legacy_chat_message_id :bigint
+#  reply_to_id            :bigint
+#  user_id                :bigint
+#
+# Indexes
+#
+#  index_disteleplus_messages_on_created_at              (created_at)
+#  index_disteleplus_messages_on_legacy_chat_message_id  (legacy_chat_message_id) UNIQUE
+#  index_disteleplus_messages_on_reply_to_id             (reply_to_id)
+#  index_disteleplus_messages_on_user_id                 (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (reply_to_id => disteleplus_messages.id) ON DELETE => nullify
+#  fk_rails_...  (user_id => users.id) ON DELETE => nullify
+#
