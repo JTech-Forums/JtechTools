@@ -71,34 +71,68 @@ module DiscourseDisteleplus
 
     def self.notify_reviewable(reviewable)
       return if reviewable.nil? || chat_id.blank?
-      return unless reviewable.pending?
       return if ReportLink.for_reviewable(reviewable.id).exists?
+
+      # A reviewable can already be resolved by the time the (delayed) job
+      # runs — e.g. an admin flagging with "Take Action" agrees immediately.
+      # Announce it anyway, pre-resolved and without action buttons, so the
+      # reports topic stays a complete log (and admin self-tests show up).
+      pending = reviewable.pending?
+      text = reviewable_html(reviewable)
+      text = "#{text}\n\n✅ <b>#{escape(resolution_line(reviewable))}</b>" unless pending
 
       payload = {
         chat_id: chat_id,
-        text: reviewable_html(reviewable),
+        text: text,
         parse_mode: "HTML",
         link_preview_options: {
           is_disabled: true,
         },
         reply_markup: {
-          inline_keyboard: action_keyboard(reviewable),
+          inline_keyboard:
+            pending ? action_keyboard(reviewable) : [[review_url_button(reviewable)]],
         },
       }
       payload[:message_thread_id] = thread_id if thread_id
 
-      result = TelegramApi.new.call("sendMessage", payload)
-      unless result.ok
-        Health.record_error(result.description, context: "report #{reviewable.id}")
-        Rails.logger.warn("#{LOG_TAG} report notify failed: #{result.description}")
-        return
-      end
+      result = send_report_message(payload, context: "report #{reviewable.id}")
+      return unless result.ok
 
       ReportLink.create!(
         reviewable_id: reviewable.id,
         telegram_chat_id: chat_id,
         telegram_message_id: result.result["message_id"],
+        status: pending ? :open : :resolved,
       )
+    end
+
+    # sendMessage with loud failure handling. A wrong or stale
+    # disteleplus_reports_topic_id makes Telegram reject the whole send
+    # ("message thread not found"), which used to die silently in /logs — the
+    # #1 "reports don't arrive" trap. Besides recording the dashboard
+    # problem, drop a content-free warning into the chat's General (at most
+    # once an hour) so the breakage is visible where the admins are looking.
+    def self.send_report_message(payload, context:)
+      result = TelegramApi.new.call("sendMessage", payload)
+      return result if result.ok
+
+      Health.record_error(result.description, context: context)
+      Rails.logger.warn("#{LOG_TAG} #{context} send failed: #{result.description}")
+
+      if payload[:message_thread_id] &&
+           Discourse.redis.set("disteleplus:report-topic-broken", "1", ex: 1.hour.to_i, nx: true)
+        TelegramApi.new.call(
+          "sendMessage",
+          chat_id: payload[:chat_id],
+          text:
+            "⚠️ #{escape(I18n.t("disteleplus.reports.topic_broken", topic: payload[:message_thread_id], error: result.description.to_s))}",
+          parse_mode: "HTML",
+          link_preview_options: {
+            is_disabled: true,
+          },
+        )
+      end
+      result
     end
 
     # ── outbound: reflect resolution back onto the Telegram message ─────────
@@ -107,19 +141,7 @@ module DiscourseDisteleplus
       link = ReportLink.for_reviewable(reviewable.id).first
       return if link.nil? || link.status_resolved?
 
-      resolver = last_resolver(reviewable)
-      status_label = status.to_s.humanize.downcase
-      line =
-        if resolver
-          I18n.t(
-            "disteleplus.reports.resolved_by",
-            status: status_label,
-            username: resolver.username,
-          )
-        else
-          I18n.t("disteleplus.reports.resolved", status: status_label)
-        end
-
+      line = resolution_line(reviewable, status: status)
       text = "#{reviewable_html(reviewable)}\n\n✅ <b>#{Formatter.escape_html(line)}</b>"
       TelegramApi.new.call(
         "editMessageText",
@@ -161,12 +183,7 @@ module DiscourseDisteleplus
         },
       }
       payload[:message_thread_id] = thread_id if thread_id
-      result = TelegramApi.new.call("sendMessage", payload)
-      unless result.ok
-        Health.record_error(result.description, context: "admin notice")
-        Rails.logger.warn("#{LOG_TAG} admin notice failed: #{result.description}")
-      end
-      result
+      send_report_message(payload, context: "admin notice")
     end
 
     # Called from the notification_created hook. Bridges the two admin-facing
@@ -230,6 +247,9 @@ module DiscourseDisteleplus
       data = callback["data"].to_s
       prefix, intent, reviewable_id = data.split(":", 3)
       return if prefix != CALLBACK_PREFIX
+      # Always answer — an unanswered callback leaves the button spinning on
+      # the presser's screen until Telegram times it out.
+      return answer.call(I18n.t("disteleplus.reports.disabled")) unless enabled?
       return answer.call(I18n.t("disteleplus.reports.unknown_action")) if INTENTS.exclude?(intent)
 
       message = callback["message"] || {}
@@ -313,7 +333,7 @@ module DiscourseDisteleplus
       }
       payload[:message_thread_id] = thread_id if thread_id
       payload[:reply_to_message_id] = reply_to if reply_to
-      TelegramApi.new.call("sendMessage", payload)
+      send_report_message(payload, context: "report details #{reviewable.id}")
     end
 
     # ── formatting ───────────────────────────────────────────────────────────
@@ -431,6 +451,16 @@ module DiscourseDisteleplus
       type ? type.to_s.humanize : nil
     rescue StandardError
       nil
+    end
+
+    def self.resolution_line(reviewable, status: nil)
+      status_label = (status.presence || reviewable.status).to_s.humanize.downcase
+      resolver = last_resolver(reviewable)
+      if resolver
+        I18n.t("disteleplus.reports.resolved_by", status: status_label, username: resolver.username)
+      else
+        I18n.t("disteleplus.reports.resolved", status: status_label)
+      end
     end
 
     # Latest transition's author, straight from the reviewable history.

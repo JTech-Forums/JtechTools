@@ -125,6 +125,7 @@ module DiscourseDisteleplus
         Upload archive: #{upload_state}
         Live upload mirror: #{mirror_state}
         Moderation reports: #{reports_state}
+        Report buttons: #{callback_delivery_state}
         Notifications: #{escape(ChannelNotifications.status_summary)}
         Voice notes: #{escape(VoiceNotes.status_summary)}
       HTML
@@ -279,6 +280,21 @@ module DiscourseDisteleplus
       where =
         target_chat == chat_id.to_s ? "this group" : "chat <code>#{escape(target_chat)}</code>"
       "enabled — #{where}, #{topic.positive? ? "topic <code>#{topic}</code>" : "General"}"
+    end
+
+    # Whether Telegram will deliver button presses at all: the webhook's
+    # stored allowed_updates must list callback_query (an empty list means
+    # every update type). This is THE diagnostic for report buttons that
+    # spin forever.
+    def callback_delivery_state
+      info = @api.call("getWebhookInfo")
+      return "unknown (getWebhookInfo failed)" unless info.ok
+      allowed = info.result&.dig("allowed_updates")
+      if allowed.blank? || allowed.include?("callback_query")
+        "delivering"
+      else
+        "⚠️ NOT delivered — press “Register Telegram webhook” in Discourse admin"
+      end
     end
 
     def telegram_admin?

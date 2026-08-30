@@ -55,6 +55,9 @@ module ::DiscourseDisteleplus
   # bridge account stays a silent worker even when an admin grants it
   # moderator rights.
   HIDDEN_BOTS_GROUP = "jtech_bridge_bots"
+  # Bump whenever DisteleplusRegisterWebhook#allowed_updates gains an update
+  # type — after_initialize then re-registers the webhook once per site.
+  ALLOWED_UPDATES_REV = 2
 
   def self.bot_user
     username = SiteSetting.disteleplus_bridge_bot_username.to_s.strip
@@ -205,9 +208,32 @@ after_initialize do
         DiscourseDisteleplus::VoiceNotes.ensure_extensions_authorized!
       end
     when "disteleplus_reports_enabled"
-      # callback_query must be (de)listed in the webhook's allowed_updates.
+      # Refresh the webhook registration and command menu.
       Jobs.enqueue(:disteleplus_register_webhook) if SiteSetting.disteleplus_enabled
     end
+  end
+
+  # One-time self-heal per allowed_updates revision: Telegram keeps the
+  # allowed_updates list from the LAST setWebhook call, so an already-bridged
+  # install upgraded to a version that needs a new update type (callback_query
+  # for report buttons) would never receive it until an admin pressed the
+  # register button. Re-register automatically, once.
+  begin
+    if SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_bot_token.present? &&
+         SiteSetting.disteleplus_webhook_secret.present? &&
+         PluginStore.get("disteleplus", "allowed_updates_rev").to_i <
+           DiscourseDisteleplus::ALLOWED_UPDATES_REV
+      PluginStore.set(
+        "disteleplus",
+        "allowed_updates_rev",
+        DiscourseDisteleplus::ALLOWED_UPDATES_REV,
+      )
+      Jobs.enqueue(:disteleplus_register_webhook)
+    end
+  rescue StandardError => e
+    Rails.logger.warn(
+      "#{DiscourseDisteleplus::LOG_TAG} webhook self-heal check failed: #{e.message}",
+    )
   end
 
   %i[user_created user_approved user_added_to_group].each do |event|

@@ -24,6 +24,9 @@ module DiscourseDisteleplus
       elsif (callback = @update["callback_query"])
         # Report action buttons. All authorization (reports chat, explicit
         # telegram_id staff mapping, rate limits) happens inside Reports.
+        Rails.logger.info(
+          "#{LOG_TAG} callback #{callback["data"].inspect} from tg user #{callback.dig("from", "id")}",
+        )
         Reports.handle_callback(callback)
       end
     end
