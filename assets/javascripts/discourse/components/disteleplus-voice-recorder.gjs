@@ -78,6 +78,7 @@ function historyToPeaks(history, barCount) {
 
 export default class DisteleplusVoiceRecorder extends Component {
   @service siteSettings;
+  @service disteleplus;
 
   // idle | requesting | recording | preview | uploading | error
   @tracked state = "idle";
@@ -85,6 +86,8 @@ export default class DisteleplusVoiceRecorder extends Component {
   @tracked errorKey = null;
   @tracked previewPlaying = false;
   @tracked previewPosition = 0;
+  @tracked paused = false;
+  @tracked caption = "";
 
   stream = null;
   recorder = null;
@@ -326,13 +329,42 @@ export default class DisteleplusVoiceRecorder extends Component {
     this.recorder.start(250);
     this.startedAt = Date.now();
     this.elapsed = 0;
+    this.paused = false;
     this.state = "recording";
+    this.startTimer();
+  }
+
+  startTimer() {
+    // startedAt is recalibrated on resume so elapsed survives pauses.
     this.timer = setInterval(() => {
       this.elapsed = (Date.now() - this.startedAt) / 1000;
       if (this.elapsed >= this.maxSeconds) {
         this.stop();
       }
     }, 100);
+  }
+
+  @action
+  togglePause() {
+    if (!this.isRecording || !this.recorder) {
+      return;
+    }
+    if (this.paused) {
+      this.recorder.resume();
+      this.startedAt = Date.now() - this.elapsed * 1000;
+      this.startTimer();
+      this.resumeMeter?.();
+      this.paused = false;
+    } else {
+      this.recorder.pause();
+      clearInterval(this.timer);
+      this.timer = null;
+      if (this.meterFrame) {
+        cancelAnimationFrame(this.meterFrame);
+        this.meterFrame = null;
+      }
+      this.paused = true;
+    }
   }
 
   startMeter() {
@@ -352,6 +384,9 @@ export default class DisteleplusVoiceRecorder extends Component {
         if (!this.analyser) {
           return;
         }
+        if (this.paused) {
+          return;
+        }
         this.analyser.getByteTimeDomainData(data);
         let sum = 0;
         for (let i = 0; i < data.length; i++) {
@@ -367,6 +402,10 @@ export default class DisteleplusVoiceRecorder extends Component {
         this.meterFrame = requestAnimationFrame(tick);
       };
       this.meterFrame = requestAnimationFrame(tick);
+      // Pause cancels the frame loop; resume re-arms it here.
+      this.resumeMeter = () => {
+        this.meterFrame = requestAnimationFrame(tick);
+      };
     } catch {
       // Meter is decoration; recording proceeds without it.
     }
@@ -442,7 +481,14 @@ export default class DisteleplusVoiceRecorder extends Component {
       this.previewPosition = 0;
       this.paintPreview();
     });
+    // Anything already typed in the composer becomes the caption draft.
+    this.caption = this.disteleplus.draft || "";
     this.state = "preview";
+  }
+
+  @action
+  updateCaption(event) {
+    this.caption = event.target.value;
   }
 
   @action
@@ -558,11 +604,13 @@ export default class DisteleplusVoiceRecorder extends Component {
         throw new Error(upload?.errors?.join(", ") || "upload failed");
       }
 
-      const payload = { raw: "", upload_ids: [upload.id] };
+      const payload = { raw: this.caption.trim(), upload_ids: [upload.id] };
       const response = await ajax("/jtech-disteleplus/messages", {
         type: "POST",
         data: payload,
       });
+      // The caption consumed whatever the composer draft held.
+      this.disteleplus.setDraft("");
       this.teardownPreview();
       this.args.onSent?.(response.message);
     } catch (e) {
@@ -593,6 +641,9 @@ export default class DisteleplusVoiceRecorder extends Component {
       {{#if this.isError}}
         <span class="disteleplus-vrec__error">{{icon "microphone-slash"}}
           {{this.errorMessage}}</span>
+      {{else if this.isRequesting}}
+        <span class="disteleplus-vrec__requesting">{{icon "microphone"}}
+          {{i18n "disteleplus.voice.requesting"}}</span>
       {{else if this.isPreview}}
         <button
           type="button"
@@ -608,13 +659,38 @@ export default class DisteleplusVoiceRecorder extends Component {
           {{this.previewPositionLabel}}
           /
           {{this.elapsedLabel}}</span>
+        <input
+          type="text"
+          class="disteleplus-vrec__caption"
+          placeholder={{i18n "disteleplus.voice.caption_placeholder"}}
+          maxlength="2000"
+          value={{this.caption}}
+          {{on "input" this.updateCaption}}
+        />
       {{else}}
-        <span class="disteleplus-vrec__dot"></span>
+        <span
+          class="disteleplus-vrec__dot {{if this.paused 'is-paused'}}"
+        ></span>
         <span class="disteleplus-vrec__time">{{this.elapsedLabel}}</span>
         <div
           class="disteleplus-vrec__wave"
           {{didInsert this.mountLiveWave}}
         ></div>
+        <button
+          type="button"
+          class="disteleplus-vrec__pause"
+          title={{if
+            this.paused
+            (i18n "disteleplus.voice.resume")
+            (i18n "disteleplus.voice.pause")
+          }}
+          aria-label={{if
+            this.paused
+            (i18n "disteleplus.voice.resume")
+            (i18n "disteleplus.voice.pause")
+          }}
+          {{on "click" this.togglePause}}
+        >{{icon (if this.paused "play" "pause")}}</button>
       {{/if}}
 
       {{#unless this.isError}}

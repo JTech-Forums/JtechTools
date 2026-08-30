@@ -72,6 +72,9 @@ en:
         sending: Sending…
         requesting: Waiting for microphone permission…
         tap_to_record: Tap to record
+        pause: Pause recording
+        resume: Resume recording
+        caption_placeholder: Add a message…
         recording_hint: Recording — tap to stop
         preview_hint: Listen back, then send or record again.
         errors:
