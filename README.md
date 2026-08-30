@@ -1,267 +1,75 @@
-# Jtech
+# Jtech Tools
 
-One combined Discourse plugin. Bundles previously-separate plugins under a single registration and a single master site setting (`jtech_enabled`). Each sub-plugin keeps its own settings, locales, and Ruby namespace.
+One Discourse plugin with everything JTech Forums runs on top of core. Nine features, each with its own on/off switch in **Admin → Settings → Jtech**.
 
-## Bundled sub-plugins
-
-| Sub-plugin | Ruby namespace | Settings prefix | Master switch |
-| --- | --- | --- | --- |
-| Dislike (phantom reactions) | `DiscourseNoLikes` | `dislike_*`, `discourse_no_likes_*`, `no_reactions_*`, `purge_phantom_likes_now` | `discourse_no_likes_enabled` |
-| Another SMTP | — | `discourse_another_email_*` | `discourse_another_email_enabled` |
-| Mini-mod | `DiscourseMiniMod` | `mini_mod_*`, `tl4_*` | `mini_mod_enabled` |
-| Mod-categories | `DiscourseModCategories` | `mod_*`, `precheck_*`, `topic_footer_*`, `topic_reply_prompt_*` | `mod_categories_enabled` |
-| Dumbcourse | `DiscourseDumbcourse` | `dumbcourse_*` | `dumbcourse_enabled` |
-| Translator-tweaks | *(patches `DiscourseTranslator`)* | `translator_tweaks_*` | `translator_tweaks_enabled` + `translator_enabled` (upstream) |
-| Smart search | `DiscourseSmartSearch` | `smart_search_*` | `smart_search_enabled` |
-| Desktop pop-ups | `DiscoursePopupNotifications` | `popup_notifications_*` | `popup_notifications_enabled` |
-| Disteleplus (Telegram ⇄ native conversation) | `DiscourseDisteleplus` | `disteleplus_*` | `disteleplus_enabled` |
-
-The bundle is gated by `jtech_enabled`; each sub-plugin is independently gated by its own setting above.
-
-### Desktop pop-up notifications
-
-A Jelly-style toast card that appears in the top-right corner (just below the header search) when a new notification arrives, modelled on the [Jelly](https://github.com/lubabs770/Jelly) macOS notifier's look and delivery.
-
-- **Purely additive.** It subscribes to the same `/notification/:user_id` MessageBus channel that already drives the bell counter and the notifications dropdown, and does nothing else — the bell, the dropdown, and read-state are untouched. Turning it off simply stops the card from appearing.
-- **Desktop only.** Never mounts on mobile (`site.mobileView`).
-- **Opt-in per user, off by default.** Each user turns it on via a **Desktop Pop Up Notifications** On/Off dropdown on their account page (`/u/:username/preferences/account`), stored in the `jtech_popup_notifications_enabled` user custom field. `popup_notifications_default_enabled` (default `false`) controls the default for users who haven't chosen.
-- **Card layout:** the acting user's name on top, their avatar on the left, the topic title in bold, then a short preview of their message (fetched from the source post).
-- **Interaction:** clicking the card routes to the post (same as clicking the row in the dropdown); clicking anywhere else — or waiting `popup_notifications_timeout_seconds` (default 20) — dismisses it.
-
-| Setting | Default | Purpose |
-| --- | --- | --- |
-| `popup_notifications_enabled` | `true` | Master switch. Off ⇒ no card for anyone, per-user preference hidden. |
-| `popup_notifications_default_enabled` | `false` | Default for users who haven't set the account-page preference. |
-| `popup_notifications_timeout_seconds` | `20` | Seconds the card stays before auto-dismissing. |
-
-### Mod-categories — staff-event notifications
-
-Mod-categories ships a notification fan-out for five staff-event streams in addition to its original topic-level moderator notes. Whenever a moderator performs one of the actions below, every OTHER staff member gets a high-priority bell notification + live MessageBus pop-up alert, AND the event surfaces in the shield-tab user menu alongside topic notes.
-
-| Stream | Event hook | URL on click |
-| --- | --- | --- |
-| Post deleted by staff | `on(:post_destroyed)` (skips self-deletes + system user) | topic + post number |
-| Queued post approved | `on(:reviewable_transitioned_to)` (status=:approved, ReviewableQueuedPost) | `/review/:id` |
-| Queued post rejected | `on(:reviewable_transitioned_to)` (status=:rejected, ReviewableQueuedPost) | `/review/:id` |
-| User note added | wraps `::DiscourseUserNotes.add_note` (bundled plugin fires no DiscourseEvent) | `/u/:username/notes` |
-| Flag note added on a reviewable | `::ReviewableNote.after_create` callback | `/review/:id` |
-
-All five are gated by independent site settings (`mod_notify_staff_on_post_actions`, `mod_notify_staff_on_user_notes`, `mod_notify_staff_on_flag_notes`) so streams can be disabled individually. The fan-out itself lives in `lib/discourse_mod_categories/staff_notifier.rb` and is wrapped in two layers of `rescue StandardError` so a notifier failure can never 500 the underlying moderator action. A 30-second per-user dedup check in `StaffNotifier.recent_duplicate?` protects against an event hook firing twice in quick succession.
-
-The shield-tab `/discourse-mod-categories/notes-feed` returns a UNION of topic-attached notes (legacy behavior — what `TopicCustomField` writes surface as) plus the non-topic event notifications above, so the tab mirrors what the bell shows for every mod-note-kind notification.
-
-### Smart search
-
-Synonym query expansion using **WordNet** (~117K-word English lexical DB, bundled via the `rwordnet` gem) for general English, with a small **tech-jargon YAML overlay** (~70 entries in `config/dictionaries/smart_search_synonyms.yml`) for the abbreviations and brand names WordNet doesn't know (`js ↔ javascript`, `k8s ↔ kubernetes`, `pg ↔ postgres`, etc.). When `smart_search_enabled` is on:
-
-1. The user's original search runs first via Discourse's vanilla `Search#execute`.
-2. If the original returns fewer than `smart_search_minimum_results` posts (default 5), up to `smart_search_variant_limit` (default 2, max 5) synonym-substituted variant searches run and their results are merged in.
-3. Every smart-search path (dictionary load, variant generation, inner variant search, merge) is wrapped in `rescue StandardError` → log and return the vanilla result. The fallback contract is documented at the top of `lib/discourse_smart_search/search_extension.rb`.
-
-No external services, no API keys, no embedding models — both backends (WordNet via SQLite DB shipped in-gem, plus the YAML overlay) run in-process. This is deliberate: the previous semantic-search attempt (Discourse AI embeddings) was disabled after every query started returning 500 when the embedding backend went down. Smart search's failure mode is "results identical to vanilla," never "search broken."
-
-Editing the overlay: only ADD entries WordNet doesn't already cover — abbreviations, brand names, protocol initialisms. Don't curate general English (WordNet handles it for free). Lowercase ASCII rows, each row is a symmetric synonym group. Reloaded at boot (or via `DiscourseSmartSearch::Synonyms.reload!` in a Rails console). See `docs/smart_search.md` for the full architecture: two-backend lookup order, request-flow diagram, fallback contract, performance notes, and a console-recipe for diagnostics.
-
-### Custom emoji as reactions (and in dumbcourse)
-
-Replacing emoji and choosing reactions is **entirely native** — the plugin ships **no bundled images and no emoji settings**. Its only job here is bridging the dumbcourse SPA, which otherwise can't see Discourse's emoji system.
-
-**Replace any emoji** (no plugin change, no rebuild): **Admin → Customize → Emoji → Add new emoji**, upload your image, and **name it after the emoji you want to override** (e.g. `man_shrugging`, `+1`, `joy`). `buildEmojiUrl` checks custom emoji **before** the built-in set, so it overrides everywhere it renders.
-
-**Set a reaction from an uploaded emoji:** the `discourse_reactions_enabled_reactions` setting (Admin → Settings → **Emoji** area) is an emoji **picker** that already includes your uploaded custom emoji — add it there.
-
-**Image spec:** square, **transparent PNG**, **72×72 or larger** (144×144 recommended — Discourse scales it down; bigger source = crisper). Non-square images get distorted.
-
-**Dumbcourse bridge** (the only plugin code involved) — `app/controllers/discourse_dumbcourse/app_controller.rb` injects into `window.DUMBCOURSE_SETTINGS`:
-
-- `enabledReactions` — the forum's actual `discourse_reactions_enabled_reactions`, so the SPA's reaction picker matches the main forum instead of a hardcoded list (this also fixes the old `laughing`/`joy` drift).
-- `customEmojis` — `{name → url}` from `Emoji.custom`, every native upload + plugin-registered emoji.
-
-`public/dumbcourse.js` then builds its reaction list from `enabledReactions` (falling back to the old hardcoded set), and `reactionGlyph()` renders each reaction as: a custom-emoji `<img>` if one exists, else the unicode glyph (via the bundled `emoji_map.json` codepoints), else the raw name. So **anything you enable/upload natively shows in dumbcourse automatically — no code change, no rebuild beyond shipping this bridge once.**
-
-### Moderator powers — one toggle per grant
-
-Every right the mini-mod and mod-categories modules hand to moderators (or TL4 users) is individually gated by its own site setting, organized into per-feature admin tabs: **Jtech — Mod** (master + moderator category create/edit/delete), **Mod: Whispers**, **Mod: Notes**, **Mod: Staff notifications**, **Mod: Topic tools**, and **Mod: Checklists**. All toggles default to the previously shipped behavior, so upgrading changes nothing until you flip switches — with three deliberate security exceptions:
-
-- **Badge-member enumeration is staff-only.** `/discourse-mod-categories/badge-members/:id` (the PM "Add badge group" lookup) previously let *any* PM-capable user list every holder of any badge; it now requires moderator rights, and the composer button only renders for staff.
-- **Note entries belong to their author.** Editing/deleting another staff member's private-note or note reply now requires being an admin or the site opting in via `mod_moderators_can_edit_others_notes` (default off).
-- **Targeted checklists can't gate admins.** A moderator-authored targeted checklist previously overrode staff status entirely and could block an admin from posting; admins are now always exempt.
-
-Serializer exposures (footer texts, pinned-post HTML, reply-approval flags, note bodies, whisper participant lists, unread counters) also now respect the module master switch and their feature toggles instead of leaking whenever the plugin bundle was enabled.
-
-### Disteleplus — Telegram ⇄ Discourse conversation
-
-Bridges exactly **one Telegram group** with exactly **one native Discourse conversation** at `/disteleplus`, two-way, so an admin without Telegram can participate in the team's Telegram group from inside Discourse (and everyone on Telegram sees their messages). Disteleplus owns its own messages, uploads, reactions, unread state, realtime channel, notifications and UI — **the official `chat` plugin is not required** and may be disabled. It is deliberately a single-room messenger: no channels, direct messages, threads, presence or calls.
-
-**What bridges, and how far** (Bot API limits are real — the bridge documents them instead of faking around them):
-
-- **Text, both ways.** Telegram messages post **as the matching Discourse user** when the Telegram username matches a Discourse username (the `disteleplus_user_map` table setting — edited via a proper row editor in admin — takes precedence and can carry the account's permanent **numeric Telegram ID**, which always wins; the legacy pipe-delimited `disteleplus_user_mappings` value is migrated automatically). Staff accounts are **never** auto-matched by bare username (usernames are re-claimable, so impersonating a moderator requires an explicit map row); `disteleplus_auto_match_usernames` turns automatic matching off entirely. Unmatched senders post via the bridge-bot user with their Telegram name shown as the sender and a **Telegram** marker. Discourse messages appear in Telegram from the bot as a bold, profile-linked display name over the text — quote blocks collapse to a `↩︎ username` attribution (never the quoted wall of text), basic markdown (bold/italic/code/links) converts to Telegram formatting, and the profile link never renders Telegram's preview card (no more author bio under every message; a link in the body gets the preview instead).
-- **Media, both ways,** up to `disteleplus_max_upload_mb` (hard ceiling 20 MB — the Bot API refuses larger bot downloads; bot sends cap at 50 MB). Oversized media becomes a placeholder (inbound) or a forum link (outbound; login-gated if secure uploads are on). Images and video render inline, documents as download cards, voice messages come in as `voice-note-*.ogg` uploads and get the voice-note player (see below). Animated stickers degrade to `[sticker 😀]` text.
-- **Edits, both ways** — with one asymmetry: Telegram-originated messages cannot be edited or deleted from Discourse (bots cannot edit other people's Telegram messages), so the UI never offers it.
-- **Deletes, Discourse → Telegram only.** Telegram never notifies bots about deletions, so Telegram-side deletions leave the Discourse copy in place — that's a Bot API fact, not a setting. Discourse deletes are soft: replies keep their structure and a *deleted* placeholder remains.
-- **Replies, both ways,** threaded via the message-link table, with a jump-to-message preview.
-- **Reactions, both ways, asymmetric.** Telegram reactions land per-user on the message (as the matched user, else the bot). Discourse reactions collapse to the bot's single allowed Telegram reaction (most recent wins) from Telegram's fixed emoji set. Requires the bot to be a **group admin** or Telegram never delivers reaction updates.
-- **Telegram polls → markdown snapshot**, vote counts refreshed best-effort. No voting from Discourse.
-- **Not bridged:** pins, typing indicators, join/leave notices, and muting.
-
-**In the conversation:** the UI follows Discourse Chat's own look (flat rows, avatar · name · time, hover toolbar) and adds what a messenger needs — right-click / ⋮ context menu (react · reply · copy text · copy link · quote in new topic · edit · delete), quick reactions from your recently used emoji plus the full core emoji picker, reaction pills that list who reacted, `@mention` and `:emoji:` autocomplete, paste and drag-and-drop uploads, an emoji button, a draft that survives navigation, ↑ in an empty composer to edit your last message, images in the core lightbox, and deep links (`/disteleplus#m<id>`) that scroll to and highlight the exact message — @mention notifications and web pushes carry them, and the target is fetched on demand when it's outside the loaded tail. Opening the page lands on the *New messages* divider.
-
-**Forum post announcements (`disteleplus_forum_post_notifications_enabled`, default off):** the one feature borrowed from discourse-chat-integration — new public forum posts are announced in the bridged Telegram conversation as `<b>user</b> posted in <a>title</a>` plus an excerpt, and mirrored into the native conversation as the bridge bot. Filter by `disteleplus_forum_post_categories` (subcategories count) and `disteleplus_forum_post_tags`; `disteleplus_forum_post_first_post_only` (default on) limits it to new topics; `disteleplus_forum_post_excerpt_length` and `disteleplus_forum_post_link_preview` shape the message. Private messages, whispers, hidden posts and read-restricted categories are never sent.
-
-**Diagnostics:** press **Send test message** on the Disteleplus admin tab (the maintenance actions there — register webhook, test message, notification sync, upload measure/backfill — are real buttons now; the legacy `*_now` checkbox settings are hidden but still work for API callers) to verify token, chat id and topic together. Any Telegram delivery failure in the last 24 hours — outbound message, announcement or test — appears on the admin dashboard as a problem with a hint keyed on Telegram's error (`chat not found`, `Forbidden`, missing topic).
-
-**Access (`disteleplus_allowed_groups`, default staff):** members of the listed groups — and always administrators — see a **Disteleplus** header icon with a server-derived unread badge that opens `/disteleplus`. Every API action checks the same Guardian predicate, MessageBus updates are published only to authorized user IDs, authors edit/delete their own messages, staff moderate all of them, and create/edit/react/read endpoints are rate limited. Message text is cooked server-side; uploads must exist and belong to the poster. The webhook is authenticated by a constant-time secret comparison, and failed attempts are rate-limited per IP. The bridge-bot account is enrolled in a hidden `jtech_bridge_bots` group registered with core's `about_page_hidden_groups`, so it never appears under "Our moderators"/"Our admins" on `/about` even if an admin grants it moderator rights.
-
-**Forced notifications (`disteleplus_force_channel_notifications`, default on):** every allowed user is enrolled and the header icon's unread badge counts every message; a Discourse notification plus web push (through core's normal gates — do-not-disturb, push filters, time window) is sent **only when a message @mentions the user or one of their groups**, never to the author or the bridge bot. Notifications are marked read as the reader's cursor advances. A scheduled sync runs every 30 minutes and new/approved/group-added users are enrolled within seconds. `/disteleplus_sync_notifications` (Telegram) or `disteleplus_notification_sync_now` (admin) forces a run; `/disteleplus_status` reports enrolment counts and whether site-wide push is on. Web push additionally needs core's `push_notifications_prompt` and each person to have accepted push on a device — the plugin cannot do that for them, and the sync log counts members without a push subscription.
-
-**Moderation reports (`disteleplus_reports_enabled`, default off):** mirrors the Discourse review queue into a Telegram "Reports" topic. Every new flag, queued post and user review appears with **✅ Approve / ❌ Deny / ⋯ More** buttons under the message; *More* replies with the full excerpt, per-flag reasons and an *Open in Discourse* link. Resolving a report — from a Telegram button **or** from the Discourse review queue — edits the Telegram message to `✅ Resolved (status) by @admin` and removes the buttons. Optionally send reports to a **separate private staff group** (`disteleplus_reports_chat_id`); when the reports topic lives inside the bridged group it is automatically excluded from the member conversation. With `disteleplus_reports_admin_notices` (default on) the topic also carries admin notices: "What's new" feature announcements, admin-dashboard problem alerts, and a who→whom note when an official warning is issued (the warning's text stays private). Bind the destination by sending `/disteleplus_bind_reports` inside the desired topic — that command requires the sender to be mapped **by numeric Telegram ID** to a Discourse **admin**. Button presses are locked down the same way: the callback must come from the reports chat, the presser must have an explicit `disteleplus_user_map` row whose `telegram_id` matches their numeric Telegram ID, that row must point at **staff**, and presses are rate-limited. Username-only rows and auto-matching are deliberately not honored for moderation — Telegram usernames can be released and re-claimed by strangers.
-
-**Voice notes (`disteleplus_voice_notes_enabled`, default on):** a microphone button in the composer records in-browser with a live level meter and a countdown to `disteleplus_voice_note_max_seconds`, previews, and sends the note as its own message. Every audio in the conversation gets a compact waveform player (play, click/drag scrub, elapsed/total, 1×/1.5×/2× speed remembered per browser, download) instead of the browser default; `disteleplus_voice_player_all_audio` limits it to voice notes only. Voice notes travel to Telegram as real **voice bubbles** (`sendVoice`) — Firefox records OGG/OPUS natively; Chrome/Edge WebM is transcoded server-side when `ffmpeg` is present (it is in the standard Discourse image), otherwise the note arrives as an audio file. Telegram voice messages arrive as `voice-note-<n>s.ogg` and get the same player. The recorder uploads through core, so enabling the feature adds `ogg|webm|m4a|opus` to `authorized_extensions` if missing.
-
-**Setup (once, ~5 minutes):**
-
-1. **BotFather:** `/newbot` → copy the token. Then `/setprivacy` → **Disable** — *mandatory*, otherwise the bot cannot see ordinary group messages (this is the #1 troubleshooting item).
-2. **Telegram group:** add the bot and promote it to **admin**. Grant manage-topics if the bot should create the Uploads topic, delete-messages for delete bridging, and keep admin status for reaction updates.
-3. **Discourse (Admin → Settings → Jtech — Disteleplus):** paste `disteleplus_bot_token`, choose `disteleplus_allowed_groups`, and turn on `disteleplus_enabled`.
-4. Press **Register Telegram webhook** on the Disteleplus admin tab — it generates the webhook secret if blank, calls `setWebhook`, and installs an admin-only Telegram command menu. Check `/logs` for warnings.
-5. In the Telegram group, run `/disteleplus_setup`. Bind General, then either enter an existing upload topic and run `/disteleplus_bind_uploads`, or run `/disteleplus_create_uploads Uploads` from General. The bot reads and saves the group/thread IDs automatically.
-6. Run `/disteleplus_status`, then send a normal message in Telegram and reply from `/disteleplus` to test both directions.
-
-**Migrating from the old Chat-based bridge:** the schema change is additive and never deletes Chat records. While the `chat` plugin is still enabled, keep `disteleplus_chat_channel_id` pointing at the old channel, then `GET /jtech-disteleplus/legacy-import` (admin) for a dry-run audit and `POST /jtech-disteleplus/legacy-import` to start the resumable, idempotent import. It preserves users, text, timestamps, replies, uploads and reactions, translates the `**Name (TG):**` prefix into a structured sender name, and re-points existing Telegram link rows at the native message IDs (their `chat_message_id` values are kept for rollback). Once `GET /legacy-import` reports `complete: true` and the live bridge has been verified, Discourse Chat can be disabled. Rolling back is redeploying the previous plugin version with Chat re-enabled.
-
-**Honest limitations** (also inline in the settings descriptions): Telegram username changes silently break the automatic match (fix with a mapping entry — numeric-ID rows are immune); anyone controlling a mapped Telegram account posts as that Discourse user — map people you trust, and give staff rows a numeric Telegram ID; the bot's messages older than 48 h can't be deleted from Telegram; a group→supergroup migration changes the chat id (update the setting); inbound Telegram formatting is still flattened to plain text (outbound converts basic markdown).
-
-Internals: webhook receiver at `/jtech-disteleplus/telegram/webhook` (secret-header auth, enqueue-and-200); every mutation — Telegram inbound, the authenticated `/jtech-disteleplus` API, and the voice recorder — passes through `DiscourseDisteleplus::MessageService`, which persists to the `disteleplus_messages` / `_message_uploads` / `_reactions` / `_user_states` tables, publishes to the private `/disteleplus/conversation` MessageBus channel, fans out notifications and enqueues the outbound Telegram job; echo suppression lives in the `disteleplus_message_links` table. The only remaining Chat touchpoint is the optional, admin-only `lib/discourse_disteleplus/legacy_chat_importer.rb`.
-
-#### Forum upload archive topic
-
-Disteleplus can additionally mirror attachments from ordinary forum posts into
-a dedicated Telegram Forum Topic. This is a one-way secondary copy: JTech
-remains the source of truth and its Upload is never moved or deleted. Each
-Telegram file has a compact caption whose collapsed expandable section contains
-the post comment, author, UTC time, exact/human file size, topic title, and a
-link back to the exact post. Searchable tags (`#jtechupload`, file type,
-category, and a short `#jtu_…` fingerprint) make Telegram lookup practical;
-the full Discourse SHA-1 is included in the expanded metadata.
-
-**No-ID Telegram setup:** after the webhook is registered, Telegram group
-administrators get these commands in the bot command menu:
-
-- `/disteleplus_setup` — a short guided checklist.
-- `/disteleplus_bind_general` — run in General; saves the group and keeps the
-  bridged conversation in General.
-- `/disteleplus_bind_uploads [name]` — run inside an existing destination
-  topic; saves that thread as the upload archive.
-- `/disteleplus_create_uploads [name]` — run in General; creates and binds the
-  topic (the bot needs manage-topics permission).
-- `/disteleplus_status` — confirms the human topic name, saved destination,
-  whether the live mirror is enabled, notification enrolment counts, and
-  voice-note capability.
-- `/disteleplus_sync_notifications` — re-enrols every eligible Discourse
-  member in the native conversation at notification level "always".
-
-Every setup command verifies the sender through Telegram's `getChatMember` and
-accepts only a group creator/administrator. Commands are consumed before the
-message bridge, so neither successful nor rejected setup attempts appear in
-Discourse. Binding a destination never starts the historical archive: measure
-and start it explicitly in Discourse admin settings.
-
-The live path observes both new and edited posts. The historical path walks
-`UploadReference` rows in small ascending-ID batches and records each delivered
-`(post_id, upload_id)` occurrence in `disteleplus_forum_upload_links`, making a
-repeat run resumable. The receipt snapshots and indexes the upload SHA-1, so a
-delivery can still be found by hash if its forum association later changes.
-Telegram rate limits re-enqueue only the affected file.
-Files above the separately configurable outbound limit (maximum 50 MB) remain
-on JTech and produce a linked metadata message instead.
-
-Safety defaults exclude private messages, whispers, deleted/hidden posts and
-read-restricted categories. A category allowlist can narrow the archive;
-restricted categories require a separate explicit switch. Before sending,
-`disteleplus_forum_upload_measure_now` logs eligible post/occurrence/unique-file
-counts, total bytes, date range, extension breakdown, oversize volume and
-already-delivered count. `disteleplus_forum_upload_backfill_now` measures, then
-starts or resumes the paced archive.
-
-Historical sends are spaced four seconds apart by default (15/minute), below
-Telegram's documented 20-messages-per-minute group limit. Batch continuation
-waits until the last scheduled delivery in the current batch, so increasing the
-batch size does not accidentally increase the send rate. Telegram 429 replies
-remain independently retryable as a safety net.
-
-When Telegram topics are in use, set `disteleplus_chat_topic_id` for the
-two-way conversation bridge and `disteleplus_forum_upload_topic_id` for the
-archive. Human messages in the archive topic are explicitly excluded from the
-inbound conversation bridge.
-
-## Layout
-
-```
-plugin.rb              master plugin file — instance_eval's each file under sub_plugins/
-about.json
-sub_plugins/
-  dislike.rb           body of original Dislike/plugin.rb
-  another_smtp.rb      body of original discourse-another-smtp/plugin.rb
-  mini_mod.rb          body of original discourse-mini-mod/plugin.rb
-  mod_categories.rb    body of original discourse-mod/plugin.rb + staff-event notifications
-  dumbcourse.rb        body of original dumbcourse/plugin.rb
-  translator_tweaks.rb runtime patches for upstream discourse/discourse-translator
-                       (alltechdev's two-commit fork ported as in-process tweaks
-                       so we can track upstream and apply our overrides on top)
-  smart_search.rb      synonym query expansion (in-process, no external services)
-scripts/
-  translator_backfill_foreign_detection.rb
-                       one-shot rails runner; enqueues the upstream translator's
-                       detect job for legacy foreign-script posts
-config/
-  settings.yml         all settings.yml files merged into seven jtech_* admin tabs
-  dictionaries/
-    smart_search_synonyms.yml
-                       symmetric synonym groups for smart_search; lowercase ASCII
-  locales/
-    server.en.yml      deep-merged server locale + categories.jtech_* translations
-    client.en.yml      deep-merged client locale
-lib/
-  discourse_no_likes/        from Dislike
-  discourse_mini_mod/        from discourse-mini-mod
-  discourse_mod_categories/  from discourse-mod + staff_notifier.rb (fan-out helper)
-  discourse_dumbcourse/      from dumbcourse
-  discourse_smart_search/    synonyms / query_expander / Search prepend module
-app/
-  controllers/{discourse_mod_categories,discourse_dumbcourse}/
-  models/{discourse_no_likes,*_site_setting.rb}
-  jobs/regular/
-db/migrate/            phantom-reactions table migration from Dislike
-assets/                merged JS/CSS — no filename collisions across sources
-public/                Dumbcourse SPA bundle (index.html, dumbcourse.{js,css}, emoji_map.json)
-```
-
-## Admin-UI tabs
-
-The plugin config page at `/admin/plugins/jtech-tools` renders one tab per sub-plugin — **Dislike**, **Alternate SMTP**, **Mini-mod**, **Mod** (spanning its six settings groups), **Dumbcourse**, **Translator tweaks**, **Smart search**, **Pop-ups**, **Disteleplus** — plus core's **All settings** tab kept last as a search-everything fallback. The same category grouping also appears on the classic Admin → Settings sidebar. The `tl4_*` settings live on the Mini-mod tab (they are implemented by, and inert without, that module).
-
-## Visual review (screenshot specs)
-
-Two GitHub Actions workflows render visual fixtures of the plugin's UI surface:
-
-- `Feature Screenshots` — ~25 hand-picked scenarios capturing the actively-developed features. Runs on push to `main`, PRs, and manual dispatch. Artifact: `feature-screenshots`.
-- `Comprehensive Screenshots` — parameterized matrix across kinds × lengths × read-states × roles × ordinals, ~1180 scenarios attempted. **Dispatch-only** (gated by `ENV["JTECH_COMPREHENSIVE_SHOTS"]` so it never slows ordinary CI). Run via:
-
-  ```bash
-  gh workflow run "Comprehensive Screenshots" --ref <branch> --repo Shalom-Karr/JtechTools
-  ```
-
-  Spec files: `spec/system/comprehensive_screenshots_spec.rb` plus `_part2`, `_part3`, `_part4`. Empirical success rate ~75% across the full matrix (the fast-path P6 section alone hits 100%). Section-prefix convention so the artifact zip sorts navigably: `A1xx` bell rows, `B2xx` shield tab, `C3xx` mod-note panel, `D4xx` bell stacking, `E5xx`/`K1xx` smart search, `G7xx` time-ago variants, `H8xx` density 1→100, etc.
-
-## Why one `enabled_site_setting`?
-
-Discourse plugins can only register a single `enabled_site_setting` at load time. The bundle's master gate is `jtech_enabled`. Every sub-plugin's logic still checks its own master switch internally (Guardian overrides, event hooks, controllers, etc. all early-return when their sub-feature is disabled), so you keep per-feature on/off control through admin settings.
-
-## Installation
+## Install
 
 ```bash
-cd /var/discourse/plugins
-git clone https://github.com/JTech-Forums/JtechTools.git jtech-tools
 cd /var/discourse
+# add to containers/app.yml under hooks → after_code → cmd:
+#   - git clone https://github.com/JTech-Forums/JtechTools.git jtech-tools
 ./launcher rebuild app
 ```
+
+Master switch: `jtech_enabled`. Every feature below also has its own switch, so you can turn things off one at a time.
+
+## What's in it
+
+### Disteleplus — team chat, bridged to Telegram
+A private one-room chat inside Discourse for staff (or any groups you allow), mirrored both ways with a Telegram group.
+
+- Opens as a small drawer bottom-right (like Discourse Chat) or full page; always full page on phones.
+- Messages, replies, edits, deletes, reactions, images, files, video, voice notes (record right in the composer), polls from Telegram.
+- Right-click a message: react, reply, copy text, copy link, quote into a new topic, edit, delete. Double-tap to react.
+- `@mentions` and `:emoji:` suggestions, emoji picker, paste or drag files in, drafts kept while you browse.
+- Search across the conversation. Link previews. "Someone is typing" indicators.
+- Unread badge on the header icon and in the browser tab; notifications only when you're @mentioned.
+- Message text is encrypted in the database.
+- Telegram side: people you map post as their Discourse account; everyone else shows with their Telegram name. Discourse messages arrive in Telegram with the author's name linked to their profile.
+- Optional: announce new forum posts into the Telegram group (by category / tag).
+- Optional: mirror the review queue (flags, posts awaiting approval) into a Telegram topic with **Approve / Deny** buttons for mapped staff.
+- Setup is done from inside Telegram with `/disteleplus_setup`; there's a "send test message" button and problems show on the admin dashboard.
+
+### Moderator tools
+- **Whispers** — reply to specific people inside a topic; others don't see it.
+- **Private notes** on topics, with reply threads, visible to staff only.
+- **Staff alerts** — every moderator is told when someone deletes a post, approves/rejects a queued post, adds a user note or a flag note. Shows in the bell and in a shield tab.
+- **Checklists** — first-post checklists, targeted checklists for specific users/groups, topic prompt checklists.
+- **Topic tools** — pinned messages in topics, footer messages, reply approval.
+- Every one of these rights is its own toggle.
+
+### Mini-mod
+Gives category moderators (people who moderate a category through a group) extra powers normally reserved for staff: create/edit categories, edit and move topics, manage tags, etc. Each power is a separate switch.
+
+### Dislike (phantom reactions)
+In categories you pick, likes stop mattering: they're hidden from history, don't count toward leaderboards, and the like notification is quietly removed. Optionally hide the like button entirely or allow it only for certain groups.
+
+### Smart search
+When a search finds too little, it quietly retries with synonyms (English dictionary + a short list of tech abbreviations like `js`/`javascript`, `k8s`/`kubernetes`) and merges the results. Runs locally, no API keys. If anything goes wrong you just get normal search results.
+
+### Desktop pop-up notifications
+A small card in the top-right corner when you get a notification, with the person's avatar, the topic title and a preview. Click it to jump there. Desktop only, each user turns it on in their account settings.
+
+### Dumbcourse
+A simplified web app version of the forum at `/dumb` for basic devices: reading, replying, reactions, push notifications, spell check. Uses the forum's own reactions and custom emoji.
+
+### Another SMTP
+Send forum email through a different mail server than the one in `app.yml` — host, port, TLS, login, and optional "from" address rewriting, all from admin settings.
+
+### Translator tweaks
+Small fixes on top of the official Translator plugin (better foreign-language detection, backfill for old posts).
+
+## Telegram setup (5 minutes)
+
+1. In Telegram, message **@BotFather**: `/newbot` → copy the token. Then `/setprivacy` → **Disable** (otherwise the bot can't read the group).
+2. Add the bot to your group and make it an **admin**.
+3. In Discourse: **Admin → Settings → Jtech — Disteleplus** → paste the token, pick who may use the chat (`disteleplus_allowed_groups`, default: staff), turn on `disteleplus_enabled`, press **Register Telegram webhook**.
+4. In the Telegram group, send `/disteleplus_setup` and follow the short checklist (`/disteleplus_bind_general`, optionally `/disteleplus_bind_uploads`, `/disteleplus_bind_reports`).
+5. Send a message from each side to check.
+
+Known limits (Telegram's rules, not ours): the bot can't delete messages older than 48 hours, can't see when Telegram users are typing, can only show one reaction per message, and if your group is converted to a supergroup the chat ID changes — bind it again.
+
+## Notes
+
+- Nothing here requires the official Discourse Chat plugin. If you're moving from the old Chat-based bridge, an admin can import the old channel (`POST /jtech-disteleplus/legacy-import`, check progress with `GET`) before switching Chat off. Nothing is deleted from the old Chat data.
+- Screenshots of the features are in `docs/screenshots`.
