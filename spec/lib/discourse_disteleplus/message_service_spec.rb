@@ -224,12 +224,12 @@ RSpec.describe DiscourseDisteleplus::MessageService do
     it "queues web push only for mentioned, subscribed recipients" do
       PushSubscription.create!(user: other, data: { endpoint: "https://push.example/x" }.to_json)
       expect { service.create!(raw: "no mention here") }.not_to change {
-        Jobs::SendPushNotification.jobs.size
+        Jobs::DeliverPushNotification.jobs.size
       }
       expect { service.create!(raw: "push @#{other.username}") }.to change {
-        Jobs::SendPushNotification.jobs.size
+        Jobs::DeliverPushNotification.jobs.size
       }.by(1)
-      payload = Jobs::SendPushNotification.jobs.last["args"].first["payload"]
+      payload = Jobs::DeliverPushNotification.jobs.last["args"].first["payload"]
       expect(payload).to include("post_url" => "/disteleplus", "username" => member.username)
     end
   end
