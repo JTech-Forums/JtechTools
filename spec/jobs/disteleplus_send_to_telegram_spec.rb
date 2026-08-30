@@ -26,6 +26,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
     SiteSetting.jtech_enabled = true
     SiteSetting.disteleplus_enabled = true
     SiteSetting.disteleplus_telegram_chat_id = chat_id
+    SiteSetting.authorized_extensions = "jpg|jpeg|png|gif|ogg|webm|m4a|opus|mp3|pdf"
 
     allow(DiscourseDisteleplus::TelegramApi).to receive(:new).and_return(api)
     allow(api).to receive(:call).and_return(ok_result)

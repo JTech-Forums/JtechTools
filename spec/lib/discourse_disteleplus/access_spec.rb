@@ -6,12 +6,13 @@ RSpec.describe DiscourseDisteleplus::Access do
   fab!(:admin)
   fab!(:moderator)
   fab!(:member) { Fabricate(:user, trust_level: TrustLevel[1]) }
-  fab!(:outsider) { Fabricate(:user, trust_level: TrustLevel[0]) }
+  fab!(:outsider) { Fabricate(:user, trust_level: TrustLevel[1]) }
+  fab!(:team) { Fabricate(:group).tap { |g| g.add(member) } }
 
   before do
     SiteSetting.jtech_enabled = true
     SiteSetting.disteleplus_enabled = true
-    SiteSetting.disteleplus_allowed_groups = Group::AUTO_GROUPS[:trust_level_1].to_s
+    SiteSetting.disteleplus_allowed_groups = team.id.to_s
   end
 
   describe ".allowed?" do
@@ -42,7 +43,7 @@ RSpec.describe DiscourseDisteleplus::Access do
 
   describe ".allowed_users" do
     it "lists admins plus allowed-group members, excluding staged accounts" do
-      Fabricate(:user, staged: true, trust_level: TrustLevel[1])
+      team.add(Fabricate(:user, staged: true))
       expect(described_class.allowed_users.pluck(:id)).to contain_exactly(admin.id, member.id)
     end
   end

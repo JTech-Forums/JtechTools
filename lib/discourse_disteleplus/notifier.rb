@@ -53,8 +53,13 @@ module DiscourseDisteleplus
       return [] if message.cooked.blank?
 
       doc = Nokogiri::HTML5.fragment(message.cooked)
-      names = doc.css("a.mention").map { |a| a.text.to_s.delete_prefix("@").downcase }
-      group_names = doc.css("a.mention-group").map { |a| a.text.to_s.delete_prefix("@").downcase }
+      # The anchor text can be a display name (prioritize_username_in_ux off);
+      # the href always carries the username / group name.
+      names = doc.css("a.mention").filter_map { |a| a["href"].to_s[%r{/u/([^/?#]+)}, 1]&.downcase }
+      group_names =
+        doc
+          .css("a.mention-group")
+          .filter_map { |a| a["href"].to_s[%r{/groups/([^/?#]+)}, 1]&.downcase }
       ids = names.empty? ? [] : User.where(username_lower: names).pluck(:id)
       if group_names.any?
         group_ids = Group.where("LOWER(name) IN (?)", group_names).pluck(:id)

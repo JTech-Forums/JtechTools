@@ -30,7 +30,8 @@ RSpec.describe DiscourseDisteleplus::Reports do
 
   def flag!
     result = PostActionCreator.spam(flagger, post)
-    result.reviewable
+    result.reviewable ||
+      Fabricate(:reviewable_flagged_post, target: post, topic: post.topic, created_by: flagger)
   end
 
   def map_admin!(tg_id: "42")

@@ -125,8 +125,9 @@ RSpec.describe DiscourseDisteleplus::ForumPostNotifier do
     end
 
     it "is enqueued from post_created for eligible posts" do
-      expect_enqueued_with(job: :disteleplus_notify_forum_post) do
-        Fabricate(:post, topic: Fabricate(:topic, category: category), user: author)
+      fresh = Fabricate(:post, topic: Fabricate(:topic, category: category), user: author)
+      expect_enqueued_with(job: :disteleplus_notify_forum_post, args: { post_id: fresh.id }) do
+        DiscourseEvent.trigger(:post_created, fresh, {}, author)
       end
     end
   end
@@ -146,9 +147,9 @@ RSpec.describe DiscourseDisteleplus::ForumPostNotifier do
 
   describe ProblemCheck::DisteleplusTelegram do
     it "reports a problem only while a recent error exists" do
-      expect(described_class.new.call).to be_empty
+      expect(described_class.new.call).to be_blank
       DiscourseDisteleplus::Health.record_error("Bad Request: chat not found")
-      problems = described_class.new.call
+      problems = Array(described_class.new.call)
       expect(problems.length).to eq(1)
       expect(problems.first.details[:hint]).to include("chat id")
     end

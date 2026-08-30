@@ -45,9 +45,8 @@ RSpec.describe DiscourseDisteleplus::MessageService do
         "message_id" => @message.id,
       )
 
-      recipients =
-        Notification.where(notification_type: Notification.types[:custom]).pluck(:user_id)
-      expect(recipients).to contain_exactly(admin.id, other.id)
+      # No @mention → no notification; the unread badge is the signal.
+      expect(Notification.where(notification_type: Notification.types[:custom]).count).to eq(0)
     end
 
     it "refuses actors outside the allowed groups" do

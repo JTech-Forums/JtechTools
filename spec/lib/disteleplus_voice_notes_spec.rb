@@ -139,11 +139,10 @@ RSpec.describe DiscourseDisteleplus::VoiceNotes do
     it "reports scope, cap and bubble capability" do
       allow(voice_notes).to receive(:ffmpeg_available?).and_return(true)
       SiteSetting.disteleplus_voice_note_max_seconds = 120
-      expect(voice_notes.status_summary).to include("bridge channel", "120s", "voice bubbles")
+      expect(voice_notes.status_summary).to include("native conversation", "120s", "voice bubbles")
 
-      SiteSetting.disteleplus_voice_notes_bridge_channel_only = false
       allow(voice_notes).to receive(:ffmpeg_available?).and_return(false)
-      expect(voice_notes.status_summary).to include("all channels", "no ffmpeg")
+      expect(voice_notes.status_summary).to include("no ffmpeg")
 
       SiteSetting.disteleplus_voice_notes_enabled = false
       expect(voice_notes.status_summary).to eq("off")

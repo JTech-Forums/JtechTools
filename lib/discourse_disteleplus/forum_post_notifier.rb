@@ -40,6 +40,7 @@ module DiscourseDisteleplus
     end
 
     def self.excerpt(post)
+      return "" if SiteSetting.disteleplus_forum_post_excerpt_length.to_i <= 0
       post.excerpt(
         SiteSetting.disteleplus_forum_post_excerpt_length,
         text_entities: true,
