@@ -621,8 +621,17 @@ after_initialize do
 
   # Expose the per-category prompt on every serialized category so the
   # composer can read it for the category a new topic is being created in.
-  Site.preloaded_category_custom_fields << DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD
-  Site.preloaded_category_custom_fields << DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD
+  #
+  # reloadable_patch, not a bare registration: a dev-mode code reload
+  # redefines core's Site class, whose class body RESETS the preload set —
+  # a plain after_initialize registration evaporates on the first reload and
+  # every page then 500s with HasCustomFields::NotPreloadedError once the
+  # categories cache rebuilds. This block re-registers on every reload; the
+  # target is a Set, so production's single run is unaffected.
+  reloadable_patch do
+    Site.preloaded_category_custom_fields << DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD
+    Site.preloaded_category_custom_fields << DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD
+  end
   add_to_serializer(
     :basic_category,
     :mod_category_new_topic_prompt,
