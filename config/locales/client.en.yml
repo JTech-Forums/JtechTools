@@ -353,6 +353,11 @@ en:
         cancel: Cancel
         open_link: Open link
         editor_title: First-post checklist
+        log_search_placeholder: Filter by name…
+        log_checklist: Checklist
+        log_kind_all: All checklists
+        log_kind_global: Global
+        log_kind_topic: Topic prompt
         editor_intro: New members must tick every item below before they can post.
           Saving changes re-prompts everyone who already accepted.
         loading: Loading…
