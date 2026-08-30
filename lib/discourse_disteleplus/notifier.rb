@@ -27,7 +27,6 @@ module DiscourseDisteleplus
           Notification.create!(
             notification_type: Notification.types[:custom],
             user_id: recipient.id,
-            post_number: message.id,
             high_priority: true,
             data: {
               message: I18n.t("disteleplus.notification", username: display_name(message)),
@@ -70,11 +69,11 @@ module DiscourseDisteleplus
     end
 
     def self.mark_read(user, through_id)
-      marker = '%"disteleplus":true%'
+      # post_number is a 4-byte column; the message id lives in the JSON data.
       Notification
         .where(user_id: user.id, notification_type: Notification.types[:custom], read: false)
-        .where("post_number <= ?", through_id.to_i)
-        .where("data LIKE ?", marker)
+        .where("data LIKE ?", '%"disteleplus":true%')
+        .where("(data::json->>'disteleplus_message_id')::bigint <= ?", through_id.to_i)
         .update_all(read: true)
       user.publish_notifications_state
     end
@@ -89,7 +88,6 @@ module DiscourseDisteleplus
         user,
         {
           notification_type: notification.notification_type,
-          post_number: message.id,
           topic_title: I18n.t("disteleplus.title"),
           excerpt: excerpt(message),
           username: display_name(message),
