@@ -29,6 +29,15 @@ en:
       search: Search messages
       search_placeholder: Search…
       search_empty: No messages match
+      seen_by:
+        one: "Seen by %{count}"
+        other: "Seen by %{count}"
+      listened_by:
+        one: "Listened by %{count}"
+        other: "Listened by %{count}"
+      quote_in_chat:
+        label: Quote in chat
+        success: Quoted in the conversation
       typing_one: "%{name} is typing"
       typing_two: "%{a} and %{b} are typing"
       typing_many: "%{count} people are typing"
