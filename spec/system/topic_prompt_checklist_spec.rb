@@ -72,11 +72,11 @@ RSpec.describe "Per-topic prompt checklist" do
     expect(page).to have_css(".mod-topic-prompt-checklist-inactive", wait: 10)
     shot("173_topic_prompt_checklist_modal_empty")
 
-    find(".mod-topic-prompt-checklist-add").click
+    find(".mod-checklist-add-inline").click
     all(".mod-topic-prompt-checklist-modal .mod-checklist-row-label").last.fill_in(
       with: "Confirm this is a real reply, not spam",
     )
-    find(".mod-topic-prompt-checklist-add").click
+    find(".mod-checklist-add-inline").click
     all(".mod-topic-prompt-checklist-modal .mod-checklist-row-label").last.fill_in(
       with: "I read the topic guidelines",
     )
@@ -108,7 +108,7 @@ RSpec.describe "Per-topic prompt checklist" do
     expect(page).to have_css(".mod-first-post-checklist-modal", wait: 10)
     shot("176_topic_prompt_checklist_user_prompted")
 
-    all(".mod-checklist-checkbox").each(&:click)
+    all(".mod-checklist-item-label").each(&:click)
     shot("177_topic_prompt_checklist_user_all_checked")
 
     find(".mod-checklist-confirm").click
@@ -187,7 +187,7 @@ RSpec.describe "Per-topic prompt checklist" do
     open_reply
 
     expect(page).to have_css(".mod-first-post-checklist-modal", wait: 10)
-    all(".mod-checklist-checkbox").each(&:click)
+    all(".mod-checklist-item-label").each(&:click)
     find(".mod-checklist-confirm").click
     expect(page).to have_css(".topic-post", minimum: 2, wait: 10)
     shot("183_topic_prompt_every_reply_first_reply")
@@ -231,9 +231,7 @@ RSpec.describe "Per-topic prompt checklist" do
     find(".mod-topic-prompt-checklist-button").click
     expect(page).to have_css(".mod-topic-prompt-checklist-modal", wait: 10)
 
-    mode = PageObjects::Components::SelectKit.new(".mod-topic-prompt-checklist-mode")
-    mode.expand
-    mode.select_row_by_value("statement")
+    find(".mod-checklist-mode-toggle button", text: "Statement").click
     expect(page).to have_css(".mod-topic-prompt-checklist-statement", wait: 10)
     find(".mod-topic-prompt-checklist-statement").fill_in(
       with: "Please read the rules before posting.",

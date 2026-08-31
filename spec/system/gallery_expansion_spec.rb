@@ -224,11 +224,9 @@ RSpec.describe "Gallery expansion" do
 
     def switch_to_statement_mode
       # The editor defaults to checklist mode for a topic with no
-      # existing config; switching to statement mode reveals the
-      # statement textarea.
-      mode = PageObjects::Components::SelectKit.new(".mod-topic-prompt-checklist-mode")
-      mode.expand
-      mode.select_row_by_value("statement")
+      # existing config; switching to statement mode (segmented toggle)
+      # reveals the statement textarea.
+      find(".mod-checklist-mode-toggle button", text: "Statement").click
       expect(page).to have_css(".mod-topic-prompt-checklist-statement", wait: 10)
     end
 
