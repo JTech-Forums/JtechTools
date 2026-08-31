@@ -98,6 +98,7 @@ end
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
 #  legacy_chat_message_id :bigint
+#  poll_post_id           :bigint
 #  reply_to_id            :bigint
 #  user_id                :bigint
 #
@@ -105,6 +106,7 @@ end
 #
 #  index_disteleplus_messages_on_created_at              (created_at)
 #  index_disteleplus_messages_on_legacy_chat_message_id  (legacy_chat_message_id) UNIQUE
+#  index_disteleplus_messages_on_poll_post_id            (poll_post_id)
 #  index_disteleplus_messages_on_reply_to_id             (reply_to_id)
 #  index_disteleplus_messages_on_user_id                 (user_id)
 #
