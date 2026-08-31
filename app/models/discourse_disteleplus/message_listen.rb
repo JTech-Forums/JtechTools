@@ -24,7 +24,7 @@ end
 #
 # Indexes
 #
-#  idx_on_message_id_user_id_1c25f6f52e  (message_id,user_id) UNIQUE
+#  index_disteleplus_message_listens_on_message_id_and_user_id  (message_id,user_id) UNIQUE
 #
 # Foreign Keys
 #
