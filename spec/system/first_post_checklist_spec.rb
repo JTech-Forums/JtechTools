@@ -79,10 +79,10 @@ RSpec.describe "First-post checklist" do
     expect(page).to have_css(".mod-checklist-inactive")
     shot("51_checklist_editor_empty")
 
-    find(".mod-checklist-add").click
+    find(".mod-checklist-add-inline").click
     all(".mod-checklist-row-label").last.fill_in(with: "I read the community guidelines")
     all(".mod-checklist-row-url").last.fill_in(with: "https://example.com/guidelines")
-    find(".mod-checklist-add").click
+    find(".mod-checklist-add-inline").click
     all(".mod-checklist-row-label").last.fill_in(
       with: "This is an app upload, not an off-topic question",
     )
@@ -137,7 +137,7 @@ RSpec.describe "First-post checklist" do
     expect(page).to have_css(".mod-first-post-checklist-modal", wait: 10)
     shot("54_tl0_checklist_modal")
 
-    all(".mod-checklist-checkbox").each(&:click)
+    all(".mod-checklist-item-label").each(&:click)
     shot("55_tl0_modal_all_checked")
 
     find(".mod-checklist-confirm").click
@@ -192,7 +192,7 @@ RSpec.describe "First-post checklist" do
     expect(page).to have_css(".mod-checklist-updated-at")
     shot("102_reprompt_session_first_accept")
 
-    all(".mod-checklist-checkbox").each(&:click)
+    all(".mod-checklist-item-label").each(&:click)
     find(".mod-checklist-confirm").click
     expect(page).to have_css(".topic-post", minimum: 2, wait: 10)
 
