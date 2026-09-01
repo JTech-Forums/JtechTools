@@ -12,8 +12,8 @@ importers:
         specifier: 2.37.2
         version: 2.37.2(ember-template-lint@7.9.3)(eslint@9.39.2)(postcss@8.5.26)(prettier@3.8.0)(stylelint@17.0.0(typescript@5.9.3))
       '@glint/ember-tsc':
-        specifier: 1.11.0
-        version: 1.11.0(typescript@5.9.3)
+        specifier: 1.11.2
+        version: 1.11.2(typescript@5.9.3)
       concurrently:
         specifier: ^10.0.5
         version: 10.0.5
@@ -306,8 +306,8 @@ packages:
   '@glimmer/wire-format@0.94.8':
     resolution: {integrity: sha512-A+Cp5m6vZMAEu0Kg/YwU2dJZXyYxVJs2zI57d3CP6NctmX7FsT8WjViiRUmt5abVmMmRH5b8BUovqY6GSMAdrw==}
 
-  '@glint/ember-tsc@1.11.0':
-    resolution: {integrity: sha512-BP0621N68b6yvie2WjO96JBWAU8XltqZZgbgRjEydaKlx/yJLlALlnlSVF3BhZH7SC/0Ffps8pHMXvOQkkP59w==}
+  '@glint/ember-tsc@1.11.2':
+    resolution: {integrity: sha512-SByYFCw0janG/VntS5xZwKYZXq1y4uE81KgC0bt5rgprOWAcEUmrPj3Nt3ZEGdsYZ+36SvHuf+vacawuy/y3aA==}
     hasBin: true
     peerDependencies:
       ember-source: '>=3.28.0'
@@ -316,8 +316,8 @@ packages:
       ember-source:
         optional: true
 
-  '@glint/template@1.8.0':
-    resolution: {integrity: sha512-TeVv3JnM0wbF86Sl2YyNhxeTEPnR5Q0xtIKqZueVzX8ouL3bj49Rk1gS0jFq7FNL7u6R+1oqToZBQmI+OCL4QA==}
+  '@glint/template@1.8.1':
+    resolution: {integrity: sha512-Yo2K8Bbd2BG1jJyNqLMkSZNxLowim5lwvbOAjBIjnwQMa97tLinmkyOfozjFsOGF8vKlP3t7rRJ2wWjaulMRCQ==}
 
   '@handlebars/parser@2.2.2':
     resolution: {integrity: sha512-n/SZW+12rwikx/f8YcSv9JCi5p9vn1Bnts9ZtVvfErG4h0gbjHI1H1ZMhVUnaOC7yzFc6PtsCKIK8XeTnL90Gw==}
@@ -1993,24 +1993,21 @@ packages:
     resolution: {integrity: sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA==}
     engines: {node: '>=14.0.0'}
 
-  vscode-jsonrpc@9.0.1:
-    resolution: {integrity: sha512-rfuA6T75H6m5EkbhtEPzre9pT0HPcDI2MMy4+nPFIBks5J8JBAUHD4tRYSgaBOijIEC7SRkC1kKyXTLqbmh9jw==}
+  vscode-jsonrpc@9.0.2:
+    resolution: {integrity: sha512-SbQSV9yRemARxeXw6LU5sS6Zq0e9/DgCCX5yelH263ZQWukbTk8EF8fjTrr1dziasf4GwlJbvTwFnTrnQFWZXQ==}
     engines: {node: '>=14.0.0'}
 
   vscode-languageserver-protocol@3.17.5:
     resolution: {integrity: sha512-mb1bvRJN8SVznADSGWM9u/b07H7Ecg0I3OgXDuLdn307rl/J3A9YD6/eYOssqhecL27hK1IPZAsaqh00i/Jljg==}
 
-  vscode-languageserver-protocol@3.18.2:
-    resolution: {integrity: sha512-XRyDbT0Pp3sSNti3JmxVEUMySWCSi1hhM+/KUlCy1hV1zmrqpM1OwO12EAki8blhmLuIMpaJrYbo0OzGVfK2Qg==}
+  vscode-languageserver-protocol@3.18.3:
+    resolution: {integrity: sha512-DF49+WeV5py4zO5hhobp60jjsDSK0lAqA0OuKBLBvp423HPWQcCbhZz3JgyfIewsEz2f8U+X75xNIFHdiXZm2w==}
 
   vscode-languageserver-textdocument@1.0.14:
     resolution: {integrity: sha512-EQyqJMi552E4ZTf46izQ4Fj6XquqxCySR3J5ZSD1SisMf6RfpeOWHxGBE8Gr6V0/3GHIGdAzDn8F8+1nTGCnoQ==}
 
   vscode-languageserver-types@3.17.5:
     resolution: {integrity: sha512-Ld1VelNuX9pdF39h2Hgaeb5hEZM2Z3jUrrMgWQAu82jMtZp7p3vJT3BzToKtZI7NgQssZje5o0zryOrhQvzQAg==}
-
-  vscode-languageserver-types@3.18.0:
-    resolution: {integrity: sha512-8TsGPNMIMiiBdkORgRSvLjuiEIiAFtO+KssmYWxQ+uSVvlf7RjK8YKCOjPzZ+YA04jXEV7+7LvkSmHkhpNS99g==}
 
   vscode-languageserver-types@3.18.3:
     resolution: {integrity: sha512-XIlzJ7Qp/jzSI1ds7/FwPAWrPeTZA7pAtlW4hdJ1J6xXWJL6dR9QYnDhJOdLzdKhUQ5Mm6mvUMw+3DcOQQasPw==}
@@ -2450,10 +2447,10 @@ snapshots:
     dependencies:
       '@glimmer/interfaces': 0.94.6
 
-  '@glint/ember-tsc@1.11.0(typescript@5.9.3)':
+  '@glint/ember-tsc@1.11.2(typescript@5.9.3)':
     dependencies:
       '@glimmer/syntax': 0.95.0
-      '@glint/template': 1.8.0
+      '@glint/template': 1.8.1
       '@volar/kit': 2.4.28(typescript@5.9.3)
       '@volar/language-core': 2.4.28
       '@volar/language-server': 2.4.28
@@ -2467,13 +2464,13 @@ snapshots:
       typescript: 5.9.3
       volar-service-html: 0.0.71(@volar/language-service@2.4.28)
       volar-service-typescript: 0.0.71(@volar/language-service@2.4.28)
-      vscode-languageserver-protocol: 3.18.2
+      vscode-languageserver-protocol: 3.18.3
       vscode-languageserver-textdocument: 1.0.14
       vscode-uri: 3.2.0
     transitivePeerDependencies:
       - supports-color
 
-  '@glint/template@1.8.0': {}
+  '@glint/template@1.8.1': {}
 
   '@handlebars/parser@2.2.2': {}
 
@@ -2661,14 +2658,14 @@ snapshots:
       path-browserify: 1.0.1
       request-light: 0.7.0
       vscode-languageserver: 9.0.1
-      vscode-languageserver-protocol: 3.18.2
+      vscode-languageserver-protocol: 3.18.3
       vscode-languageserver-textdocument: 1.0.14
       vscode-uri: 3.2.0
 
   '@volar/language-service@2.4.28':
     dependencies:
       '@volar/language-core': 2.4.28
-      vscode-languageserver-protocol: 3.18.2
+      vscode-languageserver-protocol: 3.18.3
       vscode-languageserver-textdocument: 1.0.14
       vscode-uri: 3.2.0
 
@@ -4291,23 +4288,21 @@ snapshots:
 
   vscode-jsonrpc@8.2.0: {}
 
-  vscode-jsonrpc@9.0.1: {}
+  vscode-jsonrpc@9.0.2: {}
 
   vscode-languageserver-protocol@3.17.5:
     dependencies:
       vscode-jsonrpc: 8.2.0
       vscode-languageserver-types: 3.17.5
 
-  vscode-languageserver-protocol@3.18.2:
+  vscode-languageserver-protocol@3.18.3:
     dependencies:
-      vscode-jsonrpc: 9.0.1
-      vscode-languageserver-types: 3.18.0
+      vscode-jsonrpc: 9.0.2
+      vscode-languageserver-types: 3.18.3
 
   vscode-languageserver-textdocument@1.0.14: {}
 
   vscode-languageserver-types@3.17.5: {}
-
-  vscode-languageserver-types@3.18.0: {}
 
   vscode-languageserver-types@3.18.3: {}
 
