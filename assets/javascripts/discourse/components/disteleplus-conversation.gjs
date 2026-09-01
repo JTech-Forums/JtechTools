@@ -344,8 +344,13 @@ export default class DisteleplusConversation extends Component {
   }
 
   // Telegram-style double tap: react with your first quick reaction.
+  // Touch only — on desktop a double-click usually means selecting a word,
+  // and reacting on it reads as a misfire.
   @action
   doubleTap(message, event) {
+    if (!this.site.mobileView) {
+      return;
+    }
     if (message.deleted) {
       return;
     }
