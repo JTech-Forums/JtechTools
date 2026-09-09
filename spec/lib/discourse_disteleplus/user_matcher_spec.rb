@@ -40,6 +40,16 @@ RSpec.describe DiscourseDisteleplus::UserMatcher do
     expect(described_class.match(from("alice"))).to eq(bob)
   end
 
+  describe ".staff_by_username" do
+    it "resolves staff by same username or map row, never non-staff" do
+      mod = Fabricate(:moderator, username: "modface")
+      expect(described_class.staff_by_username(from("modface"))).to eq(mod)
+      expect(described_class.staff_by_username(from("alice"))).to be_nil
+      map!(%w[tg_mod modface])
+      expect(described_class.staff_by_username(from("tg_mod"))).to eq(mod)
+    end
+  end
+
   describe ".privileged_match" do
     it "only honors explicit numeric telegram_id rows" do
       map!(%w[alice alice])

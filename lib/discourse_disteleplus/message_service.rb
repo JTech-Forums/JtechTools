@@ -101,7 +101,15 @@ module DiscourseDisteleplus
 
       message.reload
       Publisher.publish(:reaction_changed, message, actor: actor)
-      enqueue_bridge("react", message) if bridge
+      if bridge
+        enqueue_bridge(
+          "react",
+          message,
+          reactor_id: actor&.id,
+          emoji: normalized,
+          reaction_action: action.to_s,
+        )
+      end
       message
     end
 
@@ -183,9 +191,9 @@ module DiscourseDisteleplus
       Jobs.enqueue(:disteleplus_process_message, message_id: message.id)
     end
 
-    def enqueue_bridge(action, message)
+    def enqueue_bridge(action, message, **extra)
       return unless SiteSetting.disteleplus_enabled
-      Jobs.enqueue(:disteleplus_send_to_telegram, action: action, message_id: message.id)
+      Jobs.enqueue(:disteleplus_send_to_telegram, action: action, message_id: message.id, **extra)
     end
   end
 end

@@ -230,6 +230,51 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
     end
   end
 
+  describe "react" do
+    it "posts a reaction notice naming the reactor under the Telegram copy" do
+      link!(tg_id: 321)
+      described_class.new.execute(
+        action: "react",
+        message_id: message.id,
+        reactor_id: author.id,
+        emoji: "heart",
+        reaction_action: "add",
+      )
+      expect(api).to have_received(:call).with(
+        "sendMessage",
+        a_hash_including(
+          reply_to_message_id: 321,
+          disable_notification: true,
+          text: include("Chatter Person").and(include("reacted")),
+        ),
+      )
+      expect(api).to have_received(:call).with(
+        "setMessageReaction",
+        a_hash_including(message_id: 321),
+      )
+    end
+
+    it "stays quiet on removals and when notices are off" do
+      link!(tg_id: 321)
+      described_class.new.execute(
+        action: "react",
+        message_id: message.id,
+        reactor_id: author.id,
+        emoji: "heart",
+        reaction_action: "remove",
+      )
+      SiteSetting.disteleplus_bridge_reaction_notices = false
+      described_class.new.execute(
+        action: "react",
+        message_id: message.id,
+        reactor_id: author.id,
+        emoji: "heart",
+        reaction_action: "add",
+      )
+      expect(api).not_to have_received(:call).with("sendMessage", kind_of(Hash))
+    end
+  end
+
   describe "delete" do
     it "deletes every linked Telegram message and removes the links" do
       link!(tg_id: 321)

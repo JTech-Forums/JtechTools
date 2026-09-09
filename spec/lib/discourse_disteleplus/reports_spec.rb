@@ -4,7 +4,8 @@ require "rails_helper"
 
 # Reports pipeline with TelegramApi stubbed: reviewable announcements,
 # resolution edits, and — most importantly — the callback authorization
-# rules (reports chat + explicit telegram_id staff mapping, nothing less).
+# rules (reports chat + telegram_id staff mapping, or chat admin + staff by
+# username) and the self-created reports topic (never General).
 RSpec.describe DiscourseDisteleplus::Reports do
   fab!(:admin) { Fabricate(:admin, username: "bigboss") }
   fab!(:flagger) { Fabricate(:user, username: "snitch") }
@@ -111,24 +112,76 @@ RSpec.describe DiscourseDisteleplus::Reports do
       expect(DiscourseDisteleplus::ReportLink.last).to be_status_resolved
     end
 
-    it "warns into the chat when the reports topic id is broken" do
-      failed =
+    it "recreates the reports topic when Telegram says the stored one is gone" do
+      created =
+        DiscourseDisteleplus::TelegramApi::Result.new(
+          ok: true,
+          result: {
+            "message_thread_id" => 77,
+          },
+        )
+      gone =
         DiscourseDisteleplus::TelegramApi::Result.new(
           ok: false,
           description: "Bad Request: message thread not found",
         )
-      calls = []
       allow(api).to receive(:call) do |method, payload|
-        calls << [method, payload]
-        payload&.dig(:message_thread_id) ? failed : ok_result
+        next created if method == "createForumTopic"
+        payload&.dig(:message_thread_id) == 9 ? gone : ok_result
       end
 
       described_class.notify_reviewable(flag!)
 
-      warning = calls.find { |m, p| m == "sendMessage" && !p.key?(:message_thread_id) }
-      expect(warning).to be_present
-      expect(warning.last[:text]).to include("disteleplus_reports_topic_id")
+      expect(SiteSetting.disteleplus_reports_topic_id).to eq(77)
+      expect(api).to have_received(:call).with(
+        "sendMessage",
+        a_hash_including(message_thread_id: 77),
+      )
+      expect(DiscourseDisteleplus::ReportLink.count).to eq(1)
+    end
+
+    it "creates the reports topic on first use when none is stored" do
+      SiteSetting.disteleplus_reports_topic_id = 0
+      created =
+        DiscourseDisteleplus::TelegramApi::Result.new(
+          ok: true,
+          result: {
+            "message_thread_id" => 55,
+          },
+        )
+      allow(api).to receive(:call) do |method, _payload|
+        method == "createForumTopic" ? created : ok_result
+      end
+
+      described_class.notify_reviewable(flag!)
+
+      expect(api).to have_received(:call).with(
+        "createForumTopic",
+        a_hash_including(chat_id: chat_id, name: "Reports"),
+      )
+      expect(SiteSetting.disteleplus_reports_topic_id).to eq(55)
+      expect(api).to have_received(:call).with(
+        "sendMessage",
+        a_hash_including(message_thread_id: 55),
+      )
+    end
+
+    it "drops the report instead of posting into General when no topic can be created" do
+      SiteSetting.disteleplus_reports_topic_id = 0
+      refused =
+        DiscourseDisteleplus::TelegramApi::Result.new(
+          ok: false,
+          description: "Bad Request: the chat is not a forum",
+        )
+      allow(api).to receive(:call) do |method, _payload|
+        method == "createForumTopic" ? refused : ok_result
+      end
+
+      described_class.notify_reviewable(flag!)
+
+      expect(api).not_to have_received(:call).with("sendMessage", kind_of(Hash))
       expect(DiscourseDisteleplus::ReportLink.count).to eq(0)
+      expect(DiscourseDisteleplus::Health.last_error["description"]).to include("not a forum")
     end
   end
 
@@ -147,7 +200,11 @@ RSpec.describe DiscourseDisteleplus::Reports do
       expect(reviewable.reload).to be_pending
       expect(api).to have_received(:call).with(
         "answerCallbackQuery",
-        a_hash_including(text: I18n.t("disteleplus.reports.not_authorized"), show_alert: true),
+        a_hash_including(
+          text:
+            I18n.t("disteleplus.reports.not_authorized", telegram_id: "666", username: "boss_tg"),
+          show_alert: true,
+        ),
       )
     end
 
@@ -158,6 +215,27 @@ RSpec.describe DiscourseDisteleplus::Reports do
         callback(intent: "approve", reviewable: reviewable, chat: "-100123"),
       )
       expect(reviewable.reload).to be_pending
+    end
+
+    it "accepts a chat administrator who is Discourse staff by username" do
+      reviewable = flag!
+      described_class.notify_reviewable(reviewable)
+      SiteSetting.disteleplus_user_map = "[]"
+      admin.update!(username: "boss_tg")
+      member =
+        DiscourseDisteleplus::TelegramApi::Result.new(
+          ok: true,
+          result: {
+            "status" => "administrator",
+          },
+        )
+      allow(api).to receive(:call) do |method, _payload|
+        method == "getChatMember" ? member : ok_result
+      end
+
+      described_class.handle_callback(callback(intent: "approve", reviewable: reviewable))
+
+      expect(reviewable.reload).to be_approved
     end
 
     it "performs the approve action for a mapped staff presser" do
