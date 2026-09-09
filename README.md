@@ -27,7 +27,8 @@ A private one-room chat inside Discourse for staff (or any groups you allow), mi
 - Message text is encrypted in the database.
 - Telegram side: people you map post as their Discourse account; everyone else shows with their Telegram name. Discourse messages arrive in Telegram with the author's name linked to their profile.
 - Optional: announce new forum posts into the Telegram group (by category / tag).
-- Optional: mirror the review queue (flags, posts awaiting approval) into a Telegram topic with **Approve / Deny** buttons for mapped staff.
+- Optional: mirror the review queue (flags, posts awaiting approval) into a **Reports** Telegram topic — created by the plugin itself, never General — with **Approve / Deny / More** buttons. Presses work for staff mapped by numeric Telegram ID, or for chat admins whose Telegram username matches a staff account.
+- When someone reacts in Discourse, Telegram gets a quiet "**Name** reacted 👍" reply under the message, since the bot's own single reaction can't say who it was.
 - Setup is done from inside Telegram with `/disteleplus_setup`; there's a "send test message" button and problems show on the admin dashboard.
 
 ### Moderator tools
@@ -67,7 +68,7 @@ Small fixes on top of the official Translator plugin (better foreign-language de
 4. In the Telegram group, send `/disteleplus_setup` and follow the short checklist (`/disteleplus_bind_general`, optionally `/disteleplus_bind_uploads`, `/disteleplus_bind_reports`).
 5. Send a message from each side to check.
 
-Known limits (Telegram's rules, not ours): the bot can't delete messages older than 48 hours, can't see when Telegram users are typing, can only show one reaction per message, and if your group is converted to a supergroup the chat ID changes — bind it again.
+Known limits (Telegram's rules, not ours): the bot can't delete messages older than 48 hours, can't see when Telegram users are typing, can only show one reaction per message, and if your group is converted to a supergroup the chat ID changes — bind it again. The Reports topic needs **Topics** enabled in the group and the bot's *Manage Topics* right.
 
 ## Notes
 

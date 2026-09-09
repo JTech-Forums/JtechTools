@@ -52,6 +52,20 @@ module DiscourseDisteleplus
       mapped_user(id_mappings[tg_id])
     end
 
+    # Staff resolution by username for callers that ALSO verify the sender
+    # through an independent channel (Telegram chat admin status). Honors an
+    # id row, a username row, or the same-username auto-match — including
+    # staff, which plain #match deliberately refuses.
+    def self.staff_by_username(from)
+      by_id = privileged_match(from)
+      return by_id if by_id
+
+      tg_username = from&.dig("username").to_s.strip
+      return nil if tg_username.blank?
+      user = mapped_user(mappings[tg_username.downcase]) || User.find_by_username(tg_username)
+      user&.staff? ? user : nil
+    end
+
     def self.mapped_user(username)
       return nil if username.blank?
       User.find_by_username(username)

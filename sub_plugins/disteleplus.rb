@@ -207,10 +207,28 @@ after_initialize do
       if new_val == true && SiteSetting.disteleplus_enabled
         DiscourseDisteleplus::VoiceNotes.ensure_extensions_authorized!
       end
-    when "disteleplus_reports_enabled"
-      # Refresh the webhook registration and command menu.
-      Jobs.enqueue(:disteleplus_register_webhook) if SiteSetting.disteleplus_enabled
+    when "disteleplus_reports_enabled", "disteleplus_reports_chat_id"
+      # Refresh the webhook registration and command menu, and make sure the
+      # reports topic exists in the (possibly new) reports chat.
+      if SiteSetting.disteleplus_enabled
+        Jobs.enqueue(:disteleplus_register_webhook)
+        Jobs.enqueue(:disteleplus_ensure_reports_topic) if SiteSetting.disteleplus_reports_enabled
+      end
     end
+  end
+
+  # Self-migrating reports topic: a deploy that enables (or already has)
+  # reports without a stored topic id creates the "Reports" forum topic on
+  # its own — nobody has to bind anything by hand, and nothing is ever
+  # posted into General.
+  begin
+    if SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_reports_enabled &&
+         SiteSetting.disteleplus_bot_token.present? &&
+         DiscourseDisteleplus.telegram_thread_id(SiteSetting.disteleplus_reports_topic_id).nil?
+      Jobs.enqueue(:disteleplus_ensure_reports_topic)
+    end
+  rescue StandardError => e
+    Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} reports topic check failed: #{e.message}")
   end
 
   # One-time self-heal per allowed_updates revision: Telegram keeps the

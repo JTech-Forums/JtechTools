@@ -36,13 +36,13 @@ module Jobs
       when "delete"
         handle_delete(args[:message_id])
       when "react"
-        handle_react(args[:message_id])
+        handle_react(args[:message_id], args)
       end
     rescue DiscourseDisteleplus::TelegramApi::RateLimited => e
       Jobs.enqueue_in(
         e.retry_after.seconds,
         :disteleplus_send_to_telegram,
-        args.slice(:action, :message_id),
+        args.slice(:action, :message_id, :reactor_id, :emoji, :reaction_action),
       )
     rescue StandardError => e
       Rails.logger.warn(
@@ -129,10 +129,14 @@ module Jobs
     end
 
     # Mirrors the message's most recent Discourse reaction as the bot's ONE
-    # allowed Telegram reaction; an empty reaction list clears it.
-    def handle_react(message_id)
+    # allowed Telegram reaction; an empty reaction list clears it. Because
+    # that single bot reaction cannot say WHO reacted, an added reaction also
+    # posts a small "<name> reacted 👍" reply under the Telegram copy.
+    def handle_react(message_id, args = {})
       link = DiscourseDisteleplus::MessageLink.for_message(message_id).first
       return if link.nil?
+
+      send_reaction_notice(link, args) if args[:reaction_action].to_s == "add"
 
       emojis =
         DiscourseDisteleplus::Reaction
@@ -152,6 +156,34 @@ module Jobs
         message_id: link.telegram_message_id,
         reaction: reaction,
       )
+    end
+
+    def send_reaction_notice(link, args)
+      return unless SiteSetting.disteleplus_bridge_reaction_notices
+      reactor = User.find_by(id: args[:reactor_id])
+      return if reactor.nil? || reactor.id == DiscourseDisteleplus.bot_user&.id
+
+      emoji = DiscourseDisteleplus::Formatter.emojify(":#{args[:emoji]}:").to_s
+      emoji = DiscourseDisteleplus::EmojiMap.discourse_to_tg(args[:emoji]) if emoji.start_with?(":")
+      name = DiscourseDisteleplus::Formatter.escape_html(reactor.name.presence || reactor.username)
+      profile = "#{Discourse.base_url}/u/#{reactor.username_lower}"
+      text =
+        "<a href=\"#{profile}\"><b>#{name}</b></a> " \
+          "#{DiscourseDisteleplus::Formatter.escape_html(I18n.t("disteleplus.reaction_notice", emoji: emoji))}"
+
+      payload = {
+        chat_id: @chat_id,
+        text: text,
+        parse_mode: "HTML",
+        link_preview_options: {
+          is_disabled: true,
+        },
+        reply_to_message_id: link.telegram_message_id,
+        disable_notification: true,
+      }
+      payload[:message_thread_id] = @thread_id if @thread_id
+      result = @api.call("sendMessage", payload)
+      log_send_failure(result) unless result.ok
     end
 
     # ── send helpers ─────────────────────────────────────────────────────────

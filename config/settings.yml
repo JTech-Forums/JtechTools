@@ -956,6 +956,13 @@ jtech_disteleplus:
     client: false
     depends_on:
       - "disteleplus_enabled"
+  # "<name> reacted 👍" reply under the Telegram copy whenever a Discourse
+  # member reacts — the bot's own single reaction can't say who it was.
+  disteleplus_bridge_reaction_notices:
+    default: true
+    client: false
+    depends_on:
+      - "disteleplus_bridge_reactions"
 
   # Forum post summaries -> the Telegram conversation (chat-integration style).
   disteleplus_forum_post_notifications_enabled:
@@ -1008,11 +1015,19 @@ jtech_disteleplus:
     client: false
     depends_on:
       - "disteleplus_reports_enabled"
+  # Zero means "not created yet": the plugin creates a forum topic named
+  # disteleplus_reports_topic_name in the reports chat and stores its id here.
+  # Reports are NEVER posted into General.
   disteleplus_reports_topic_id:
     default: 0
     client: false
     min: 0
     max: 2000000000
+    depends_on:
+      - "disteleplus_reports_enabled"
+  disteleplus_reports_topic_name:
+    default: Reports
+    client: false
     depends_on:
       - "disteleplus_reports_enabled"
   disteleplus_reports_excerpt_length:

@@ -47,6 +47,8 @@ module DiscourseDisteleplus
         "chat_not_found"
       elsif text.include?("forbidden") || text.include?("kicked")
         "forbidden"
+      elsif text.include?("not a forum") || text.include?("forum")
+        "not_a_forum"
       elsif text.include?("thread not found") || text.include?("topic")
         "topic_not_found"
       else
