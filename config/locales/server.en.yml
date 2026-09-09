@@ -5,6 +5,7 @@ en:
     notification_with_preview: "%{username} mentioned you: %{excerpt}"
     poll_closed_notification: "Your poll closed: %{question}"
     upload_only: Sent an attachment
+    reaction_notice: "reacted %{emoji}"
     test_message: "✅ <b>%{site}</b> can reach this group. The conversation is at %{url}"
     reports:
       approve: Approve
@@ -17,14 +18,12 @@ en:
       status: Status
       resolved: "Resolved (%{status})"
       resolved_by: "Resolved (%{status}) by @%{username}"
-      not_authorized: Not authorized. An admin must add your numeric Telegram
-        ID to your row in disteleplus_user_map (get it from @userinfobot).
+      not_authorized: "Not authorized. Your Telegram id is %{telegram_id}
+        (@%{username}) — a Discourse admin must add it as telegram_id on your
+        row in disteleplus_user_map, pointing at a staff account."
       rate_limited: Slow down — too many actions in a row.
       unknown_action: Unknown action.
       disabled: Reports are disabled in Discourse admin settings.
-      topic_broken: "Could not deliver a moderation report to Telegram topic
-        %{topic}: %{error}. Fix disteleplus_reports_topic_id in Discourse
-        admin, or run /disteleplus_bind_reports inside the right topic."
       gone: This report no longer exists.
       already_resolved: Already resolved — updating the message.
       details_sent: Details posted below.
@@ -45,6 +44,7 @@ en:
       chat_not_found: "Telegram does not know this chat id. Re-check disteleplus_telegram_chat_id, or run /disteleplus_bind_general in the group (a group→supergroup migration changes the id)."
       forbidden: "The bot was removed from the group or lost permissions. Re-add it as an administrator."
       topic_not_found: "The configured Telegram topic no longer exists. Re-bind it with /disteleplus_bind_general or /disteleplus_bind_uploads."
+      not_a_forum: "The Telegram group has Topics turned off, so the bot cannot create the Reports topic. Enable Topics in the group settings (and give the bot the Manage Topics right); reports are never posted into General."
       generic: "See /logs for the full response and check the bot token."
 
   jtech_tools:
@@ -699,6 +699,10 @@ en:
       snapshot of the question and options, rewritten as votes come in so the
       counts stay roughly current. Voting from Discourse is not possible.
 
+    disteleplus_bridge_reaction_notices: When a Discourse member reacts to a
+      bridged message, post a short "Name reacted 👍" reply under the Telegram
+      copy (silently, no push). The bot's own reaction on the message cannot
+      show who reacted, so this is the only way the Telegram side learns it.
     disteleplus_bridge_reactions: Telegram reactions appear as chat
       reactions — from the matching Discourse user when there is one, from
       the bridge bot otherwise. Reactions sent under a group's anonymous
@@ -843,9 +847,15 @@ en:
       private staff group to keep flagged content away from members — the
       bot must be an administrator there too.
     disteleplus_reports_topic_id: Telegram Forum Topic ID (message_thread_id)
-      inside the reports chat. Zero posts into General. When the reports
+      of the reports topic. Leave at zero — the plugin creates a topic named
+      {{setting:disteleplus_reports_topic_name}} in the reports chat on its
+      own and stores the id here (the group needs Topics enabled and the bot
+      the Manage Topics right). Reports are never posted into General; if the
+      topic is deleted in Telegram a new one is created. When the reports
       topic lives inside the bridged group, messages written in it are
       excluded from the member conversation automatically.
+    disteleplus_reports_topic_name: Name given to the Telegram forum topic
+      the plugin creates for moderation reports.
     disteleplus_reports_excerpt_length: Characters of the flagged/queued
       content shown in the report message. Zero hides the excerpt entirely
       (the More button still shows details on demand).

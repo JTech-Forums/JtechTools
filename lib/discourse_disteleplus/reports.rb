@@ -9,14 +9,17 @@ module DiscourseDisteleplus
   # from the Discourse review queue — the Telegram message is edited to show
   # who resolved it and how, and the action buttons disappear.
   #
-  # Authorization model for button presses (deliberately strict — this drives
-  # real moderation actions):
-  #   1. the callback must originate in the configured reports chat,
-  #   2. the presser must resolve through an EXPLICIT disteleplus_user_map row
-  #      (numeric telegram_id match required — usernames are re-claimable and
-  #      are never trusted for moderation),
-  #   3. the mapped Discourse user must be staff.
-  # Everyone else gets a polite "not authorized" toast and nothing happens.
+  # Authorization model for button presses (this drives real moderation):
+  #   1. the callback must originate in the configured reports chat, and
+  #   2. the presser must be Discourse staff, proven either by an explicit
+  #      disteleplus_user_map row matched on permanent numeric telegram_id, or
+  #      by being an administrator of the reports chat AND resolving to a
+  #      staff account by username (see Reports.acting_staff).
+  # Everyone else gets a "not authorized" alert that names their Telegram id
+  # so an admin can map them, and nothing happens.
+  #
+  # Reports always live in their own forum topic (auto-created, see
+  # ensure_topic!) — never in the group's General.
   module Reports
     CALLBACK_PREFIX = "dtp"
     INTENTS = %w[approve deny more].freeze
@@ -50,6 +53,38 @@ module DiscourseDisteleplus
 
     def self.thread_id
       DiscourseDisteleplus.telegram_thread_id(SiteSetting.disteleplus_reports_topic_id)
+    end
+
+    # Reports live in their own Telegram forum topic, never in General. When
+    # no (valid) topic id is stored, create one named
+    # disteleplus_reports_topic_name in the reports chat and remember it —
+    # so a fresh deploy migrates itself without anyone binding anything.
+    # Returns the message_thread_id, or nil when Telegram refused (chat is
+    # not a forum, bot lacks manage-topics) — callers then DROP the message.
+    def self.ensure_topic!(api: TelegramApi.new)
+      return nil if chat_id.blank?
+      return thread_id if thread_id
+
+      DistributedMutex.synchronize("disteleplus-reports-topic", validity: 30) do
+        # Another process may have created it while we waited for the lock.
+        return thread_id if thread_id
+
+        name = SiteSetting.disteleplus_reports_topic_name.to_s.squish.presence || "Reports"
+        result = api.call("createForumTopic", chat_id: chat_id, name: name.first(128))
+        created = result.result&.dig("message_thread_id").to_i
+        if result.ok && created > 1
+          SiteSetting.set_and_log(:disteleplus_reports_topic_id, created, Discourse.system_user)
+          Rails.logger.info("#{LOG_TAG} created reports topic #{created} in chat #{chat_id}")
+          created
+        else
+          Health.record_error(
+            result.description.presence || "createForumTopic returned no thread id",
+            context: "create reports topic",
+          )
+          Rails.logger.warn("#{LOG_TAG} could not create the reports topic: #{result.description}")
+          nil
+        end
+      end
     end
 
     def self.reports_chat?(candidate)
@@ -93,8 +128,6 @@ module DiscourseDisteleplus
             pending ? action_keyboard(reviewable) : [[review_url_button(reviewable)]],
         },
       }
-      payload[:message_thread_id] = thread_id if thread_id
-
       result = send_report_message(payload, context: "report #{reviewable.id}")
       return unless result.ok
 
@@ -106,32 +139,38 @@ module DiscourseDisteleplus
       )
     end
 
-    # sendMessage with loud failure handling. A wrong or stale
-    # disteleplus_reports_topic_id makes Telegram reject the whole send
-    # ("message thread not found"), which used to die silently in /logs — the
-    # #1 "reports don't arrive" trap. Besides recording the dashboard
-    # problem, drop a content-free warning into the chat's General (at most
-    # once an hour) so the breakage is visible where the admins are looking.
+    # sendMessage into the reports topic, creating the topic first when
+    # needed and recreating it when Telegram says the stored one is gone.
+    # Never falls back to General: with no topic available the message is
+    # dropped and the failure recorded for the admin dashboard.
     def self.send_report_message(payload, context:)
-      result = TelegramApi.new.call("sendMessage", payload)
+      api = TelegramApi.new
+      topic = ensure_topic!(api: api)
+      if topic.nil?
+        # No topic and none could be created: drop rather than leak into
+        # General. The dashboard problem check shows why.
+        Rails.logger.warn("#{LOG_TAG} #{context} dropped: no reports topic available")
+        return TelegramApi::Result.new(ok: false, description: "no reports topic")
+      end
+      payload = payload.merge(message_thread_id: topic)
+
+      result = api.call("sendMessage", payload)
       return result if result.ok
+
+      # The stored topic was deleted in Telegram: forget it, create a fresh
+      # one and retry once.
+      if result.description.to_s.match?(/thread not found|topic/i)
+        Rails.logger.warn(
+          "#{LOG_TAG} reports topic #{topic} is gone (#{result.description}); recreating",
+        )
+        SiteSetting.set_and_log(:disteleplus_reports_topic_id, 0, Discourse.system_user)
+        fresh = ensure_topic!(api: api)
+        result = api.call("sendMessage", payload.merge(message_thread_id: fresh)) if fresh
+        return result if result.ok
+      end
 
       Health.record_error(result.description, context: context)
       Rails.logger.warn("#{LOG_TAG} #{context} send failed: #{result.description}")
-
-      if payload[:message_thread_id] &&
-           Discourse.redis.set("disteleplus:report-topic-broken", "1", ex: 1.hour.to_i, nx: true)
-        TelegramApi.new.call(
-          "sendMessage",
-          chat_id: payload[:chat_id],
-          text:
-            "⚠️ #{escape(I18n.t("disteleplus.reports.topic_broken", topic: payload[:message_thread_id], error: result.description.to_s))}",
-          parse_mode: "HTML",
-          link_preview_options: {
-            is_disabled: true,
-          },
-        )
-      end
       result
     end
 
@@ -182,7 +221,6 @@ module DiscourseDisteleplus
           is_disabled: true,
         },
       }
-      payload[:message_thread_id] = thread_id if thread_id
       send_report_message(payload, context: "admin notice")
     end
 
@@ -260,13 +298,22 @@ module DiscourseDisteleplus
         return answer.call(I18n.t("disteleplus.reports.not_authorized"), alert: true)
       end
 
-      actor = UserMatcher.privileged_match(callback["from"])
+      actor = acting_staff(callback["from"], message.dig("chat", "id"), api: api)
       unless actor&.staff?
         Rails.logger.warn(
           "#{LOG_TAG} unauthorized report action by tg user " \
             "#{callback.dig("from", "id")} (@#{callback.dig("from", "username")})",
         )
-        return answer.call(I18n.t("disteleplus.reports.not_authorized"), alert: true)
+        return(
+          answer.call(
+            I18n.t(
+              "disteleplus.reports.not_authorized",
+              telegram_id: callback.dig("from", "id").to_s,
+              username: callback.dig("from", "username").to_s.presence || "-",
+            ),
+            alert: true,
+          )
+        )
       end
 
       begin
@@ -308,6 +355,29 @@ module DiscourseDisteleplus
       answer.call(I18n.t("disteleplus.reports.action_failed"), alert: true)
     end
 
+    # Who is pressing the button, as a Discourse staff user — or nil.
+    # Two independent ways in:
+    #   1. an explicit disteleplus_user_map row matched by permanent numeric
+    #      telegram_id (the recommended setup), or
+    #   2. the presser is an administrator/creator of the reports chat AND
+    #      resolves to a Discourse staff account by username (map row or the
+    #      same username). Renaming a Telegram account alone cannot pass this:
+    #      the attacker would also have to be made admin of the staff group.
+    def self.acting_staff(from, chat, api:)
+      by_id = UserMatcher.privileged_match(from)
+      return by_id if by_id&.staff?
+
+      by_name = UserMatcher.staff_by_username(from)
+      return nil unless by_name&.staff?
+
+      member = api.call("getChatMember", chat_id: chat, user_id: from["id"])
+      status = member.result&.dig("status") if member.ok
+      %w[creator administrator].include?(status) ? by_name : nil
+    rescue StandardError => e
+      Rails.logger.warn("#{LOG_TAG} acting_staff lookup failed: #{e.message}")
+      nil
+    end
+
     # First preferred action id actually available to this user on this
     # reviewable.
     def self.action_for(reviewable, actor, intent)
@@ -331,7 +401,6 @@ module DiscourseDisteleplus
           inline_keyboard: [[review_url_button(reviewable)]],
         },
       }
-      payload[:message_thread_id] = thread_id if thread_id
       payload[:reply_to_message_id] = reply_to if reply_to
       send_report_message(payload, context: "report details #{reviewable.id}")
     end
