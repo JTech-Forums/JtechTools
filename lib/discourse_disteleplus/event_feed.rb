@@ -24,6 +24,10 @@ module DiscourseDisteleplus
     end
 
     def self.reviewable_created(reviewable)
+      if reviewable.is_a?(ReviewableQueuedPost) &&
+           !SiteSetting.disteleplus_event_messages_queued_posts
+        return
+      end
       kind =
         reviewable.type.to_s.demodulize.underscore.humanize.downcase.delete_prefix("reviewable ")
       post!("🚩 **New review item** (#{kind}) — [open the queue](#{Discourse.base_url}/review)")
