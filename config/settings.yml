@@ -956,6 +956,13 @@ jtech_disteleplus:
     client: false
     depends_on:
       - "disteleplus_enabled"
+  # Reply approval / new-user approval can queue a post for every reply,
+  # which drowns the room; flags and user reviews are rarer and still post.
+  disteleplus_event_messages_queued_posts:
+    default: true
+    client: false
+    depends_on:
+      - "disteleplus_enabled"
 
   # What crosses the bridge.
   disteleplus_bridge_uploads:

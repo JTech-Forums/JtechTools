@@ -673,6 +673,10 @@ en:
       first logins, suspensions, silences. These stay in the conversation
       (no bell notifications, no Telegram mirror — Telegram has its own
       reports pipeline).
+    disteleplus_event_messages_queued_posts: Include posts awaiting approval
+      (queued posts) in the review-queue messages above. Turn off to keep
+      flags and user reviews but skip the queued-post stream on forums that
+      approve replies.
     disteleplus_bridge_uploads: Copy photos, documents, video and audio across
       the bridge, in both directions, up to the size limit below. When off,
       media is replaced by a short placeholder line.
