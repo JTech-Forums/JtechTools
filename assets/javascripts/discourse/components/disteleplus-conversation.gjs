@@ -34,6 +34,8 @@ import DisteleplusVoiceRecorder from "./disteleplus-voice-recorder";
 const EMOJI_CONTEXT = "disteleplus";
 const DEFAULT_QUICK_REACTIONS = ["+1", "heart", "laughing", "fire", "tada"];
 const MAX_UPLOADS = 10;
+// Extra 40-message pages fetched on open to reach the unread divider.
+const MAX_UNREAD_PAGES = 3;
 
 // Single-room conversation in Discourse Chat's visual language, with a
 // right-click / ⋯ context menu per message, quick reactions plus the full
@@ -225,16 +227,68 @@ export default class DisteleplusConversation extends Component {
     if (targetId && (await this.jumpToId(targetId))) {
       return;
     }
-    const divider = this.timeline?.querySelector(
-      ".disteleplus-separator.is-unread"
-    );
-    if (divider) {
-      divider.scrollIntoView({ block: "start" });
-      this.showJump = !this.nearBottom;
+    // The drawer renders this component before the first fetch resolves, so
+    // the timeline can still be empty here. Scrolling it now would stick at
+    // the top once the rows land, and nothing re-runs this after the load.
+    const wasLoaded = this.disteleplus.loaded;
+    try {
+      await this.disteleplus.ensureLoaded();
+    } catch {
+      return;
+    }
+    if (this.isDestroying) {
+      return;
+    }
+    if (!wasLoaded) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      this.enhance(this.timeline);
+      // setViewing(true) ran on mount with nothing loaded, so its markRead
+      // was a no-op; catch up the way an already-loaded open would have.
+      this.disteleplus.markRead();
+    }
+    if (await this.scrollToUnread()) {
       return;
     }
     this.scrollToBottom();
     this.pinWhileMediaSettles();
+  }
+
+  // Land on the unread divider. The first page is only the newest
+  // PAGE_SIZE messages, so with more unread than that the divider would sit
+  // at the very top of the list with no context above it — page back until
+  // the read cursor is inside the loaded slice (within reason) first.
+  async scrollToUnread() {
+    const readId = this.disteleplus.openedAtReadId;
+    if (!readId || !this.disteleplus.messages.length) {
+      return false;
+    }
+    for (let page = 0; page < MAX_UNREAD_PAGES; page++) {
+      if (
+        this.disteleplus.messages[0].id <= readId ||
+        !this.disteleplus.hasMore
+      ) {
+        break;
+      }
+      try {
+        await this.disteleplus.loadOlder();
+      } catch {
+        break;
+      }
+      if (this.isDestroying) {
+        return true;
+      }
+    }
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const divider = this.timeline?.querySelector(
+      ".disteleplus-separator.is-unread"
+    );
+    if (!divider) {
+      return false;
+    }
+    this.enhance(this.timeline);
+    divider.scrollIntoView({ block: "start" });
+    this.showJump = !this.nearBottom;
+    return true;
   }
 
   // Images, voice players and oneboxes finish layout AFTER the opening
