@@ -231,4 +231,30 @@ RSpec.describe "DiscourseModCategories plugin.rb" do
       expect(Guardian.new(moderator).can_manage_mod_messages?).to eq(false)
     end
   end
+
+  describe "username-avatar (email_hash override)" do
+    fab!(:mixed_case_user) { Fabricate(:user, username: "MixedCase") }
+
+    it "registers discourse_username_avatar_enabled defaulting to true" do
+      expect(SiteSetting.defaults[:discourse_username_avatar_enabled]).to eq(true)
+    end
+
+    it "keeps the setting off the client payload" do
+      client_settings = SiteSetting.client_settings
+      expect(client_settings).not_to include(:discourse_username_avatar_enabled)
+    end
+
+    it "derives email_hash from the downcased username when enabled" do
+      SiteSetting.discourse_username_avatar_enabled = true
+      expect(mixed_case_user.email_hash).to eq(Digest::MD5.hexdigest("mixedcase"))
+    end
+
+    it "falls back to the normal email-based hash when disabled" do
+      SiteSetting.discourse_username_avatar_enabled = false
+      disabled_hash = mixed_case_user.email_hash
+
+      SiteSetting.discourse_username_avatar_enabled = true
+      expect(mixed_case_user.email_hash).not_to eq(disabled_hash)
+    end
+  end
 end

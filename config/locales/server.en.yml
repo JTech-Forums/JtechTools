@@ -882,6 +882,11 @@ en:
       domain. Toggling {{setting:disteleplus_setup_commands_enabled}} refreshes
       or removes the command menu automatically.
 
+    # ── Jtech — Username avatar ─────────────────────────────────────────────
+    discourse_username_avatar_enabled: Derive default (non-uploaded) avatars
+      from a user's username instead of their email address. Users with a
+      manually uploaded custom avatar are unaffected.
+
     placeholder:
       discourse_another_email_smtp_address: smtp.example.com
       discourse_another_email_smtp_username: username@example.com
@@ -917,6 +922,7 @@ en:
       disteleplus_reports_chat_id: reports|admin group|moderation
       disteleplus_reports_admin_notices: what's new|dashboard|problems|warnings
       disteleplus_auto_match_usernames: identity|impersonate|spoof|security
+      discourse_username_avatar_enabled: avatar|gravatar|username|letter avatar
 
     errors:
       translator_tweaks_invalid_worker_url: must be a full https:// URL with
