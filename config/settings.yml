@@ -1239,3 +1239,13 @@ jtech_disteleplus:
     requires_confirmation: "simple_on_enable"
     depends_on:
       - "disteleplus_enabled"
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Username avatar (default avatars derived from username, not email)
+# ───────────────────────────────────────────────────────────────────────────
+jtech_username_avatar:
+  # Master switch. Historical setting name kept verbatim from the original
+  # standalone plugin.
+  discourse_username_avatar_enabled:
+    default: true
+    client: false

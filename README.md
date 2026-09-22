@@ -1,6 +1,6 @@
 # Jtech Tools
 
-One Discourse plugin with everything JTech Forums runs on top of core. Nine features, each with its own on/off switch in **Admin → Settings → Jtech**.
+One Discourse plugin with everything JTech Forums runs on top of core. Ten features, each with its own on/off switch in **Admin → Settings → Jtech**.
 
 ## Install
 
@@ -59,6 +59,9 @@ Send forum email through a different mail server than the one in `app.yml` — h
 
 ### Translator tweaks
 Small fixes on top of the official Translator plugin (better foreign-language detection, backfill for old posts).
+
+### Username avatar
+Default (non-uploaded) avatars are derived from a user's **username** instead of their email address, so they no longer depend on whether — or where — someone has a Gravatar. Users with a manually uploaded custom avatar are unaffected. Existing users keep their cached Gravatar-derived avatar until it's flushed; run `scripts/username_avatar_recalculate.rb` (see the file's header for the exact command) to reset everyone without a custom avatar to their username-based letter avatar.
 
 ## Telegram setup (5 minutes)
 

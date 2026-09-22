@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # name: jtech-tools
-# about: Jtech Tools — the JTech Forums all-in-one plugin. Reaction controls, alternate SMTP relay, mini-mod and moderator tooling, the Dumbcourse app, translator tweaks, smart search, desktop pop-ups, and the Telegram chat bridge.
+# about: Jtech Tools — the JTech Forums all-in-one plugin. Reaction controls, alternate SMTP relay, mini-mod and moderator tooling, the Dumbcourse app, translator tweaks, smart search, desktop pop-ups, username-based default avatars, and the Telegram chat bridge.
 # version: 0.4.0
 # authors: TripleU, Shalom_Karr, Ars18
 # url: https://github.com/JTech-Forums/JtechTools
@@ -14,8 +14,8 @@ gem "rwordnet", "2.0.0", require: false
 
 # Master gate. Each sub-plugin keeps its own enable setting (e.g.
 # discourse_no_likes_enabled, mini_mod_enabled, mod_categories_enabled,
-# dumbcourse_enabled, discourse_another_email_enabled, smart_search_enabled)
-# for fine-grained control.
+# dumbcourse_enabled, discourse_another_email_enabled, smart_search_enabled,
+# discourse_username_avatar_enabled) for fine-grained control.
 enabled_site_setting :jtech_enabled
 
 # Load each sub-plugin's body in the Plugin::Instance context so that all
@@ -38,6 +38,7 @@ enabled_site_setting :jtech_enabled
   smart_search
   popup_notifications
   disteleplus
+  username_avatar
 ].each do |sub|
   path = File.expand_path("sub_plugins/#{sub}.rb", __dir__)
   instance_eval(File.read(path), path, 1)
