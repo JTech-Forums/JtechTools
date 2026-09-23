@@ -311,14 +311,6 @@ after_initialize do
   # ── Event feed → conversation ─────────────────────────────────────────────
   # Automatic system messages in the chat when selected forum events happen.
 
-  on(:reviewable_created) do |reviewable|
-    if DiscourseDisteleplus::EventFeed.on?(:reviewable_created)
-      DiscourseDisteleplus::EventFeed.reviewable_created(reviewable)
-    end
-  rescue StandardError => e
-    Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} event feed hook failed: #{e.message}")
-  end
-
   on(:topic_created) do |topic, *_args|
     if DiscourseDisteleplus::EventFeed.on?(:topic_created)
       DiscourseDisteleplus::EventFeed.topic_created(topic)
