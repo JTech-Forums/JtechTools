@@ -7,6 +7,11 @@ module DiscourseDisteleplus
   # user, skip bell notifications, and skip the Telegram bridge: the
   # Telegram side already has its own reports pipeline with action buttons,
   # and mirroring both would double every event.
+  #
+  # Review-queue items are deliberately NOT here: staff already receive a
+  # bell notification per review item, so a chat line repeating it was the
+  # same report twice. Reports live in the review queue and — with action
+  # buttons — in the Telegram reports topic.
   module EventFeed
     def self.on?(event)
       SiteSetting.disteleplus_enabled &&
@@ -21,16 +26,6 @@ module DiscourseDisteleplus
       )
     rescue StandardError => e
       Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} event feed failed: #{e.message}")
-    end
-
-    def self.reviewable_created(reviewable)
-      if reviewable.is_a?(ReviewableQueuedPost) &&
-           !SiteSetting.disteleplus_event_messages_queued_posts
-        return
-      end
-      kind =
-        reviewable.type.to_s.demodulize.underscore.humanize.downcase.delete_prefix("reviewable ")
-      post!("🚩 **New review item** (#{kind}) — [open the queue](#{Discourse.base_url}/review)")
     end
 
     def self.topic_created(topic)

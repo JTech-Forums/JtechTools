@@ -2,36 +2,45 @@
 
 require "rails_helper"
 
-# Event feed → conversation: which review-queue items become a system
-# message in the room.
 RSpec.describe DiscourseDisteleplus::EventFeed do
+  fab!(:post)
+  fab!(:flagger, :user)
+
   before do
     SiteSetting.jtech_enabled = true
     SiteSetting.disteleplus_enabled = true
-    SiteSetting.disteleplus_event_messages = "reviewable_created"
   end
 
-  describe ".reviewable_created" do
-    fab!(:flag) { Fabricate(:reviewable_flagged_post) }
-    fab!(:queued) { Fabricate(:reviewable_queued_post) }
-
-    it "posts flags and queued posts by default" do
-      expect { described_class.reviewable_created(flag) }.to change {
-        DiscourseDisteleplus::Message.count
-      }.by(1)
-      expect { described_class.reviewable_created(queued) }.to change {
-        DiscourseDisteleplus::Message.count
-      }.by(1)
-    end
-
-    it "skips queued posts, and only those, when the switch is off" do
-      SiteSetting.disteleplus_event_messages_queued_posts = false
-      expect { described_class.reviewable_created(queued) }.not_to change {
+  describe "review-queue items" do
+    it "never narrates them into the conversation" do
+      # Staff already get a bell notification per review item; a chat line
+      # would be the same report twice.
+      expect { PostActionCreator.spam(flagger, post) }.not_to change {
         DiscourseDisteleplus::Message.count
       }
-      expect { described_class.reviewable_created(flag) }.to change {
-        DiscourseDisteleplus::Message.count
-      }.by(1)
+    end
+
+    it "has no handler and is not offered as a choice" do
+      expect(described_class).not_to respond_to(:reviewable_created)
+      expect(SiteSetting.disteleplus_event_messages).not_to include("reviewable_created")
+      choices = SiteSetting.type_supervisor.type_hash(:disteleplus_event_messages)[:choices]
+      expect(choices).to be_present
+      expect(choices).not_to include("reviewable_created")
+    end
+  end
+
+  describe "events that do still narrate" do
+    it "posts a suspension line as the system user, unbridged and silent" do
+      SiteSetting.disteleplus_event_messages = "user_suspended"
+      user = Fabricate(:user, username: "troublemaker")
+
+      expect {
+        described_class.user_suspended(user: user, suspended_till: nil, reason: "spam")
+      }.to change { DiscourseDisteleplus::Message.count }.by(1)
+
+      message = DiscourseDisteleplus::Message.last
+      expect(message.user_id).to eq(Discourse.system_user.id)
+      expect(message.raw).to include("troublemaker").and include("spam")
     end
   end
 end
