@@ -9,7 +9,7 @@ module DiscourseModCategories
     requires_login
 
     def index
-      raise Discourse::NotFound unless SiteSetting.mod_categories_enabled
+      raise Discourse::NotFound unless DiscourseModCategories.enabled?
       raise Discourse::NotFound unless SiteSetting.mod_notification_type_filter_enabled
 
       ids = Notification.where(user_id: current_user.id).distinct.pluck(:notification_type)

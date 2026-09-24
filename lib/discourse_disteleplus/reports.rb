@@ -38,7 +38,7 @@ module DiscourseDisteleplus
     DENY_ACTIONS = %i[reject_post disagree_and_restore disagree delete_user reject ignore].freeze
 
     def self.enabled?
-      SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_reports_enabled &&
+      DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_reports_enabled &&
         SiteSetting.disteleplus_bot_token.present?
     end
 

@@ -21,7 +21,7 @@ module DiscourseDisteleplus
 
     def self.enabled?
       !!(
-        SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_polls_enabled &&
+        DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_polls_enabled &&
           defined?(::DiscoursePoll)
       )
     end

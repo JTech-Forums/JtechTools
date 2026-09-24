@@ -4,6 +4,14 @@
 # so DSL methods (after_initialize, register_asset, on, …) work unchanged.
 
 module ::DiscourseDumbcourse
+  # Module switch AND the bundle master (jtech_enabled). Discourse's own
+  # plugin gate stops event hooks, serializers and assets when the master is
+  # off, but not the core-class patches or scheduled jobs, so every read of
+  # this module's switch goes through here.
+  def self.enabled?
+    SiteSetting.jtech_enabled && SiteSetting.dumbcourse_enabled
+  end
+
   PLUGIN_NAME = "discourse-dumbcourse"
 
   def self.base_path

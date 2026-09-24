@@ -15,7 +15,7 @@ module DiscourseDisteleplus
                        :preload_json
 
     def receive
-      raise Discourse::NotFound unless SiteSetting.disteleplus_enabled
+      raise Discourse::NotFound unless DiscourseDisteleplus.enabled?
 
       secret = SiteSetting.disteleplus_webhook_secret.to_s
       header = request.headers["X-Telegram-Bot-Api-Secret-Token"].to_s

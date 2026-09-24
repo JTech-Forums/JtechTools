@@ -11,7 +11,7 @@ cd /var/discourse
 ./launcher rebuild app
 ```
 
-Master switch: `jtech_enabled`. Every feature below also has its own switch, so you can turn things off one at a time.
+Master switch: `jtech_enabled`. Turning it off stops every feature, including the permission changes Mini-mod and the moderator tools make and the Telegram bridge's background jobs. Every feature below also has its own switch, so you can turn things off one at a time.
 
 ## What's in it
 
@@ -77,3 +77,4 @@ Known limits (Telegram's rules, not ours): the bot can't delete messages older t
 
 - Nothing here requires the official Discourse Chat plugin. If you're moving from the old Chat-based bridge, an admin can import the old channel (`POST /jtech-disteleplus/legacy-import`, check progress with `GET`) before switching Chat off. Nothing is deleted from the old Chat data.
 - Screenshots of the features are in `docs/screenshots`.
+- **If you turned the moderator tools off before August 30, 2026, check them again.** An update that day switched `mod_categories_enabled`, `mod_pin_post_enabled` and `mod_notes_feed_enabled` to on by default, and it cleared any "off" you had saved for them, so they came back on after your next rebuild. The old values can't be restored automatically. Switch `mod_categories_enabled` off again under **Admin → Settings → Jtech — Mod**, which turns the whole module off; it will stay off from now on.

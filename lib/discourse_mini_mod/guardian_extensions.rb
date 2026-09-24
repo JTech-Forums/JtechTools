@@ -4,7 +4,7 @@ module DiscourseMiniMod
   module GuardianExtensions
     def can_create_category?(parent = nil)
       return true if super
-      return false if !SiteSetting.mini_mod_enabled
+      return false if !DiscourseMiniMod.enabled?
       return false if !SiteSetting.mini_mod_can_create_categories
       return false if !category_group_moderation_allowed?
       return false if !category_group_moderator_scope.exists?
@@ -20,7 +20,7 @@ module DiscourseMiniMod
 
     def can_edit_category?(category)
       return true if super
-      return false if !SiteSetting.mini_mod_enabled
+      return false if !DiscourseMiniMod.enabled?
       return false if !SiteSetting.mini_mod_can_edit_categories
 
       if SiteSetting.mini_mod_manage_all_categories
@@ -32,7 +32,7 @@ module DiscourseMiniMod
 
     def can_edit_serialized_category?(category_id:, read_restricted:)
       return true if super
-      return false if !SiteSetting.mini_mod_enabled
+      return false if !DiscourseMiniMod.enabled?
       return false if !SiteSetting.mini_mod_can_edit_categories
       return false if !category_group_moderation_allowed?
 
@@ -45,7 +45,7 @@ module DiscourseMiniMod
 
     def can_edit_topic?(topic)
       return true if super
-      return false if !SiteSetting.mini_mod_enabled
+      return false if !DiscourseMiniMod.enabled?
       return false if !SiteSetting.mini_mod_can_edit_topics
       return false if !SiteSetting.mini_mod_manage_all_categories
       return false if !category_group_moderation_allowed?
@@ -54,11 +54,11 @@ module DiscourseMiniMod
     end
 
     def can_create_post_on_topic?(topic)
-      if SiteSetting.mini_mod_enabled && !SiteSetting.tl4_can_post_in_closed_topics &&
+      if DiscourseMiniMod.enabled? && !SiteSetting.tl4_can_post_in_closed_topics &&
            topic.present? && topic.closed? && !is_staff? && @user.has_trust_level?(TrustLevel[4])
         return false
       end
-      if SiteSetting.mini_mod_enabled && !SiteSetting.mini_mod_can_post_in_closed_topics &&
+      if DiscourseMiniMod.enabled? && !SiteSetting.mini_mod_can_post_in_closed_topics &&
            topic.present? && topic.closed? && !is_staff? && mini_mod_for?(topic)
         return false
       end
@@ -66,12 +66,12 @@ module DiscourseMiniMod
     end
 
     def can_open_topic?(topic)
-      if SiteSetting.mini_mod_enabled && !SiteSetting.tl4_can_reopen_topics && topic.present? &&
+      if DiscourseMiniMod.enabled? && !SiteSetting.tl4_can_reopen_topics && topic.present? &&
            !is_staff? && @user.has_trust_level?(TrustLevel[4])
         return false
       end
-      if SiteSetting.mini_mod_enabled && !SiteSetting.mini_mod_can_reopen_topics &&
-           topic.present? && !is_staff? && mini_mod_for?(topic)
+      if DiscourseMiniMod.enabled? && !SiteSetting.mini_mod_can_reopen_topics && topic.present? &&
+           !is_staff? && mini_mod_for?(topic)
         return false
       end
       super
@@ -83,12 +83,12 @@ module DiscourseMiniMod
     # when the topic is already closed — in that case, the action is a reopen, which
     # we want to revoke from category group moderators by default.
     def can_close_topic?(topic)
-      if SiteSetting.mini_mod_enabled && !SiteSetting.tl4_can_reopen_topics && topic.present? &&
+      if DiscourseMiniMod.enabled? && !SiteSetting.tl4_can_reopen_topics && topic.present? &&
            topic.closed? && !is_staff? && @user.has_trust_level?(TrustLevel[4])
         return false
       end
-      if SiteSetting.mini_mod_enabled && !SiteSetting.mini_mod_can_reopen_topics &&
-           topic.present? && topic.closed? && !is_staff? && mini_mod_for?(topic)
+      if DiscourseMiniMod.enabled? && !SiteSetting.mini_mod_can_reopen_topics && topic.present? &&
+           topic.closed? && !is_staff? && mini_mod_for?(topic)
         return false
       end
       super
@@ -96,7 +96,7 @@ module DiscourseMiniMod
 
     def can_move_topic_to_category?(category)
       return true if super
-      return false if !SiteSetting.mini_mod_enabled
+      return false if !DiscourseMiniMod.enabled?
       return false if !SiteSetting.mini_mod_can_move_topics
       return false if !category_group_moderation_allowed?
 
@@ -140,7 +140,7 @@ module DiscourseMiniMod
     end
 
     def mini_mod_tag_manager?
-      SiteSetting.mini_mod_enabled && SiteSetting.mini_mod_manage_tags &&
+      DiscourseMiniMod.enabled? && SiteSetting.mini_mod_manage_tags &&
         SiteSetting.tagging_enabled && category_group_moderation_allowed? &&
         category_group_moderator_scope.exists?
     end

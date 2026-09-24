@@ -16,7 +16,7 @@ module DiscourseDisteleplus
       )
 
     def self.active?
-      SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_force_channel_notifications
+      DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_force_channel_notifications
     end
 
     def self.push_prompt_enabled?

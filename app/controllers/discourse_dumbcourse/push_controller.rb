@@ -128,7 +128,7 @@ module DiscourseDumbcourse
     private
 
     def ensure_dumbcourse_enabled
-      if !SiteSetting.dumbcourse_enabled || !SiteSetting.dumbcourse_push_enabled
+      if !DiscourseDumbcourse.enabled? || !SiteSetting.dumbcourse_push_enabled
         raise Discourse::NotFound
       end
     end

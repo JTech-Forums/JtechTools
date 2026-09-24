@@ -3,7 +3,7 @@
 module Jobs
   class DisteleplusMeasureForumUploads < ::Jobs::Base
     def execute(_args)
-      return unless SiteSetting.disteleplus_enabled
+      return unless DiscourseDisteleplus.enabled?
       DiscourseDisteleplus::ForumUploadMetrics.log!
     end
   end

@@ -11,7 +11,7 @@ module Jtech
 
     ACTIONS = {
       "register_webhook" => {
-        gate: -> { SiteSetting.disteleplus_enabled },
+        gate: -> { DiscourseDisteleplus.enabled? },
         run: -> do
           if SiteSetting.disteleplus_webhook_secret.blank?
             SiteSetting.disteleplus_webhook_secret = SecureRandom.hex(32)
@@ -20,25 +20,21 @@ module Jtech
         end,
       },
       "send_test_message" => {
-        gate: -> { SiteSetting.disteleplus_enabled },
+        gate: -> { DiscourseDisteleplus.enabled? },
         run: -> { Jobs.enqueue(:disteleplus_send_test_message) },
       },
       "sync_notifications" => {
         gate: -> do
-          SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_force_channel_notifications
+          DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_force_channel_notifications
         end,
         run: -> { Jobs.enqueue(:disteleplus_sync_channel_notifications) },
       },
       "measure_forum_uploads" => {
-        gate: -> do
-          SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_forum_uploads_enabled
-        end,
+        gate: -> { DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_forum_uploads_enabled },
         run: -> { Jobs.enqueue(:disteleplus_measure_forum_uploads) },
       },
       "backfill_forum_uploads" => {
-        gate: -> do
-          SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_forum_uploads_enabled
-        end,
+        gate: -> { DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_forum_uploads_enabled },
         run: -> { Jobs.enqueue(:disteleplus_backfill_forum_uploads, after_reference_id: 0) },
       },
       "purge_phantom_likes" => {

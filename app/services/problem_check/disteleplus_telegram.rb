@@ -6,7 +6,7 @@ class ProblemCheck::DisteleplusTelegram < ProblemCheck
   self.priority = "low"
 
   def call
-    return no_problem unless SiteSetting.disteleplus_enabled
+    return no_problem unless DiscourseDisteleplus.enabled?
 
     error = DiscourseDisteleplus::Health.last_error
     return no_problem if error.nil?

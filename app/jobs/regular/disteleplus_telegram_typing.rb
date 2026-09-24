@@ -5,7 +5,7 @@ module Jobs
   # controller throttles enqueues; Telegram shows the status for ~5 seconds.
   class DisteleplusTelegramTyping < ::Jobs::Base
     def execute(_args)
-      return unless SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_typing_to_telegram
+      return unless DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_typing_to_telegram
       chat_id = SiteSetting.disteleplus_telegram_chat_id.to_s.strip
       return if chat_id.blank?
 

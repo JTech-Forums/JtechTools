@@ -21,7 +21,7 @@ module DiscourseMiniMod
   module TopicViewDetailsSerializerExtension
     def include_can_close_topic?
       topic = object.topic
-      return super if !SiteSetting.mini_mod_enabled
+      return super if !DiscourseMiniMod.enabled?
       return super if !topic.closed?
       return super if scope.user.blank? || scope.is_staff?
 

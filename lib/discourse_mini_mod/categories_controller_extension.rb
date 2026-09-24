@@ -22,7 +22,7 @@ module DiscourseMiniMod
     private
 
     def mini_mod_check_parent_category
-      return if !SiteSetting.mini_mod_enabled
+      return if !DiscourseMiniMod.enabled?
       return if !SiteSetting.enable_category_group_moderation
       return if current_user.blank? || current_user.staff?
       return if SiteSetting.mini_mod_manage_all_categories

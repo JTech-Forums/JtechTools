@@ -17,7 +17,7 @@ module DiscourseMiniMod
     def add_moderator_post(user, text, opts = nil)
       opts = (opts || {}).dup
 
-      if !opts.key?(:skip_guardian) && SiteSetting.mini_mod_enabled &&
+      if !opts.key?(:skip_guardian) && DiscourseMiniMod.enabled? &&
            !SiteSetting.mini_mod_can_post_in_closed_topics && user.present? && !user.staff? &&
            category.present? && Guardian.new(user).is_category_group_moderator?(category)
         opts[:skip_guardian] = true

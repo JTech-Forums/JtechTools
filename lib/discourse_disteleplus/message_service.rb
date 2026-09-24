@@ -192,7 +192,7 @@ module DiscourseDisteleplus
     end
 
     def enqueue_bridge(action, message, **extra)
-      return unless SiteSetting.disteleplus_enabled
+      return unless DiscourseDisteleplus.enabled?
       Jobs.enqueue(:disteleplus_send_to_telegram, action: action, message_id: message.id, **extra)
     end
   end

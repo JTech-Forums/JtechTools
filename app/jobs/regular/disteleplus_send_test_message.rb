@@ -5,7 +5,7 @@ module Jobs
   # together, and records the failure for the dashboard problem check.
   class DisteleplusSendTestMessage < ::Jobs::Base
     def execute(_args)
-      return unless SiteSetting.disteleplus_enabled
+      return unless DiscourseDisteleplus.enabled?
       chat_id = SiteSetting.disteleplus_telegram_chat_id.to_s.strip
       if chat_id.blank?
         DiscourseDisteleplus::Health.record_error(

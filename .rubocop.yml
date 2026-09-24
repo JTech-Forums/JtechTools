@@ -46,3 +46,4 @@ RSpec/DescribeClass:
     - "spec/plugin_spec.rb"
     - "spec/lib/whisper_guardian_spec.rb"
     - "spec/lib/reply_approval_spec.rb"
+    - "spec/lib/jtech_master_switch_spec.rb"

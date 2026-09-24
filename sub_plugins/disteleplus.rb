@@ -58,6 +58,14 @@ register_asset "stylesheets/disteleplus-native.scss"
 ].each { |name| register_svg_icon(name) }
 
 module ::DiscourseDisteleplus
+  # Module switch AND the bundle master (jtech_enabled). Discourse's own
+  # plugin gate stops event hooks, serializers and assets when the master is
+  # off, but not the core-class patches or scheduled jobs, so every read of
+  # this module's switch goes through here.
+  def self.enabled?
+    SiteSetting.jtech_enabled && SiteSetting.disteleplus_enabled
+  end
+
   LOG_TAG = "[jtech-tools disteleplus]"
   GENERAL_TOPIC_IDS = [0, 1].freeze
   # Members of this group are excluded from the /about page's "Our admins" /
@@ -173,7 +181,7 @@ after_initialize do
     case name.to_s
     when "disteleplus_register_webhook_now"
       if new_val == true
-        if SiteSetting.disteleplus_enabled
+        if DiscourseDisteleplus.enabled?
           if SiteSetting.disteleplus_webhook_secret.blank?
             SiteSetting.disteleplus_webhook_secret = SecureRandom.hex(32)
           end
@@ -183,28 +191,28 @@ after_initialize do
       end
     when "disteleplus_forum_upload_measure_now"
       if new_val == true
-        if SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_forum_uploads_enabled
+        if DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_forum_uploads_enabled
           Jobs.enqueue(:disteleplus_measure_forum_uploads)
         end
         SiteSetting.disteleplus_forum_upload_measure_now = false
       end
     when "disteleplus_forum_upload_backfill_now"
       if new_val == true
-        if SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_forum_uploads_enabled
+        if DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_forum_uploads_enabled
           Jobs.enqueue(:disteleplus_backfill_forum_uploads, after_reference_id: 0)
         end
         SiteSetting.disteleplus_forum_upload_backfill_now = false
       end
     when "disteleplus_send_test_message_now"
       if new_val == true
-        Jobs.enqueue(:disteleplus_send_test_message) if SiteSetting.disteleplus_enabled
+        Jobs.enqueue(:disteleplus_send_test_message) if DiscourseDisteleplus.enabled?
         SiteSetting.disteleplus_send_test_message_now = false
       end
     when "disteleplus_setup_commands_enabled"
-      Jobs.enqueue(:disteleplus_register_webhook) if SiteSetting.disteleplus_enabled
+      Jobs.enqueue(:disteleplus_register_webhook) if DiscourseDisteleplus.enabled?
     when "disteleplus_notification_sync_now"
       if new_val == true
-        Jobs.enqueue(:disteleplus_sync_channel_notifications) if SiteSetting.disteleplus_enabled
+        Jobs.enqueue(:disteleplus_sync_channel_notifications) if DiscourseDisteleplus.enabled?
         SiteSetting.disteleplus_notification_sync_now = false
       end
     when "disteleplus_force_channel_notifications", "disteleplus_allowed_groups",
@@ -216,13 +224,13 @@ after_initialize do
         DiscourseDisteleplus::VoiceNotes.ensure_extensions_authorized!
       end
     when "disteleplus_voice_notes_enabled"
-      if new_val == true && SiteSetting.disteleplus_enabled
+      if new_val == true && DiscourseDisteleplus.enabled?
         DiscourseDisteleplus::VoiceNotes.ensure_extensions_authorized!
       end
     when "disteleplus_reports_enabled", "disteleplus_reports_chat_id"
       # Refresh the webhook registration and command menu, and make sure the
       # reports topic exists in the (possibly new) reports chat.
-      if SiteSetting.disteleplus_enabled
+      if DiscourseDisteleplus.enabled?
         Jobs.enqueue(:disteleplus_register_webhook)
         Jobs.enqueue(:disteleplus_ensure_reports_topic) if SiteSetting.disteleplus_reports_enabled
       end
@@ -234,7 +242,7 @@ after_initialize do
   # its own — nobody has to bind anything by hand, and nothing is ever
   # posted into General.
   begin
-    if SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_reports_enabled &&
+    if DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_reports_enabled &&
          SiteSetting.disteleplus_bot_token.present? &&
          DiscourseDisteleplus.telegram_thread_id(SiteSetting.disteleplus_reports_topic_id).nil?
       Jobs.enqueue(:disteleplus_ensure_reports_topic)
@@ -249,7 +257,7 @@ after_initialize do
   # for report buttons) would never receive it until an admin pressed the
   # register button. Re-register automatically, once.
   begin
-    if SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_bot_token.present? &&
+    if DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_bot_token.present? &&
          SiteSetting.disteleplus_webhook_secret.present? &&
          PluginStore.get("disteleplus", "allowed_updates_rev").to_i <
            DiscourseDisteleplus::ALLOWED_UPDATES_REV
@@ -358,7 +366,7 @@ after_initialize do
 
   %i[post_created post_edited].each do |event|
     on(event) do |post, *_args|
-      next unless SiteSetting.disteleplus_enabled
+      next unless DiscourseDisteleplus.enabled?
       next unless SiteSetting.disteleplus_forum_uploads_enabled
       next unless DiscourseDisteleplus::ForumUploadPolicy.eligible?(post)
 

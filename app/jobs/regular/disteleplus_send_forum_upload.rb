@@ -5,7 +5,7 @@ module Jobs
   # between a historical scan and the live post hook.
   class DisteleplusSendForumUpload < ::Jobs::Base
     def execute(args)
-      return unless SiteSetting.disteleplus_enabled
+      return unless DiscourseDisteleplus.enabled?
       return unless SiteSetting.disteleplus_forum_uploads_enabled
 
       post_id = args[:post_id].to_i

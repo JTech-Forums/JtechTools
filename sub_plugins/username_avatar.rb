@@ -26,7 +26,9 @@ after_initialize do
       # method only feeds the Gravatar lookup, which avatar_template never
       # consults once uploaded_avatar_id points at a real custom upload.
       def email_hash
-        return super unless SiteSetting.discourse_username_avatar_enabled
+        unless SiteSetting.jtech_enabled && SiteSetting.discourse_username_avatar_enabled
+          return super
+        end
         return super if username.blank?
 
         Digest::MD5.hexdigest(username.downcase.strip)
@@ -34,7 +36,5 @@ after_initialize do
     end
   end
 
-  reloadable_patch do
-    ::User.prepend(DiscourseUsernameAvatar::UserEmailHashPatch)
-  end
+  reloadable_patch { ::User.prepend(DiscourseUsernameAvatar::UserEmailHashPatch) }
 end
