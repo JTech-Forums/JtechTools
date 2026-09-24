@@ -22,6 +22,11 @@ export const ENHANCED_CLASS = "disteleplus-audio--enhanced";
 const BAR_COUNT = 40;
 const SPEEDS = [1, 1.5, 2];
 const SPEED_STORAGE_KEY = "disteleplus-voice-speed";
+// A touch on the waveform is a seek only if it stays put and ends quickly;
+// past either bound the browser is raising the long-press context menu (the
+// only way to reach Delete on a phone) or the finger is scrubbing.
+const TAP_SLOP_PX = 8;
+const TAP_MAX_MS = 400;
 const VOICE_NAME = /(^|\/)voice(-note)?[-_.]/i;
 
 const peaksCache = new Map();
@@ -205,6 +210,8 @@ class VoicePlayer {
     this.speed = readSpeed();
     this.duration = Number.isFinite(audio.duration) ? audio.duration : 0;
     this.scrubbing = false;
+    // Touch press that has not yet become a scrub — see bind().
+    this.pendingTouch = null;
     this.src =
       audio.currentSrc || audio.src || audio.querySelector("source")?.src || "";
     this.build();
@@ -329,18 +336,58 @@ class VoicePlayer {
       this.playButton.title = i18n("disteleplus.player.unavailable");
     });
 
+    // The waveform covers most of a voice-note bubble, so it must not swallow
+    // the gestures that open the message context menu — Delete lives there,
+    // and on touch the long-press is the ONLY route to it (the hover toolbar
+    // needs a mouse). Two rules keep both working:
+    //   * right/middle mouse buttons are ignored outright, so the browser
+    //     still raises contextmenu;
+    //   * a touch pointerdown is never preventDefault()ed, because that
+    //     cancels the long-press contextmenu. Scrubbing by touch begins once
+    //     the finger actually moves; a stationary press stays available for
+    //     the menu, and a quick tap still seeks. touch-action: none on
+    //     .disteleplus-wave keeps the timeline from scrolling meanwhile.
     this.track.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+      if (event.pointerType === "touch") {
+        this.pendingTouch = {
+          id: event.pointerId,
+          x: event.clientX,
+          at: Date.now(),
+        };
+        return;
+      }
       event.preventDefault();
-      this.scrubbing = true;
-      this.track.setPointerCapture?.(event.pointerId);
-      this.seekToEvent(event, false);
+      this.beginScrub(event);
     });
+
     this.track.addEventListener("pointermove", (event) => {
+      const pending = this.pendingTouch;
+      if (pending && event.pointerId === pending.id) {
+        if (Math.abs(event.clientX - pending.x) < TAP_SLOP_PX) {
+          return;
+        }
+        this.pendingTouch = null;
+        this.beginScrub(event);
+        return;
+      }
       if (this.scrubbing) {
         this.seekToEvent(event, false);
       }
     });
+
     const finish = (event) => {
+      const pending = this.pendingTouch;
+      if (pending && event.pointerId === pending.id) {
+        this.pendingTouch = null;
+        // A quick tap seeks; a longer stationary press was a menu gesture.
+        if (Date.now() - pending.at <= TAP_MAX_MS) {
+          this.seekToEvent(event, true);
+        }
+        return;
+      }
       if (!this.scrubbing) {
         return;
       }
@@ -349,6 +396,12 @@ class VoicePlayer {
     };
     this.track.addEventListener("pointerup", finish);
     this.track.addEventListener("pointercancel", finish);
+
+    // The long-press menu won the gesture: drop the pending tap so playback
+    // does not jump when the finger lifts.
+    this.track.addEventListener("contextmenu", () => {
+      this.pendingTouch = null;
+    });
 
     this.track.addEventListener("keydown", (event) => {
       const step = 5;
@@ -369,6 +422,12 @@ class VoicePlayer {
         this.toggle();
       }
     });
+  }
+
+  beginScrub(event) {
+    this.scrubbing = true;
+    this.track.setPointerCapture?.(event.pointerId);
+    this.seekToEvent(event, false);
   }
 
   setPlayIcon(name) {

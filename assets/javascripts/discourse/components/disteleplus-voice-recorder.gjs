@@ -515,6 +515,10 @@ export default class DisteleplusVoiceRecorder extends Component {
     };
     let scrubbing = false;
     track.addEventListener("pointerdown", (event) => {
+      // Left button only; a right-click belongs to the browser, not the scrub.
+      if (event.button !== 0) {
+        return;
+      }
       event.preventDefault();
       scrubbing = true;
       track.setPointerCapture?.(event.pointerId);
