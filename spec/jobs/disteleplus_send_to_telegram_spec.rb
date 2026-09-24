@@ -230,7 +230,7 @@ RSpec.describe Jobs::DisteleplusSendToTelegram do
     end
   end
 
-  describe "react" do
+  describe "react notices" do
     it "posts a reaction notice naming the reactor under the Telegram copy" do
       link!(tg_id: 321)
       described_class.new.execute(
