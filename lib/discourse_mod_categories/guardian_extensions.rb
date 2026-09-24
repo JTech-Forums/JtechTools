@@ -124,7 +124,7 @@ module DiscourseModCategories
     end
 
     def mod_categories_grant?
-      SiteSetting.mod_categories_enabled && is_moderator?
+      DiscourseModCategories.enabled? && is_moderator?
     end
   end
 end

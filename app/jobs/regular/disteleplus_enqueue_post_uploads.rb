@@ -4,7 +4,7 @@ module Jobs
   # Resolves current UploadReference rows after create/edit post-processing.
   class DisteleplusEnqueuePostUploads < ::Jobs::Base
     def execute(args)
-      return unless SiteSetting.disteleplus_enabled
+      return unless DiscourseDisteleplus.enabled?
       return unless SiteSetting.disteleplus_forum_uploads_enabled
 
       post = ::Post.includes(:topic, :uploads).find_by(id: args[:post_id])

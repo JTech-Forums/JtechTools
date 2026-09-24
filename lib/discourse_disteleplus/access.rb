@@ -9,7 +9,7 @@ module DiscourseDisteleplus
     end
 
     def self.allowed?(user)
-      return false unless SiteSetting.disteleplus_enabled
+      return false unless DiscourseDisteleplus.enabled?
       return false if user.nil? || !user.active || user.staged || user.suspended?
       return true if user.admin?
 

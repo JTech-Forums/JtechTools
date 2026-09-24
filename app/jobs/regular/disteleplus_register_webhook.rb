@@ -23,7 +23,7 @@ module Jobs
     end
 
     def execute(_args)
-      return unless SiteSetting.disteleplus_enabled
+      return unless DiscourseDisteleplus.enabled?
       if SiteSetting.disteleplus_bot_token.blank? || SiteSetting.disteleplus_webhook_secret.blank?
         Rails.logger.warn("#{DiscourseDisteleplus::LOG_TAG} setWebhook skipped: token/secret blank")
         return

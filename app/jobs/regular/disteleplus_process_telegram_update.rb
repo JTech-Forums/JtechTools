@@ -7,7 +7,7 @@ module Jobs
   # (getFile during media processing).
   class DisteleplusProcessTelegramUpdate < ::Jobs::Base
     def execute(args)
-      return unless SiteSetting.disteleplus_enabled
+      return unless DiscourseDisteleplus.enabled?
 
       update = args[:update]
       return if update.blank?

@@ -18,7 +18,7 @@ module Jobs
     AUDIO_EXT = %w[mp3 m4a ogg wav flac].freeze
 
     def execute(args)
-      return unless SiteSetting.disteleplus_enabled
+      return unless DiscourseDisteleplus.enabled?
 
       @api = DiscourseDisteleplus::TelegramApi.new
       # Strip: a pasted trailing space in the setting makes Telegram answer

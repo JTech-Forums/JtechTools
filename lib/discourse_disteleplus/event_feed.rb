@@ -14,7 +14,7 @@ module DiscourseDisteleplus
   # buttons — in the Telegram reports topic.
   module EventFeed
     def self.on?(event)
-      SiteSetting.disteleplus_enabled &&
+      DiscourseDisteleplus.enabled? &&
         SiteSetting.disteleplus_event_messages.to_s.split("|").include?(event.to_s)
     end
 

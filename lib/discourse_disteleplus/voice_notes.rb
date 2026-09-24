@@ -27,7 +27,7 @@ module DiscourseDisteleplus
     FFMPEG_TIMEOUT_SECONDS = 60
 
     def self.enabled?
-      SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_voice_notes_enabled
+      DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_voice_notes_enabled
     end
 
     def self.voice_note?(upload)

@@ -5,7 +5,7 @@ module Jobs
   # giant job, keeping normal Sidekiq work responsive during a large archive.
   class DisteleplusBackfillForumUploads < ::Jobs::Base
     def execute(args)
-      return unless SiteSetting.disteleplus_enabled
+      return unless DiscourseDisteleplus.enabled?
       return unless SiteSetting.disteleplus_forum_uploads_enabled
 
       cursor = args[:after_reference_id].to_i

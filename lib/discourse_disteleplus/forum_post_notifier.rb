@@ -9,7 +9,7 @@ module DiscourseDisteleplus
   # forum-upload archive so private content never leaks.
   module ForumPostNotifier
     def self.enabled?
-      SiteSetting.disteleplus_enabled && SiteSetting.disteleplus_forum_post_notifications_enabled
+      DiscourseDisteleplus.enabled? && SiteSetting.disteleplus_forum_post_notifications_enabled
     end
 
     def self.eligible?(post)

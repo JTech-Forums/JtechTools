@@ -201,7 +201,7 @@ module DiscourseDumbcourse
     end
 
     def ensure_enabled
-      raise Discourse::NotFound unless SiteSetting.dumbcourse_enabled
+      raise Discourse::NotFound unless DiscourseDumbcourse.enabled?
     end
 
     def authenticated?

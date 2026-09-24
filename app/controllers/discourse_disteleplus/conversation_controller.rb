@@ -225,7 +225,7 @@ module DiscourseDisteleplus
     private
 
     def ensure_enabled
-      raise Discourse::NotFound unless SiteSetting.disteleplus_enabled
+      raise Discourse::NotFound unless DiscourseDisteleplus.enabled?
     end
 
     def ensure_allowed

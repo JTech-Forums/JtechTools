@@ -26,6 +26,14 @@ register_svg_icon "certificate"
 register_svg_icon "eye"
 
 module ::DiscourseModCategories
+  # Module switch AND the bundle master (jtech_enabled). Discourse's own
+  # plugin gate stops event hooks, serializers and assets when the master is
+  # off, but not the core-class patches or scheduled jobs, so every read of
+  # this module's switch goes through here.
+  def self.enabled?
+    SiteSetting.jtech_enabled && SiteSetting.mod_categories_enabled
+  end
+
   # Custom-field keys for the moderator-set messages.
   TOPIC_FOOTER_FIELD = "mod_topic_footer_message"
   TOPIC_REPLY_PROMPT_FIELD = "mod_topic_reply_prompt"
@@ -104,7 +112,7 @@ module ::DiscourseModCategories
   # trust-level cap). A user owing several is shown the highest-priority one.
   def self.owed_checklist_for(user, topic_id: nil)
     return nil unless user
-    return nil unless SiteSetting.mod_categories_enabled
+    return nil unless DiscourseModCategories.enabled?
 
     # --- Targeted checklists (override trust level and moderator status) ---
     # Admins are exempt: a moderator-authored targeted checklist must never
@@ -331,7 +339,7 @@ after_initialize do
       next unless read
       next unless notification_type == ::Notification.types[:custom]
       next if data.to_s.exclude?('"mod_note":true')
-      next unless SiteSetting.mod_categories_enabled && SiteSetting.mod_notes_feed_enabled
+      next unless DiscourseModCategories.enabled? && SiteSetting.mod_notes_feed_enabled
       user = ::User.find_by(id: user_id)
       user&.publish_notifications_state
     end
@@ -395,29 +403,27 @@ after_initialize do
     :topic_view,
     :mod_topic_footer_message,
     include_condition: -> do
-      SiteSetting.mod_categories_enabled && SiteSetting.topic_footer_message_enabled
+      DiscourseModCategories.enabled? && SiteSetting.topic_footer_message_enabled
     end,
   ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_FOOTER_FIELD] }
   add_to_serializer(
     :topic_view,
     :mod_topic_reply_prompt,
     include_condition: -> do
-      SiteSetting.mod_categories_enabled && SiteSetting.topic_reply_prompt_enabled
+      DiscourseModCategories.enabled? && SiteSetting.topic_reply_prompt_enabled
     end,
   ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD] }
   add_to_serializer(
     :topic_view,
     :mod_topic_reply_prompt_max_tl,
     include_condition: -> do
-      SiteSetting.mod_categories_enabled && SiteSetting.topic_reply_prompt_enabled
+      DiscourseModCategories.enabled? && SiteSetting.topic_reply_prompt_enabled
     end,
   ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_REPLY_PROMPT_TL_FIELD] }
   add_to_serializer(
     :topic_view,
     :mod_topic_pinned_post_id,
-    include_condition: -> do
-      SiteSetting.mod_categories_enabled && SiteSetting.mod_pin_post_enabled
-    end,
+    include_condition: -> { DiscourseModCategories.enabled? && SiteSetting.mod_pin_post_enabled },
   ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_PINNED_POST_FIELD] }
   # The pinned post's render data, attached to the topic so the bottom-copy
   # connector renders without needing the post to be in the currently-loaded
@@ -426,15 +432,13 @@ after_initialize do
   add_to_serializer(
     :topic_view,
     :mod_topic_pinned_post,
-    include_condition: -> do
-      SiteSetting.mod_categories_enabled && SiteSetting.mod_pin_post_enabled
-    end,
+    include_condition: -> { DiscourseModCategories.enabled? && SiteSetting.mod_pin_post_enabled },
   ) { DiscourseModCategories.serialized_pinned_post(object.topic) }
   add_to_serializer(
     :topic_view,
     :mod_topic_require_reply_approval,
     include_condition: -> do
-      SiteSetting.mod_categories_enabled && SiteSetting.mod_topic_require_reply_approval_enabled
+      DiscourseModCategories.enabled? && SiteSetting.mod_topic_require_reply_approval_enabled
     end,
   ) { !!object.topic.custom_fields[DiscourseModCategories::TOPIC_REQUIRE_REPLY_APPROVAL_FIELD] }
 
@@ -445,7 +449,7 @@ after_initialize do
     :topic_view,
     :mod_topic_prompt_checklist,
     include_condition: -> do
-      SiteSetting.mod_categories_enabled && SiteSetting.mod_topic_prompt_checklist_enabled
+      DiscourseModCategories.enabled? && SiteSetting.mod_topic_prompt_checklist_enabled
     end,
   ) do
     raw = object.topic.custom_fields[DiscourseModCategories::TOPIC_PROMPT_CHECKLIST_FIELD]
@@ -487,7 +491,7 @@ after_initialize do
     :topic_view,
     :mod_topic_private_note,
     include_condition: -> do
-      scope.is_staff? && SiteSetting.mod_categories_enabled &&
+      scope.is_staff? && DiscourseModCategories.enabled? &&
         SiteSetting.mod_topic_private_notes_enabled
     end,
   ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_PRIVATE_NOTE_FIELD] }
@@ -495,7 +499,7 @@ after_initialize do
     :topic_view,
     :mod_topic_private_note_position,
     include_condition: -> do
-      scope.is_staff? && SiteSetting.mod_categories_enabled &&
+      scope.is_staff? && DiscourseModCategories.enabled? &&
         SiteSetting.mod_topic_private_notes_enabled
     end,
   ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_PRIVATE_NOTE_POSITION_FIELD] }
@@ -504,7 +508,7 @@ after_initialize do
     :topic_view,
     :mod_topic_private_note_author,
     include_condition: -> do
-      scope.is_staff? && SiteSetting.mod_categories_enabled &&
+      scope.is_staff? && DiscourseModCategories.enabled? &&
         SiteSetting.mod_topic_private_notes_enabled
     end,
   ) do
@@ -516,7 +520,7 @@ after_initialize do
     :topic_view,
     :mod_topic_private_note_created_at,
     include_condition: -> do
-      scope.is_staff? && SiteSetting.mod_categories_enabled &&
+      scope.is_staff? && DiscourseModCategories.enabled? &&
         SiteSetting.mod_topic_private_notes_enabled
     end,
   ) { object.topic.custom_fields[DiscourseModCategories::TOPIC_PRIVATE_NOTE_CREATED_AT_FIELD] }
@@ -525,7 +529,7 @@ after_initialize do
     :topic_view,
     :mod_topic_private_note_replies,
     include_condition: -> do
-      scope.is_staff? && SiteSetting.mod_categories_enabled &&
+      scope.is_staff? && DiscourseModCategories.enabled? &&
         SiteSetting.mod_topic_private_notes_enabled
     end,
   ) do
@@ -555,7 +559,7 @@ after_initialize do
     :topic_view,
     :mod_topic_note_viewers,
     include_condition: -> do
-      scope.is_staff? && SiteSetting.mod_categories_enabled &&
+      scope.is_staff? && DiscourseModCategories.enabled? &&
         SiteSetting.mod_note_view_tracking_enabled
     end,
   ) do
@@ -578,9 +582,7 @@ after_initialize do
   add_to_serializer(
     :current_user,
     :mod_note_unread_count,
-    include_condition: -> do
-      SiteSetting.mod_categories_enabled && SiteSetting.mod_notes_feed_enabled
-    end,
+    include_condition: -> { DiscourseModCategories.enabled? && SiteSetting.mod_notes_feed_enabled },
   ) do
     next 0 unless object.staff?
 
@@ -607,7 +609,7 @@ after_initialize do
   # are routed to the review queue instead of being published directly.
   # This is the per-topic analogue of a category's require_reply_approval.
   NewPostManager.add_handler do |manager|
-    next nil unless SiteSetting.mod_categories_enabled
+    next nil unless DiscourseModCategories.enabled?
     next nil unless SiteSetting.mod_topic_require_reply_approval_enabled
     topic_id = manager.args[:topic_id]
     next nil if topic_id.blank?
@@ -639,7 +641,7 @@ after_initialize do
     :basic_category,
     :mod_category_new_topic_prompt,
     include_condition: -> do
-      SiteSetting.mod_categories_enabled && SiteSetting.precheck_new_topic_enabled
+      DiscourseModCategories.enabled? && SiteSetting.precheck_new_topic_enabled
     end,
   ) { object.custom_fields[DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_FIELD] }
 
@@ -1072,7 +1074,7 @@ after_initialize do
     :basic_category,
     :mod_category_new_topic_prompt_max_tl,
     include_condition: -> do
-      SiteSetting.mod_categories_enabled && SiteSetting.precheck_new_topic_enabled
+      DiscourseModCategories.enabled? && SiteSetting.precheck_new_topic_enabled
     end,
   ) { object.custom_fields[DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD] }
 
@@ -1151,7 +1153,7 @@ after_initialize do
   # system user so automated cleanups (spam, expiry, plugin sweeps)
   # don't spam every staff member's bell.
   on(:post_destroyed) do |post, opts, user|
-    next unless SiteSetting.mod_categories_enabled
+    next unless DiscourseModCategories.enabled?
     next unless SiteSetting.mod_notify_staff_on_post_actions
     next if post.blank? || user.blank?
     next if post.user_id == user.id
@@ -1207,7 +1209,7 @@ after_initialize do
   # set, and the queued-post status update path in this Discourse
   # version doesn't reliably invoke after_update callbacks.
   on(:reviewable_transitioned_to) do |status, reviewable|
-    next unless SiteSetting.mod_categories_enabled
+    next unless DiscourseModCategories.enabled?
     next if reviewable.blank?
     # Only queued-post reviewables — flag/user reviewables transition
     # through this event too but have their own notification chain.
@@ -1302,7 +1304,7 @@ after_initialize do
             note = add_note_without_mod_categories_notify(*args, **kwargs)
 
             begin
-              if SiteSetting.mod_categories_enabled && SiteSetting.mod_notify_staff_on_user_notes
+              if DiscourseModCategories.enabled? && SiteSetting.mod_notify_staff_on_user_notes
                 user = args[0]
                 raw = args[1]
                 created_by_id = args[2]
@@ -1347,7 +1349,7 @@ after_initialize do
   reloadable_patch do
     if defined?(::ReviewableNote)
       ::ReviewableNote.after_create do
-        next unless SiteSetting.mod_categories_enabled
+        next unless DiscourseModCategories.enabled?
         next unless SiteSetting.mod_notify_staff_on_flag_notes
 
         author = ::User.find_by(id: user_id)
