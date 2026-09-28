@@ -15,7 +15,7 @@ on:
 jobs:
   screenshots:
     name: comprehensive_screenshots
-    runs-on: [self-hosted, linux, x64, debiantripleu-ci]
+    runs-on: debiantripleu-ci
     container: discourse/discourse_test:slim-browsers
     timeout-minutes: 120
 
