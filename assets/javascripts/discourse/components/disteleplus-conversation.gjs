@@ -286,7 +286,7 @@ export default class DisteleplusConversation extends Component {
       return false;
     }
     this.enhance(this.timeline);
-    divider.scrollIntoView({ block: "start" });
+    divider.scrollIntoView({ block: "start", behavior: "instant" });
     this.showJump = !this.nearBottom;
     return true;
   }
@@ -301,7 +301,7 @@ export default class DisteleplusConversation extends Component {
     }
     this.cancelOpenPin?.();
     const observer = new ResizeObserver(() => {
-      el.scrollTop = el.scrollHeight;
+      this.setScrollTop(el, el.scrollHeight);
     });
     const cancel = () => {
       observer.disconnect();
@@ -323,6 +323,16 @@ export default class DisteleplusConversation extends Component {
     if (match) {
       this.jumpToId(Number(match[1]));
     }
+  }
+
+  // The timeline sets `scroll-behavior: smooth`, so assigning scrollTop
+  // animates: the scroll starts at the top and fires scroll events all the
+  // way down. onScroll's load-older check (scrollTop <= 100) trips on the
+  // way past, and its restore then overrides the in-flight animation and
+  // parks the reader at the top of the batch it just paged in. Every
+  // programmatic scroll therefore has to be instant.
+  setScrollTop(element, top) {
+    element.scrollTo({ top, behavior: "instant" });
   }
 
   // Scroll to and highlight a message by id, fetching a window around it
@@ -902,7 +912,7 @@ export default class DisteleplusConversation extends Component {
     const older = await this.disteleplus.loadOlder();
     if (older.length) {
       requestAnimationFrame(() => {
-        element.scrollTop = element.scrollHeight - oldHeight;
+        this.setScrollTop(element, element.scrollHeight - oldHeight);
         this.enhance(element);
       });
     }
@@ -915,7 +925,7 @@ export default class DisteleplusConversation extends Component {
       await new Promise((resolve) => requestAnimationFrame(resolve));
     }
     if (this.timeline) {
-      this.timeline.scrollTop = this.timeline.scrollHeight;
+      this.setScrollTop(this.timeline, this.timeline.scrollHeight);
       this.newBelow = 0;
       this.showJump = false;
       this.disteleplus.markRead();
