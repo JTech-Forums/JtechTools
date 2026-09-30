@@ -277,18 +277,17 @@ RSpec.describe "Feature screenshots" do
   end
 
   # ──────────────────────────────────────────────────────────────────────
-  # Audience-aware whisper bumping on /latest. Two paired scenarios that
-  # prove the same topic appears in different positions depending on
-  # whether the viewer is in the whisper's audience.
+  # Legacy whisper bumps on /latest: a topic bumped by a whisper before
+  # whispers stopped bumping is sorted by its last public post for every
+  # non-staff viewer, audience or not.
   # ──────────────────────────────────────────────────────────────────────
 
   def seed_audience_aware_bump_scenario
     # Two topics seeded with a clear baseline ordering:
     #   public_topic   bumped 30 min ago (older)
     #   whisper_topic  bumped 5 min ago (newer) — by a whisper visible to audience_user only
-    # The whisper-bump fix should:
-    #   * Keep whisper_topic at top for audience_user (and staff).
-    #   * Demote whisper_topic below public_topic for stranger.
+    # Non-staff viewers (audience_user and stranger alike) should see
+    # public_topic above whisper_topic.
     public_topic = Fabricate(:topic, category: category, title: "Public conversation")
     Fabricate(:post, topic: public_topic, user: author, raw: "Newest *public* post in the list.")
     ::Topic.where(id: public_topic.id).update_all(
@@ -334,19 +333,20 @@ RSpec.describe "Feature screenshots" do
     [whisper_topic, public_topic]
   end
 
-  it "13. captures /latest for an AUDIENCE member — whispered topic at the top" do
-    whisper_topic, _public_topic = seed_audience_aware_bump_scenario
+  # Whispers never bump a topic for anyone but staff, the whisper's own
+  # audience included: a legacy whisper bump is sorted by the last public
+  # post, so the audience member sees the same order as everyone else.
+  it "13. captures /latest for an AUDIENCE member — whisper bump ignored" do
+    _whisper_topic, public_topic = seed_audience_aware_bump_scenario
 
     sign_in(audience_user)
     visit("/latest")
     expect(page).to have_css(".topic-list-item", minimum: 2, wait: 15)
-    # The whispered topic should be the first item — proves the audience
-    # member still sees the whisper-bump.
     expect(page).to have_css(
-      ".topic-list-item:first-of-type a.title[href*='#{whisper_topic.slug}']",
+      ".topic-list-item:first-of-type a.title[href*='#{public_topic.slug}']",
       wait: 5,
     )
-    shot("13_latest_audience_user_sees_whisper_at_top")
+    shot("13_latest_audience_user_sees_public_topic_first")
   end
 
   it "14. captures /latest for a NON-AUDIENCE viewer — whispered topic demoted" do
