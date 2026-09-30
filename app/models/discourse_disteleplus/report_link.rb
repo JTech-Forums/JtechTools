@@ -20,15 +20,15 @@ end
 # Table name: disteleplus_report_links
 #
 #  id                  :bigint           not null, primary key
-#  reviewable_id       :bigint           not null
-#  telegram_chat_id    :bigint           not null
-#  telegram_message_id :bigint           not null
 #  status              :integer          default("open"), not null
 #  created_at          :datetime         not null
 #  updated_at          :datetime         not null
+#  reviewable_id       :bigint           not null
+#  telegram_chat_id    :bigint           not null
+#  telegram_message_id :bigint           not null
 #
 # Indexes
 #
-#  index_disteleplus_report_links_on_reviewable_id  (reviewable_id) UNIQUE
 #  idx_disteleplus_report_links_tg                  (telegram_chat_id,telegram_message_id) UNIQUE
+#  index_disteleplus_report_links_on_reviewable_id  (reviewable_id) UNIQUE
 #
