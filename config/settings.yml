@@ -636,6 +636,7 @@ jtech_popup_notifications:
       - note
       - chat_mentioned
       - chat_message
+      - reqpm
       - generic
     depends_on:
       - "popup_notifications_enabled"
@@ -1240,3 +1241,92 @@ jtech_username_avatar:
   discourse_username_avatar_enabled:
     default: true
     client: false
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — REQ-PM (request / send contact details instead of private messages)
+# ───────────────────────────────────────────────────────────────────────────
+jtech_reqpm:
+  # Master switch. Read at page boot (button, header icon, prompt), hence
+  # refresh: true.
+  reqpm_enabled:
+    default: true
+    client: true
+    refresh: true
+
+  # Who can use it. Default trust_level_0 = every signed-in member. Staged,
+  # suspended, silenced and anonymous-mode accounts are always excluded.
+  reqpm_allowed_groups:
+    default: "10"
+    client: false
+    type: group_list
+    allow_any: false
+    refresh: true
+    depends_on:
+      - "reqpm_enabled"
+
+  # The "add your contact details" prompt for anyone who has none yet —
+  # new signups and existing members alike.
+  reqpm_setup_prompt:
+    default: gentle
+    client: false
+    type: enum
+    enum: "ReqpmSetupPromptSiteSetting"
+    depends_on:
+      - "reqpm_enabled"
+  reqpm_setup_snooze_days:
+    default: 7
+    client: false
+    min: 1
+    max: 365
+    depends_on:
+      - "reqpm_enabled"
+    depends_on_values:
+      reqpm_setup_prompt:
+        - "gentle"
+
+  # Where the entry points show.
+  reqpm_header_icon:
+    default: true
+    client: true
+    refresh: true
+    depends_on:
+      - "reqpm_enabled"
+
+  # Card size.
+  reqpm_max_methods:
+    default: 10
+    client: false
+    min: 1
+    max: 25
+    depends_on:
+      - "reqpm_enabled"
+
+  # Abuse limits. Staff get no exemption.
+  reqpm_max_requests_per_day:
+    default: 10
+    client: false
+    min: 1
+    max: 200
+    depends_on:
+      - "reqpm_enabled"
+  reqpm_max_shares_per_day:
+    default: 20
+    client: false
+    min: 1
+    max: 200
+    depends_on:
+      - "reqpm_enabled"
+  reqpm_request_cooldown_days:
+    default: 3
+    client: false
+    min: 0
+    max: 90
+    depends_on:
+      - "reqpm_enabled"
+  reqpm_request_expiry_days:
+    default: 30
+    client: false
+    min: 1
+    max: 365
+    depends_on:
+      - "reqpm_enabled"

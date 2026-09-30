@@ -146,6 +146,189 @@ en:
         download: Download
         fullscreen: Full screen
         unavailable: This audio could not be loaded.
+    reqpm:
+      title: REQ-PM
+      button:
+        label: REQ-PM
+        title: Request or send contact details
+      header:
+        title: REQ-PM — contact details
+        title_with_count: "REQ-PM — %{count} waiting for you"
+      sidebar:
+        text: REQ-PM
+        title: Request and exchange contact details
+      notifications:
+        request: wants your contact details
+        shared: sent you their contact details
+      actions:
+        call: Call
+        text: Text
+        chat: Chat
+        email: Email
+        visit: Visit
+        open: Open
+      kinds:
+        phone:
+          field: Number
+          name: Phone
+          short: Phone
+          placeholder: "+1 718 555 0100"
+          hint: Include the country code if people outside your country may call.
+        sms:
+          field: Number
+          name: Text message
+          short: Text
+          placeholder: "+1 718 555 0100"
+          hint: The number people can text.
+        whatsapp:
+          field: WhatsApp number
+          name: WhatsApp
+          short: WhatsApp
+          placeholder: "+972 52 123 4567"
+          hint: Your WhatsApp number with the country code, so the Chat button works.
+        email:
+          field: Address
+          name: Email
+          short: Email
+          placeholder: you@example.com
+          hint: An address you check.
+        website:
+          field: Link
+          name: Website
+          short: Website
+          placeholder: example.com
+          hint: Only http and https links are allowed.
+        telegram:
+          field: Username or number
+          name: Telegram
+          short: Telegram
+          placeholder: "@username"
+          hint: Your Telegram username or number.
+        signal:
+          field: Number or username
+          name: Signal
+          short: Signal
+          placeholder: "+1 718 555 0100 or name.01"
+          hint: Your Signal number or username.
+        discord:
+          field: Username
+          name: Discord
+          short: Discord
+          placeholder: username
+          hint: Your Discord username.
+        custom:
+          field: Details
+          name: Something else
+          short: Other
+          placeholder: How people can reach you
+          hint: Give it a name and an emoji — e.g. 🏢 Office, 📟 Pager, 🎙️ Zello.
+      contact_list:
+        copy: Copy
+        copied: Copied
+      form:
+        emoji: Emoji
+        label: Name
+        label_placeholder: e.g. Office line
+        value: Details
+        note: Note
+        optional: (optional)
+        note_placeholder: e.g. Evenings only, no calls on Shabbos
+        share_by_default: Tick this one by default when I send my details
+        add: Add
+        save: Save
+        cancel: Cancel
+      errors:
+        generic: Something went wrong. Please try again.
+      editor:
+        empty: You haven't added any way to reach you yet.
+        pick_title: How can people reach you?
+        add_first: Add a way to reach you
+        add_another: Add another
+        limit_reached: "You've reached the limit of %{max} contact methods."
+        default_pill: default
+        default_title: Ticked by default when you send your details
+        unreadable: This couldn't be read after a server move — please edit it and enter it again.
+        move_up: Move up
+        move_down: Move down
+        edit: Edit
+        delete: Remove
+        delete_confirm: "Remove %{name} from your card? Anyone you sent it to will no longer see it."
+      user_modal:
+        title: "REQ-PM with %{username}"
+        their_details: "%{username}'s details"
+        nothing_yet: "%{username} hasn't sent you any contact details yet."
+        forget: Remove from my contacts
+        forget_confirm: "Remove %{username}'s details from your contacts? You'd need to ask again to get them back."
+        what_would_you_like: What would you like? (optional — they decide what to send)
+        request: "Request %{username}'s contact details"
+        request_sent: "Request sent. %{username} will be notified and can choose what to send you."
+        pending: "You asked on %{date}. It's up to %{username} whether to answer."
+        withdraw: Withdraw request
+        cooldown: "You asked recently. You can ask again on %{date}."
+        unavailable: "%{username} can't be asked for contact details right now."
+        they_asked: "%{username} asked for your contact details"
+        they_would_like: "They'd like: %{kinds}"
+        they_asked_hint: Tick what you're happy to send below — or say no thanks. They won't be told either way.
+        no_thanks: No thanks
+        declined: Request dismissed. They won't be told.
+        your_details: Your details
+        pick_hint: "Tick what %{username} may see. You can change this or stop sharing any time."
+        send: Send selected
+        update_share: Update what they see
+        shared: "Sent. %{username} can now see what you ticked."
+        stop_sharing: Stop sharing
+        stop_confirm: "Stop sharing your contact details with %{username}? They won't be told."
+        stopped: "%{username} can no longer see your details."
+        edit_card: Edit my card
+        no_methods: "Add a way to reach you first — then choose what %{username} can see."
+        cannot_share: "You can't send contact details to %{username} right now."
+        close: Close
+      setup:
+        title: Add a way for members to reach you
+        lead: This forum doesn't have private messages. Instead, members exchange contact details with REQ-PM.
+        point_ask: Anyone can ask for your details — you decide whether to answer.
+        point_choose: You choose exactly which details each person gets, and can take them back.
+        point_private: Your details are encrypted, never shown publicly, and staff can't view them on the forum.
+        done: All set
+        later: Remind me later
+        never: I'd rather not
+        required_note: Add at least one way to reach you to continue.
+        log_out: Log out
+      hub:
+        subtitle: Exchange contact details with other members — you always choose what to send.
+        tabs:
+          requests: Requests
+          contacts: Contacts
+          card: My card
+          shared: Shared with
+        incoming_title: Waiting for your answer
+        wants_yours: wants your contact details
+        choose_what_to_send: Choose what to send
+        no_incoming: No one is waiting for you.
+        outgoing_title: Your requests
+        state:
+          waiting: Waiting
+          answered: Answered
+          expired: Expired
+        open: Open
+        no_outgoing: You haven't asked anyone yet.
+        how_to_request: To ask someone, click their avatar or name anywhere on the forum and press REQ-PM.
+        filter: Filter by name…
+        shared: shared
+        send_yours: Send yours
+        no_match: No one matches that.
+        no_contacts: No one has sent you their details yet.
+        my_card_title: Ways to reach you
+        privacy_title: How REQ-PM keeps you safe
+        privacy_you_choose: Nobody sees anything until you send it to them, and they only see what you ticked.
+        privacy_encrypted: Your details are encrypted in the forum's database.
+        privacy_staff: Staff can't see them — there's no admin screen for them, and REQ-PM refuses API keys and admins impersonating you.
+        privacy_revoke: You can take back what you sent at any time.
+        allow_requests: Let members request my contact details
+        allow_requests_hint: When off, nobody can send you a request. You can still send your details to people yourself.
+        shared_intro: These members can see some of your details. Change what they see or stop sharing any time.
+        change: Change
+        no_shared: You haven't sent your details to anyone yet.
     jtech_popup_notifications:
       someone: Someone
       # Second half of the toast heading line, "Name — <action>".
@@ -169,6 +352,7 @@ en:
         chat_mentioned: Mentioned you in chat
         chat_message: Sent a chat message
         poll_closed: Your poll closed
+        reqpm: Contact details (REQ-PM)
         # NB: this key must never be "one" or "other" — Discourse's i18n
         # linter would then treat the whole action map as a pluralized
         # string and reject the other keys.
@@ -473,6 +657,7 @@ en:
           popups: Pop-ups
           disteleplus: Disteleplus
           username_avatar: Username avatar
+          reqpm: REQ-PM
           all_settings: All settings
   admin_js:
     admin:
@@ -531,7 +716,13 @@ en:
           jtech_mod_topic_tools: "Jtech — Mod: Topic tools"
           jtech_mod_checklists: "Jtech — Mod: Checklists"
           jtech_username_avatar: Jtech — Username avatar
+          jtech_reqpm: Jtech — REQ-PM
         # Dropdown labels for the plugin's translatable enum settings.
+        reqpm:
+          setup_prompt:
+            "off": "Off — never ask"
+            gentle: Gentle — ask nicely, can be snoozed or turned down
+            required: Required — ask on every page until they add one
         dumbcourse:
           view:
             latest: Latest

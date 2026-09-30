@@ -885,6 +885,38 @@ en:
       from a user's username instead of their email address. Users with a
       manually uploaded custom avatar are unaffected.
 
+    # ── Jtech — REQ-PM ─────────────────────────────────────────────────────
+    reqpm_enabled: REQ-PM lets members exchange contact details (phone, text,
+      WhatsApp, email, website, or their own custom ones) instead of private
+      messages. Members request each other's details or send their own, and
+      choose exactly which ones to send. There is no free text, details are
+      encrypted in the database, and staff cannot view them — not in the UI,
+      through the API, or by impersonating.
+    reqpm_allowed_groups: Groups that can use REQ-PM (send, request and
+      receive). Staged, suspended, silenced and anonymous-mode accounts are
+      always left out. Default trust_level_0 is every signed-in member; use
+      trust_level_1 to keep brand-new accounts out.
+    reqpm_setup_prompt: 'How strongly members without any contact details are
+      asked to add some — new signups and existing members alike. "Gentle"
+      shows a friendly window they can snooze or turn down for good.
+      "Required" brings it back on every page until they add at least one
+      way to reach them, like a missing required profile field.'
+    reqpm_setup_snooze_days: How long "Remind me later" hides the setup
+      window for.
+    reqpm_header_icon: Show the REQ-PM icon in the header (with a badge for
+      unanswered requests). The button on user cards and profiles, and the
+      REQ-PM page, are always available.
+    reqpm_max_methods: Most contact methods one member can keep on their card.
+    reqpm_max_requests_per_day: Most contact requests one member can send in
+      24 hours. Applies to staff too.
+    reqpm_max_shares_per_day: Most times one member can send their details
+      (to anyone) in 24 hours. Applies to staff too.
+    reqpm_request_cooldown_days: After asking someone, how many days before
+      the same member can ask that person again — whatever the answer was.
+      0 turns the cooldown off.
+    reqpm_request_expiry_days: Unanswered requests close after this many
+      days.
+
     placeholder:
       discourse_another_email_smtp_address: smtp.example.com
       discourse_another_email_smtp_username: username@example.com
@@ -921,6 +953,8 @@ en:
       disteleplus_reports_admin_notices: what's new|dashboard|problems|warnings
       disteleplus_auto_match_usernames: identity|impersonate|spoof|security
       discourse_username_avatar_enabled: avatar|gravatar|username|letter avatar
+      reqpm_enabled: reqpm|req-pm|contact|phone|whatsapp|private message|pm|dm
+      reqpm_setup_prompt: reqpm|onboarding|required field|contact card
 
     errors:
       translator_tweaks_invalid_worker_url: must be a full https:// URL with
@@ -938,3 +972,36 @@ en:
     post_rejected_notification_alert: '%{username} rejected a queued post'
     user_note_notification_alert: '%{username} added a note on %{target}'
     flag_note_notification_alert: '%{username} added a note on a flag for %{target}'
+
+  reqpm:
+    notifications:
+      request: "wants your contact details — choose what to send"
+      shared: "sent you their contact details"
+    errors:
+      not_allowed: "REQ-PM isn't available for your account."
+      own_session_only: "REQ-PM only works from your own signed-in session."
+      self: "That's you!"
+      unavailable: "You can't exchange contact details with this member right now."
+      pending: "You already asked this member. They'll get back to you if they want to."
+      cooldown: "You asked this member recently. You can ask again on %{date}."
+      not_found: "That isn't there any more."
+      nothing_selected: "Pick at least one way to be reached."
+      invalid_methods: "Some of those contact methods no longer exist. Reload and try again."
+      unreadable: "One of those contact methods needs to be re-entered before you can send it."
+      too_many_methods: "You can keep up to %{max} contact methods."
+      invalid_field: "%{problem}"
+      fields:
+        kind: Contact type
+        value: Contact detail
+        label: Name
+        emoji: Emoji
+        note: Note
+      problems:
+        unknown: "%{field} isn't one we know."
+        blank: "%{field} can't be empty."
+        too_long: "%{field} is too long."
+        invalid_characters: "%{field} contains characters that aren't allowed."
+        phone: "That doesn't look like a phone number (5–15 digits, may start with +)."
+        email: "That doesn't look like an email address."
+        url: "That doesn't look like a web address (http or https)."
+        handle: "That doesn't look like a username (letters, numbers, . _ -)."

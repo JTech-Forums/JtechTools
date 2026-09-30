@@ -54,6 +54,10 @@ const LINKS = [
     route: "adminPlugins.show.jtech-tools-username-avatar",
   },
   {
+    label: "jtech_tools.admin.tabs.reqpm",
+    route: "adminPlugins.show.jtech-tools-reqpm",
+  },
+  {
     label: "jtech_tools.admin.tabs.all_settings",
     route: "adminPlugins.show.settings",
   },

@@ -84,6 +84,41 @@ Discourse::Application.routes.append do
   get "/disteleplus" => "discourse_disteleplus/conversation#page"
 end
 
+# ── REQ-PM (contact exchange) ─────────────────────────────────────────────
+Discourse::Application.routes.append do
+  scope "/jtech-reqpm", module: "discourse_reqpm", as: :reqpm, defaults: { format: :json } do
+    get "/card" => "card#show"
+    post "/card/methods" => "card#create"
+    put "/card/methods/order" => "card#reorder"
+    put "/card/methods/:id" => "card#update"
+    delete "/card/methods/:id" => "card#destroy"
+    put "/card/preferences" => "card#preferences"
+    post "/card/setup/snooze" => "card#snooze_setup"
+    post "/card/setup/decline" => "card#decline_setup"
+
+    get "/inbox" => "exchange#inbox"
+    get "/users/:username" => "exchange#relationship",
+        :constraints => {
+          username: RouteFormat.username,
+        }
+    post "/requests" => "exchange#create_request"
+    post "/requests/:id/decline" => "exchange#decline_request"
+    delete "/requests/:id" => "exchange#cancel_request"
+    post "/shares" => "exchange#share"
+    delete "/shares/:username" => "exchange#revoke",
+           :constraints => {
+             username: RouteFormat.username,
+           }
+    delete "/received/:username" => "exchange#forget",
+           :constraints => {
+             username: RouteFormat.username,
+           }
+  end
+
+  # Ember entry point (hard loads and links from notifications).
+  get "/reqpm" => "discourse_reqpm/card#page"
+end
+
 # ── Jtech admin maintenance actions (buttons on the plugin tabs) ───────────
 Discourse::Application.routes.append do
   post "/admin/plugins/jtech-tools/actions/:id" => "jtech/admin_actions#run",

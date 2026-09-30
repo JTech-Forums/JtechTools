@@ -12,6 +12,7 @@ RSpec.describe "Jtech master switch" do
     "DiscourseModCategories" => :mod_categories_enabled,
     "DiscourseDisteleplus" => :disteleplus_enabled,
     "DiscourseDumbcourse" => :dumbcourse_enabled,
+    "DiscourseReqpm" => :reqpm_enabled,
   }.each do |mod_name, setting|
     describe "#{mod_name}.enabled?" do
       let(:mod) { mod_name.constantize }

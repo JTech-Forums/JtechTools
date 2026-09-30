@@ -19,5 +19,6 @@ export default {
     this.route("jtech-tools-popups", { path: "popups" });
     this.route("jtech-tools-disteleplus", { path: "disteleplus" });
     this.route("jtech-tools-username-avatar", { path: "username-avatar" });
+    this.route("jtech-tools-reqpm", { path: "reqpm" });
   },
 };
