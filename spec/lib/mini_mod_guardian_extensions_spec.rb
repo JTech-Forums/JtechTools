@@ -58,8 +58,9 @@ RSpec.describe DiscourseMiniMod::GuardianExtensions do
   end
 
   describe "#can_delete_category?" do
-    it "allows category group moderators to delete their moderated category" do
-      expect(Guardian.new(user).can_delete_category?(category)).to eq(true)
+    it "never lets category group moderators delete categories" do
+      expect(Guardian.new(user).can_edit_category?(category)).to eq(true)
+      expect(Guardian.new(user).can_delete_category?(category)).to eq(false)
     end
 
     it "does not allow deleting categories with topics" do
@@ -102,9 +103,9 @@ RSpec.describe DiscourseMiniMod::GuardianExtensions do
       expect(Guardian.new(user).can_edit_category?(other_category)).to eq(true)
     end
 
-    it "allows deleting any empty category" do
+    it "still never allows deleting categories" do
       other_category = Fabricate(:category)
-      expect(Guardian.new(user).can_delete_category?(other_category)).to eq(true)
+      expect(Guardian.new(user).can_delete_category?(other_category)).to eq(false)
     end
 
     it "allows editing serialized categories the user does not moderate" do
@@ -147,9 +148,13 @@ RSpec.describe DiscourseMiniMod::GuardianExtensions do
     context "with mini_mod_manage_all_categories enabled" do
       before { SiteSetting.mini_mod_manage_all_categories = true }
 
-      it "allows moving topics to any visible category" do
+      it "allows moving topics past topic approval in any category they could post in" do
+        poster = Fabricate(:user, refresh_auto_groups: true)
+        group.add(poster)
         other_category = Fabricate(:category)
-        expect(Guardian.new(user).can_move_topic_to_category?(other_category)).to eq(true)
+        other_category.require_topic_approval = true
+        other_category.save!
+        expect(Guardian.new(poster).can_move_topic_to_category?(other_category)).to eq(true)
       end
 
       it "does not allow moving to a category the user cannot see" do

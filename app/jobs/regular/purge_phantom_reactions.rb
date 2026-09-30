@@ -1,108 +1,56 @@
 # frozen_string_literal: true
 
 module Jobs
+  # Applies the current Dislike settings to likes that already exist in the
+  # restricted categories (the hooks only see likes made from now on).
   class PurgePhantomReactions < ::Jobs::Base
     def execute(_args)
       restricted = DiscourseNoLikes.restricted_category_ids
       return if restricted.empty?
 
-      like_type = PostActionType.types[:like]
-      restricted_str = restricted.map(&:to_i).join(",")
+      args = { category_ids: restricted, like_type: PostActionType::LIKE_POST_ACTION_ID }
 
-      # 1. Back-fill the audit table with any existing phantom likes not yet
-      # recorded — only when the site wants the audit trail at all. The
-      # ON CONFLICT target is the unique (post_id, user_id, reaction_type)
-      # index; without naming it the insert would duplicate the whole table
-      # on every run.
-      DB.exec(<<~SQL) if SiteSetting.dislike_record_audit_trail
-          INSERT INTO discourse_no_likes_phantoms
-                      (post_id, user_id, category_id, reaction_type, created_at, updated_at)
-          SELECT  pa.post_id, pa.user_id, t.category_id, 'like', NOW(), NOW()
-            FROM  post_actions pa
-            JOIN  posts  p ON p.id = pa.post_id AND p.deleted_at IS NULL
-            JOIN  topics t ON t.id = p.topic_id AND t.deleted_at IS NULL
-           WHERE  pa.post_action_type_id = #{like_type}
-             AND  pa.deleted_at IS NULL
-             AND  t.category_id IN (#{restricted_str})
-          ON CONFLICT (post_id, user_id, reaction_type) DO NOTHING
+      # 1. Back-fill the audit table. The ON CONFLICT target is the unique
+      # (post_id, user_id, reaction_type) index, so re-running is harmless.
+      DB.exec(<<~SQL, args) if SiteSetting.dislike_record_audit_trail
+        INSERT INTO discourse_no_likes_phantoms
+                    (post_id, user_id, category_id, reaction_type, created_at, updated_at)
+        SELECT pa.post_id, pa.user_id, t.category_id, 'like', NOW(), NOW()
+          FROM post_actions pa
+          JOIN posts p ON p.id = pa.post_id AND p.deleted_at IS NULL
+          JOIN topics t ON t.id = p.topic_id AND t.deleted_at IS NULL
+         WHERE pa.post_action_type_id = :like_type
+           AND pa.deleted_at IS NULL
+           AND t.category_id IN (:category_ids)
+        ON CONFLICT (post_id, user_id, reaction_type) DO NOTHING
+      SQL
+
+      # 2. Hide what the author was already told and what activity streams
+      # already show.
+      if DiscourseNoLikes.hide_history?
+        DB.exec(<<~SQL, args.merge(action_types: [UserAction::LIKE, UserAction::WAS_LIKED]))
+          DELETE FROM user_actions ua
+           USING topics t
+           WHERE t.id = ua.target_topic_id
+             AND t.category_id IN (:category_ids)
+             AND ua.action_type IN (:action_types)
         SQL
 
-      # 2. Only recalculate stats if leaderboard counting is disabled
-      unless SiteSetting.dislike_count_in_leaderboard
-        affected_ids = DB.query_single(<<~SQL).uniq
-              SELECT DISTINCT u FROM (
-                SELECT p.user_id AS u
-                  FROM post_actions pa
-                  JOIN posts  p ON p.id = pa.post_id AND p.deleted_at IS NULL
-                  JOIN topics t ON t.id = p.topic_id AND t.deleted_at IS NULL
-                 WHERE pa.post_action_type_id = #{like_type}
-                   AND pa.deleted_at IS NULL
-                   AND t.category_id IN (#{restricted_str})
-                UNION ALL
-                SELECT pa.user_id AS u
-                  FROM post_actions pa
-                  JOIN posts  p ON p.id = pa.post_id AND p.deleted_at IS NULL
-                  JOIN topics t ON t.id = p.topic_id AND t.deleted_at IS NULL
-                 WHERE pa.post_action_type_id = #{like_type}
-                   AND pa.deleted_at IS NULL
-                   AND t.category_id IN (#{restricted_str})
-              ) sub
-            SQL
-
-        if affected_ids.any?
-          affected_ids.each do |uid|
-            likes_received =
-              DB
-                .query_single(
-                  DiscourseNoLikes::LIKES_RECEIVED_SQL %
-                    { uid: uid.to_i, like_type: like_type, restricted: restricted_str },
-                )
-                .first
-                .to_i
-
-            likes_given =
-              DB
-                .query_single(
-                  DiscourseNoLikes::LIKES_GIVEN_SQL %
-                    { uid: uid.to_i, like_type: like_type, restricted: restricted_str },
-                )
-                .first
-                .to_i
-
-            DB.exec(
-              "UPDATE user_stats SET likes_received = :lr, likes_given = :lg WHERE user_id = :uid",
-              lr: likes_received,
-              lg: likes_given,
-              uid: uid,
-            )
-          end
-
-          Rails.logger.info(
-            "DiscourseNoLikes: purge — recalculated stats for #{affected_ids.size} users",
-          )
-        end
+        notification_types = [Notification.types[:liked], Notification.types[:reaction]].compact
+        Notification
+          .joins(:topic)
+          .where(topics: { category_id: restricted })
+          .where(notification_type: notification_types)
+          .in_batches
+          .destroy_all
       end
 
-      # 3. Only delete UserAction history if history display is disabled
-      unless SiteSetting.dislike_show_in_history
-        DB.exec(<<~SQL)
-          DELETE FROM user_actions
-           WHERE action_type IN (#{UserAction::LIKE}, #{UserAction::WAS_LIKED})
-             AND target_post_id IN (
-               SELECT pa.post_id
-                 FROM post_actions pa
-                 JOIN posts  p ON p.id = pa.post_id AND p.deleted_at IS NULL
-                 JOIN topics t ON t.id = p.topic_id AND t.deleted_at IS NULL
-                WHERE pa.post_action_type_id = #{like_type}
-                  AND pa.deleted_at IS NULL
-                  AND t.category_id IN (#{restricted_str})
-             )
-        SQL
+      # 3. Rebuild likes given/received. The directory refresh reads
+      # user_actions (hence after step 2) and DiscourseNoLikes corrects it for
+      # the restricted categories, then copies the totals into user_stats.
+      DirectoryItem.refresh_period!(:all, force: true)
 
-        Rails.logger.info("DiscourseNoLikes: purge — cleared user_actions history")
-      end
-
-      Rails.logger.info("DiscourseNoLikes: purge complete")
+      Rails.logger.info("[jtech-tools dislike] purge complete")
     end
   end
 end
