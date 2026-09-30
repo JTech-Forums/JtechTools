@@ -66,7 +66,7 @@ A light version of the forum at `/dumb` for flip phones, KaiOS and old Android b
 - Settings: **Admin → Plugins → Jtech Tools → Dumbcourse**.
 
 ### Another SMTP
-Send forum email through a different mail server than the one in `app.yml` — host, port, TLS, login, and optional "from" address rewriting, all from admin settings.
+Send forum email through a different mail server than the one in `app.yml` — host, port, TLS, login, and optional "from" address rewriting, all from admin settings. Mail sent from a group's own inbox (group SMTP) keeps using that group's server. Test it with **Send test email** under Admin → Email; the dashboard warns if the relay is on without an address.
 
 ### Translator tweaks
 Small fixes on top of the official Translator plugin (better foreign-language detection, backfill for old posts).

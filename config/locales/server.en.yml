@@ -54,6 +54,7 @@ en:
 
   dashboard:
     problem:
+      another_smtp_unconfigured: "Another SMTP is switched on but has no relay address, so forum email is still going out through the server's own mail host. Set <a href='%{base_path}/admin/plugins/jtech-tools/smtp'>the relay address</a> or switch Another SMTP off."
       disteleplus_telegram: "Disteleplus could not deliver to Telegram (%{at}): <code>%{description}</code> — %{hint}"
 
   site_settings:
@@ -128,9 +129,9 @@ en:
     discourse_another_email_enabled: Send outbound forum email through the
       relay configured below instead of the server's DISCOURSE_SMTP_* host.
       Only the host, port, transport security and credentials are replaced —
-      everything else in the mail configuration still applies. This affects
-      every outgoing message, including mail sent from group SMTP addresses,
-      which will no longer use their own per-group credentials.
+      everything else in the mail configuration still applies. Mail sent from
+      a group's own inbox (group SMTP) keeps using that group's mail server.
+      Check the relay with "Send test email" under Admin → Email.
 
     discourse_another_email_smtp_address: Hostname or IP address of the
       relay — no scheme, port, or path. Leave empty to keep using the
