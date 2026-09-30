@@ -4,7 +4,6 @@ module DiscourseDumbcourse
   class PushController < ::ApplicationController
     requires_plugin "jtech-tools"
     requires_login except: [:server_info]
-    skip_before_action :verify_authenticity_token
     before_action :ensure_dumbcourse_enabled, except: [:server_info]
 
     # GET /<base>/push/info
@@ -23,11 +22,19 @@ module DiscourseDumbcourse
       if topic.blank? || device_id.blank?
         return render json: { error: "topic and device_id required" }, status: :bad_request
       end
+      # Both end up in Redis channel names and logs.
+      unless topic.match?(/\A[\w\-]{8,80}\z/) && device_id.match?(/\A[\w\-.:]{1,80}\z/)
+        return render json: { error: "invalid topic or device_id" }, status: :bad_request
+      end
+      RateLimiter.new(current_user, "dumbcourse-push-register", 20, 1.hour).performed!
 
       # Store the mapping: user_id -> { device_id, topic }
       # Use a mutex to prevent concurrent registrations from overwriting each other
       DistributedMutex.synchronize("dumbcourse_push_devices_#{current_user.id}") do
         devices = PluginStore.get("dumbcourse", "push_devices_#{current_user.id}") || {}
+        if !devices.key?(device_id) && devices.size >= 10
+          return render json: { error: "too many devices" }, status: :unprocessable_entity
+        end
         devices[device_id] = {
           topic: topic,
           registered_at: Time.now.iso8601,

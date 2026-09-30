@@ -8,13 +8,21 @@ module DiscourseDumbcourse
   class LanguagetoolController < ::ApplicationController
     requires_plugin "jtech-tools"
     requires_login
-    skip_before_action :verify_authenticity_token
+
+    MAX_TEXT = 20_000
 
     def check
-      raise Discourse::NotFound unless SiteSetting.dumbcourse_languagetool_enabled
+      unless DiscourseDumbcourse.enabled? && SiteSetting.dumbcourse_languagetool_enabled
+        raise Discourse::NotFound
+      end
 
       text = params[:text].to_s
       return render json: { error: "text required" }, status: :bad_request if text.blank?
+      if text.length > MAX_TEXT
+        return render json: { error: "text too long" }, status: :payload_too_large
+      end
+      # Every check is a call to an outside service (and its quota).
+      RateLimiter.new(current_user, "dumbcourse-languagetool", 30, 10.minutes).performed!
 
       language = params[:language].to_s.strip
       language = "auto" if language.blank?
@@ -100,6 +108,8 @@ module DiscourseDumbcourse
       end
 
       render json: { matches: matches }
+    rescue RateLimiter::LimitExceeded
+      raise
     rescue StandardError => e
       Rails.logger.warn("[Dumbcourse LT] Error: #{e.class}: #{e.message}")
       render json: { error: "LanguageTool request failed" }, status: :bad_gateway

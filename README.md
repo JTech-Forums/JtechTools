@@ -51,8 +51,19 @@ When a search finds too little, it quietly retries with synonyms (English dictio
 ### Desktop pop-up notifications
 A small card in the top-right corner when you get a notification, with the person's avatar, the topic title and a preview. Click it to jump there. Desktop only, each user turns it on in their account settings.
 
-### Dumbcourse
-A simplified web app version of the forum at `/dumb` for basic devices: reading, replying, reactions, push notifications, spell check. Uses the forum's own reactions and custom emoji.
+### Dumbcourse — the forum for flip phones
+A light version of the forum at `/dumb` for flip phones, KaiOS and old Android browsers that can't run the full site. It works with the D-pad and keypad like the phone's own apps, and on any touch screen or computer too.
+
+- **Reading**: Latest / New / Unread / Top / Hot, categories, tags. **↑↓** read (a long post scrolls before focus moves on), **←→** switch tabs, or jump post to post inside a topic. Unread topics open at your first unread post; Back returns you to exactly where you were. Live updates, "someone is typing…", read tracking.
+- **Doing**: **OK** on a post opens its actions: like or react, reply, quote, bookmark, edit, delete, flag, copy link, who reacted, jump to the replied post — and every **link in the post**, so you never tab through a paragraph. Polls vote with the D-pad. Full-screen composer with @mentions, emoji, formatting menu, uploads, a real preview and optional spell check; drafts save as you type.
+- **Your stuff**: notifications (live badge), bookmarks, drafts, messages, profile with activity, search with filters and recent searches, and **REQ-PM** — request, answer and send contact details, with one-press **Call / Text / WhatsApp**.
+- **Signing in without typing a password on a keypad**: *Sign in with another device* (the phone shows a code; approve it from any device where you're signed in), *Email me a sign-in link*, *Email me a code* (when the forum has Discourse's email codes on), social logins, and password + two-factor codes. Sign-up, password reset and account activation work here too — those full-site pages don't on old phones.
+- **Keypad shortcuts**: `*` menu, `#` search, `0` help, `1`/`7` top/bottom, `2`/`8` page up/down, `4` back; in a topic `3` reply, `5` like, `9` jump to post. A soft-key bar shows what the soft keys do. Full list under *Keys & shortcuts* in the app.
+- **Looks**: light, dark or automatic theme, text size 80–160%, compact layout, avatars on/off, images shown / tap-to-load / hidden (data saver). Chosen per phone.
+- **Old phones find it by themselves**: browsers that can't run the full forum (KaiOS, Opera Mini, old Android/Chrome/Firefox) are sent to the matching Dumbcourse page — including links in emails — and members can choose *Open forum links here* on their phone. Search engines are never redirected. Setting: `dumbcourse_redirect_legacy_browsers`.
+- **Safe by construction**: strict Content-Security-Policy (no inline or third-party scripts), no framing, all HTML escaped by default, private data kept per account on the phone and wiped on logout, rate-limited endpoints, and the device-pairing approval can only be collected by the phone that asked.
+- Written in **TypeScript** and compiled to plain ES5 (checked on every build) so it runs on engines from Chrome 30 / Firefox 30 / Android 4.4 up. See [`docs/dumbcourse.md`](docs/dumbcourse.md) for how it's built.
+- Settings: **Admin → Plugins → Jtech Tools → Dumbcourse**.
 
 ### Another SMTP
 Send forum email through a different mail server than the one in `app.yml` — host, port, TLS, login, and optional "from" address rewriting, all from admin settings.

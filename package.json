@@ -3,12 +3,17 @@
   "devDependencies": {
     "@discourse/lint-configs": "2.37.2",
     "@glint/ember-tsc": "1.11.6",
+    "@types/node": "^22.20.4",
     "concurrently": "^10.0.5",
     "discourse": "npm:@discourse/types@2026.1.0-2709d36",
     "ember-template-lint": "7.9.3",
+    "esbuild": "0.25.11",
     "eslint": "9.39.2",
+    "espree": "10.4.0",
+    "postcss": "8.5.6",
     "prettier": "3.8.0",
-    "stylelint": "17.0.0"
+    "stylelint": "17.0.0",
+    "typescript": "5.9.3"
   },
   "scripts": {
     "lint": "concurrently \"pnpm:lint:*(!fix)\" --names \"lint:\"",
@@ -19,9 +24,13 @@
     "lint:js:fix": "eslint {assets,admin/assets,test}/javascripts --fix --no-error-on-unmatched-pattern",
     "lint:hbs": "ember-template-lint {assets,admin/assets,test}/javascripts/**/*.gjs --no-error-on-unmatched-pattern",
     "lint:hbs:fix": "ember-template-lint {assets,admin/assets,test}/javascripts/**/*.gjs --fix --no-error-on-unmatched-pattern",
-    "lint:prettier": "pnpm prettier assets/stylesheets/**/*.scss {assets,admin/assets,test}/javascripts/**/*.{js,gjs} --check --no-error-on-unmatched-pattern",
-    "lint:prettier:fix": "pnpm prettier assets/stylesheets/**/*.scss {assets,admin/assets,test}/javascripts/**/*.{js,gjs} -w --no-error-on-unmatched-pattern",
-    "lint:types": "ember-tsc -b"
+    "lint:prettier": "pnpm prettier assets/stylesheets/**/*.scss {assets,admin/assets,test}/javascripts/**/*.{js,gjs} dumbcourse/**/*.ts dumbcourse/styles/*.css --check --no-error-on-unmatched-pattern",
+    "lint:prettier:fix": "pnpm prettier assets/stylesheets/**/*.scss {assets,admin/assets,test}/javascripts/**/*.{js,gjs} dumbcourse/**/*.ts dumbcourse/styles/*.css -w --no-error-on-unmatched-pattern",
+    "lint:types": "ember-tsc -b",
+    "dumbcourse:build": "node --experimental-strip-types --no-warnings dumbcourse/build.ts",
+    "dumbcourse:check": "tsc -p dumbcourse/tsconfig.json && tsc -p dumbcourse/tsconfig.node.json && node --experimental-strip-types --no-warnings dumbcourse/build.ts --check",
+    "dumbcourse:test": "node --experimental-strip-types --no-warnings --test \"dumbcourse/test/*.test.ts\"",
+    "lint:dumbcourse": "pnpm dumbcourse:check && pnpm dumbcourse:test"
   },
   "engines": {
     "node": ">= 22",

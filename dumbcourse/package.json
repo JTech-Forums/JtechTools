@@ -1,0 +1,5 @@
+{
+  "//": "Marks the Dumbcourse build script and tests as ES modules for Node and tsc.",
+  "private": true,
+  "type": "module"
+}

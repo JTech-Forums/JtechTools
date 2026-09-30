@@ -662,10 +662,11 @@ jtech_dumbcourse:
 
   # Appearance.
   dumbcourse_default_theme:
-    default: dark
+    default: auto
     client: false
     type: enum
     choices:
+    - auto
     - dark
     - light
     depends_on:
@@ -692,6 +693,22 @@ jtech_dumbcourse:
     depends_on:
       - "dumbcourse_enabled"
   dumbcourse_online_glow_enabled:
+    default: true
+    client: false
+    depends_on:
+      - "dumbcourse_enabled"
+
+  # Sign in by approving the phone from another signed-in device.
+  dumbcourse_device_pairing_enabled:
+    default: true
+    client: true
+    depends_on:
+      - "dumbcourse_enabled"
+
+  # Send browsers that can't run the full site (KaiOS, old Android/Chrome,
+  # Opera Mini, …) to Dumbcourse, and anyone who chose "Open forum links
+  # here" in Dumbcourse.
+  dumbcourse_redirect_legacy_browsers:
     default: true
     client: false
     depends_on:
