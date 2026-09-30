@@ -51,9 +51,9 @@ RSpec.describe "Whisper serialization" do
     expect(stream_post_ids).to include(whisper_post.id)
   end
 
-  it "shows the whisper to a cumulative topic participant" do
+  it "hides the whisper from a topic participant it doesn't name" do
     sign_in(participant)
-    expect(stream_post_ids).to include(whisper_post.id)
+    expect(stream_post_ids).not_to include(whisper_post.id)
   end
 
   it "shows the whisper to staff" do
@@ -96,19 +96,23 @@ RSpec.describe "Whisper serialization" do
     expect(post_json["mod_whisper_is_staff_only"]).to eq(true)
   end
 
-  it "exposes the topic whisper participant ids on the topic view" do
+  it "exposes the topic whisper participant ids on the topic view to staff only" do
     sign_in(admin)
     get "/t/#{topic.id}.json"
     expect(response.parsed_body["mod_whisper_participant_ids"]).to match_array(
       [target.id, participant.id],
     )
+
+    sign_in(target)
+    get "/t/#{topic.id}.json"
+    expect(response.parsed_body).not_to have_key("mod_whisper_participant_ids")
   end
 
   describe "audience visibility" do
     # A whisper IS visible to every member of its audience: an explicit
-    # target, a cumulative topic participant, and any staff member. Asserted
-    # both via Guardian#can_see_post? and the topic-view JSON.
-    %i[target participant admin moderator author].each do |persona|
+    # target, the author, and any staff member. Asserted both via
+    # Guardian#can_see_post? and the topic-view JSON.
+    %i[target admin moderator author].each do |persona|
       it "is visible to #{persona} via Guardian and topic-view JSON" do
         user = send(persona)
         expect(Guardian.new(user).can_see_post?(whisper_post.reload)).to eq(true)
@@ -119,11 +123,14 @@ RSpec.describe "Whisper serialization" do
     end
 
     # A whisper is NOT visible to a non-audience user.
-    it "is not visible to a stranger via Guardian or topic-view JSON" do
-      expect(Guardian.new(stranger).can_see_post?(whisper_post.reload)).to eq(false)
+    %i[stranger participant].each do |persona|
+      it "is not visible to #{persona} via Guardian or topic-view JSON" do
+        user = send(persona)
+        expect(Guardian.new(user).can_see_post?(whisper_post.reload)).to eq(false)
 
-      sign_in(stranger)
-      expect(stream_post_ids).not_to include(whisper_post.id)
+        sign_in(user)
+        expect(stream_post_ids).not_to include(whisper_post.id)
+      end
     end
   end
 

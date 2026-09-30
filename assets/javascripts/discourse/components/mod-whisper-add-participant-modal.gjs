@@ -10,11 +10,12 @@ import { popupAjaxError } from "discourse/lib/ajax-error";
 import EmailGroupUserChooser from "discourse/select-kit/components/email-group-user-chooser";
 import { i18n } from "discourse-i18n";
 
-// Staff-facing modal (opened from a whisper post's admin menu) for adding a
-// user to the topic's whisper conversation. POSTs each chosen username to the
-// plugin's whisper-participant endpoint, which merges the user id into the
-// topic's cumulative `mod_whisper_participant_ids`.
+// Staff-facing modal (opened from a whisper post's admin menu) for adding
+// users to THAT whisper's audience. POSTs each chosen username to the
+// plugin's whisper-participant endpoint, which adds the user id to the
+// post's explicit targets — never to every whisper in the topic.
 export default class ModWhisperAddParticipantModal extends Component {
+  @service appEvents;
   @service toasts;
 
   @tracked selection = [];
@@ -27,8 +28,9 @@ export default class ModWhisperAddParticipantModal extends Component {
 
   @action
   async confirm() {
-    const topicId = this.args.model?.post?.topic_id;
-    if (!topicId || !this.selection.length) {
+    const post = this.args.model?.post;
+    const topicId = post?.topic_id;
+    if (!topicId || !post?.id || !this.selection.length) {
       this.args.closeModal();
       return;
     }
@@ -40,10 +42,11 @@ export default class ModWhisperAddParticipantModal extends Component {
           `/discourse-mod-categories/topic/${topicId}/whisper-participant`,
           {
             type: "POST",
-            data: { username },
+            data: { username, post_id: post.id },
           }
         );
       }
+      this.appEvents.trigger("post-stream:refresh", { id: post.id });
 
       this.toasts.success({
         duration: 3000,

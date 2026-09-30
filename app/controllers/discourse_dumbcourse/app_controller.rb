@@ -24,11 +24,19 @@ module DiscourseDumbcourse
       end
 
       if request_path != ""
-        safe_path = Pathname.new(request_path).cleanpath.to_s
-        safe_path = safe_path.sub(%r{\A\.+/}, "")
-        file_path = public_root.join(safe_path)
+        # Resolve symlinks and every `..` and only serve files that are
+        # really inside public/ — `cleanpath` keeps leading `..` segments,
+        # so a string-level strip is not a containment check.
+        root_real = public_root.realpath
+        file_path =
+          begin
+            root_real.join(request_path.delete_prefix("/")).realpath
+          rescue StandardError
+            nil
+          end
+        file_path = nil if file_path && !file_path.to_s.start_with?("#{root_real}/")
 
-        if file_path.file?
+        if file_path&.file?
           ext = file_path.extname.downcase
           mime =
             case ext

@@ -66,6 +66,10 @@ module ::DiscourseModCategories
         else
           post = topic.posts.find_by(id: raw.to_i)
           raise Discourse::InvalidParameters.new(:pinned_post_id) unless post
+          # A pinned copy is shown to every reader of the topic.
+          if DiscourseModCategories::Whisper.whisper?(post)
+            raise Discourse::InvalidParameters.new(:pinned_post_id)
+          end
           topic.custom_fields[TOPIC_PINNED_POST_FIELD] = post.id
         end
       end
@@ -102,7 +106,7 @@ module ::DiscourseModCategories
                reply_prompt: topic.custom_fields[TOPIC_REPLY_PROMPT_FIELD].to_s,
                reply_prompt_max_tl: topic.custom_fields[TOPIC_REPLY_PROMPT_TL_FIELD],
                pinned_post_id: topic.custom_fields[TOPIC_PINNED_POST_FIELD],
-               pinned_post: DiscourseModCategories.serialized_pinned_post(topic),
+               pinned_post: DiscourseModCategories.serialized_pinned_post(topic, guardian),
                require_reply_approval: !!topic.custom_fields[TOPIC_REQUIRE_REPLY_APPROVAL_FIELD],
                private_note: topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].to_s,
                private_note_position:
@@ -251,10 +255,17 @@ module ::DiscourseModCategories
 
       armed = ActiveModel::Type::Boolean.new.cast(params[:mod_whisper])
 
+      # A topic's first post can't be a whisper: title, excerpt and new-topic
+      # notifications are public by nature.
+      if armed && post.is_first_post?
+        raise Discourse::InvalidParameters.new(
+                I18n.t("discourse_mod_categories.whisper.first_post_not_allowed"),
+              )
+      end
+
       targets_field = DiscourseModCategories::POST_WHISPER_TARGETS_FIELD
       groups_field = DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD
       badges_field = DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD
-      participants_field = DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
 
       if armed
         user_ids = sanitize_ids(params[:mod_whisper_target_user_ids])
@@ -273,19 +284,13 @@ module ::DiscourseModCategories
         post.custom_fields[badges_field] = badge_ids
         post.save_custom_fields(true)
 
-        # Cumulative topic-participants update — mirrors what
-        # on(:post_created) does so a freshly-targeted user starts seeing
-        # ALL whispers in the topic, not just future ones.
+        # Explicitly targeted non-staff users may whisper back to staff in
+        # this topic. Being a participant grants no visibility at all.
         if post.topic
-          existing = Array(post.topic.custom_fields[participants_field]).map(&:to_i)
-          additions = user_ids.dup
-          additions += ::GroupUser.where(group_id: group_ids).pluck(:user_id) if group_ids.any?
-          additions += ::UserBadge.where(badge_id: badge_ids).pluck(:user_id) if badge_ids.any?
-          merged = (existing + additions).uniq
-          if merged.sort != existing.sort
-            post.topic.custom_fields[participants_field] = merged
-            post.topic.save_custom_fields(true)
-          end
+          DiscourseModCategories::Whisper.merge_participants(
+            post.topic,
+            ::User.where(id: user_ids).where(admin: false, moderator: false).pluck(:id),
+          )
         end
       else
         # Disarming: the `mod_is_whisper` serializer keys off
@@ -656,9 +661,10 @@ module ::DiscourseModCategories
       render json: { usernames: usernames, badge: { id: badge.id, name: badge.display_name } }
     end
 
-    # Adds a user to a topic's cumulative whisper conversation. From then on
-    # that user sees every whisper in the topic (both Guardian#can_see_post?
-    # and the topic-stream SQL filter grant visibility to participants).
+    # Adds users to ONE whisper's audience (its explicit target users). They
+    # see that whisper — and, because staff replies carry the audience
+    # forward, the conversation that follows it — but never other whispers
+    # in the topic: a whisper is visible to exactly who its banner names.
     def add_whisper_participant
       raise Discourse::NotFound unless SiteSetting.mod_whisper_enabled
       raise Discourse::NotFound unless SiteSetting.mod_whisper_add_participant_enabled
@@ -671,6 +677,13 @@ module ::DiscourseModCategories
       # deliberately independent of the module master.
       raise Discourse::InvalidAccess unless current_user&.staff?
 
+      post = topic.posts.find_by(id: params[:post_id])
+      unless post && DiscourseModCategories::Whisper.whisper?(post)
+        raise Discourse::InvalidParameters.new(
+                I18n.t("discourse_mod_categories.whisper.add_participant_needs_whisper"),
+              )
+      end
+
       user =
         if params[:user_id].present?
           User.find_by(id: params[:user_id])
@@ -679,16 +692,25 @@ module ::DiscourseModCategories
         end
       raise Discourse::InvalidParameters.new(:username) unless user
 
-      existing = Array(topic.custom_fields[TOPIC_WHISPER_PARTICIPANTS_FIELD]).map(&:to_i)
-      merged = (existing + [user.id]).reject { |i| i <= 0 }.uniq
+      targets_field = DiscourseModCategories::POST_WHISPER_TARGETS_FIELD
+      existing = DiscourseModCategories::Whisper.normalize_ids(post.custom_fields[targets_field])
+      added = existing.exclude?(user.id)
 
-      if merged.sort != existing.sort
-        topic.custom_fields[TOPIC_WHISPER_PARTICIPANTS_FIELD] = merged
-        topic.save_custom_fields(true)
-        notify_whisper_participant(topic, user)
+      if added
+        post.custom_fields[targets_field] = existing + [user.id]
+        post.save_custom_fields(true)
+        DiscourseModCategories::Whisper.merge_participants(topic, [user.id]) unless user.staff?
+        notify_whisper_participant(topic, post, user)
+        post.publish_change_to_clients!(:revised)
       end
 
-      render json: { participant_ids: merged }
+      render json: {
+               participant_ids:
+                 DiscourseModCategories::Whisper.normalize_ids(
+                   topic.custom_fields[TOPIC_WHISPER_PARTICIPANTS_FIELD],
+                 ),
+               **serialized_post_whisper_state(post.reload),
+             }
     end
 
     private
@@ -710,9 +732,9 @@ module ::DiscourseModCategories
       raise Discourse::InvalidAccess.new("not_note_author")
     end
 
-    # Notifies a newly added user that they were added to the topic's whisper
-    # conversation, mirroring the whisper `post_created` notification pattern.
-    def notify_whisper_participant(topic, user)
+    # Notifies a newly added user that they were added to a whisper,
+    # mirroring the whisper `post_created` notification pattern.
+    def notify_whisper_participant(topic, post, user)
       return unless SiteSetting.mod_notify_whisper_targets
       return if user.id == current_user.id
 
@@ -720,10 +742,12 @@ module ::DiscourseModCategories
         notification_type: Notification.types[:custom],
         user_id: user.id,
         topic_id: topic.id,
-        post_number: topic.highest_post_number,
+        post_number: post.post_number,
         data: {
           topic_title: topic.title,
           display_username: current_user.username,
+          mod_whisper: true,
+          original_post_id: post.id,
           message: "discourse_mod_categories.whisper.whisper_notification",
         }.to_json,
       )

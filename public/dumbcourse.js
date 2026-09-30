@@ -647,6 +647,7 @@ function refreshCurrentUser() {
     if (r.state === 'unauth') {
       S.loggedIn = false;
       storageSet('jt_logged_in', '0');
+      clearApiCache();
       return false;
     }
     if (r.state === 'ok' && r.data && r.data.current_user) {
@@ -654,6 +655,7 @@ function refreshCurrentUser() {
       S.authChecked = true;
       S.username = r.data.current_user.username || S.username;
       S.userId = r.data.current_user.id || S.userId;
+      claimApiCache();
       S.admin = !!r.data.current_user.admin;
       S.moderator = !!r.data.current_user.moderator;
       if (S.username) storageSet('jt_username', S.username);
@@ -666,6 +668,7 @@ function refreshCurrentUser() {
     if (r.state === 'ok') {
       S.loggedIn = false;
       storageSet('jt_logged_in', '0');
+      clearApiCache();
       return false;
     }
     return !!S.loggedIn;
@@ -778,6 +781,7 @@ function clearDraft(key) {
 }
 function cacheApiSet(path, val) {
   if (!path || !val) return;
+  if (!apiCacheOwnerOk()) return;
   PERSISTENT_API_CACHE[path] = {
     t: Date.now(),
     v: val
@@ -793,7 +797,25 @@ function cacheApiSet(path, val) {
   }
   storageSet(API_CACHE_KEY, JSON.stringify(PERSISTENT_API_CACHE));
 }
+// The persisted API cache holds private data (whispers, PMs, notifications)
+// as seen by ONE account. Bind it to that account: a cache written by
+// someone else — a previous user of this browser — is never served, and it
+// is wiped on logout or whenever the signed-in account changes.
+var API_CACHE_OWNER_KEY = 'jt_api_cache_owner';
+function apiCacheOwnerOk() {
+  var owner = storageGet(API_CACHE_OWNER_KEY, '') || '';
+  return !!S.userId && owner === String(S.userId);
+}
+function claimApiCache() {
+  var owner = storageGet(API_CACHE_OWNER_KEY, '') || '';
+  if (!S.userId) return;
+  if (owner !== String(S.userId)) {
+    clearApiCache();
+    storageSet(API_CACHE_OWNER_KEY, String(S.userId));
+  }
+}
 function cacheApiGet(path) {
+  if (!apiCacheOwnerOk()) return null;
   var c = PERSISTENT_API_CACHE[path];
   if (!c) return null;
   if (Date.now() - c.t > API_CACHE_TTL) return null;
@@ -804,6 +826,7 @@ function clearApiCache() {
   PERSISTENT_API_CACHE = {};
   try {
     storageRemove(API_CACHE_KEY);
+    storageRemove(API_CACHE_OWNER_KEY);
   } catch (e) {}
 }
 function rememberImage(url) {
@@ -2824,6 +2847,7 @@ function _logout() {
               method: 'DELETE'
             }).catch(function () {});
           } catch (e) {}
+          clearApiCache();
           S.token = '';
           S.csrf = '';
           S.cookies = '';
@@ -4863,6 +4887,22 @@ function renderPost(p, topicData) {
     }
     // Mods see deleted posts with special styling
     body = '<div class="deleted-notice" style="color:var(--fg2);font-style:italic;padding:8px;background:var(--bg2);border-radius:4px;margin-bottom:8px">' + (isDeleted ? 'This post was deleted' + (p.deleted_by ? ' by ' + esc(p.deleted_by.username || 'a moderator') : '') : 'This post is hidden') + '</div>' + body;
+  }
+  if (p.mod_is_whisper) {
+    // A whisper is private to the people it names (plus staff). Say so, so
+    // nobody mistakes it for a public post. Replies and quotes to it are
+    // kept private by the server whatever this client sends.
+    var whisperTo = [];
+    (p.mod_whisper_targets || []).forEach(function (t) {
+      if (t && t.username) whisperTo.push('@' + t.username);
+    });
+    (p.mod_whisper_target_groups || []).forEach(function (g) {
+      if (g && g.name) whisperTo.push(g.name);
+    });
+    (p.mod_whisper_target_badges || []).forEach(function (b) {
+      if (b && b.name) whisperTo.push(b.name);
+    });
+    body = '<div class="whisper-notice" style="color:var(--fg2);font-style:italic;padding:6px 8px;background:var(--bg2);border-radius:4px;margin-bottom:8px">&#128274; ' + (whisperTo.length ? 'Whisper to ' + esc(whisperTo.join(', ')) : 'Whisper to staff') + '</div>' + body;
   }
   var pollsHtml = '';
   if (p.polls && p.polls.length) {

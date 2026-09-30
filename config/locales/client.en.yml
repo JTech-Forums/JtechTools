@@ -619,15 +619,15 @@ en:
           failed_toast: Could not convert this post
         add_participant:
           menu_label: Add user to whisper
-          modal_title: Add a user to the whisper conversation
-          modal_instructions: Choose the users to add to this topic's whisper conversation.
-            They will see every whisper in this topic from now on.
+          modal_title: Add users to this whisper
+          modal_instructions: Choose the users to add to this whisper. They will see this
+            whisper and replies that keep its audience — not other whispers in the topic.
           search_placeholder: Search for a user…
           confirm: Add to whisper
           cancel: Cancel
           added_toast:
-            one: Added %{count} user to the whisper conversation
-            other: Added %{count} users to the whisper conversation
+            one: Added %{count} user to the whisper
+            other: Added %{count} users to the whisper
       pm_badge:
         button: Add badge group
         modal_title: Add badge holders as recipients

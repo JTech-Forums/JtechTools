@@ -436,7 +436,9 @@ module DiscourseDisteleplus
       lines << "#{escape(I18n.t("disteleplus.reports.status"))}: #{escape(reviewable.status.to_s)}"
       reviewable.reviewable_scores.each do |score|
         parts = ["@#{escape(score.user&.username.to_s)}", escape(score_type_label(score))]
-        parts << escape(score.reason.to_s.first(200)) if score.reason.present?
+        if score.reason.present? && !DiscourseModCategories::Whisper.private_reviewable?(reviewable)
+          parts << escape(score.reason.to_s.first(200))
+        end
         lines << "• #{parts.compact_blank.join(" — ")}"
       end
       lines << "<blockquote>#{escape(long_excerpt)}</blockquote>" if long_excerpt.present?
@@ -493,6 +495,11 @@ module DiscourseDisteleplus
     def self.excerpt_for(reviewable, length: nil)
       length ||= SiteSetting.disteleplus_reports_excerpt_length
       return "" if length.to_i <= 0
+      # A whisper's text only ever goes to its audience; the reports chat is
+      # not it. Reviewers open it in Discourse.
+      if DiscourseModCategories::Whisper.private_reviewable?(reviewable)
+        return I18n.t("disteleplus.reports.whisper_hidden")
+      end
       raw =
         if reviewable.target.is_a?(::Post)
           reviewable.target.raw

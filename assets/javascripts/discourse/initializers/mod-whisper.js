@@ -1,6 +1,6 @@
-import { withPluginApi } from "discourse/lib/plugin-api";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
+import { withPluginApi } from "discourse/lib/plugin-api";
 import { i18n } from "discourse-i18n";
 import ModWhisperTargetModal from "../components/mod-whisper-target-modal";
 import {
@@ -19,9 +19,10 @@ export default {
   initialize() {
     withPluginApi((api) => {
       const siteSettings = api.container.lookup("service:site-settings");
-      if (!siteSettings?.mod_whisper_enabled) {
-        return;
-      }
+      // Switching whispers off only stops NEW ones: existing whispers stay
+      // private on the server, so they keep their banner here (and replies to
+      // them stay whispers). Only the tools for creating whispers go away.
+      const whispersEnabled = !!siteSettings?.mod_whisper_enabled;
 
       const currentUser = api.getCurrentUser();
 
@@ -40,7 +41,7 @@ export default {
       // id:discourse.modify-class-model.)
       api.onAppEvent("composer:saved", () => {
         const pendingEdit = takePendingWhisperEdit();
-        if (!pendingEdit || !api.getCurrentUser()?.staff) {
+        if (!whispersEnabled || !pendingEdit || !api.getCurrentUser()?.staff) {
           return;
         }
 
@@ -88,7 +89,7 @@ export default {
         // get a manual UI toggle. Hiding the toolbar button entirely
         // avoids the confusing "eye button that does nothing for me"
         // state that non-staff non-participants used to see.
-        if (!currentUser?.staff) {
+        if (!whispersEnabled || !currentUser?.staff) {
           return;
         }
         toolbar.addButton({

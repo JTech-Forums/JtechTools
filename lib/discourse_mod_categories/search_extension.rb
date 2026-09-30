@@ -32,32 +32,39 @@ module DiscourseModCategories
       rescue StandardError => e
         # Only the post-filter is rescued — a raise from core `super` above
         # propagates untouched (we're not a circuit breaker for core search).
-        # The DB-level indexer gate already prevents the leak; this fallback
-        # only degrades the belt-and-suspenders pass.
+        # Fail CLOSED: drop every whisper from the result rather than none.
         ::Rails.logger.warn(
           "[jtech-tools] Search whisper post-filter fell back: #{e.class}: #{e.message}",
         )
+        begin
+          filter_whispers!(result, drop_all: true)
+        rescue StandardError
+          result.posts.clear if result.respond_to?(:posts) && result.posts.is_a?(Array)
+        end
       end
       result
     end
 
     private
 
-    def filter_whispers!(result)
-      return unless defined?(::SiteSetting) && ::SiteSetting.mod_whisper_enabled
+    def filter_whispers!(result, drop_all: false)
       return unless result.respond_to?(:posts)
       posts = result.posts
       return unless posts.is_a?(Array)
       return if posts.empty?
 
       viewer = @guardian.respond_to?(:user) ? @guardian.user : nil
-      return if viewer&.staff?
+      return if viewer&.staff? && !drop_all
 
       post_ids = posts.map(&:id).compact
       return if post_ids.empty?
 
       blocked =
-        DiscourseModCategories::UserActionWhisperFilter.blocked_whisper_post_ids(post_ids, viewer)
+        if drop_all
+          DiscourseModCategories::Whisper.whisper_post_ids(post_ids)
+        else
+          DiscourseModCategories::Whisper.hidden_post_ids(post_ids, viewer)
+        end
       return if blocked.empty?
       blocked_set = blocked.to_set
 

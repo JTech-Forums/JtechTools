@@ -81,8 +81,8 @@ RSpec.describe "Whisper tracking-state broadcast" do
       expect(filtered_user_ids(whisper_post)).to include(target.id)
     end
 
-    it "keeps the cumulative topic participants in the broadcast" do
-      expect(filtered_user_ids(whisper_post)).to include(participant.id)
+    it "drops a topic participant the whisper doesn't name" do
+      expect(filtered_user_ids(whisper_post)).not_to include(participant.id)
     end
 
     it "keeps staff in the broadcast" do
@@ -111,12 +111,13 @@ RSpec.describe "Whisper tracking-state broadcast" do
     end
   end
 
-  it "leaves the scope alone when mod_whisper_enabled is off" do
+  it "still narrows the broadcast when mod_whisper_enabled is off" do
     whisper_post.custom_fields[targets_field] = [target.id]
     whisper_post.save_custom_fields(true)
     whisper_post.reload
 
     SiteSetting.mod_whisper_enabled = false
-    expect(filtered_user_ids(whisper_post)).to include(stranger.id)
+    expect(filtered_user_ids(whisper_post)).not_to include(stranger.id)
+    expect(filtered_user_ids(whisper_post)).to include(target.id)
   end
 end

@@ -16,6 +16,8 @@ module DiscourseDisteleplus
       return false unless enabled?
       return false if post.nil? || post.deleted_at.present? || post.hidden?
       return false if post.post_type != Post.types[:regular]
+      # Whispers are private to their audience — never announced.
+      return false if DiscourseModCategories::Whisper.whisper?(post)
       return false if post.user.nil? || post.user.bot?
 
       topic = post.topic

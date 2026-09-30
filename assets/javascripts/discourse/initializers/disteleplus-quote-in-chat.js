@@ -21,8 +21,13 @@ export default {
       return;
     }
 
-    withPluginApi("1.0", (api) => {
+    withPluginApi((api) => {
       api.addPostAdminMenuButton((post) => {
+        // A whisper's text belongs to its audience only — never offer to
+        // paste it into the team chat (and on to Telegram).
+        if (post?.mod_is_whisper) {
+          return;
+        }
         return {
           icon: "comments",
           className: "disteleplus-quote-in-chat",

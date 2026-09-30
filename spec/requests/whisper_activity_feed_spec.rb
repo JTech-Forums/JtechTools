@@ -71,15 +71,17 @@ RSpec.describe "Whisper activity feed" do
     expect(ids).to include(regular_reply.id, whisper_post.id)
   end
 
-  it "shows the whisper to a topic whisper participant" do
+  it "hides the whisper from a topic participant it doesn't name" do
     ids = activity_post_ids_for(participant)
-    expect(ids).to include(regular_reply.id, whisper_post.id)
+    expect(ids).to include(regular_reply.id)
+    expect(ids).not_to include(whisper_post.id)
   end
 
-  it "leaves the feed unchanged when mod_whisper_enabled is off" do
+  it "still hides the whisper when mod_whisper_enabled is off" do
     SiteSetting.mod_whisper_enabled = false
     ids = activity_post_ids_for(stranger)
-    expect(ids).to include(regular_reply.id, whisper_post.id)
+    expect(ids).to include(regular_reply.id)
+    expect(ids).not_to include(whisper_post.id)
   end
 
   describe "UserActionWhisperFilter.apply" do
@@ -106,10 +108,10 @@ RSpec.describe "Whisper activity feed" do
       expect(DiscourseModCategories::UserActionWhisperFilter.apply([], stranger)).to eq([])
     end
 
-    it "keeps every row when mod_whisper_enabled is off" do
+    it "still drops the whisper row when mod_whisper_enabled is off" do
       SiteSetting.mod_whisper_enabled = false
       filtered = DiscourseModCategories::UserActionWhisperFilter.apply(rows, stranger)
-      expect(filtered.map(&:post_id)).to eq(rows.map(&:post_id))
+      expect(filtered.map(&:post_id)).to contain_exactly(regular_reply.id, nil)
     end
 
     it "drops the whisper row for an anonymous viewer (nil user)" do
@@ -118,10 +120,18 @@ RSpec.describe "Whisper activity feed" do
       expect(ids).to contain_exactly(regular_reply.id, nil)
     end
 
-    it "falls back to the unfiltered rows when something raises" do
+    it "fails closed (drops whisper rows) when the precise filter raises" do
+      allow(DiscourseModCategories::Whisper).to receive(:hidden_post_ids).and_raise(
+        StandardError.new("boom"),
+      )
+      filtered = DiscourseModCategories::UserActionWhisperFilter.apply(rows, stranger)
+      expect(filtered.map(&:post_id)).to contain_exactly(regular_reply.id, nil)
+    end
+
+    it "drops every post row when it can't even tell which rows are whispers" do
       allow(::PostCustomField).to receive(:where).and_raise(StandardError.new("boom"))
       filtered = DiscourseModCategories::UserActionWhisperFilter.apply(rows, stranger)
-      expect(filtered.map(&:post_id)).to eq(rows.map(&:post_id))
+      expect(filtered.map(&:post_id)).to eq([nil])
     end
   end
 end
