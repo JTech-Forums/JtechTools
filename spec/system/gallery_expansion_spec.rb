@@ -760,10 +760,11 @@ RSpec.describe "Gallery expansion" do
       expect(page).to have_css(".mod-checklist-modal", wait: 10)
     end
 
-    it "shows the inactive notice when no checklist exists" do
+    it "shows an empty editor when no checklist exists" do
       sign_in(moderator)
       open_checklist_modal
-      expect(page).to have_css(".mod-checklist-inactive", wait: 10)
+      expect(page).to have_css(".mod-checklist-add-inline", wait: 10)
+      expect(page).to have_no_css(".mod-checklist-row")
       shot("155_checklist_editor_inactive_notice")
     end
 

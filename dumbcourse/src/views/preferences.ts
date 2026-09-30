@@ -59,8 +59,7 @@ function toggleRow(
   key: string,
   label: string,
   on: boolean,
-  iconName: string,
-  hint = ""
+  iconName: string
 ): SafeHtml {
   return html`<li>
     <button
@@ -75,7 +74,6 @@ function toggleRow(
       <span class="row-icon">${icon(iconName)}</span>
       <div class="row-main">
         <div class="row-title">${label}</div>
-        ${hint ? html`<div class="row-meta">${hint}</div>` : ""}
       </div>
       <span class="switch${on ? " on" : ""}" aria-hidden="true"
         ><span></span
@@ -84,18 +82,12 @@ function toggleRow(
   </li>`;
 }
 
-function linkRow(
-  path: string,
-  label: string,
-  iconName: string,
-  hint = ""
-): SafeHtml {
+function linkRow(path: string, label: string, iconName: string): SafeHtml {
   return html`<li>
     <a class="row setting" href="${href(path)}" data-key="link-${path}">
       <span class="row-icon">${icon(iconName)}</span>
       <div class="row-main">
         <div class="row-title">${label}</div>
-        ${hint ? html`<div class="row-meta">${hint}</div>` : ""}
       </div>
       <span class="chev">${icon("back", "flip")}</span></a
     >
@@ -149,8 +141,7 @@ export function preferencesRoute(ctx: RouteContext): void {
           "compact",
           "Compact layout",
           prefs.density === "compact",
-          "list",
-          "Fit more on the screen"
+          "list"
         )}
         ${toggleRow("avatars", "Profile pictures", prefs.avatars, "user")}
         ${valueRow(
@@ -175,38 +166,21 @@ export function preferencesRoute(ctx: RouteContext): void {
       <h2 class="section-title">Behaviour</h2>
       <ul class="rows">
         ${valueRow("defaultView", "Start screen", startLabel, "home")}
-        ${toggleRow(
-          "live",
-          "Live updates",
-          prefs.live,
-          "refresh",
-          "Off saves data and battery"
-        )}
+        ${toggleRow("live", "Live updates", prefs.live, "refresh")}
         ${toggleRow(
           "prefer",
           "Open forum links here",
           prefersDumbcourse(),
-          "phone",
-          "Links to the forum open in Dumbcourse on this phone"
+          "phone"
         )}
       </ul>
       ${u
         ? html`<h2 class="section-title">Account</h2>
             <ul class="rows">
-              ${linkRow(
-                "/preferences/profile",
-                "Profile",
-                "user",
-                "Name, about you, status"
-              )}
+              ${linkRow("/preferences/profile", "Profile", "user")}
               ${linkRow("/preferences/email", "Email notifications", "mail")}
               ${u.can_pair_devices
-                ? linkRow(
-                    "/link",
-                    "Sign in another device",
-                    "devices",
-                    "Use a code instead of a password"
-                  )
+                ? linkRow("/link", "Sign in another device", "devices")
                 : ""}
               <li>
                 <button
@@ -219,7 +193,6 @@ export function preferencesRoute(ctx: RouteContext): void {
                   <span class="row-icon">${icon("key")}</span>
                   <div class="row-main">
                     <div class="row-title">Change password</div>
-                    <div class="row-meta">We'll email you a link</div>
                   </div>
                 </button>
               </li>
@@ -411,9 +384,6 @@ export function profilePrefsRoute(ctx: RouteContext): Promise<void> {
               maxlength="100"
               placeholder=":palm_tree: On vacation"
             />
-            <p class="hint">
-              Start with an :emoji: if you like. Leave empty to clear.
-            </p>
           </div>
           <div class="field">
             <label class="field-label" for="pBio">About me</label
@@ -545,8 +515,7 @@ export function emailPrefsRoute(ctx: RouteContext): Promise<void> {
             "email_digests",
             "Summary emails",
             !!o.email_digests,
-            "draft",
-            "Popular topics when you haven't visited"
+            "draft"
           )}
         </ul>`
       );

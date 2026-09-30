@@ -211,12 +211,8 @@ export function searchRoute(ctx: RouteContext): Promise<void> | void {
                   >
                 </li>`
             )}
-          </ul>
-          <p class="hint pad">Tip: press # anywhere to search.</p>`.value
-      : html`<div class="state state-empty">
-          ${icon("search")}
-          <p>Find topics, posts and people. Filters narrow it down.</p>
-        </div>`.value;
+          </ul>`.value
+      : "";
     requestAnimationFrame(() => focus(input));
     return;
   }

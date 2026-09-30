@@ -13,7 +13,7 @@ import { user } from "../session.ts";
 import { avatar, topicPath } from "../site.ts";
 import type { TopicListResponse } from "../types.ts";
 import { icon } from "../ui/icons.ts";
-import { actionSheet, confirmDialog, toast } from "../ui/layers.ts";
+import { actionSheet, confirmDialog } from "../ui/layers.ts";
 import { decodeEntities, topicRow, usersById } from "../ui/topic-row.ts";
 import { useScreen } from "./common.ts";
 import { openComposer } from "./composer.ts";
@@ -50,10 +50,7 @@ export function bookmarksRoute(ctx: RouteContext): Promise<void> {
       d.bookmarks ||
       [];
     if (!list.length) {
-      s.empty(
-        "Nothing bookmarked yet. Open a post's actions and choose Bookmark to save it here.",
-        "bookmark"
-      );
+      s.empty("No bookmarks.", "bookmark");
       return;
     }
     const rows: SafeHtml[] = list.map((b) => {
@@ -181,60 +178,55 @@ export function draftsRoute(ctx: RouteContext): void {
   s.title("Drafts", { back: true });
   const drafts = listDrafts();
   if (!drafts.length) {
-    s.empty(
-      "No drafts. Anything you start writing is saved here until you send it.",
-      "draft"
-    );
+    s.empty("No drafts.", "draft");
     return;
   }
   s.render(
-    html`<p class="hint pad">Drafts are kept on this phone only.</p>
-      <ul class="rows">
-        ${drafts.map(
-          (d) =>
-            html`<li>
-              <button
-                type="button"
-                class="row"
-                data-act="open-draft"
-                data-draft="${d.key}"
-                data-key="d-${d.key}"
+    html`<ul class="rows">
+      ${drafts.map(
+        (d) =>
+          html`<li>
+            <button
+              type="button"
+              class="row"
+              data-act="open-draft"
+              data-draft="${d.key}"
+              data-key="d-${d.key}"
+            >
+              <span class="row-icon"
+                >${icon(
+                  d.kind === "reply"
+                    ? "reply"
+                    : d.kind === "edit"
+                      ? "edit"
+                      : d.kind === "message"
+                        ? "mail"
+                        : "plus"
+                )}</span
               >
-                <span class="row-icon"
-                  >${icon(
-                    d.kind === "reply"
-                      ? "reply"
-                      : d.kind === "edit"
-                        ? "edit"
-                        : d.kind === "message"
-                          ? "mail"
-                          : "plus"
-                  )}</span
-                >
-                <div class="row-main">
-                  <div class="row-title">${emojify(draftTitle(d))}</div>
-                  ${d.text
-                    ? html`<div class="row-excerpt">
-                        ${truncate(d.text, 120)}
-                      </div>`
-                    : ""}
-                  <div class="row-meta">
-                    <span>${timeAgo(d.updatedAt)}</span>
-                  </div>
+              <div class="row-main">
+                <div class="row-title">${emojify(draftTitle(d))}</div>
+                ${d.text
+                  ? html`<div class="row-excerpt">
+                      ${truncate(d.text, 120)}
+                    </div>`
+                  : ""}
+                <div class="row-meta">
+                  <span>${timeAgo(d.updatedAt)}</span>
                 </div>
-              </button>
-            </li>`
-        )}
-      </ul>`
+              </div>
+            </button>
+          </li>`
+      )}
+    </ul>`
   );
 
   const open = (d: Draft) => {
     if (d.kind === "reply" && d.topicId) {
       // Open the topic so the reply lands in context.
       go(topicPath(d.topicId, "", null) + "?compose=1");
-    } else if (d.kind === "edit" && d.topicId) {
-      go(topicPath(d.topicId, "", null));
-      toast("Open the post's actions and choose Edit to continue.");
+    } else if (d.kind === "edit" && d.topicId && d.postId) {
+      go(topicPath(d.topicId, "", null) + "?edit=" + d.postId);
     } else if (d.kind === "topic") {
       openComposer({ kind: "topic", categoryId: d.categoryId || null });
     } else {

@@ -402,16 +402,6 @@ export default class ModChecklistEditor extends Component {
           }}
         </p>
       {{/if}}
-      <p class="mod-checklist-editor-intro">
-        {{i18n "discourse_mod_categories.first_post_checklist.editor_intro"}}
-      </p>
-
-      {{#unless this.rows.length}}
-        <div class="mod-checklist-inactive">
-          {{i18n "discourse_mod_categories.first_post_checklist.inactive"}}
-        </div>
-      {{/unless}}
-
       {{#if this.rows.length}}
         <div class="mod-checklist-rows">
           {{#each this.rows as |row index|}}
@@ -637,12 +627,6 @@ export default class ModChecklistEditor extends Component {
               "discourse_mod_categories.first_post_checklist.targeted_title"
             }}
           </h3>
-          <p class="mod-checklist-targeted-intro">
-            {{i18n
-              "discourse_mod_categories.first_post_checklist.targeted_intro"
-            }}
-          </p>
-
           {{#each this.targeted as |checklist|}}
             <div class="mod-checklist-targeted-item">
               {{#if checklist.version}}

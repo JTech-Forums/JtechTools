@@ -141,9 +141,6 @@ export default class ModTopicMessagesModal extends Component {
             <label class="mod-messages-label">
               {{i18n "discourse_mod_categories.topic_messages.footer_label"}}
             </label>
-            <p class="mod-messages-hint">
-              {{i18n "discourse_mod_categories.topic_messages.footer_hint"}}
-            </p>
             <textarea
               class="mod-footer-input"
               rows="3"
@@ -175,9 +172,6 @@ export default class ModTopicMessagesModal extends Component {
                 }}
               </span>
             </label>
-            <p class="mod-messages-hint">
-              {{i18n "discourse_mod_categories.topic_messages.approval_hint"}}
-            </p>
           </div>
         {{/if}}
 
@@ -186,9 +180,6 @@ export default class ModTopicMessagesModal extends Component {
             <label class="mod-messages-label">
               {{i18n "discourse_mod_categories.topic_messages.note_label"}}
             </label>
-            <p class="mod-messages-hint">
-              {{i18n "discourse_mod_categories.topic_messages.note_hint"}}
-            </p>
             <textarea
               class="mod-private-note-input"
               rows="3"

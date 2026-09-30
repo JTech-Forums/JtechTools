@@ -50,8 +50,6 @@ export default class ReqpmPreferences extends Component {
               "reqpm.preferences.title"
             }}</h3>
         {{/if}}
-        <p class="reqpm-muted">{{i18n "reqpm.preferences.intro"}}</p>
-
         <ReqpmCardEditor @onChange={{this.cardChanged}} />
 
         {{#if this.card}}
@@ -61,13 +59,8 @@ export default class ReqpmPreferences extends Component {
               @label="reqpm.hub.allow_requests"
               {{on "click" this.toggleAllowRequests}}
             />
-            <p class="reqpm-muted">{{i18n "reqpm.hub.allow_requests_hint"}}</p>
           </div>
         {{/if}}
-
-        <p class="reqpm-muted reqpm-preferences__privacy">{{i18n
-            "reqpm.hub.privacy_short"
-          }}</p>
 
         {{#if @showHubLink}}
           <LinkTo @route="reqpm" class="reqpm-preferences__hub-link">

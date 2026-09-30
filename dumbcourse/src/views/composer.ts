@@ -720,10 +720,7 @@ ${text}</textarea
         if (err && err.body && err.body.action === "enqueued") {
           clearDraft(key);
           layer.close();
-          toast(
-            "Thanks — your post is waiting for a moderator to approve it.",
-            "success"
-          );
+          toast("Sent for approval.", "success");
           return;
         }
         toast(errorMessage(e), "error");

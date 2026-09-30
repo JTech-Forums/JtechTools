@@ -85,10 +85,7 @@ export default class ReqpmSetupModal extends Component {
       class="reqpm-setup-modal"
     >
       <:body>
-        <div class="reqpm-setup-modal__intro">
-          <p class="reqpm-setup-modal__lead">{{i18n "reqpm.setup.lead"}}</p>
-          <p class="reqpm-muted">{{i18n "reqpm.setup.point_private"}}</p>
-        </div>
+        <p class="reqpm-setup-modal__lead">{{i18n "reqpm.setup.lead"}}</p>
 
         <ReqpmCardEditor @startAdding={{true}} @onChange={{this.cardChanged}} />
       </:body>

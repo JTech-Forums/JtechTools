@@ -1203,18 +1203,6 @@ kbd {
   margin-bottom: 0.45rem;
 }
 
-.steps {
-  margin: 0.5rem 1rem;
-  padding-left: 1.2rem;
-  list-style: decimal;
-  font-size: 0.9rem;
-  color: var(--fg2);
-}
-
-.steps li {
-  margin: 0.25rem 0;
-}
-
 .pair {
   padding: 1rem 0.75rem;
   text-align: center;

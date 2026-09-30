@@ -56,9 +56,6 @@ export default class JtechAdminActions extends Component {
   <template>
     <div class="jtech-admin-actions">
       <h3>{{i18n "admin.jtech_tools.actions.title"}}</h3>
-      <p class="jtech-admin-actions__hint">
-        {{i18n "admin.jtech_tools.actions.hint"}}
-      </p>
       <div class="jtech-admin-actions__buttons">
         {{#each @actions as |descriptor|}}
           <DButton

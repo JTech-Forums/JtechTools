@@ -256,10 +256,6 @@ export default class ModTopicPromptChecklistModal extends Component {
       class="mod-topic-prompt-checklist-modal"
     >
       <:body>
-        <p class="mod-topic-prompt-checklist-intro">
-          {{i18n "discourse_mod_categories.topic_prompt_checklist.intro"}}
-        </p>
-
         {{#if this.loading}}
           <p class="mod-topic-prompt-checklist-loading">
             {{i18n "discourse_mod_categories.topic_prompt_checklist.loading"}}
@@ -308,11 +304,6 @@ export default class ModTopicPromptChecklistModal extends Component {
                     "discourse_mod_categories.topic_prompt_checklist.mode_title_statement"
                   }}
                 </span>
-                <span class="mod-checklist-mode-toggle__desc">
-                  {{i18n
-                    "discourse_mod_categories.topic_prompt_checklist.mode_desc_statement"
-                  }}
-                </span>
               </button>
               <button
                 type="button"
@@ -323,11 +314,6 @@ export default class ModTopicPromptChecklistModal extends Component {
                 <span class="mod-checklist-mode-toggle__title">
                   {{i18n
                     "discourse_mod_categories.topic_prompt_checklist.mode_title_checklist"
-                  }}
-                </span>
-                <span class="mod-checklist-mode-toggle__desc">
-                  {{i18n
-                    "discourse_mod_categories.topic_prompt_checklist.mode_desc_checklist"
                   }}
                 </span>
               </button>
@@ -352,14 +338,6 @@ export default class ModTopicPromptChecklistModal extends Component {
               ></textarea>
             </div>
           {{else}}
-            {{#unless this.rows.length}}
-              <div class="mod-topic-prompt-checklist-inactive">
-                {{i18n
-                  "discourse_mod_categories.topic_prompt_checklist.inactive"
-                }}
-              </div>
-            {{/unless}}
-
             {{#if this.rows.length}}
               <div class="mod-checklist-rows">
                 {{#each this.rows as |row|}}

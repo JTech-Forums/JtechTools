@@ -96,7 +96,7 @@ export function reviewRoute(ctx: RouteContext): Promise<void> {
       > = {};
       (d.users || []).forEach((u) => (users[u.id] = u));
       if (!items.length) {
-        s.empty("Nothing to review. All clear.", "check");
+        s.empty("Nothing to review.", "check");
         return;
       }
       const rows: SafeHtml[] = items.map((r) => {

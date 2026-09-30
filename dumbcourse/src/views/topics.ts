@@ -89,9 +89,9 @@ function tabs(active: string, base: string): SafeHtml {
 function emptyText(view: string): string {
   switch (view) {
     case "new":
-      return "Nothing new. You're all caught up.";
+      return "Nothing new.";
     case "unread":
-      return "No unread topics. Nice.";
+      return "No unread topics.";
     case "hot":
       return "Nothing's hot right now.";
     case "top":

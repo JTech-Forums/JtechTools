@@ -54,10 +54,14 @@ export default class ReqpmMethodForm extends Component {
     return i18n(`reqpm.kinds.${this.kind}.placeholder`);
   }
 
+  // Phone numbers without a country code get the forum's default one; the
+  // only hint the form shows.
   get hint() {
-    return i18n(`reqpm.kinds.${this.kind}.hint`, {
-      code: this.siteSettings.reqpm_default_country_code || "1",
-    });
+    return this.info.input === "tel"
+      ? i18n("reqpm.form.country_code_hint", {
+          code: this.siteSettings.reqpm_default_country_code || "1",
+        })
+      : null;
   }
 
   get canSave() {
@@ -181,7 +185,9 @@ export default class ReqpmMethodForm extends Component {
           class="reqpm-method-form__value"
           {{on "input" this.setValue}}
         />
-        <span class="reqpm-field__hint">{{this.hint}}</span>
+        {{#if this.hint}}
+          <span class="reqpm-field__hint">{{this.hint}}</span>
+        {{/if}}
       </label>
 
       <label class={{this.fieldClass "note"}}>

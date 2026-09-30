@@ -213,7 +213,6 @@ export default class ReqpmHub extends Component {
     >
       <header class="reqpm-hub__header">
         <h1>{{i18n "reqpm.title"}}</h1>
-        <p class="reqpm-muted">{{i18n "reqpm.hub.subtitle"}}</p>
       </header>
 
       <nav class="reqpm-tabs" role="tablist">
@@ -320,8 +319,6 @@ export default class ReqpmHub extends Component {
             {{else}}
               <p class="reqpm-empty">{{i18n "reqpm.hub.no_outgoing"}}</p>
             {{/if}}
-            <p class="reqpm-tip">{{icon "circle-info"}}
-              {{i18n "reqpm.hub.how_to_request"}}</p>
           </section>
         {{else if (eq this.tab "contacts")}}
           <section class="reqpm-panel">
@@ -393,7 +390,6 @@ export default class ReqpmHub extends Component {
         {{else if (eq this.tab "shared")}}
           <section class="reqpm-panel">
             {{#if this.sent.length}}
-              <p class="reqpm-muted">{{i18n "reqpm.hub.shared_intro"}}</p>
               <ul class="reqpm-rows">
                 {{#each this.sent as |row|}}
                   <li class="reqpm-row">

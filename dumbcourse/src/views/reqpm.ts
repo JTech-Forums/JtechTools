@@ -365,10 +365,7 @@ export function contactsRoute(ctx: RouteContext): Promise<void> {
                     </li>`
                 )}
               </ul>`
-            : html`<p class="hint pad">
-                You haven't asked anyone yet. Open someone's profile and choose
-                Contact details.
-              </p>`}`;
+            : html`<p class="hint pad">You haven't asked anyone yet.</p>`}`;
       } else if (tab.key === "contacts") {
         body = d.received.length
           ? html`${d.received.map(
@@ -398,35 +395,33 @@ export function contactsRoute(ctx: RouteContext): Promise<void> {
           : html`<div class="state state-empty">
               ${icon("phone")}
               <p>No one has sent you their details yet.</p>
+              <p class="hint">Ask from someone's profile.</p>
             </div>`;
       } else {
         body = d.sent.length
-          ? html`<p class="hint pad">
-                These members can see some of your details.
-              </p>
-              <ul class="rows">
-                ${d.sent.map(
-                  (x) =>
-                    html`<li>
-                      <a
-                        class="row"
-                        href="${href(
-                          "/contacts/u/" + encodeURIComponent(x.user.username)
-                        )}"
-                        data-key="s-${x.user.username}"
-                        >${avatar(x.user.avatar_template, 28)}
-                        <div class="row-main">
-                          <div class="row-title">${x.user.username}</div>
-                          <div class="row-meta">
-                            ${x.method_ids.length} shared ·
-                            ${timeAgo(x.shared_at)}
-                          </div>
+          ? html`<ul class="rows">
+              ${d.sent.map(
+                (x) =>
+                  html`<li>
+                    <a
+                      class="row"
+                      href="${href(
+                        "/contacts/u/" + encodeURIComponent(x.user.username)
+                      )}"
+                      data-key="s-${x.user.username}"
+                      >${avatar(x.user.avatar_template, 28)}
+                      <div class="row-main">
+                        <div class="row-title">${x.user.username}</div>
+                        <div class="row-meta">
+                          ${x.method_ids.length} shared ·
+                          ${timeAgo(x.shared_at)}
                         </div>
-                        <span class="btn small">Change</span></a
-                      >
-                    </li>`
-                )}
-              </ul>`
+                      </div>
+                      <span class="btn small">Change</span></a
+                    >
+                  </li>`
+              )}
+            </ul>`
           : html`<div class="state state-empty">
               ${icon("users")}
               <p>You haven't sent your details to anyone yet.</p>
@@ -456,11 +451,7 @@ function renderCard(
     (card) => {
       const box = byId("reqpmBody");
       if (!box || !s.alive()) return;
-      box.innerHTML = html`<p class="hint pad">
-          ${icon("lock")} Encrypted, never public, and staff can't view it on
-          the forum. You choose who sees what.
-        </p>
-        <ul class="rows">
+      box.innerHTML = html`<ul class="rows">
           ${card.methods.map(
             (m) =>
               html`<li>
@@ -480,7 +471,7 @@ function renderCard(
                     </div>
                     <div class="row-title method-value">
                       ${m.unreadable
-                        ? "Couldn't be read — please re-enter"
+                        ? "Unreadable — edit and enter it again"
                         : m.value}
                     </div>
                   </div>
@@ -499,9 +490,7 @@ function renderCard(
                 ${icon("plus")}Add a way to reach you
               </button>
             </div>`
-          : html`<p class="hint pad">
-              You've reached the limit of ${card.max_methods}.
-            </p>`}
+          : html`<p class="hint pad">Limit of ${card.max_methods} reached.</p>`}
         <ul class="rows">
           <li>
             <button
@@ -515,9 +504,6 @@ function renderCard(
               <span class="row-icon">${icon("bell")}</span>
               <div class="row-main">
                 <div class="row-title">Let members request my details</div>
-                <div class="row-meta">
-                  When off, you can still send yours yourself.
-                </div>
               </div>
               <span
                 class="switch${card.allow_requests ? " on" : ""}"
@@ -571,7 +557,7 @@ function renderCard(
             danger: true,
             run: () =>
               confirmDialog(
-                `Remove ${kindName(m)} from your card? Anyone you sent it to will no longer see it.`,
+                `Remove ${kindName(m)}? Anyone you sent it to will lose it too.`,
                 { ok: "Remove", danger: true }
               ).then((ok) => {
                 if (ok)
@@ -590,12 +576,7 @@ function renderCard(
 }
 
 function editMethod(m: Method | null, kind: string, done: () => void): void {
-  const hints: Record<string, string> = {
-    phone: `Without a country code it's saved as +${settings.reqpmCountryCode}.`,
-    sms: `Without a country code it's saved as +${settings.reqpmCountryCode}.`,
-    whatsapp: `Without a country code it's saved as +${settings.reqpmCountryCode}.`,
-    website: "Only http and https links.",
-  };
+  const tel = kind === "phone" || kind === "sms" || kind === "whatsapp";
   const askLabel = (): Promise<string | null> =>
     kind === "custom"
       ? promptDialog("What is it called?", {
@@ -612,12 +593,14 @@ function editMethod(m: Method | null, kind: string, done: () => void): void {
       type:
         kind === "email"
           ? "email"
-          : kind === "phone" || kind === "sms" || kind === "whatsapp"
+          : tel
             ? "tel"
             : kind === "website"
               ? "url"
               : "text",
-      hint: hints[kind] || "",
+      hint: tel
+        ? `Saved as +${settings.reqpmCountryCode} unless you add a country code.`
+        : "",
       ok: "Save",
     }).then((value) => {
       if (value === null) return;
@@ -681,8 +664,7 @@ export function contactUserRoute(ctx: RouteContext): Promise<void> {
         </div>`;
       } else if (r.outgoing_request && r.outgoing_request.state === "waiting") {
         ask = html`<p class="notice">
-            You asked on ${longDate(r.outgoing_request.created_at)}. It's up to
-            ${u.username} whether to answer.
+            Requested ${longDate(r.outgoing_request.created_at)}
           </p>
           ${r.outgoing_request.can_cancel
             ? html`<div class="pad">
@@ -693,7 +675,7 @@ export function contactUserRoute(ctx: RouteContext): Promise<void> {
             : ""}`;
       } else if (r.request_blocked === "cooldown" && r.retry_at) {
         ask = html`<p class="hint pad">
-          You asked recently. You can ask again on ${longDate(r.retry_at)}.
+          You can ask again on ${longDate(r.retry_at)}.
         </p>`;
       } else if (r.request_blocked && r.request_blocked !== "self") {
         ask = html`<p class="hint pad">
@@ -739,10 +721,11 @@ export function contactUserRoute(ctx: RouteContext): Promise<void> {
               </li>`;
             })}
           </ul>`
-        : html`<p class="hint pad">
-            Add a way to reach you first — then choose what ${u.username} can
-            see. <a href="${href("/contacts?tab=card")}">Edit my card</a>
-          </p>`;
+        : html`<div class="pad">
+            <a class="btn block" href="${href("/contacts?tab=card")}"
+              >${icon("plus")}Add a way to reach you</a
+            >
+          </div>`;
 
       const shareActions =
         r.can_share && r.my_methods.length
@@ -797,9 +780,6 @@ export function contactUserRoute(ctx: RouteContext): Promise<void> {
             : ""}
           ${ask}
           <h2 class="section-title">Your details</h2>
-          <p class="hint pad">
-            Tick what ${u.username} may see. You can change it any time.
-          </p>
           ${shareList} ${shareActions}`
       );
 
@@ -809,10 +789,7 @@ export function contactUserRoute(ctx: RouteContext): Promise<void> {
           wanted_kinds: kinds,
         }).then(
           () => {
-            toast(
-              `Asked. ${u.username} decides what, if anything, to send.`,
-              "success"
-            );
+            toast("Request sent.", "success");
             again();
           },
           (e: unknown) => toast(errorMessage(e), "error")
@@ -842,7 +819,7 @@ export function contactUserRoute(ctx: RouteContext): Promise<void> {
           .filter((c) => c.checked)
           .map((c) => parseInt(c.getAttribute("data-method") || "0", 10));
         if (!ids.length) {
-          toast("Tick at least one, or use Stop sharing.", "error");
+          toast("Pick at least one.", "error");
           return;
         }
         post("/jtech-reqpm/shares.json", {
@@ -862,17 +839,17 @@ export function contactUserRoute(ctx: RouteContext): Promise<void> {
           `/jtech-reqpm/requests/${r.incoming_request.id}/decline.json`
         ).then(
           () => {
-            toast("Request dismissed. They won't be told.", "success");
+            toast("Request dismissed.", "success");
             go("/contacts", { replace: true });
           },
           (e: unknown) => toast(errorMessage(e), "error")
         );
       });
       s.act("stop", () =>
-        confirmDialog(
-          `Stop sharing your contact details with ${u.username}? They won't be told.`,
-          { ok: "Stop sharing", danger: true }
-        ).then((ok) => {
+        confirmDialog(`Stop sharing your details with ${u.username}?`, {
+          ok: "Stop sharing",
+          danger: true,
+        }).then((ok) => {
           if (ok)
             del(
               `/jtech-reqpm/shares/${encodeURIComponent(u.username)}.json`
@@ -881,7 +858,7 @@ export function contactUserRoute(ctx: RouteContext): Promise<void> {
       );
       s.act("forget", () =>
         confirmDialog(
-          `Remove ${u.username}'s details from your contacts? You'd need to ask again to get them back.`,
+          `Remove ${u.username}'s details? You'd have to ask again.`,
           { ok: "Remove", danger: true }
         ).then((ok) => {
           if (ok)

@@ -255,9 +255,6 @@ export default class ModWhisperTargetModal extends Component {
       class="mod-whisper-target-modal"
     >
       <:body>
-        <p class="mod-whisper-target-modal__instructions">
-          {{i18n "discourse_mod_categories.whisper.modal_instructions"}}
-        </p>
         <EmailGroupUserChooser
           @value={{this.selection}}
           @onChange={{this.updateSelection}}
@@ -269,11 +266,9 @@ export default class ModWhisperTargetModal extends Component {
         />
 
         {{#if this.badgeChoices.length}}
-          <p
-            class="mod-whisper-target-modal__instructions mod-whisper-target-modal__badge-instructions"
-          >
-            {{i18n "discourse_mod_categories.whisper.modal_badge_instructions"}}
-          </p>
+          <label class="mod-whisper-target-modal__badge-label">
+            {{i18n "discourse_mod_categories.whisper.badge_label"}}
+          </label>
           <MultiSelect
             @value={{this.selectedBadgeIds}}
             @content={{this.badgeChoices}}
