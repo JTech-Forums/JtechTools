@@ -52,6 +52,9 @@ en:
     admin_actions:
       disabled: "The feature this action belongs to is disabled — enable its settings first."
 
+  reviewables:
+    reasons:
+      mod_topic_requires_reply_approval: "Staff turned on reply approval for this topic, so replies wait for review."
   dashboard:
     problem:
       another_smtp_unconfigured: "Another SMTP is switched on but has no relay address, so forum email is still going out through the server's own mail host. Set <a href='%{base_path}/admin/plugins/jtech-tools/smtp'>the relay address</a> or switch Another SMTP off."
@@ -259,26 +262,13 @@ en:
       never affected.
 
     # ── Jtech — Mod ────────────────────────────────────────────────────────
-    mod_categories_enabled: Master switch for the moderator powers in this
-      module — category grants, topic tools, checklists, private staff notes
-      and staff event notifications. Off means moderators lose every grant
-      below, immediately. Whispers, the notification type filter and
+    mod_categories_enabled: Master switch for the moderator tools in this
+      module — topic tools, checklists, private staff notes and staff event
+      notifications. Off means moderators lose every tool below,
+      immediately. Letting moderators create and edit categories is core's
+      {{setting:moderators_manage_categories}}. Whispers, the notification type filter and
       notification auto-mark have their own switches and keep working with
       this off.
-
-    mod_moderators_can_create_categories: Grants every moderator category
-      creation, which Discourse core reserves for admins. Applies site-wide;
-      there is no per-category or per-moderator scoping.
-
-    mod_moderators_can_edit_categories: Grants every moderator edit rights on
-      every category, site-wide — INCLUDING its security settings, so a
-      moderator can grant themselves or anyone else access to a private
-      category. Leave off unless you trust all moderators with that.
-
-    mod_moderators_can_delete_categories: Grants every moderator deletion of
-      categories that are empty (no topics), have no subcategories, and are
-      not Uncategorized. Categories with content cannot be deleted through
-      this grant.
 
     # ── Jtech — Mod: Topic tools ───────────────────────────────────────────
     precheck_new_topic_enabled: Shows a "before you post" prompt when a user
@@ -405,11 +395,11 @@ en:
       whisper is read, so a user who later earns the badge can read earlier
       whispers, and one who loses it loses access.
 
-    mod_whisper_audience_aware_topic_list: Keeps a whisper from bumping a
-      topic up the latest list, or refreshing its activity time, for users
-      who cannot read it. Costs two extra joins on every topic list query —
-      turn off to fall back to normal ordering, where a whisper bumps the
-      topic for everyone.
+    mod_whisper_audience_aware_topic_list: Lets a whisper count as a new,
+      unread post for the non-staff users, groups and badge holders it is
+      addressed to (staff always see whispers as new). Off, only its
+      notification tells them about it. Whispers never bump a topic or count
+      as new for anyone outside their audience either way.
 
     # ── Jtech — Translator tweaks ──────────────────────────────────────────
     translator_tweaks_enabled: Master switch for the Jtech tweaks to the

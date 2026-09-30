@@ -69,7 +69,11 @@ RSpec.describe "Gallery expansion" do
   # Moderator category management
   # ---------------------------------------------------------------------------
   context "moderator category management" do
-    before { sign_in(moderator) }
+    before do
+      # Moderator category management is core's setting.
+      SiteSetting.moderators_manage_categories = true
+      sign_in(moderator)
+    end
 
     it "lists categories on the categories page as a moderator" do
       Fabricate(:category, name: "Releases")
@@ -326,7 +330,12 @@ RSpec.describe "Gallery expansion" do
   # Per-category new-topic prompt — extra states
   # ---------------------------------------------------------------------------
   context "per-category new-topic prompt — extra states" do
-    before { sign_in(moderator) }
+    before do
+      # The prompt lives on the category settings screen, which moderators
+      # reach through core's moderators_manage_categories.
+      SiteSetting.moderators_manage_categories = true
+      sign_in(moderator)
+    end
 
     it "shows a live preview with a markdown bold and a link" do
       visit("/c/#{category.slug}/edit/settings")

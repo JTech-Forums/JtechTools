@@ -339,7 +339,12 @@ RSpec.describe "Moderator messages" do
   end
 
   context "a moderator sets the per-category new-topic prompt" do
-    before { sign_in(moderator) }
+    before do
+      # Reaching the category settings screen is core's
+      # moderators_manage_categories.
+      SiteSetting.moderators_manage_categories = true
+      sign_in(moderator)
+    end
 
     it "saves the prompt from the category settings screen" do
       visit("/c/#{category.slug}/edit/settings")

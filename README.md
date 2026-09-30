@@ -37,7 +37,8 @@ A private one-room chat inside Discourse for staff (or any groups you allow), mi
 - **Staff alerts** — every moderator is told when someone deletes a post, approves/rejects a queued post, adds a user note or a flag note. Shows in the bell and in a shield tab.
 - **Checklists** — first-post checklists, targeted checklists for specific users/groups, topic prompt checklists.
 - **Topic tools** — pinned messages in topics, footer messages, reply approval.
-- Every one of these rights is its own toggle.
+- Every one of these rights is its own toggle. Everything works only on topics the moderator can see, and staff alerts go only to staff who can open what they point at.
+- Letting moderators create and edit categories is core's `moderators_manage_categories` setting (this module used to grant it itself, without core's check that the moderator can see the category). Sites that had the old grant on get the core setting switched on by the upgrade.
 
 ### Mini-mod
 Gives category moderators (people who moderate a category through a group) extra powers normally reserved for staff: create/edit categories, edit and move topics, manage tags, etc. Each power is a separate switch. They never reach a category they can't see, never delete categories, and can't change a category's security or moderators (new subcategories copy their parent's). It can also take away closing/reopening and posting in closed topics from category moderators and TL4 users.

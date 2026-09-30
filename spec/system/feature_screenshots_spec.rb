@@ -23,7 +23,6 @@ RSpec.describe "Feature screenshots" do
 
   let(:targets_field) { DiscourseModCategories::POST_WHISPER_TARGETS_FIELD }
   let(:participants_field) { DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD }
-  let(:nwba_field) { DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD }
 
   before do
     SiteSetting.mod_categories_enabled = true
@@ -277,15 +276,15 @@ RSpec.describe "Feature screenshots" do
   end
 
   # ──────────────────────────────────────────────────────────────────────
-  # Legacy whisper bumps on /latest: a topic bumped by a whisper before
-  # whispers stopped bumping is sorted by its last public post for every
-  # non-staff viewer, audience or not.
+  # Whispers on /latest: a whisper doesn't bump its topic, so the topic sorts
+  # by its last public post for every viewer, audience or not.
   # ──────────────────────────────────────────────────────────────────────
 
   def seed_audience_aware_bump_scenario
     # Two topics seeded with a clear baseline ordering:
     #   public_topic   bumped 30 min ago (older)
-    #   whisper_topic  bumped 5 min ago (newer) — by a whisper visible to audience_user only
+    #   whisper_topic  last public post 1 hour ago, then a whisper 5 min ago
+    #                  visible to audience_user only (which doesn't bump it)
     # Non-staff viewers (audience_user and stranger alike) should see
     # public_topic above whisper_topic.
     public_topic = Fabricate(:topic, category: category, title: "Public conversation")
@@ -309,33 +308,17 @@ RSpec.describe "Feature screenshots" do
     whisper.save_custom_fields(true)
     whisper_topic.custom_fields[participants_field] = [audience_user.id]
 
-    # Backdate the public posts BEFORE reading their max(created_at) for the
-    # non-whisper-bumped-at stamp. Without this, the public posts have
-    # created_at ≈ now, the NWBA stamp becomes "now", and the modifier's
-    # demotion still puts whisper_topic above public_topic (whose bumped_at
-    # is 30 min ago) — defeating the test premise. Mirrors the request
-    # spec's update_columns(created_at: 1.hour.ago) pattern.
-    whisper_topic.posts.where.not(id: whisper.id).update_all(created_at: 1.hour.ago)
-    last_public_post_time = whisper_topic.posts.where.not(id: whisper.id).maximum(:created_at)
-    whisper_topic.custom_fields[nwba_field] = last_public_post_time.iso8601
     whisper_topic.save_custom_fields(true)
-
-    # Roll back highest_post_number (mirrors on(:post_created)) so the
-    # unread-badge math is also audience-aware for this scenario.
-    non_whisper_max =
-      whisper_topic.posts.where.not(id: whisper.id).where(deleted_at: nil).maximum(:post_number)
-    ::Topic.where(id: whisper_topic.id).update_all(
-      bumped_at: 5.minutes.ago,
-      last_posted_at: 5.minutes.ago,
-      highest_post_number: non_whisper_max,
-    )
+    whisper_topic.posts.where.not(id: whisper.id).update_all(created_at: 1.hour.ago)
+    whisper.update_columns(created_at: 5.minutes.ago)
+    DiscourseModCategories::Whisper.refresh_topic_counters(whisper_topic)
+    ::Topic.where(id: whisper_topic.id).update_all(bumped_at: 1.hour.ago)
 
     [whisper_topic, public_topic]
   end
 
-  # Whispers never bump a topic for anyone but staff, the whisper's own
-  # audience included: a legacy whisper bump is sorted by the last public
-  # post, so the audience member sees the same order as everyone else.
+  # Whispers never bump a topic, for their own audience either, so the
+  # audience member sees the same order as everyone else.
   it "13. captures /latest for an AUDIENCE member — whisper bump ignored" do
     _whisper_topic, public_topic = seed_audience_aware_bump_scenario
 

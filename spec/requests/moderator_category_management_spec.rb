@@ -2,15 +2,34 @@
 
 require "rails_helper"
 
-# End-to-end coverage for the moderator category-management feature. Hits the
-# actual /categories.json endpoints as a moderator and verifies the plugin's
-# Guardian overrides correctly grant create/edit/delete permissions.
+# Moderator category management is core's moderators_manage_categories (the
+# Mod module used to grant it itself). Hits the real /categories.json
+# endpoints to pin the behavior sites relying on it get.
 RSpec.describe "Category management for moderators", type: :request do
   fab!(:moderator)
   fab!(:user)
   fab!(:category)
 
-  before { SiteSetting.mod_categories_enabled = true }
+  before do
+    SiteSetting.mod_categories_enabled = true
+    SiteSetting.moderators_manage_categories = true
+  end
+
+  it "keeps admin-only categories away from moderators" do
+    admin_only = Fabricate(:private_category, group: Group[:admins])
+    sign_in(moderator)
+    put "/categories/#{admin_only.id}.json",
+        params: {
+          name: admin_only.name,
+          color: admin_only.color,
+          text_color: admin_only.text_color,
+          permissions: {
+            "everyone" => 1,
+          },
+        }
+    expect(response.status).to eq(403)
+    expect(admin_only.reload.read_restricted).to eq(true)
+  end
 
   describe "POST /categories.json" do
     it "lets a moderator create a top-level category" do
