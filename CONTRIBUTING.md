@@ -21,7 +21,7 @@ See [`README.md`](./README.md) for the directory map. The short version:
    ```bash
    pnpm install
    bundle install
-   pnpm lint              # ESLint + Prettier + Stylelint + template-lint
+   pnpm lint              # ESLint + Prettier + Stylelint + type-check + Dumbcourse
    bundle exec rubocop    # Ruby
    ```
 4. Run the relevant specs in a Discourse dev install:
@@ -34,7 +34,7 @@ See [`README.md`](./README.md) for the directory map. The short version:
 ## Style
 
 - **Ruby**: `rubocop-discourse` + `syntax_tree` — `bundle exec stree write Gemfile *.rb sub_plugins/*.rb lib/**/*.rb` if anything's off.
-- **JS / `.gjs`**: ESLint + Prettier via `@discourse/lint-configs`. `pnpm lint:fix` rewrites for you.
+- **TypeScript (`.ts` / `.gts`)**: all frontend code is TypeScript; no new `.js`/`.gjs`. Components declare a `Signature`, services use `@service declare foo: FooService`, and `pnpm lint:types` must pass with no `@ts-ignore`/`@ts-expect-error`. Keep the long-standing `discourse/components/...` import paths (older cores lack `discourse/ui-kit/...`); their types come from `types/discourse-shims.d.ts`. ESLint + Prettier via `@discourse/lint-configs`; `pnpm lint:fix` rewrites for you.
 - **SCSS**: Stylelint via `@discourse/lint-configs/stylelint`. Same `lint:fix`.
 - **Comments**: Don't restate what the code does. Comment **why** when a constraint isn't obvious.
 
