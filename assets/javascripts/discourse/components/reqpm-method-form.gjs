@@ -17,6 +17,7 @@ import ReqpmKindIcon from "./reqpm-kind-icon";
 // shown next to the field it is about.
 export default class ReqpmMethodForm extends Component {
   @service reqpm;
+  @service siteSettings;
 
   @tracked value = this.args.method?.value || "";
   @tracked label = this.args.method?.label || "";
@@ -54,7 +55,9 @@ export default class ReqpmMethodForm extends Component {
   }
 
   get hint() {
-    return i18n(`reqpm.kinds.${this.kind}.hint`);
+    return i18n(`reqpm.kinds.${this.kind}.hint`, {
+      code: this.siteSettings.reqpm_default_country_code || "1",
+    });
   }
 
   get canSave() {

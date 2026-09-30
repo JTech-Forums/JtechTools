@@ -32,9 +32,38 @@ function digits(value) {
   return (value || "").replace(/[^\d]/g, "");
 }
 
-function dialable(value) {
-  const d = digits(value);
-  return (value || "").trim().startsWith("+") ? `+${d}` : d;
+// The full international number (country code + digits, no "+"), or null
+// when it can't be placed. Mirrors Kinds.with_country_code on the server,
+// for numbers saved before that existed: "646-820-1413" with the default
+// code 1 → "16468201413". Without this WhatsApp read the leading "64" as
+// New Zealand.
+export function internationalDigits(value, defaultCode) {
+  const raw = (value || "").trim();
+  const d = digits(raw);
+  if (raw.startsWith("+")) {
+    return d;
+  }
+  if (raw.startsWith("00")) {
+    return d.slice(2);
+  }
+  const code = String(defaultCode ?? "").replace(/\D/g, "");
+  if (!code || d.startsWith("0")) {
+    return null;
+  }
+  if (d.length === 10) {
+    return code + d;
+  }
+  if (d.startsWith(code) && d.length === 10 + code.length) {
+    return d;
+  }
+  return null;
+}
+
+// tel:/sms: target — international when known, otherwise the number as
+// typed so a local dial still works.
+function dialable(value, defaultCode) {
+  const intl = internationalDigits(value, defaultCode);
+  return intl ? `+${intl}` : digits(value);
 }
 
 function looksLikePhone(value) {
@@ -53,20 +82,23 @@ export function httpUrl(value) {
 // The one-tap action for a contact method, or null when copying is the only
 // sensible thing (e.g. a Discord username). Every href is built from a
 // fixed scheme plus a value the server has already validated for its kind.
-export function actionFor(method) {
+export function actionFor(method, defaultCode = "1") {
   const value = (method?.value || "").trim();
   if (!value) {
     return null;
   }
   switch (method.kind) {
     case "phone":
-      return { href: `tel:${dialable(value)}`, label: "call" };
+      return { href: `tel:${dialable(value, defaultCode)}`, label: "call" };
     case "sms":
-      return { href: `sms:${dialable(value)}`, label: "text" };
-    case "whatsapp":
-      return digits(value).length >= 5
-        ? { href: `https://wa.me/${digits(value)}`, label: "chat" }
+      return { href: `sms:${dialable(value, defaultCode)}`, label: "text" };
+    case "whatsapp": {
+      // wa.me needs the full international number; no guessing.
+      const intl = internationalDigits(value, defaultCode);
+      return intl && intl.length >= 8
+        ? { href: `https://wa.me/${intl}`, label: "chat" }
         : null;
+    }
     case "email":
       // No ?, & or # — they would add headers (cc, body…) to the mailto:.
       return /^[^\s@<>"?&#%]+@[^\s@<>"?&#%]+$/.test(value)
@@ -85,10 +117,14 @@ export function actionFor(method) {
         ? { href: `https://t.me/${handle}`, label: "chat" }
         : null;
     }
-    case "signal":
-      return looksLikePhone(value) && value.startsWith("+")
-        ? { href: `https://signal.me/#p/${dialable(value)}`, label: "chat" }
+    case "signal": {
+      const intl = looksLikePhone(value)
+        ? internationalDigits(value, defaultCode)
         : null;
+      return intl
+        ? { href: `https://signal.me/#p/+${intl}`, label: "chat" }
+        : null;
+    }
     case CUSTOM: {
       const href = httpUrl(value);
       return href ? { href, label: "open" } : null;

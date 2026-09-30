@@ -217,4 +217,32 @@ RSpec.describe "REQ-PM", reqpm_prompt: true do
     expect(page).to have_css(".reqpm-preferences .d-toggle-switch")
     shot("18_preferences_tab")
   end
+
+  it "treats a number saved without a country code as +1 for Call and WhatsApp" do
+    # Saved before numbers were normalized on save: no country code stored.
+    legacy = add_method(alice, "whatsapp", "646-820-1413")
+    legacy.update_columns(
+      value_ciphertext:
+        DiscourseReqpm::Crypto.encrypt("646-820-1413", user_id: alice.id, field: :value),
+    )
+    phone = add_method(alice, "phone", "(718) 555-0100")
+    DiscourseReqpm::Share.create!(
+      owner_id: alice.id,
+      recipient_id: bob.id,
+      contact_method_id: legacy.id,
+    )
+    DiscourseReqpm::Share.create!(
+      owner_id: alice.id,
+      recipient_id: bob.id,
+      contact_method_id: phone.id,
+    )
+
+    sign_in(bob)
+    visit "/reqpm?tab=contacts"
+    card = find(".reqpm-contact-card", text: "alice_k")
+    whatsapp = card.find(".reqpm-contact-list__item", text: "646-820-1413")
+    expect(whatsapp.find("a.reqpm-contact-list__go")[:href]).to eq("https://wa.me/16468201413")
+    call = card.find(".reqpm-contact-list__item", text: "555-0100")
+    expect(call.find("a.reqpm-contact-list__go")[:href]).to eq("tel:+17185550100")
+  end
 end

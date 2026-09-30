@@ -28,6 +28,44 @@ RSpec.describe DiscourseReqpm::Kinds do
       expect(normalize(kind: "phone", value: "0527.123.456")[:value]).to eq("0527.123.456")
     end
 
+    describe "default country code" do
+      it "adds +1 to a 10-digit number typed without one" do
+        expect(normalize(kind: "whatsapp", value: "646-820-1413")[:value]).to eq("+1 646-820-1413")
+        expect(normalize(kind: "sms", value: "(718) 555-0100")[:value]).to eq("+1 (718) 555-0100")
+      end
+
+      it "adds just the + when the number already starts with the code" do
+        expect(normalize(kind: "phone", value: "1 646 820 1413")[:value]).to eq("+1 646 820 1413")
+      end
+
+      it "turns the 00 international prefix into +" do
+        expect(normalize(kind: "whatsapp", value: "00972 52 123 4567")[:value]).to eq(
+          "+972 52 123 4567",
+        )
+      end
+
+      it "leaves numbers it can't place alone" do
+        expect(normalize(kind: "phone", value: "052-123-4567")[:value]).to eq("052-123-4567")
+        expect(normalize(kind: "phone", value: "555-0100")[:value]).to eq("555-0100")
+        expect(normalize(kind: "phone", value: "+44 20 7946 0958")[:value]).to eq(
+          "+44 20 7946 0958",
+        )
+      end
+
+      it "follows the setting, and can be turned off" do
+        SiteSetting.reqpm_default_country_code = "972"
+        expect(normalize(kind: "phone", value: "5212345678")[:value]).to eq("+972 5212345678")
+
+        SiteSetting.reqpm_default_country_code = ""
+        expect(normalize(kind: "phone", value: "646-820-1413")[:value]).to eq("646-820-1413")
+      end
+
+      it "applies to phone-shaped Signal and Telegram values only" do
+        expect(normalize(kind: "signal", value: "646 820 1413")[:value]).to eq("+1 646 820 1413")
+        expect(normalize(kind: "telegram", value: "@jtech_user")[:value]).to eq("@jtech_user")
+      end
+    end
+
     it "rejects things that are not phone numbers" do
       expect(reason_for(kind: "phone", value: "call me")).to eq(%i[value phone])
       expect(reason_for(kind: "phone", value: "123")).to eq(%i[value phone])

@@ -177,20 +177,20 @@ en:
           field: Number
           name: Phone
           short: Phone
-          placeholder: "+1 718 555 0100"
-          hint: Include the country code if people outside your country may call.
+          placeholder: "(718) 555-0100"
+          hint: "Numbers without a country code are saved as +%{code}. Outside the US/Canada? Start with + and your country code."
         sms:
           field: Number
           name: Text message
           short: Text
-          placeholder: "+1 718 555 0100"
-          hint: The number people can text.
+          placeholder: "(718) 555-0100"
+          hint: "The number people can text. Without a country code it's saved as +%{code}."
         whatsapp:
           field: WhatsApp number
           name: WhatsApp
           short: WhatsApp
-          placeholder: "+972 52 123 4567"
-          hint: Your WhatsApp number with the country code, so the Chat button works.
+          placeholder: "(718) 555-0100"
+          hint: "Without a country code it's saved as +%{code}. Outside the US/Canada? Start with + and your country code."
         email:
           field: Address
           name: Email
