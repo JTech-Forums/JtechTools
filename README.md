@@ -1,6 +1,6 @@
 # Jtech Tools
 
-One Discourse plugin with everything JTech Forums runs on top of core. Ten features, each with its own on/off switch in **Admin → Settings → Jtech**.
+One Discourse plugin with everything JTech Forums runs on top of core. Eleven features, each with its own on/off switch in **Admin → Settings → Jtech**.
 
 ## Install
 
@@ -62,6 +62,20 @@ Small fixes on top of the official Translator plugin (better foreign-language de
 
 ### Username avatar
 Default (non-uploaded) avatars are derived from a user's **username** instead of their email address, so they no longer depend on whether — or where — someone has a Gravatar. Users with a manually uploaded custom avatar are unaffected. Existing users keep their cached Gravatar-derived avatar until it's flushed; run `scripts/username_avatar_recalculate.rb` (see the file's header for the exact command) to reset everyone without a custom avatar to their username-based letter avatar.
+
+### REQ-PM — exchange contact details instead of private messages
+The forum has no PMs; REQ-PM is how members reach each other off the forum without anyone (members or staff) being able to read a conversation.
+
+- Every member keeps a small **contact card**: Phone, Text message, WhatsApp, Email, Website, Telegram, Signal, Discord — or **Something else** with their own name and emoji. Each entry is a proper input for its type (phone keypad, email keyboard, http/https-only links), with an optional short note ("evenings only").
+- **Request**: press **REQ-PM** on anyone's user card or profile → *Request their contact details* (optionally tick what you'd like — phone, WhatsApp…). There is no text box, so it can't become a PM back door.
+- **Send**: they get a notification, tick exactly which of their details you may see, and press send. You can also send your own details unprompted. Either side can take back what they sent, or remove a card they received, at any time — silently.
+- Declining is silent too: the requester only ever sees "waiting", then "expired".
+- Everything lives on the **REQ-PM** page (`/reqpm`, header icon with a badge, sidebar link): *Requests*, *Contacts* (with Call / Text / Chat / Email buttons and copy), *My card*, *Shared with*.
+- **Setup prompt**: members with an empty card — new signups and existing members — get a friendly "Add a way for members to reach you" window. `reqpm_setup_prompt`: *gentle* (default; "Remind me later" / "I'd rather not"), *required* (comes back on every page until they add one; admin pages exempt), or *off*.
+- **Privacy**: values are AES-256-GCM encrypted at rest, each bound to its owner and field, and are only ever returned to their owner and to the people the owner chose. There is no admin screen for them, REQ-PM endpoints refuse API keys and admin impersonation, ignores/mutes stop staff too, and values are masked in request logs. Notifications and realtime messages carry who/what only, never a value.
+- **Abuse limits** (all adjustable, staff included): 10 requests and 20 sends per day, 3-day cooldown before asking the same person again, requests expire after 30 days, max 10 methods per card. Members can switch off "Let members request my contact details"; ignore/mute blocks requests and sends. Staged, suspended, silenced and anonymous-mode accounts can't take part.
+- Settings: **Admin → Plugins → Jtech Tools → REQ-PM**. Who can use it: `reqpm_allowed_groups` (default: everyone signed in).
+- Note: the encryption key is derived from the server's `secret_key_base`, which isn't part of a Discourse backup. After restoring onto a *different* server, cards show "please re-enter" instead of the old values — nothing leaks or gets mixed up.
 
 ## Telegram setup (5 minutes)
 

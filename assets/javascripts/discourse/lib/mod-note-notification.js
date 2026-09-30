@@ -2,7 +2,9 @@ import { i18n } from "discourse-i18n";
 
 // Notification-type renderer for the moderator-note custom notification
 // AND the staff-event streams that piggyback on the same `mod_note: true`
-// marker (post actions, user notes, flag/reviewable notes).
+// marker (post actions, user notes, flag/reviewable notes). Core allows one
+// renderer per notification type, so the other features' `custom`
+// notifications (Disteleplus mentions, REQ-PM) are decoded here too.
 //
 // All plugin notifications share the `custom` notification type, so this
 // renderer keys off the `mod_note` marker the server sets in the
@@ -38,6 +40,18 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
       return !!this.notification.data?.disteleplus;
     }
 
+    // REQ-PM: someone asked for, or sent, contact details. The data holds
+    // only who and what — never a contact value.
+    get isReqpm() {
+      return !!this.notification.data?.reqpm;
+    }
+
+    get reqpmKind() {
+      return this.notification.data?.reqpm_kind === "shared"
+        ? "shared"
+        : "request";
+    }
+
     // "mention" (default) or "poll_closed" — each gets its own bell text.
     get disteleplusKind() {
       return this.notification.data?.disteleplus_kind || "mention";
@@ -59,7 +73,7 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     // the user notes tab, or the review-queue entry, depending on kind.
     get linkHref() {
       if (
-        (this.isModNote || this.isDisteleplus) &&
+        (this.isModNote || this.isDisteleplus || this.isReqpm) &&
         this.notification.data?.url
       ) {
         return this.notification.data.url;
@@ -68,6 +82,9 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     }
 
     get linkTitle() {
+      if (this.isReqpm) {
+        return i18n("reqpm.title");
+      }
       if (this.isDisteleplus) {
         if (this.disteleplusKind === "poll_closed") {
           return i18n("disteleplus.poll.closed_title");
@@ -87,6 +104,9 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     // The plugin's registered shield icon, so the notification reads
     // unambiguously as a moderator/staff item.
     get icon() {
+      if (this.isReqpm) {
+        return this.reqpmKind === "shared" ? "id-card" : "address-card";
+      }
       if (this.isDisteleplus) {
         return this.disteleplusKind === "poll_closed"
           ? "chart-simple"
@@ -102,6 +122,9 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     // Accurate, self-describing label naming the acting moderator —
     // e.g. "added a moderator note", "deleted a post", "added a note on a user".
     get label() {
+      if (this.isReqpm) {
+        return this.username;
+      }
       if (this.isDisteleplus) {
         if (this.disteleplusKind === "poll_closed") {
           return i18n("disteleplus.poll.closed_label");
@@ -119,6 +142,9 @@ export default function modNoteNotificationRenderer(NotificationTypeBase) {
     // Second line: the excerpt (note body / post body / reply body)
     // when available, falling back to the topic title.
     get description() {
+      if (this.isReqpm) {
+        return i18n(`reqpm.notifications.${this.reqpmKind}`);
+      }
       if (this.isDisteleplus) {
         return this.notification.data?.excerpt;
       }

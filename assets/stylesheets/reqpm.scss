@@ -1,0 +1,853 @@
+// REQ-PM — contact card, per-user window, hub page and setup prompt.
+// Theme-aware: surfaces and text use core color variables; only the
+// platform badges carry their brand color.
+.reqpm-muted {
+  color: var(--primary-medium);
+  font-size: var(--font-down-1);
+}
+
+// ── Platform badge ─────────────────────────────────────────────────────────
+.reqpm-kind-icon {
+  --reqpm-kind: var(--tertiary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2em;
+  height: 2em;
+  border-radius: 50%;
+  background: var(--reqpm-kind);
+  color: #fff;
+  font-size: var(--font-0);
+
+  .d-icon {
+    width: 1em;
+    height: 1em;
+  }
+
+  img.emoji {
+    width: 1.2em;
+    height: 1.2em;
+  }
+
+  &--phone {
+    --reqpm-kind: #2e7d32;
+  }
+
+  &--sms {
+    --reqpm-kind: #0277bd;
+  }
+
+  &--whatsapp {
+    --reqpm-kind: #25d366;
+  }
+
+  &--email {
+    --reqpm-kind: #c62828;
+  }
+
+  &--website {
+    --reqpm-kind: #5e35b1;
+  }
+
+  &--telegram {
+    --reqpm-kind: #229ed9;
+  }
+
+  &--signal {
+    --reqpm-kind: #3a76f0;
+  }
+
+  &--discord {
+    --reqpm-kind: #5865f2;
+  }
+
+  &--custom {
+    --reqpm-kind: var(--primary-low);
+  }
+}
+
+// ── Received details ───────────────────────────────────────────────────────
+.reqpm-contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  &__item {
+    display: flex;
+    gap: 0.75em;
+    align-items: center;
+    padding: 0.6em 0.75em;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius-large, 8px);
+    background: var(--secondary);
+  }
+
+  &__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+
+  &__value {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+    user-select: all;
+  }
+
+  &__note {
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+    font-style: italic;
+  }
+
+  &__actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.35em;
+  }
+}
+
+// ── Own card editor ────────────────────────────────────────────────────────
+.reqpm-card-editor {
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+    margin: 0 0 1em;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75em;
+    align-items: center;
+    padding: 0.6em 0.75em;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius-large, 8px);
+
+    &--unreadable {
+      border-color: var(--danger-medium);
+      background: var(--danger-low);
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex: 1 1 12em;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    align-items: center;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+
+  &__value {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  &__note {
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+    font-style: italic;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.15em;
+  }
+
+  &__inline-form {
+    flex: 1 1 100%;
+  }
+
+  &__empty {
+    display: flex;
+    gap: 0.75em;
+    align-items: center;
+    margin-bottom: 1em;
+    padding: 1em;
+    border: 1px dashed var(--primary-low-mid);
+    border-radius: var(--d-border-radius-large, 8px);
+    color: var(--primary-medium);
+
+    .d-icon {
+      font-size: var(--font-up-3);
+    }
+
+    p {
+      margin: 0;
+    }
+  }
+
+  &__picker-title {
+    margin: 0 0 0.5em;
+    font-weight: 600;
+  }
+
+  &__new {
+    margin-top: 0.5em;
+  }
+}
+
+.reqpm-pill {
+  display: inline-flex;
+  gap: 0.25em;
+  align-items: center;
+  padding: 0 0.5em;
+  border-radius: 1em;
+  background: var(--tertiary-very-low);
+  color: var(--tertiary);
+  font-size: var(--font-down-2);
+
+  .d-icon {
+    width: 0.8em;
+    height: 0.8em;
+  }
+}
+
+.reqpm-kind-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5em, 1fr));
+  gap: 0.5em;
+  margin-bottom: 0.75em;
+
+  &__tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
+    align-items: center;
+    padding: 0.75em 0.5em;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius-large, 8px);
+    background: var(--secondary);
+    color: var(--primary);
+    font-size: var(--font-down-1);
+    text-align: center;
+    cursor: pointer;
+
+    .reqpm-kind-icon {
+      font-size: var(--font-up-2);
+    }
+
+    &:hover,
+    &:focus-visible {
+      border-color: var(--tertiary);
+      background: var(--tertiary-very-low);
+    }
+  }
+}
+
+// ── Add / edit form ────────────────────────────────────────────────────────
+.reqpm-method-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75em;
+  padding: 0.9em;
+  border: 1px solid var(--tertiary-low);
+  border-radius: var(--d-border-radius-large, 8px);
+  background: var(--primary-very-low);
+
+  &__head {
+    display: flex;
+    gap: 0.6em;
+    align-items: center;
+    font-weight: 600;
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75em;
+    align-items: flex-end;
+  }
+
+  &__default {
+    display: flex;
+    gap: 0.5em;
+    align-items: center;
+    font-size: var(--font-down-1);
+    font-weight: normal;
+
+    input {
+      margin: 0;
+    }
+  }
+
+  &__error {
+    color: var(--danger);
+    font-size: var(--font-down-1);
+  }
+
+  &__buttons {
+    display: flex;
+    gap: 0.5em;
+  }
+}
+
+.reqpm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  margin: 0;
+
+  &--grow {
+    flex: 1 1 12em;
+  }
+
+  &__label {
+    font-size: var(--font-down-1);
+    font-weight: 600;
+  }
+
+  &__optional {
+    color: var(--primary-medium);
+    font-weight: normal;
+  }
+
+  &__hint {
+    color: var(--primary-medium);
+    font-size: var(--font-down-2);
+    font-weight: normal;
+  }
+
+  input[type] {
+    width: 100%;
+    margin: 0;
+  }
+
+  &--error input[type] {
+    border-color: var(--danger);
+  }
+}
+
+// ── Shared pieces ──────────────────────────────────────────────────────────
+.reqpm-callout {
+  display: flex;
+  gap: 0.75em;
+  align-items: flex-start;
+  margin-bottom: 1em;
+  padding: 0.75em 1em;
+  border-radius: var(--d-border-radius-large, 8px);
+
+  > .d-icon {
+    margin-top: 0.2em;
+  }
+
+  &--incoming {
+    border: 1px solid var(--tertiary-low);
+    background: var(--tertiary-very-low);
+  }
+
+  &--success {
+    border: 1px solid var(--success-low);
+    background: var(--success-low);
+    color: var(--primary);
+  }
+}
+
+.reqpm-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  align-items: center;
+  margin-top: 0.75em;
+  color: var(--primary-medium);
+}
+
+.reqpm-error {
+  margin: 0.5em 0;
+  color: var(--danger);
+  font-size: var(--font-down-1);
+}
+
+.reqpm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em;
+  margin-bottom: 0.75em;
+}
+
+.reqpm-chip {
+  display: inline-flex;
+  gap: 0.4em;
+  align-items: center;
+  padding: 0.2em 0.7em 0.2em 0.25em;
+  border: 1px solid var(--primary-low);
+  border-radius: 2em;
+  background: var(--secondary);
+  color: var(--primary);
+  font-size: var(--font-down-1);
+  cursor: pointer;
+
+  .reqpm-kind-icon {
+    font-size: var(--font-down-2);
+  }
+
+  &--on {
+    border-color: var(--tertiary);
+    background: var(--tertiary-very-low);
+    font-weight: 600;
+  }
+}
+
+.reqpm-section {
+  margin-top: 1.25em;
+
+  h3 {
+    display: flex;
+    gap: 0.4em;
+    align-items: center;
+    margin: 0 0 0.6em;
+    font-size: var(--font-up-1);
+  }
+}
+
+.reqpm-ask {
+  margin-top: 0.75em;
+
+  &__label {
+    margin: 0 0 0.4em;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+}
+
+.reqpm-share-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  margin: 0.5em 0 0.75em;
+  padding: 0;
+  list-style: none;
+
+  &__item {
+    display: flex;
+    gap: 0.6em;
+    align-items: center;
+    margin: 0;
+    padding: 0.5em 0.75em;
+    font-weight: normal;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius-large, 8px);
+    cursor: pointer;
+
+    &:has(input:checked) {
+      border-color: var(--tertiary);
+      background: var(--tertiary-very-low);
+    }
+
+    input {
+      margin: 0;
+    }
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+
+  &__value {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+}
+
+// ── Per-user window ────────────────────────────────────────────────────────
+.reqpm-user-modal {
+  .d-modal__container {
+    max-width: 36em;
+  }
+
+  &__who {
+    display: flex;
+    gap: 0.75em;
+    align-items: center;
+    margin-bottom: 1em;
+  }
+
+  &__username {
+    font-size: var(--font-up-1);
+    font-weight: 600;
+  }
+
+  // Answering a request: your own details come first.
+  &__sections {
+    display: flex;
+    flex-direction: column;
+
+    &--answering .reqpm-section--send {
+      order: -1;
+      margin-top: 0;
+    }
+  }
+
+  &__send-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+  }
+
+  &__forget,
+  &__edit-card {
+    margin-top: 0.5em;
+  }
+
+  &__decline {
+    margin-top: 0.4em;
+    padding-left: 0;
+  }
+}
+
+// ── Setup prompt ───────────────────────────────────────────────────────────
+.reqpm-setup-modal {
+  .d-modal__container {
+    max-width: 38em;
+  }
+
+  &__lead {
+    margin-top: 0;
+    font-size: var(--font-up-1);
+  }
+
+  &__points {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+    margin: 0 0 1.25em;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: flex;
+      gap: 0.6em;
+      align-items: flex-start;
+    }
+
+    .d-icon {
+      margin-top: 0.2em;
+      color: var(--tertiary);
+    }
+  }
+
+  &__required {
+    margin-right: auto;
+  }
+}
+
+// ── Header icon, user card button ──────────────────────────────────────────
+.reqpm-header-icon {
+  .btn {
+    position: relative;
+  }
+
+  &__badge {
+    position: absolute;
+    top: 0.1em;
+    right: 0.05em;
+    min-width: 1.4em;
+    padding: 0 0.3em;
+    border-radius: 1em;
+    background: var(--tertiary);
+    color: var(--secondary);
+    font-size: var(--font-down-2);
+    font-weight: 700;
+    line-height: 1.4em;
+    text-align: center;
+  }
+}
+
+.reqpm-user-button {
+  white-space: nowrap;
+}
+
+// ── Hub page ───────────────────────────────────────────────────────────────
+.reqpm-hub {
+  max-width: 52em;
+  margin: 0 auto;
+  padding-bottom: 3em;
+
+  &__header {
+    margin: 1em 0;
+
+    h1 {
+      display: flex;
+      gap: 0.4em;
+      align-items: center;
+      margin: 0 0 0.25em;
+    }
+
+    p {
+      margin: 0;
+    }
+  }
+
+  h2 {
+    margin: 1.25em 0 0.6em;
+    font-size: var(--font-up-1);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+}
+
+.reqpm-tabs {
+  display: flex;
+  gap: 0.25em;
+  margin-bottom: 1em;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--primary-low);
+
+  &__tab {
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: 0.4em;
+    align-items: center;
+    margin-bottom: -1px;
+    padding: 0.6em 0.9em;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: none;
+    color: var(--primary-medium);
+    font-size: var(--font-0);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--primary);
+    }
+
+    &.active {
+      border-bottom-color: var(--tertiary);
+      color: var(--primary);
+      font-weight: 600;
+    }
+  }
+
+  &__count {
+    min-width: 1.5em;
+    padding: 0 0.4em;
+    border-radius: 1em;
+    background: var(--primary-low);
+    color: var(--primary);
+    font-size: var(--font-down-2);
+    line-height: 1.5em;
+    text-align: center;
+
+    &--alert {
+      background: var(--tertiary);
+      color: var(--secondary);
+    }
+  }
+}
+
+.reqpm-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reqpm-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75em;
+  align-items: center;
+  padding: 0.75em;
+  border: 1px solid var(--primary-low);
+  border-radius: var(--d-border-radius-large, 8px);
+
+  &--incoming {
+    border-color: var(--tertiary-low);
+    background: var(--tertiary-very-low);
+  }
+
+  &__body {
+    flex: 1 1 14em;
+    min-width: 0;
+  }
+
+  &__kinds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3em;
+    align-items: center;
+    margin-top: 0.3em;
+
+    .reqpm-kind-icon {
+      font-size: var(--font-down-2);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+  }
+}
+
+.reqpm-state {
+  margin-left: 0.4em;
+  padding: 0 0.5em;
+  border-radius: 1em;
+  font-size: var(--font-down-2);
+
+  &--waiting {
+    background: var(--highlight-low);
+  }
+
+  &--answered {
+    background: var(--success-low);
+  }
+
+  &--expired {
+    background: var(--primary-low);
+    color: var(--primary-medium);
+  }
+}
+
+.reqpm-empty {
+  color: var(--primary-medium);
+
+  &--big {
+    padding: 2em 1em;
+    text-align: center;
+
+    .d-icon {
+      font-size: 2.5em;
+      opacity: 0.5;
+    }
+  }
+}
+
+.reqpm-tip {
+  display: flex;
+  gap: 0.5em;
+  align-items: flex-start;
+  margin-top: 1.5em;
+  color: var(--primary-medium);
+  font-size: var(--font-down-1);
+}
+
+.reqpm-filter {
+  width: 100%;
+  margin-bottom: 1em;
+}
+
+.reqpm-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(20em, 1fr));
+  gap: 1em;
+}
+
+.reqpm-contact-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75em;
+  padding: 0.9em;
+  border: 1px solid var(--primary-low);
+  border-radius: var(--d-border-radius-large, 8px);
+  background: var(--primary-very-low);
+
+  &--highlight {
+    border-color: var(--tertiary);
+    box-shadow: 0 0 0 3px var(--tertiary-low);
+  }
+
+  &__head {
+    display: flex;
+    gap: 0.6em;
+    align-items: center;
+  }
+
+  &__who {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__when {
+    white-space: nowrap;
+  }
+
+  &__foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+  }
+}
+
+.reqpm-privacy {
+  display: flex;
+  gap: 0.75em;
+  margin-bottom: 1.5em;
+  padding: 0.9em 1em;
+  border: 1px solid var(--success-low);
+  border-radius: var(--d-border-radius-large, 8px);
+  background: var(--primary-very-low);
+
+  > .d-icon {
+    margin-top: 0.2em;
+    color: var(--success);
+    font-size: var(--font-up-2);
+  }
+
+  ul {
+    margin: 0.4em 0 0;
+    padding-left: 1.1em;
+    color: var(--primary-high);
+    font-size: var(--font-down-1);
+  }
+}
+
+.reqpm-setting {
+  margin-top: 1.5em;
+  padding-top: 1em;
+  border-top: 1px solid var(--primary-low);
+
+  p {
+    margin: 0.4em 0 0;
+  }
+}
+
+@media (width <= 600px) {
+  .reqpm-contact-list__item {
+    flex-wrap: wrap;
+  }
+
+  .reqpm-contact-list__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .reqpm-cards {
+    grid-template-columns: 1fr;
+  }
+}
