@@ -1,107 +1,76 @@
-# Jtech Tools
+<p align="center">
+  <img src="docs/images/logo.svg" width="112" alt="">
+</p>
 
-One Discourse plugin with everything JTech Forums runs on top of core. Ten features, each with its own on/off switch in **Admin → Settings → Jtech**.
+<h1 align="center">Jtech Tools</h1>
 
-## Install
+<p align="center">
+  The plugin behind <a href="https://forums.jtechforums.org">JTech Forums</a>: everything we run on top of Discourse, in one place.
+</p>
+
+<p align="center">
+  <img src="docs/images/collage.png" alt="Dumbcourse on a keypad phone, a whisper, a moderator note, REQ-PM and a desktop pop-up">
+</p>
+
+---
+
+We built these tools for our own forum as the need came up. Some help moderators work, some keep private things private, and one makes the forum usable on a flip phone. They live in one plugin so there's one thing to install and update. Every piece has its own switch, so you only run what you want.
+
+## What's inside
+
+**For moderators**
+
+- **[Moderator tools](docs/features/moderator-tools.md).** Whispers to specific people inside a topic, private staff notes, alerts when another moderator acts, checklists before posting, and small topic tools like footer messages and reply approval.
+- **[Mini-mod](docs/features/mini-mod.md).** A few extra rights for people who moderate a single category: managing their categories, moving topics, tags. None of it reaches past what they can see.
+- **[Dislike](docs/features/dislike.md).** In the categories you choose, likes stop counting: no notifications, no history, no leaderboard.
+
+**For members**
+
+- **[REQ-PM](docs/features/reqpm.md).** The forum has no private messages. Members ask each other for contact details, and choose exactly what to share.
+- **[Dumbcourse](docs/features/dumbcourse.md).** The whole forum at `/dumb`, built for flip phones and old browsers, driven by the D-pad and keypad.
+- **[Smart search](docs/features/smart-search.md).** When a search finds too little, it tries again with synonyms, so "k8s" finds "kubernetes".
+- **[Desktop pop-ups](docs/features/popups.md).** A small card in the corner when a notification arrives.
+
+**Behind the scenes**
+
+- **[Disteleplus](docs/features/disteleplus.md).** A chat room for staff, mirrored both ways with a Telegram group, with the review queue in Telegram too.
+- **[Another SMTP](docs/features/another-smtp.md).** Send forum email through a different mail server.
+- **[Translator tweaks](docs/features/translator-tweaks.md).** A proxy for the Translator plugin's Google requests.
+
+## Installing
+
+Add the plugin to your `app.yml` and rebuild:
+
+```yaml
+hooks:
+  after_code:
+    - exec:
+        cd: $home/plugins
+        cmd:
+          - git clone https://github.com/JTech-Forums/JtechTools.git jtech-tools
+```
 
 ```bash
 cd /var/discourse
-# add to containers/app.yml under hooks → after_code → cmd:
-#   - git clone https://github.com/JTech-Forums/JtechTools.git jtech-tools
 ./launcher rebuild app
 ```
 
-Master switch: `jtech_enabled`. Turning it off stops every feature, including the permission changes Mini-mod and the moderator tools make and the Telegram bridge's background jobs. Every feature below also has its own switch, so you can turn things off one at a time.
+Keep the folder name `jtech-tools` (lowercase). Discourse builds the plugin's stylesheet address from it.
 
-## What's in it
+## Turning things on
 
-### Disteleplus — team chat, bridged to Telegram
-A private one-room chat inside Discourse for staff (or any groups you allow), mirrored both ways with a Telegram group.
+Everything is under **Admin → Plugins → Jtech Tools**, one tab per feature. Some features start switched off; each feature's page says what to set first.
 
-- Opens as a small drawer bottom-right (like Discourse Chat) or full page; always full page on phones.
-- Messages, replies, edits, deletes, reactions, images, files, video, voice notes (record right in the composer), polls from Telegram.
-- Right-click a message: react, reply, copy text, copy link, quote into a new topic, edit, delete. Double-tap to react.
-- `@mentions` and `:emoji:` suggestions, emoji picker, paste or drag files in, drafts kept while you browse.
-- Search across the conversation. Link previews. "Someone is typing" indicators.
-- Unread badge on the header icon and in the browser tab; notifications only when you're @mentioned.
-- Message text is encrypted in the database.
-- Telegram side: people you map post as their Discourse account; everyone else shows with their Telegram name. Discourse messages arrive in Telegram with the author's name linked to their profile.
-- Optional: announce new forum posts into the Telegram group (by category / tag).
-- Optional: mirror the review queue (flags, posts awaiting approval) into a **Reports** Telegram topic — created by the plugin itself, never General — with **Approve / Deny / More** buttons. Presses work for staff mapped by numeric Telegram ID, or for chat admins whose Telegram username matches a staff account.
-- When someone reacts in Discourse, Telegram gets a quiet "**Name** reacted 👍" reply under the message, since the bot's own single reaction can't say who it was.
-- Setup is done from inside Telegram with `/disteleplus_setup`; there's a "send test message" button and problems show on the admin dashboard.
+`jtech_enabled` is the master switch. Turning it off stops everything at once, including the permission changes and background jobs. Private things stay private either way: switching whispers off never makes an existing whisper public.
 
-### Moderator tools
-- **Whispers** — reply to specific people (users, groups or badge holders) inside a topic. A whisper is visible only to staff, its author and the people it names — nobody else, anywhere: not in the topic, search, activity, e-mails, notifications, link previews, RSS, the /dumb app or the Telegram bridge. Replies to and quotes of a whisper stay private to the same people automatically. Turning whispers off stops new ones; existing whispers stay private.
-- **Private notes** on topics, with reply threads, visible to staff only.
-- **Staff alerts** — every moderator is told when someone deletes a post, approves/rejects a queued post, adds a user note or a flag note. Shows in the bell and in a shield tab.
-- **Checklists** — first-post checklists, targeted checklists for specific users/groups, topic prompt checklists.
-- **Topic tools** — pinned messages in topics, footer messages, reply approval.
-- Every one of these rights is its own toggle. Everything works only on topics the moderator can see, and staff alerts go only to staff who can open what they point at.
-- Letting moderators create and edit categories is core's `moderators_manage_categories` setting (this module used to grant it itself, without core's check that the moderator can see the category). Sites that had the old grant on get the core setting switched on by the upgrade.
+Upgrading? [CHANGELOG.md](CHANGELOG.md) lists what changed and anything worth checking afterwards.
 
-### Mini-mod
-Gives category moderators (people who moderate a category through a group) extra powers normally reserved for staff: create/edit categories, edit and move topics, manage tags, etc. Each power is a separate switch. They never reach a category they can't see, never delete categories, and can't change a category's security or moderators (new subcategories copy their parent's). It can also take away closing/reopening and posting in closed topics from category moderators and TL4 users.
+## Working on it
 
-### Dislike (phantom reactions)
-In categories you pick, likes (and discourse-reactions reactions) stop mattering: the author isn't notified, they leave no "Likes Given/Received" history, and they don't count toward likes given/received in the user directory and on profiles. Each of those is its own switch. Optionally hide the like button entirely or allow it only for certain groups. The like count on the post itself, badges and trust levels are core's and still see the likes. **Purge phantom likes** (on the Dislike tab) applies the settings to likes made before a category was restricted.
+Start with the [repository rules](AGENTS.md) and [CONTRIBUTING.md](CONTRIBUTING.md). The developer docs cover [how it's put together](docs/development/architecture.md) and [how to run it and its tests](docs/development/testing.md). Everything else is in [docs/](docs/README.md).
 
-### Smart search
-When a search finds too little, it quietly retries with synonyms (English dictionary + a short list of tech abbreviations like `js`/`javascript`, `k8s`/`kubernetes`) and merges the results. Runs locally, no API keys. If anything goes wrong you just get normal search results.
+Found a security problem? Please report it privately; see [SECURITY.md](SECURITY.md).
 
-### Desktop pop-up notifications
-A small card in the top-right corner when you get a notification, with the person's avatar, the topic title and a preview. Click it to jump there, or dismiss it; it stays while you hover over it. Desktop only, quiet during Do Not Disturb, and each user turns it on in their account settings.
+## License
 
-### Dumbcourse — the forum for flip phones
-A light version of the forum at `/dumb` for flip phones, KaiOS and old Android browsers that can't run the full site. It works with the D-pad and keypad like the phone's own apps, and on any touch screen or computer too.
-
-- **Reading**: Latest / New / Unread / Top / Hot, categories, tags. **↑↓** read (a long post scrolls before focus moves on), **←→** switch tabs, or jump post to post inside a topic. Unread topics open at your first unread post; Back returns you to exactly where you were. Live updates, "someone is typing…", read tracking.
-- **Doing**: **OK** on a post opens its actions: like or react, reply, quote, bookmark, edit, delete, flag, copy link, who reacted, jump to the replied post — and every **link in the post**, so you never tab through a paragraph. Polls vote with the D-pad. Full-screen composer with @mentions, emoji, formatting menu, uploads, a real preview and optional spell check; drafts save as you type.
-- **Your stuff**: notifications (live badge), bookmarks, drafts, messages, profile with activity, search with filters and recent searches, and **REQ-PM** — request, answer and send contact details, with one-press **Call / Text / WhatsApp**.
-- **Signing in without typing a password on a keypad**: *Sign in with another device* (the phone shows a code; approve it from any device where you're signed in), *Email me a sign-in link*, *Email me a code* (when the forum has Discourse's email codes on), social logins, and password + two-factor codes. Sign-up, password reset and account activation work here too — those full-site pages don't on old phones.
-- **Keypad shortcuts**: `*` menu, `#` search, `0` help, `1`/`7` top/bottom, `2`/`8` page up/down, `4` back; in a topic `3` reply, `5` like, `9` jump to post. A soft-key bar shows what the soft keys do. Full list under *Keys & shortcuts* in the app.
-- **Looks**: light, dark or automatic theme, text size 80–160%, compact layout, avatars on/off, images shown / tap-to-load / hidden (data saver). Chosen per phone.
-- **Old phones find it by themselves**: browsers that can't run the full forum (KaiOS, Opera Mini, old Android/Chrome/Firefox) are sent to the matching Dumbcourse page — including links in emails — and members can choose *Open forum links here* on their phone. Search engines are never redirected. Setting: `dumbcourse_redirect_legacy_browsers`.
-- **Safe by construction**: strict Content-Security-Policy (no inline or third-party scripts), no framing, all HTML escaped by default, private data kept per account on the phone and wiped on logout, rate-limited endpoints, and the device-pairing approval can only be collected by the phone that asked.
-- Written in **TypeScript** and compiled to plain ES5 (checked on every build) so it runs on engines from Chrome 30 / Firefox 30 / Android 4.4 up. See [`docs/dumbcourse.md`](docs/dumbcourse.md) for how it's built.
-- Settings: **Admin → Plugins → Jtech Tools → Dumbcourse**.
-
-### Another SMTP
-Send forum email through a different mail server than the one in `app.yml` — host, port, TLS, login, and optional "from" address rewriting, all from admin settings. Mail sent from a group's own inbox (group SMTP) keeps using that group's server. Test it with **Send test email** under Admin → Email; the dashboard warns if the relay is on without an address.
-
-### Translator tweaks
-For sites running the official Translator plugin with Google: sends its Google requests through a proxy you run (`translator_tweaks_worker_url`), plus a one-off script to detect the language of old non-Latin posts. Newer Discourse ships translation through core content localization and Discourse AI, which don't need this.
-
-### Username avatar (removed — now core settings)
-The old module made Gravatar lookups fail on purpose so everyone got a letter avatar. Core does this directly: `automatically_download_gravatars` off stops the lookups, and `gravatar_enabled` off removes the Gravatar choice. The upgrade switches both off on sites that had the module on. To reset people who already have a Gravatar picture to their letter avatar, run `scripts/username_avatar_recalculate.rb` (see its header).
-
-### REQ-PM — exchange contact details instead of private messages
-The forum has no PMs; REQ-PM is how members reach each other off the forum without anyone (members or staff) being able to read a conversation.
-
-- Every member keeps a small **contact card**: Phone, Text message, WhatsApp, Email, Website, Telegram, Signal, Discord — or **Something else** with their own name and emoji. Each entry is a proper input for its type (phone keypad, email keyboard, http/https-only links), with an optional short note ("evenings only").
-- **Request**: press **REQ-PM** on anyone's user card or profile → *Request their contact details* (optionally tick what you'd like — phone, WhatsApp…). There is no text box, so it can't become a PM back door.
-- **Send**: they get a notification, tick exactly which of their details you may see, and press send. You can also send your own details unprompted. Either side can take back what they sent, or remove a card they received, at any time — silently.
-- Declining is silent too: the requester only ever sees "waiting", then "expired".
-- Everything lives on the **REQ-PM** page (`/reqpm`) — reached from the avatar menu (**REQ-PM contacts**) or the sidebar's *More* list: *Requests*, *Contacts* (with Call / Text / Chat / Email buttons and copy), *My card*, *Shared with*. Your own card is also under **Preferences → REQ-PM**. New requests show in the notification bell; nothing is added to the header.
-- **Setup prompt**: members with an empty card — new signups and existing members — get a friendly "Add a way for members to reach you" window. `reqpm_setup_prompt`: *gentle* (default; "Remind me later" / "I'd rather not"), *required* (comes back on every page until they add one; admin pages exempt), or *off*.
-- **Privacy**: values are AES-256-GCM encrypted at rest, each bound to its owner and field, and are only ever returned to their owner and to the people the owner chose. There is no admin screen for them, REQ-PM endpoints refuse API keys and admin impersonation, ignores/mutes stop staff too, and values are masked in request logs. Notifications and realtime messages carry who/what only, never a value.
-- **Phone numbers** typed without a country code are saved with the forum's default, `reqpm_default_country_code` (**+1** out of the box), so Call / Text / WhatsApp reach the right country. Numbers starting with `+`, `00` or a local `0` are kept as typed.
-- **Abuse limits** (all adjustable, staff included): 10 requests and 20 sends per day, 3-day cooldown before asking the same person again, requests expire after 30 days, max 10 methods per card. Members can switch off "Let members request my contact details"; ignore/mute blocks requests and sends. Staged, suspended, silenced and anonymous-mode accounts can't take part.
-- Settings: **Admin → Plugins → Jtech Tools → REQ-PM**. Who can use it: `reqpm_allowed_groups` (default: everyone signed in).
-- Note: the encryption key is derived from the server's `secret_key_base`, which isn't part of a Discourse backup. After restoring onto a *different* server, cards show "please re-enter" instead of the old values — nothing leaks or gets mixed up.
-
-## Telegram setup (5 minutes)
-
-1. In Telegram, message **@BotFather**: `/newbot` → copy the token. Then `/setprivacy` → **Disable** (otherwise the bot can't read the group).
-2. Add the bot to your group and make it an **admin**.
-3. In Discourse: **Admin → Settings → Jtech — Disteleplus** → paste the token, pick who may use the chat (`disteleplus_allowed_groups`, default: staff), turn on `disteleplus_enabled`, press **Register Telegram webhook**.
-4. In the Telegram group, send `/disteleplus_setup` and follow the short checklist (`/disteleplus_bind_general`, optionally `/disteleplus_bind_uploads`, `/disteleplus_bind_reports`).
-5. Send a message from each side to check.
-
-Known limits (Telegram's rules, not ours): the bot can't delete messages older than 48 hours, can't see when Telegram users are typing, can only show one reaction per message, and if your group is converted to a supergroup the chat ID changes — bind it again. The Reports topic needs **Topics** enabled in the group and the bot's *Manage Topics* right.
-
-## Notes
-
-- Nothing here requires the official Discourse Chat plugin. If you're moving from the old Chat-based bridge, an admin can import the old channel (`POST /jtech-disteleplus/legacy-import`, check progress with `GET`) before switching Chat off. Nothing is deleted from the old Chat data.
-- Screenshots of the features are in `docs/screenshots`.
-- **If you turned the moderator tools off before August 30, 2026, check them again.** An update that day switched `mod_categories_enabled`, `mod_pin_post_enabled` and `mod_notes_feed_enabled` to on by default, and it cleared any "off" you had saved for them, so they came back on after your next rebuild. The old values can't be restored automatically. Switch `mod_categories_enabled` off again under **Admin → Settings → Jtech — Mod**, which turns the whole module off; it will stay off from now on.
+[GPL-3.0](LICENSE). Made by TripleU, Shalom Karr and Ars18 for JTech Forums.

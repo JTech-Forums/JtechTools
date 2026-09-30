@@ -1,63 +1,43 @@
-# Contributing to Jtech
+# Contributing
 
-Thanks for considering a contribution. Jtech is one Discourse plugin that wraps five sub-plugins. Each sub-plugin keeps its own Ruby namespace, settings prefix, and master enable switch — so your change should usually live entirely inside one sub-plugin's territory.
+Thanks for helping. Before you start, read the [repository rules](AGENTS.md). They're short, and every PR is reviewed against them.
 
-## Project layout
+## Getting set up
 
-See [`README.md`](./README.md) for the directory map. The short version:
+You need a Discourse development install with this repo linked into its `plugins/` folder as `jtech-tools`. [docs/development/testing.md](docs/development/testing.md) has the commands for setup, lint, specs and screenshots, and [architecture.md](docs/development/architecture.md) explains where things live.
 
-- **`plugin.rb`** — master registration; do not duplicate `enabled_site_setting` or magic-header keys.
-- **`sub_plugins/<name>.rb`** — each old plugin's body, instance_eval'd. Edit the relevant one.
-- **`lib/<namespace>/`** — pure Ruby helpers per sub-plugin.
-- **`app/`**, **`db/migrate/`**, **`assets/`**, **`public/`** — standard Discourse plugin layout.
-- **`config/settings.yml`** — one section per admin tab. Keep setting keys unchanged in PRs that only reorganize.
-- **`config/locales/{server,client}.en.yml`** — every site setting must have a translation in one or the other.
+## Making a change
 
-## Development workflow
-
-1. Fork → branch off `main`.
-2. Make your change. Stay inside one sub-plugin where possible. Don't introduce cross-sub-plugin coupling without raising it in the PR description.
-3. Run lint locally:
+1. Branch off `main`.
+2. Keep the change inside one module where you can. If it has to reach across modules, say why in the PR.
+3. Add or update specs. A bug fix comes with a spec that fails without it.
+4. Run the checks:
    ```bash
-   pnpm install
-   bundle install
-   pnpm lint              # ESLint + Prettier + Stylelint + type-check + Dumbcourse
-   bundle exec rubocop    # Ruby
+   pnpm lint
+   BUNDLE_GEMFILE=../discourse/Gemfile bundle exec rubocop
+   BUNDLE_GEMFILE=../discourse/Gemfile bundle exec stree check Gemfile $(git ls-files '*.rb')
    ```
-4. Run the relevant specs in a Discourse dev install:
-   ```bash
-   # From your Discourse root, with this plugin symlinked into plugins/
-   bundle exec rake plugin:spec[jtech]
-   ```
-5. Open a PR. The template will ask which sub-plugin you touched and how you tested.
-
-## Style
-
-- **Ruby**: `rubocop-discourse` + `syntax_tree` — `bundle exec stree write Gemfile *.rb sub_plugins/*.rb lib/**/*.rb` if anything's off.
-- **TypeScript (`.ts` / `.gts`)**: all frontend code is TypeScript; no new `.js`/`.gjs`. Components declare a `Signature`, services use `@service declare foo: FooService`, and `pnpm lint:types` must pass with no `@ts-ignore`/`@ts-expect-error`. Keep the long-standing `discourse/components/...` import paths (older cores lack `discourse/ui-kit/...`); their types come from `types/discourse-shims.d.ts`. ESLint + Prettier via `@discourse/lint-configs`; `pnpm lint:fix` rewrites for you.
-- **SCSS**: Stylelint via `@discourse/lint-configs/stylelint`. Same `lint:fix`.
-- **Comments**: Don't restate what the code does. Comment **why** when a constraint isn't obvious.
+   Then run the specs for the module you touched, from the Discourse folder.
+5. Open a PR. The template asks which module you touched and how you tested it.
 
 ## Adding a setting
 
-1. Add to `config/settings.yml` under the right `jtech_*` section. Always declare `default:` and `client:` (use `client: false` if unsure).
-2. Add a translation in `config/locales/server.en.yml` (admin label) or `client.en.yml` (if used by JS UI).
-3. Reference the setting via `SiteSetting.<name>` in Ruby; never duplicate its value as a constant.
-4. If it gates behavior, early-return when it's disabled rather than wrapping the whole module.
+1. Add it to `config/settings.yml` in the right `jtech_*` block, with `default:` and `client:`. Use `client: false` unless the browser needs it.
+2. Describe it in `config/locales/server.en.yml`. Explain what it does and any catch.
+3. Read it with `SiteSetting.<name>` and go through the module's `enabled?` helper.
+4. Document it in the module's page under `docs/features/`. The settings table there is generated from the YAML.
 
-## Adding a setting category (new admin tab)
+## Adding a module
 
-1. Add the top-level key to `config/settings.yml`.
-2. Add a translation under `en.site_settings.categories.<key>` in `config/locales/server.en.yml`.
+1. Create `sub_plugins/<name>.rb` and add it to the list in `plugin.rb`.
+2. Put its Ruby in `lib/discourse_<name>/`, with an `enabled?` helper that includes `jtech_enabled`.
+3. Give it its own settings block and an admin tab: see `admin/assets/javascripts/discourse/` and `assets/javascripts/discourse/initializers/jtech-tools-admin-nav.ts`.
+4. Add `docs/features/<name>.md`, and link it from the README and `docs/README.md`.
 
-## Reporting bugs / requesting features
+## Bugs and ideas
 
-Use the GitHub issue templates. Tag which sub-plugin is affected — it speeds up routing.
-
-## Security
-
-See [`SECURITY.md`](./SECURITY.md) for the disclosure policy. Don't open public issues for vulnerabilities.
+Use the issue templates and say which module is involved. Security problems go through [SECURITY.md](SECURITY.md), not public issues.
 
 ## License
 
-By contributing you agree your work will ship under the project's [GPL-3.0 license](./LICENSE).
+Contributions are released under the project's [GPL-3.0 license](LICENSE).

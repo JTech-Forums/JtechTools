@@ -5,9 +5,9 @@ title: "[BUG] "
 labels: bug
 ---
 
-## Which sub-plugin?
+## Which module?
 
-<!-- One of: dislike, another-smtp, mini-mod, mod-categories, dumbcourse, or "shared" -->
+<!-- One of: moderator tools, mini-mod, dislike, disteleplus, reqpm, dumbcourse, smart search, pop-ups, another smtp, translator tweaks, or "shared" -->
 
 ## What happened
 
