@@ -1,0 +1,25 @@
+{
+  // The app itself. `lib` is deliberately ES5 + Promise: any newer
+  // built-in (Array#includes, Object.assign, String#startsWith, …) is a
+  // type error, because the phones Dumbcourse targets do not have them.
+  // The iterable typings are there only so for…of over arrays type-checks;
+  // it compiles to a plain index loop, and the build forbids Symbol.
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["ES5", "ES2015.Promise", "ES2015.Symbol", "ES2015.Iterable", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": false,
+    "types": []
+  },
+  "include": ["src/**/*.ts"]
+}

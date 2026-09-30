@@ -161,6 +161,16 @@ Discourse::Application.routes.append do
           } do
       post "/hcaptcha" => "app#hcaptcha"
 
+      # Sign in with another device, and the composer preview.
+      scope "/auth/pair", defaults: { format: :json } do
+        post "/" => "pair#create"
+        get "/poll" => "pair#poll"
+        get "/lookup" => "pair#lookup"
+        post "/approve" => "pair#approve"
+        post "/deny" => "pair#deny"
+      end
+      post "/api/preview" => "api#preview", :defaults => { format: :json }
+
       # Push notification endpoints (must be before catch-all)
       scope "/push", defaults: { format: :json } do
         get "/info" => "push#server_info"

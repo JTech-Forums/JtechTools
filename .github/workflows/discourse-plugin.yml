@@ -25,3 +25,19 @@ jobs:
     # SCSS bug came back in this PR's system_tests.
     with:
       name: jtech-tools
+
+  # Dumbcourse is written in TypeScript and shipped as a prebuilt ES5 bundle
+  # in public/. Type-check it, run its unit tests, and fail if the committed
+  # bundle doesn't match the sources (run `pnpm dumbcourse:build`).
+  dumbcourse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint:dumbcourse

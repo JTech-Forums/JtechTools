@@ -506,8 +506,25 @@ en:
       Takes effect immediately, no restart required.
 
     dumbcourse_default_theme: Colour scheme applied the first time someone
-      opens the app. Each visitor can switch afterwards and their choice is
-      remembered in that browser, so changing this only affects new visitors.
+      opens the app. "auto" follows the phone's own light/dark setting (and is
+      dark on phones that have none). Each visitor can switch afterwards and
+      their choice is remembered in that browser, so changing this only
+      affects new visitors.
+
+    dumbcourse_device_pairing_enabled: Offer "Sign in with another device" —
+      the phone shows a short code, and the member approves it from any
+      device where they're already signed in (like signing in to a TV). Saves
+      typing a password on a keypad. Codes last ten minutes, only the
+      requesting browser can use the approval, and code lookups are rate
+      limited.
+
+    dumbcourse_redirect_legacy_browsers: Send visitors whose browser can't
+      run the full forum (KaiOS, Opera Mini, old Android and Chrome/Firefox
+      versions, and anything in browser update user agents) to the matching
+      Dumbcourse page instead of the broken full site — including sign-in,
+      email-login and password-reset links. Members who choose "Open forum
+      links here" in Dumbcourse's preferences are sent there too. Search
+      engine crawlers are never redirected.
 
     dumbcourse_default_view: Topic list shown when someone opens the app at
       its root URL. "My posts" falls back to Latest for signed-out visitors.
@@ -966,6 +983,11 @@ en:
       dumbcourse_base_path_invalid: must be a single URL segment made of
         lowercase letters, digits, hyphens and underscores, and must not be a
         reserved Discourse path
+
+  dumbcourse:
+    pairing:
+      not_found: That code isn't valid or has expired.
+      busy: Couldn't create a code just now. Please try again.
 
   discourse_mod_categories:
     whisper:

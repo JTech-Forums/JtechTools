@@ -1,0 +1,58 @@
+/* Theme tokens. The build gives every var() a plain fallback (dark) and
+   repeats the light theme for engines without custom properties. */
+
+:root {
+  --bg: #111317;
+  --surface: #1a1d23;
+  --surface2: #23272f;
+  --surface3: #2c313b;
+  --line: #2f343e;
+  --fg: #eceff4;
+  --fg2: #a9b1be;
+  --fg3: #7c8594;
+  --accent: #5ea8ff;
+  --accent-strong: #8cc0ff;
+  --accent-fg: #06111f;
+  --accent-soft: #1b2d45;
+  --focus: #ffcf5c;
+  --focus-soft: #2e2a1a;
+  --danger: #ff7a7a;
+  --danger-soft: #3a1f22;
+  --ok: #52cc8f;
+  --ok-soft: #173327;
+  --warn: #f2b84b;
+  --unread: #5ea8ff;
+  --shadow: rgba(0, 0, 0, 0.5);
+  --backdrop: rgba(0, 0, 0, 0.6);
+  --code: #0c0e11;
+  --radius: 10px;
+  --radius-s: 6px;
+  --top-h: 2.9rem;
+  --sk-h: 1.9rem;
+}
+
+html.light {
+  --bg: #f4f5f8;
+  --surface: #ffffff;
+  --surface2: #eef1f6;
+  --surface3: #e2e7ef;
+  --line: #dde2ea;
+  --fg: #151920;
+  --fg2: #525c6c;
+  --fg3: #7f8898;
+  --accent: #1c6bd6;
+  --accent-strong: #0f55b3;
+  --accent-fg: #ffffff;
+  --accent-soft: #e2edfc;
+  --focus: #1c6bd6;
+  --focus-soft: #e7f0fd;
+  --danger: #c9302c;
+  --danger-soft: #fbe6e5;
+  --ok: #1f8f58;
+  --ok-soft: #e1f5ea;
+  --warn: #a86a00;
+  --unread: #1c6bd6;
+  --shadow: rgba(20, 30, 50, 0.18);
+  --backdrop: rgba(10, 15, 25, 0.45);
+  --code: #f1f3f7;
+}
