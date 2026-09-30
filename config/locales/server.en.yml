@@ -90,26 +90,16 @@ en:
       every logged-in user — unlike most group settings, empty means
       "everyone", not "nobody". Anonymous likes are not filtered by this list.
 
-    dislike_show_in_history: Keep phantom likes in the activity streams — the
-      liker's "Likes Given" and the author's "Likes Received". When off the
-      like is invisible in both streams and the author's "liked" notification
-      is deleted as well; see
-      {{setting:dislike_notification_cleanup_window_seconds}}.
+    dislike_show_in_history: Treat phantom likes like normal likes for
+      history — the liker's "Likes Given", the author's "Likes Received" and
+      the author's "liked" or "reacted" notification. When off, phantom likes
+      never notify the author and leave no activity-stream rows.
 
-    dislike_notification_cleanup_window_seconds: How far back to look for the
-      author's "liked" notification when deleting it. The delete runs inline
-      the instant the like is created, so the default covers a healthy site;
-      raise it only if notifications survive, and be aware that a longer
-      window can also remove an older "liked" notification for the same post
-      from a different user. Consolidated "liked" notifications are never
-      removed. Only used while {{setting:dislike_show_in_history}} is off.
-
-    dislike_count_in_leaderboard: Let phantom likes move the likes_given and
-      likes_received user statistics. These feed the leaderboard, user cards,
-      the user directory sort and like-based badges — not just the
-      leaderboard. When off the counters are left untouched, and
-      {{setting:purge_phantom_likes_now}} recalculates them from
-      non-restricted categories only.
+    dislike_count_in_leaderboard: Let phantom likes count toward likes given
+      and received — the user directory, user cards and profile summaries.
+      When off they are left out of those totals, which are corrected each
+      time the directory refreshes (hourly). Like counts on the posts,
+      badges and trust-level requirements are not affected.
 
     dislike_record_audit_trail: Write one row per phantom reaction to the
       discourse_no_likes_phantoms table — likes, plus any non-default
@@ -117,13 +107,12 @@ en:
       query it with the Data Explorer. Turn off to skip an extra insert on
       every like in these categories.
 
-    purge_phantom_likes_now: Run the retroactive clean-up job now; it switches
-      itself back off when it starts (reload the page to see that). The job
-      back-fills the audit table from likes that already exist, recalculates
-      likes_given and likes_received for affected users unless
-      {{setting:dislike_count_in_leaderboard}} is on, and deletes the matching
-      activity-stream rows unless {{setting:dislike_show_in_history}} is on.
-      It does not delete any likes and does not touch notifications.
+    purge_phantom_likes_now: Run the clean-up job now; it switches itself
+      back off when it starts. The job applies the settings above to likes
+      made before them. It back-fills the audit table and, unless
+      {{setting:dislike_show_in_history}} is on, removes the matching
+      activity-stream rows and "liked"/"reacted" notifications. It then
+      recalculates likes given and received. It never deletes likes.
 
     # ── Jtech — Alternate SMTP ─────────────────────────────────────────────
     discourse_another_email_enabled: Send outbound forum email through the
@@ -203,37 +192,45 @@ en:
 
     mini_mod_manage_all_categories: Scope for the grants below. Off, a
       category group moderator's Mini-mod rights reach only the categories
-      they actually moderate. On, they reach every category on the site, they
-      may create top-level categories, and "Mini mod can edit topics" starts
-      taking effect — that setting does nothing while this one is off. Turn
-      this on deliberately; it is the widest switch on this tab.
+      they actually moderate. On, they reach every category they can see,
+      they may create top-level categories, and "Mini mod can edit topics"
+      starts taking effect — that setting does nothing while this one is off.
+      Categories they can't see stay out of reach either way. Turn this on
+      deliberately; it is the widest switch on this tab.
 
     mini_mod_can_create_categories: Let category group moderators create
       categories. With "Mini mod manage all categories" off they may only
-      create subcategories beneath a category they already moderate; with it
-      on they may create any category, top-level included. Deleting
-      categories is never granted.
+      create subcategories beneath a category they moderate; with it on, any
+      category they can see, top-level included. A new subcategory gets its
+      parent's security and moderators, so they can manage it and it is no
+      more visible than its parent. Deleting categories is never granted.
 
     mini_mod_can_edit_categories: Let category group moderators open the
       category settings screens and save changes, for the categories they
-      moderate — or for every category when "Mini mod manage all categories"
-      is on.
+      moderate — or for every category they can see when "Mini mod manage all
+      categories" is on. Security (who can see and post), moderators,
+      incoming email, review groups, category types, position and custom
+      fields stay with staff, and a category can only be moved under one
+      they moderate. Reordering the site's categories stays with staff.
 
     mini_mod_can_edit_topics: Let category group moderators edit any topic
-      they can see — title, category, tags and first post — unless the first
-      post is locked. This is site-wide and is not limited to the categories
-      they moderate. It requires "Mini mod manage all categories"; while that
-      is off, this setting does nothing.
+      they can see and post in — title, category, tags and first post —
+      unless the first post is locked. Private messages, archived topics and
+      the TOS/FAQ/privacy pages are never included. This is site-wide and
+      requires "Mini mod manage all categories"; while that is off, this
+      setting does nothing. (Core's {{setting:edit_all_topic_groups}} grants
+      the same to any group.)
 
     mini_mod_can_move_topics: Let category group moderators move topics into
-      another category. Destinations are limited to the categories they
-      moderate, or to any category they can see when "Mini mod manage all
-      categories" is on.
+      the categories they moderate, even where they couldn't start a topic
+      themselves. With "Mini mod manage all categories" on they may also move
+      topics past topic approval into any category they can post in.
 
-    mini_mod_manage_tags: Let category group moderators create tags, rename
-      tags and reach the tag administration screens, as staff can. This is
-      site-wide and is not limited to the categories they moderate. Tag
-      groups stay staff-only. Requires {{setting:tagging_enabled}}.
+    mini_mod_manage_tags: Let category group moderators create, rename and
+      delete tags they can see and reach the tag administration screens.
+      This is site-wide and is not limited to the categories they moderate.
+      Tag groups, the CSV tag upload and "delete unused tags" stay
+      staff-only. Requires {{setting:tagging_enabled}}.
 
     mini_mod_can_post_in_closed_topics: A restriction, not a grant. Discourse
       normally lets category group moderators reply inside closed topics in
@@ -242,10 +239,9 @@ en:
 
     mini_mod_can_reopen_topics: A restriction, not a grant. Discourse normally
       lets category group moderators reopen closed topics in the categories
-      they moderate; leaving this off takes that away and hides the reopen
-      button on closed topics, rather than letting them click it and hit an
-      error. Turn it on to restore the standard behaviour. Staff are never
-      affected.
+      they moderate; leaving this off takes that away — including "open"
+      topic timers — and hides the reopen button on closed topics. Turn it on
+      to restore the standard behaviour. Staff are never affected.
 
     tl4_can_post_in_closed_topics: A restriction, not a grant, and it reaches
       every trust level 4 user on the site — not only category group
@@ -257,9 +253,10 @@ en:
     tl4_can_reopen_topics: A restriction, not a grant, and it reaches every
       trust level 4 user on the site — not only category group moderators.
       Discourse normally lets TL4 users reopen closed topics; leaving this
-      off takes that away and hides the reopen button on closed topics. It is
-      enforced by this module, so it only has any effect while
-      {{setting:mini_mod_enabled}} is on. Staff are never affected.
+      off takes that away — including "open" topic timers — and hides the
+      reopen button on closed topics. It is enforced by this module, so it
+      only has any effect while {{setting:mini_mod_enabled}} is on. Staff are
+      never affected.
 
     # ── Jtech — Mod ────────────────────────────────────────────────────────
     mod_categories_enabled: Master switch for the moderator powers in this

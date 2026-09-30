@@ -13,8 +13,12 @@ module ::DiscourseMiniMod
   end
 end
 
+register_asset "stylesheets/mini-mod.scss"
+
 require_relative "../lib/discourse_mini_mod/categories_controller_extension"
 require_relative "../lib/discourse_mini_mod/guardian_extensions"
+require_relative "../lib/discourse_mini_mod/open_topic_job_extension"
+require_relative "../lib/discourse_mini_mod/tags_controller_extension"
 require_relative "../lib/discourse_mini_mod/topic_extension"
 require_relative "../lib/discourse_mini_mod/topic_view_details_serializer_extension"
 
@@ -32,7 +36,9 @@ after_initialize do
     ::Guardian.prepend(DiscourseMiniMod::GuardianExtensions)
     ::Topic.prepend(DiscourseMiniMod::TopicExtension)
     ::TopicViewDetailsSerializer.prepend(DiscourseMiniMod::TopicViewDetailsSerializerExtension)
+    ::Jobs::OpenTopic.prepend(DiscourseMiniMod::OpenTopicJobExtension)
     ::CategoriesController.include(DiscourseMiniMod::CategoriesControllerExtension)
+    ::TagsController.include(DiscourseMiniMod::TagsControllerExtension)
   end
 
   add_to_serializer(:current_user, :can_admin_tags) { scope.can_admin_tags? }

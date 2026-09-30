@@ -1,5 +1,9 @@
 import { withPluginApi } from "discourse/lib/plugin-api";
 
+// Mini-mods with mini_mod_manage_tags get the bulk "create tags" form on
+// /tags (the staff-only wrench menu beside it is hidden by the
+// tags-below-title connector). Tag renaming is already gated by
+// currentUser.canEditTags, which reflects the server-side grant.
 export default {
   name: "mini-mod-tags",
 
@@ -7,19 +11,16 @@ export default {
     withPluginApi((api) => {
       api.modifyClass(
         "controller:tags/index",
-        {
-          pluginId: "discourse-mini-mod",
-
-          get canAdminTags() {
-            return this.currentUser?.staff || this.currentUser?.can_admin_tags;
+        (Superclass) =>
+          class extends Superclass {
+            get canAdminTags() {
+              return !!(
+                this.currentUser?.staff || this.currentUser?.can_admin_tags
+              );
+            }
           },
-        },
         undefined
       );
-
-      // No component:tag-info override: core's tag-info is template-only now
-      // and its gate (@currentUser.canEditTags) already reflects the
-      // plugin's can_edit_tag_names? Guardian override via the serializer.
     });
   },
 };

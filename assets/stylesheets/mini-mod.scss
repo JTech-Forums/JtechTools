@@ -1,0 +1,6 @@
+// The /tags wrench menu only holds staff-only tools; see
+// connectors/tags-below-title/mini-mod-tag-manager.gts. select-kit sets its
+// own display, hence the extra specificity.
+html.mini-mod-tag-manager .tags-controls .select-kit.tags-admin-dropdown {
+  display: none;
+}

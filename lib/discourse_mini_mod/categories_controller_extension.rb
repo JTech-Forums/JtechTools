@@ -1,42 +1,100 @@
 # frozen_string_literal: true
 
 module DiscourseMiniMod
-  # CategoriesController#create calls `guardian.ensure_can_create!(Category)`
-  # without passing the parent category, so the Guardian-level
-  # `can_create_category?(parent)` override never sees the actual parent and
-  # falls through to the "no parent → allow top-level" branch. Without this
-  # extension, a mini-mod could POST /categories.json with parent_category_id
-  # pointing at a category they don't moderate and the controller would
-  # happily create the subcategory.
+  # CategoriesController trusts anyone who passes `ensure_can_edit!` /
+  # `ensure_can_create!` with every category field, because core only lets
+  # staff through. Mini-mods get through too, so their requests are narrowed
+  # here:
   #
-  # This adds a per-request check on the create action that re-validates the
-  # parent_category_id against the user's category-group-moderator status.
-  # The check is a no-op for staff, when the plugin is disabled, when
-  # mini_mod_manage_all_categories is on, or when no parent_category_id is
-  # supplied.
+  # * Fields that decide who can see, moderate or mail into a category, or
+  #   that carry plugin data, are dropped (the category form sends every
+  #   field on save, so they are ignored rather than rejected). Otherwise a
+  #   mini-mod could make a private category public, or hand moderation — and
+  #   with it every Mini-mod right — to any group, trust_level_0 included.
+  # * A new category must sit under a category they moderate (anywhere they
+  #   can see with manage-all), and inherits that parent's access and
+  #   moderators, so they can manage what they create and it is no more
+  #   visible than its parent.
+  # * Moving a category to another parent is held to the same rule.
+  # * Reordering categories site-wide stays with staff.
   module CategoriesControllerExtension
     extend ActiveSupport::Concern
 
-    included { before_action :mini_mod_check_parent_category, only: :create }
+    STAFF_ONLY_PARAMS = %i[
+      permissions
+      moderating_group_ids
+      email_in
+      email_in_allow_strangers
+      mailinglist_mirror
+      custom_fields
+      topic_posting_review_group_ids
+      reply_posting_review_group_ids
+      category_type
+      category_types
+      category_type_settings
+      category_type_site_settings
+      position
+    ].freeze
+
+    included do
+      before_action :mini_mod_narrow_create, only: :create
+      before_action :mini_mod_narrow_update, only: :update
+      before_action :mini_mod_forbid_reorder, only: %i[move reorder]
+    end
 
     private
 
-    def mini_mod_check_parent_category
-      return if !DiscourseMiniMod.enabled?
-      return if !SiteSetting.enable_category_group_moderation
-      return if current_user.blank? || current_user.staff?
-      return if SiteSetting.mini_mod_manage_all_categories
+    # Non-staff, so any category right they have came from this module.
+    def mini_mod_request?
+      current_user.present? && guardian.mini_mod_acting?
+    end
 
-      parent_id = params[:parent_category_id].presence
-      return if parent_id.blank?
+    def mini_mod_narrow_create
+      return if !mini_mod_request?
 
-      parent = Category.find_by(id: parent_id)
-      return if parent.blank?
+      mini_mod_strip_staff_params
+      parent = Category.find_by(id: params[:parent_category_id].presence)
 
-      unless guardian.is_category_group_moderator?(parent)
-        raise Discourse::InvalidAccess.new(
-                "Mini-mods can only create subcategories under categories they moderate",
-              )
+      if parent.nil?
+        raise Discourse::InvalidAccess unless SiteSetting.mini_mod_manage_all_categories
+        return
+      end
+      raise Discourse::InvalidAccess unless guardian.mini_mod_reaches_category?(parent)
+
+      params[:permissions] = parent.permissions_params.presence || { "everyone" => 1 }
+      params[:moderating_group_ids] = parent.moderating_group_ids
+    end
+
+    def mini_mod_narrow_update
+      return if !mini_mod_request?
+      category = Category.find_by(id: params[:id])
+      return if category.nil?
+
+      mini_mod_strip_staff_params
+      return if !params.key?(:parent_category_id)
+
+      new_parent_id = params[:parent_category_id].presence&.to_i
+      return if new_parent_id == category.parent_category_id
+
+      if new_parent_id.nil?
+        raise Discourse::InvalidAccess unless SiteSetting.mini_mod_manage_all_categories
+      else
+        new_parent = Category.find_by(id: new_parent_id)
+        raise Discourse::InvalidAccess unless guardian.mini_mod_reaches_category?(new_parent)
+      end
+    end
+
+    def mini_mod_forbid_reorder
+      raise Discourse::InvalidAccess if mini_mod_request?
+    end
+
+    def mini_mod_strip_staff_params
+      STAFF_ONLY_PARAMS.each { |key| params.delete(key) }
+      if (settings = params[:category_setting_attributes]).respond_to?(:delete)
+        # The review modes pair with the review group lists above, which stay
+        # with staff; require_topic/reply_approval stay with the moderator.
+        settings.delete(:topic_posting_review_mode)
+        settings.delete(:reply_posting_review_mode)
       end
     end
   end
