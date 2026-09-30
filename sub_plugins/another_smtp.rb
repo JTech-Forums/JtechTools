@@ -14,7 +14,5 @@ after_initialize do
     register_problem_check ::ProblemCheck::AnotherSmtpUnconfigured
   end
 
-  on(:before_email_send) do |message, type|
-    DiscourseAnotherSmtp::Relay.apply(message, type)
-  end
+  on(:before_email_send) { |message, type| DiscourseAnotherSmtp::Relay.apply(message, type) }
 end
