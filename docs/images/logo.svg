@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title id="title">Jtech Tools</title>
+  <defs>
+    <linearGradient id="bubble" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3B74FF"/>
+      <stop offset="1" stop-color="#1C3DB5"/>
+    </linearGradient>
+    <mask id="jaw">
+      <rect width="256" height="256" fill="#fff"/>
+      <rect x="150" y="20" width="20" height="38" rx="3" fill="#000"/>
+    </mask>
+  </defs>
+  <!-- A forum post bubble -->
+  <path d="M128 18C64.5 18 13 63.2 13 119c0 31.4 16.3 59.4 41.8 78L42 240l52.1-21.4c10.8 2.5 22.1 3.8 33.9 3.8 63.5 0 115-45.2 115-101.2S191.5 18 128 18Z" fill="url(#bubble)"/>
+  <!-- The J -->
+  <path d="M146 64h28v72c0 32-20.7 52-51 52-28 0-46.8-17-50-44l27.2-4.6c1.7 13 10 21.6 22.6 21.6 14 0 23.2-9.3 23.2-26V64Z" fill="#fff"/>
+  <!-- Its top is an open-ended wrench -->
+  <circle cx="160" cy="52" r="28" fill="#FFC53D" mask="url(#jaw)"/>
+</svg>

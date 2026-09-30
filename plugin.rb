@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 # name: jtech-tools
-# about: Jtech Tools — the JTech Forums all-in-one plugin. Reaction controls, alternate SMTP relay, mini-mod and moderator tooling, the Dumbcourse app, translator tweaks, smart search, desktop pop-ups, the Telegram chat bridge, and REQ-PM contact exchange.
-# version: 0.4.0
+# about: Jtech Tools — the JTech Forums all-in-one plugin: moderator tools, Mini-mod, Dislike, the Disteleplus Telegram bridge, REQ-PM, Dumbcourse, smart search, desktop pop-ups, Another SMTP and translator tweaks.
+# version: 0.5.0
 # authors: TripleU, Shalom_Karr, Ars18
 # url: https://github.com/JTech-Forums/JtechTools
 # required_version: 3.0.0

@@ -5,9 +5,9 @@ title: "[FEATURE] "
 labels: enhancement
 ---
 
-## Which sub-plugin?
+## Which module?
 
-<!-- One of: dislike, another-smtp, mini-mod, mod-categories, dumbcourse, shared, or "new sub-plugin" -->
+<!-- One of: moderator tools, mini-mod, dislike, disteleplus, reqpm, dumbcourse, smart search, pop-ups, another smtp, translator tweaks, shared, or "new module" -->
 
 ## The problem
 

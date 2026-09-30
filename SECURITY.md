@@ -6,7 +6,7 @@ If you find a security issue in Jtech, please **do not** open a public GitHub is
 
 Please include:
 
-- Which sub-plugin (or shared code) is affected.
+- Which module (or shared code) is affected.
 - The Discourse version and Jtech commit you reproduced against.
 - A minimal proof-of-concept (PoC) — request payloads, reproduction steps, or a patch demonstrating the issue.
 - The expected impact (data exposure, privilege escalation, RCE, denial of service, etc.).
