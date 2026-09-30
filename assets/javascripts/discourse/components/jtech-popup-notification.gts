@@ -1,10 +1,9 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
-import { getOwner } from "@ember/application";
 import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
-import type Owner from "@ember/owner";
+import { type default as Owner, getOwner } from "@ember/owner";
 import type RouterService from "@ember/routing/router-service";
 import { cancel, type Timer } from "@ember/runloop";
 import { service } from "@ember/service";
@@ -158,6 +157,7 @@ type PopupCurrentUser = User & {
   id: number;
   username: string;
   jtech_popup_notifications_enabled?: boolean;
+  isInDoNotDisturb(): boolean;
 };
 
 // notification_type (core enum, stable) → icon + action i18n key suffix.
@@ -194,6 +194,9 @@ const MOD_NOTE_KINDS: Record<string, ToastMeta> = {
 // would make the i18n linter treat the action map as a pluralized string.)
 const FALLBACK: ToastMeta = { icon: "bell", action: "generic" };
 
+// Actions whose post is the recipient's own (someone liked or edited it).
+const ABOUT_YOUR_POST = new Set(["liked", "edited"]);
+
 // Disteleplus native conversation: its MessageBus channel is user-scoped by
 // the server-side Publisher, so subscribing here only ever yields messages
 // this user may see.
@@ -213,14 +216,11 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
   disteleplusSubscribed = false;
   seen = new Set<number | string>();
   listening = false;
+  paused = false;
 
   constructor(owner: Owner, args: JtechPopupNotificationSignature["Args"]) {
     super(owner, args);
-    if (
-      !this.currentUser ||
-      this.site.mobileView ||
-      !this.siteSettings.popup_notifications_enabled
-    ) {
+    if (!this.currentUser || !this.siteSettings.popup_notifications_enabled) {
       return;
     }
     this.mountedAt = Date.now();
@@ -251,6 +251,19 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
   // onto currentUser) takes effect without a page reload.
   get prefEnabled(): boolean {
     return !!this.currentUser?.jtech_popup_notifications_enabled;
+  }
+
+  // Everything that silences a card, checked when each one arrives: the
+  // site switch (so an admin turning it off stops already-open tabs), the
+  // user's preference, Do Not Disturb, and a phone-sized window (read live,
+  // since the view follows the window size).
+  get muted(): boolean {
+    return (
+      !this.siteSettings.popup_notifications_enabled ||
+      !this.prefEnabled ||
+      this.site.mobileView ||
+      !!this.currentUser?.isInDoNotDisturb?.()
+    );
   }
 
   // True while the user is already looking at the conversation — full page
@@ -304,7 +317,7 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
   onConversationEvent(data: unknown) {
     const payload = data as ConversationEvent | null | undefined;
     try {
-      if (!this.siteSettings.popup_notifications_enabled || !this.prefEnabled) {
+      if (this.muted) {
         return;
       }
       if (payload?.type !== "created" || !payload.message?.id) {
@@ -370,9 +383,7 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
   async onMessage(data: unknown) {
     const payload = data as NotificationChannelMessage | null | undefined;
     try {
-      // Re-check the master switch live so an admin turning the feature off
-      // stops toasts in already-open tabs, not just after a reload.
-      if (!this.siteSettings.popup_notifications_enabled || !this.prefEnabled) {
+      if (this.muted) {
         return;
       }
       const notification = payload?.last_notification?.notification;
@@ -438,9 +449,7 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
       toast.avatarUrl = getURLWithCDN(
         data.avatar_template.replace("{size}", String(AVATAR_SIZE))
       );
-      if (this.prefEnabled) {
-        this.addToast(toast);
-      }
+      this.addToast(toast);
       return;
     }
 
@@ -451,7 +460,9 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
     try {
       const post = await this.fetchPost(notification, data);
       if (post) {
-        if (post.avatar_template) {
+        // For likes and edits the post is the recipient's own, so its
+        // avatar would be theirs, not the actor's; show the type icon.
+        if (post.avatar_template && !ABOUT_YOUR_POST.has(meta.action)) {
           toast.avatarUrl = getURLWithCDN(
             post.avatar_template.replace("{size}", String(AVATAR_SIZE))
           );
@@ -464,8 +475,8 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
       // ignore enrichment failure — show what we have
     }
 
-    // The preference may have flipped off during the await.
-    if (!this.prefEnabled) {
+    // Anything may have changed during the await.
+    if (this.muted) {
       return;
     }
     this.addToast(toast);
@@ -474,21 +485,18 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
   // Prepend the newest card; drop the oldest beyond the cap. Each card gets
   // its own auto-dismiss timer.
   addToast(toast: PopupToast): void {
-    const secs =
-      parseInt(
-        String(this.siteSettings.popup_notifications_timeout_seconds),
-        10
-      ) || 20;
-    toast.timer = discourseLater(this, this.dismiss, toast, secs * 1000);
+    if (!this.paused) {
+      this.startTimer(toast);
+    }
 
+    // A dropped card stays in `seen`: a later state update carrying the same
+    // notification must not bring it back.
     const next = [toast, ...this.toasts];
     const maxToasts =
       parseInt(String(this.siteSettings.popup_notifications_max_stack), 10) ||
       DEFAULT_MAX_TOASTS;
     while (next.length > maxToasts) {
-      const dropped = next.pop();
-      cancel(dropped.timer);
-      this.seen.delete(dropped.key);
+      cancel(next.pop().timer);
     }
     this.toasts = next;
 
@@ -496,6 +504,30 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
       document.addEventListener("click", this.onDocumentClick, true);
       this.listening = true;
     }
+  }
+
+  startTimer(toast: PopupToast): void {
+    const secs =
+      parseInt(
+        String(this.siteSettings.popup_notifications_timeout_seconds),
+        10
+      ) || 20;
+    cancel(toast.timer);
+    toast.timer = discourseLater(this, this.dismiss, toast, secs * 1000);
+  }
+
+  // Cards stay while the pointer or keyboard focus is on them, so they can
+  // be read, and each gets its full time again afterwards.
+  @action
+  pause() {
+    this.paused = true;
+    this.toasts.forEach((t) => cancel(t.timer));
+  }
+
+  @action
+  resume() {
+    this.paused = false;
+    this.toasts.forEach((t) => this.startTimer(t));
   }
 
   fetchPost(
@@ -513,10 +545,11 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
     return null;
   }
 
+  // DOMParser builds an inert document: unlike innerHTML on a detached
+  // element, it doesn't start loading the post's images.
   excerptFrom(cooked: string): string {
-    const el = document.createElement("div");
-    el.innerHTML = cooked;
-    const text = (el.textContent || "").replace(/\s+/g, " ").trim();
+    const doc = new DOMParser().parseFromString(cooked, "text/html");
+    const text = (doc.body.textContent || "").replace(/\s+/g, " ").trim();
     return text.length > EXCERPT_LENGTH
       ? `${text.slice(0, EXCERPT_LENGTH)}…`
       : text;
@@ -566,6 +599,7 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
     cancel(toast.timer);
     this.toasts = this.toasts.filter((t) => t !== toast);
     if (this.toasts.length === 0) {
+      this.paused = false;
       this.stopListening();
     }
   }
@@ -573,20 +607,28 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
   dismissAll(): void {
     this.toasts.forEach((t) => cancel(t.timer));
     this.toasts = [];
+    this.paused = false;
     this.stopListening();
   }
 
   <template>
-    {{#if this.toasts.length}}
-      <div class="jtech-popup-toasts">
-        {{#each this.toasts key="key" as |toast|}}
-          <div
-            class="jtech-popup-toast"
-            role="button"
-            tabindex="0"
+    <div
+      aria-live="polite"
+      class="jtech-popup-toasts"
+      role="status"
+      {{on "mouseenter" this.pause}}
+      {{on "mouseleave" this.resume}}
+      {{on "focusin" this.pause}}
+      {{on "focusout" this.resume}}
+    >
+      {{#each this.toasts key="key" as |toast|}}
+        <div class="jtech-popup-toast">
+          <button
+            class="jtech-popup-toast__open"
+            type="button"
             {{on "click" (fn this.open toast)}}
           >
-            <div class="jtech-popup-toast__avatar">
+            <span class="jtech-popup-toast__avatar">
               {{#if toast.avatarUrl}}
                 <img alt="" height="44" src={{toast.avatarUrl}} width="44" />
                 <span class="jtech-popup-toast__type-badge">
@@ -597,23 +639,33 @@ export default class JtechPopupNotification extends Component<JtechPopupNotifica
                   {{icon toast.icon}}
                 </span>
               {{/if}}
-            </div>
-            <div class="jtech-popup-toast__body">
-              <div class="jtech-popup-toast__heading">
+            </span>
+            <span class="jtech-popup-toast__body">
+              <span class="jtech-popup-toast__heading">
                 <span class="jtech-popup-toast__name">{{toast.name}}</span>
                 <span class="jtech-popup-toast__action">—
                   {{toast.action}}</span>
-              </div>
+              </span>
               {{#if toast.title}}
-                <div class="jtech-popup-toast__title">{{toast.title}}</div>
+                <span class="jtech-popup-toast__title">{{toast.title}}</span>
               {{/if}}
               {{#if toast.excerpt}}
-                <div class="jtech-popup-toast__excerpt">{{toast.excerpt}}</div>
+                <span
+                  class="jtech-popup-toast__excerpt"
+                >{{toast.excerpt}}</span>
               {{/if}}
-            </div>
-          </div>
-        {{/each}}
-      </div>
-    {{/if}}
+            </span>
+          </button>
+          <button
+            aria-label={{i18n "jtech_popup_notifications.close"}}
+            class="jtech-popup-toast__close btn-flat"
+            type="button"
+            {{on "click" (fn this.dismiss toast)}}
+          >
+            {{icon "xmark"}}
+          </button>
+        </div>
+      {{/each}}
+    </div>
   </template>
 }

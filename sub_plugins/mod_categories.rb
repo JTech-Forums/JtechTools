@@ -98,6 +98,17 @@ module ::DiscourseModCategories
     }
   end
 
+  # A note reply's id. Replies saved before replies had ids get one derived
+  # from their content, so it is the same on every render and edit/delete
+  # can find them.
+  def self.note_reply_id(entry)
+    entry["id"].presence ||
+      Digest::SHA1.hexdigest([entry["user_id"], entry["created_at"], entry["raw"]].join("\0"))[
+        0,
+        16
+      ]
+  end
+
   # The current checklist config, or nil when none is set. Shape:
   #   { "version" => Integer, "items" => [{ "label" =>, "url" => }],
   #     "updated_at" => ISO8601 String }
@@ -531,7 +542,7 @@ after_initialize do
     entries.map do |entry|
       author = entry["user_id"] && User.find_by(id: entry["user_id"])
       {
-        id: entry["id"].presence || SecureRandom.hex(8),
+        id: DiscourseModCategories.note_reply_id(entry),
         raw: entry["raw"].to_s,
         created_at: entry["created_at"],
         author:
@@ -714,6 +725,13 @@ after_initialize do
     DiscourseModCategories::WhisperQueryFilter.apply(scope, tv.guardian&.user)
   end
 
+  # One query for the whisper fields of every post on the page, instead of
+  # one per post from the Guardian and serializer checks.
+  TopicView.on_preload do |topic_view|
+    posts = topic_view.posts
+    DiscourseModCategories::Whisper.prime!(posts.to_a) if posts.present?
+  end
+
   # Whether a new post is a whisper (and who its audience is) is decided in
   # DiscourseModCategories::Whisper.prepare_new_post!, called from a
   # PostCreator#setup_post prepend (core_whisper_patches.rb) — NOT from the
@@ -764,100 +782,90 @@ after_initialize do
         data: data,
       )
     end
+  end
 
-    # Dedupe: PostAlerter creates standard :replied / :quoted / :mentioned
-    # notifications for audience members too. Remove the core duplicates for
-    # users who got our custom whisper notification. (Non-audience users
-    # never get core notifications for a whisper — PostAlerter's
-    # can_receive_post_notifications? gate runs our Guardian check.)
-    if post.persisted?
-      ::Jobs.enqueue_in(
-        5.seconds,
-        :dedupe_mod_whisper_notifications,
-        post_id: post.id,
-        recipient_ids: recipient_ids,
-      )
-    end
+  # PostAlerter (which runs after :post_created) would also send the
+  # whisper's audience its usual replied / mentioned / quoted / posted
+  # notifications. Anyone who already got the whisper notification above is
+  # added to PostAlerter's "already notified" list, so they get one
+  # notification, not two. (People outside the audience get nothing from
+  # PostAlerter — its can_receive_post_notifications? check runs the
+  # whisper Guardian rules.)
+  DiscourseEvent.on(:post_alerter_before_mentions) do |post, _new_record, notified|
+    next unless DiscourseModCategories::Whisper.whisper?(post)
+
+    ids =
+      ::Notification
+        .where(
+          topic_id: post.topic_id,
+          post_number: post.post_number,
+          notification_type: ::Notification.types[:custom],
+        )
+        .where("data LIKE ?", '%"mod_whisper":true%')
+        .pluck(:user_id)
+    next if ids.empty?
+
+    already = notified.map(&:id)
+    notified.concat(::User.where(id: ids - already).to_a)
   end
 
   # Whisper fields are serialized whether or not whispers are switched on:
   # existing whispers stay private either way, so they keep their banner.
+  whisper_only = -> { DiscourseModCategories::Whisper.whisper?(object) }
   add_to_serializer(:post, :mod_is_whisper) { DiscourseModCategories::Whisper.whisper?(object) }
 
-  add_to_serializer(:post, :mod_whisper_target_user_ids) do
+  add_to_serializer(:post, :mod_whisper_target_user_ids, include_condition: whisper_only) do
     Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
   end
-  add_to_serializer(:post, :include_mod_whisper_target_user_ids?) do
-    DiscourseModCategories::Whisper.whisper?(object)
-  end
 
-  add_to_serializer(:post, :mod_whisper_target_group_ids) do
+  add_to_serializer(:post, :mod_whisper_target_group_ids, include_condition: whisper_only) do
     Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).map(
       &:to_i
     )
   end
-  add_to_serializer(:post, :include_mod_whisper_target_group_ids?) do
-    DiscourseModCategories::Whisper.whisper?(object)
-  end
 
-  add_to_serializer(:post, :mod_whisper_target_groups) do
+  add_to_serializer(:post, :mod_whisper_target_groups, include_condition: whisper_only) do
     ids =
       Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).map(
         &:to_i
       )
     ::Group.where(id: ids).map { |g| { id: g.id, name: g.name } }
   end
-  add_to_serializer(:post, :include_mod_whisper_target_groups?) do
-    DiscourseModCategories::Whisper.whisper?(object)
-  end
 
-  add_to_serializer(:post, :mod_whisper_target_badge_ids) do
+  add_to_serializer(:post, :mod_whisper_target_badge_ids, include_condition: whisper_only) do
     Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(
       &:to_i
     )
   end
-  add_to_serializer(:post, :include_mod_whisper_target_badge_ids?) do
-    DiscourseModCategories::Whisper.whisper?(object)
-  end
 
-  add_to_serializer(:post, :mod_whisper_target_badges) do
+  add_to_serializer(:post, :mod_whisper_target_badges, include_condition: whisper_only) do
     ids =
       Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(
         &:to_i
       )
     ::Badge.where(id: ids).map { |b| { id: b.id, name: b.display_name } }
   end
-  add_to_serializer(:post, :include_mod_whisper_target_badges?) do
-    DiscourseModCategories::Whisper.whisper?(object)
-  end
 
-  add_to_serializer(:post, :mod_whisper_targets) do
+  add_to_serializer(:post, :mod_whisper_targets, include_condition: whisper_only) do
     ids =
       Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
     ::User
       .where(id: ids)
       .map { |u| { id: u.id, username: u.username, avatar_template: u.avatar_template } }
   end
-  add_to_serializer(:post, :include_mod_whisper_targets?) do
-    DiscourseModCategories::Whisper.whisper?(object)
-  end
 
   # A whisper with no user targets AND no group targets AND no badge
   # targets is a staff-only whisper-back.
-  add_to_serializer(:post, :mod_whisper_is_staff_only) do
+  add_to_serializer(:post, :mod_whisper_is_staff_only, include_condition: whisper_only) do
     Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).empty? &&
       Array(
         object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD],
       ).empty? &&
       Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).empty?
   end
-  add_to_serializer(:post, :include_mod_whisper_is_staff_only?) do
-    DiscourseModCategories::Whisper.whisper?(object)
-  end
 
-  add_to_serializer(:post, :mod_whisper_author_is_staff) { !!object.user&.staff? }
-  add_to_serializer(:post, :include_mod_whisper_author_is_staff?) do
-    DiscourseModCategories::Whisper.whisper?(object)
+  add_to_serializer(:post, :mod_whisper_author_is_staff, include_condition: whisper_only) do
+    !!object.user&.staff?
   end
 
   add_to_serializer(

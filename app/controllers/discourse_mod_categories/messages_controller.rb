@@ -162,17 +162,19 @@ module ::DiscourseModCategories
       raw = params[:raw].to_s.strip
       raise Discourse::InvalidParameters.new(:raw) if raw.empty?
 
-      replies = note_replies(topic)
       reply = {
         "id" => SecureRandom.hex(8),
         "user_id" => current_user.id,
         "raw" => raw,
         "created_at" => Time.zone.now.iso8601,
       }
-      replies << reply
-      topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
-      topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
-      topic.save_custom_fields(true)
+      with_note_lock(topic) do
+        replies = note_replies(topic)
+        replies << reply
+        topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
+        topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
+        topic.save_custom_fields(true)
+      end
       notify_staff_of_reply(topic, reply) if SiteSetting.mod_notify_staff_on_topic_notes
 
       render json: { replies: serialized_note_replies(topic) }
@@ -189,15 +191,17 @@ module ::DiscourseModCategories
       raise Discourse::InvalidParameters.new(:raw) if raw.empty?
 
       reply_id = params[:reply_id].to_s
-      replies = note_replies(topic)
-      reply = replies.find { |r| r["id"] == reply_id }
-      raise Discourse::InvalidParameters.new(:reply_id) unless reply
-      ensure_can_touch_note_entry!(reply["user_id"])
+      with_note_lock(topic) do
+        replies = note_replies(topic)
+        reply = replies.find { |r| r["id"] == reply_id }
+        raise Discourse::InvalidParameters.new(:reply_id) unless reply
+        ensure_can_touch_note_entry!(reply["user_id"])
 
-      reply["raw"] = raw
-      topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
-      topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
-      topic.save_custom_fields(true)
+        reply["raw"] = raw
+        topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
+        topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
+        topic.save_custom_fields(true)
+      end
 
       render json: note_thread_json(topic)
     end
@@ -210,15 +214,17 @@ module ::DiscourseModCategories
       ensure_feature!(:mod_topic_private_notes_enabled)
 
       reply_id = params[:reply_id].to_s
-      replies = note_replies(topic)
-      target = replies.find { |r| r["id"] == reply_id }
-      raise Discourse::InvalidParameters.new(:reply_id) unless target
-      ensure_can_touch_note_entry!(target["user_id"])
+      with_note_lock(topic) do
+        replies = note_replies(topic)
+        target = replies.find { |r| r["id"] == reply_id }
+        raise Discourse::InvalidParameters.new(:reply_id) unless target
+        ensure_can_touch_note_entry!(target["user_id"])
 
-      replies.reject! { |r| r["id"] == reply_id }
-      topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
-      topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
-      topic.save_custom_fields(true)
+        replies.reject! { |r| r["id"] == reply_id }
+        topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD] = replies
+        topic.custom_fields[TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD] = Time.zone.now.iso8601
+        topic.save_custom_fields(true)
+      end
 
       render json: note_thread_json(topic)
     end
@@ -352,29 +358,32 @@ module ::DiscourseModCategories
       raise Discourse::NotFound if note.strip.empty?
 
       now = Time.zone.now.iso8601
-      raw = topic.custom_fields[DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD]
-      viewers = raw.is_a?(Array) ? raw.deep_dup : []
+      viewers = nil
+      with_note_lock(topic) do
+        raw = topic.custom_fields[DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD]
+        viewers = raw.is_a?(Array) ? raw.deep_dup : []
 
-      existing = viewers.find { |v| v["user_id"].to_i == current_user.id }
-      if existing
-        existing["viewed_at"] = now
-        # Refresh denormalized identity fields in case the user renamed /
-        # changed their avatar since their last view.
-        existing["username"] = current_user.username
-        existing["name"] = current_user.name
-        existing["avatar_template"] = current_user.avatar_template
-      else
-        viewers << {
-          "user_id" => current_user.id,
-          "username" => current_user.username,
-          "name" => current_user.name,
-          "avatar_template" => current_user.avatar_template,
-          "viewed_at" => now,
-        }
+        existing = viewers.find { |v| v["user_id"].to_i == current_user.id }
+        if existing
+          existing["viewed_at"] = now
+          # Refresh denormalized identity fields in case the user renamed /
+          # changed their avatar since their last view.
+          existing["username"] = current_user.username
+          existing["name"] = current_user.name
+          existing["avatar_template"] = current_user.avatar_template
+        else
+          viewers << {
+            "user_id" => current_user.id,
+            "username" => current_user.username,
+            "name" => current_user.name,
+            "avatar_template" => current_user.avatar_template,
+            "viewed_at" => now,
+          }
+        end
+
+        topic.custom_fields[DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD] = viewers
+        topic.save_custom_fields(true)
       end
-
-      topic.custom_fields[DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD] = viewers
-      topic.save_custom_fields(true)
 
       render json: { viewers: serialized_note_viewers(viewers) }
     end
@@ -758,6 +767,16 @@ module ::DiscourseModCategories
     # moderator must not set a footer, reply approval, note or checklist on
     # (or read the note of) a private message or restricted topic they can't
     # read.
+    # The note thread and its viewer list are JSON in topic custom fields;
+    # a read-modify-write without a lock would let two staff saving at once
+    # drop one of the changes.
+    def with_note_lock(topic)
+      DistributedMutex.synchronize("mod_topic_note_#{topic.id}") do
+        topic.reload
+        yield
+      end
+    end
+
     def find_topic!
       topic = Topic.find_by(id: params[:topic_id])
       raise Discourse::NotFound if topic.nil? || !guardian.can_see_topic?(topic)
@@ -967,7 +986,7 @@ module ::DiscourseModCategories
     def note_replies(topic)
       replies = topic.custom_fields[TOPIC_PRIVATE_NOTE_REPLIES_FIELD]
       replies = [] unless replies.is_a?(Array)
-      replies.each { |entry| entry["id"] = SecureRandom.hex(8) if entry["id"].blank? }
+      replies.each { |entry| entry["id"] = DiscourseModCategories.note_reply_id(entry) }
       replies
     end
 

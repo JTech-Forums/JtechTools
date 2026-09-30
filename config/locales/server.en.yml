@@ -402,29 +402,20 @@ en:
       as new for anyone outside their audience either way.
 
     # ── Jtech — Translator tweaks ──────────────────────────────────────────
-    translator_tweaks_enabled: Master switch for the Jtech tweaks to the
-      upstream discourse-translator plugin. Everything in this section is
-      inert unless that plugin is installed. The globe tweak below responds
-      to this switch immediately; the worker proxy is applied once at boot,
-      so turning this off does not send translation traffic back to Google
-      until the site is restarted.
+    translator_tweaks_enabled: Master switch for the Jtech tweak to the
+      upstream discourse-translator plugin. Inert unless that plugin is
+      installed. The proxy below is applied once at boot, so turning this
+      off doesn't send translation traffic back to Google until the site is
+      restarted.
 
     translator_tweaks_worker_url: 'Base URL the bundled Google translate
       provider is pointed at instead of translation.googleapis.com — include
       the full /language/translate/v2 path; /detect and /languages are
       appended to it. Leave blank to let discourse-translator call Google
-      directly. Two caveats: every post being translated or
-      language-detected is sent to this host, so only enter a proxy you
-      control; and the endpoints are Ruby constants swapped at boot, so
-      editing or clearing this has no effect until a full app restart
-      (./launcher restart app).'
-
-    translator_tweaks_hide_untranslatable: Hide the translate globe on posts
-      that have no detected language yet, instead of showing a globe whose
-      click is a no-op. Posts written before discourse-translator was
-      installed never get a detection row unless they are backfilled;
-      brand-new posts get the globe a few seconds later when the detection
-      job lands. Takes effect immediately — no restart needed.
+      directly. Every post being translated or language-detected, and the
+      site''s Google API key, are sent to this host, so only enter a proxy
+      you control. The endpoints are swapped at boot, so editing or clearing
+      this has no effect until a full app restart (./launcher restart app).'
 
     # ── Jtech — Smart search ─────────────────────────────────────────────
     smart_search_enabled: When a search returns few results, run it again
@@ -883,11 +874,6 @@ en:
       domain. Toggling {{setting:disteleplus_setup_commands_enabled}} refreshes
       or removes the command menu automatically.
 
-    # ── Jtech — Username avatar ─────────────────────────────────────────────
-    discourse_username_avatar_enabled: Derive default (non-uploaded) avatars
-      from a user's username instead of their email address. Users with a
-      manually uploaded custom avatar are unaffected.
-
     # ── Jtech — REQ-PM ─────────────────────────────────────────────────────
     reqpm_enabled: REQ-PM lets members exchange contact details (phone, text,
       WhatsApp, email, website, or their own custom ones) instead of private
@@ -947,7 +933,6 @@ en:
       tl4_can_post_in_closed_topics: mini-mod|tl4|trust level 4|closed topic
       tl4_can_reopen_topics: mini-mod|tl4|trust level 4|reopen
       translator_tweaks_worker_url: cloudflare|worker|proxy|googleapis|translate
-      translator_tweaks_hide_untranslatable: globe|translate|detected locale
       smart_search_extra_synonyms: synonym|dictionary|search expansion
       popup_notifications_excluded_types: toast|noise|likes|mute
       dumbcourse_base_path: mount|url|path|spa
@@ -958,7 +943,6 @@ en:
       disteleplus_reports_chat_id: reports|admin group|moderation
       disteleplus_reports_admin_notices: what's new|dashboard|problems|warnings
       disteleplus_auto_match_usernames: identity|impersonate|spoof|security
-      discourse_username_avatar_enabled: avatar|gravatar|username|letter avatar
       reqpm_enabled: reqpm|req-pm|contact|phone|whatsapp|private message|pm|dm
       reqpm_setup_prompt: reqpm|onboarding|required field|contact card
 

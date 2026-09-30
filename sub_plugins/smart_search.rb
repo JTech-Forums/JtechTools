@@ -1,54 +1,26 @@
 # frozen_string_literal: true
 # Jtech sub-plugin: smart search.
 #
-# Expands the user's search term with synonyms — WordNet (the rwordnet gem)
-# for general English, plus a curated tech-jargon overlay shipped at
-# config/dictionaries/smart_search_synonyms.yml, plus any site-specific
-# groups from the smart_search_extra_synonyms setting — so that "js" finds
-# posts that only say "javascript" and "k8s" finds "kubernetes". The
-# original search runs first, and only when it returns fewer than
-# `smart_search_minimum_results` posts do variant searches run and get
-# merged in.
+# When a search finds too little, retry it with synonyms — WordNet (the
+# rwordnet gem) for general English, a curated tech-jargon overlay
+# (config/dictionaries/smart_search_synonyms.yml) and the site's own groups
+# (smart_search_extra_synonyms) — so "js" finds posts that only say
+# "javascript". See DiscourseSmartSearch::SearchExtension.
 #
-# Reliability constraints (the previous semantic-search attempt 500'd
-# every query; that must not recur):
-#   * No external services, no API calls, no embedding models — all
-#     synonym work is in-process Ruby + a YAML dictionary read once at
-#     boot.
-#   * Every code path that touches search is wrapped in rescue
-#     StandardError → log + fall back to vanilla Discourse search.
-#     A broken dictionary, a Postgres error on a variant query, or a
-#     future Discourse refactor cannot break the user's search.
-#   * Variant queries inherit the original `@opts` (guardian, filters,
-#     context) so permissions are never widened.
+# No external services: everything is in-process Ruby, and every step is
+# rescued back to the plain search result.
 
 require_relative "../lib/discourse_smart_search/synonyms"
 require_relative "../lib/discourse_smart_search/query_expander"
 require_relative "../lib/discourse_smart_search/search_extension"
 
 after_initialize do
-  reloadable_patch do
-    ::Search.prepend(::DiscourseSmartSearch::SearchExtension) if defined?(::Search)
-  end
+  reloadable_patch { ::Search.prepend(::DiscourseSmartSearch::SearchExtension) }
 
-  # Layer the admin-editable synonym groups on top of the shipped dictionary.
-  # Entries are comma-separated words ("|" is the list separator). Applied at
-  # boot and re-applied whenever the setting changes.
-  refresh_extra_synonyms =
-    lambda do
-      extras =
-        SiteSetting
-          .smart_search_extra_synonyms_map
-          .map { |row| row.split(",").map(&:strip).reject(&:empty?) }
-          .reject { |group| group.size < 2 }
-      ::DiscourseSmartSearch::Synonyms.reload!(extras: extras)
-    rescue StandardError => e
-      Rails.logger.warn("[smart-search] extra synonyms reload failed: #{e.class}: #{e.message}")
-    end
-
-  refresh_extra_synonyms.call if SiteSetting.smart_search_extra_synonyms.present?
-
-  on(:site_setting_changed) do |name, _old, _new|
-    refresh_extra_synonyms.call if name.to_s == "smart_search_extra_synonyms"
+  # WordNet's index takes ~40MB and half a second to load. Loading it before
+  # the web server forks lets every worker share one copy instead of each
+  # building its own on its first search.
+  if Rails.env.production? && SiteSetting.jtech_enabled && SiteSetting.smart_search_enabled
+    DiscourseSmartSearch::Synonyms.wordnet_available?
   end
 end

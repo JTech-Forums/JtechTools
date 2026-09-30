@@ -2,7 +2,7 @@
 // just below the header (and its search icon). Theme-aware: uses the active
 // theme's surface colors so it looks native in both light and dark themes.
 //
-// Rendered by assets/javascripts/discourse/components/jtech-popup-notification.gjs
+// Rendered by assets/javascripts/discourse/components/jtech-popup-notification.gts
 // into the always-present `above-footer` outlet; fixed positioning lifts it
 // out of the footer to the top-right of the viewport.
 // Fixed stack anchored top-right, just below the header. Newest card first;
@@ -31,17 +31,39 @@
   border: 1px solid var(--primary-low);
   border-radius: 12px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
-  cursor: pointer;
   animation: jtech-popup-toast-in 160ms ease-out;
 
   &:hover {
     border-color: var(--primary-medium);
   }
 
+  // The whole card body is one button that opens the notification.
+  &__open {
+    display: flex;
+    flex: 1 1 auto;
+    gap: 12px;
+    align-items: flex-start;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--tertiary);
+      outline-offset: 4px;
+      border-radius: 8px;
+    }
+  }
+
   // Avatar column, with a small type-icon badge pinned to its top-right
   // corner. When there is no source post (e.g. a flag note) there is no
   // avatar, so the type icon renders on its own at avatar size instead.
   &__avatar {
+    display: block;
     position: relative;
     flex: 0 0 auto;
     width: 44px;
@@ -92,11 +114,26 @@
   }
 
   &__body {
+    display: block;
+    flex: 1 1 auto;
     min-width: 0; // allow the ellipsis on the title to work inside flex
+  }
+
+  &__close {
+    flex: 0 0 auto;
+    margin: -6px -8px 0 0;
+    padding: 4px;
+    color: var(--primary-medium);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--primary);
+    }
   }
 
   // Top line: "Name — Action" (e.g. "pat — Liked your post").
   &__heading {
+    display: block;
     font-size: var(--font-0);
     line-height: 1.2;
   }
@@ -111,6 +148,7 @@
 
   // Middle line: topic title, bold.
   &__title {
+    display: block;
     margin-top: 2px;
     font-weight: 700;
     font-size: var(--font-up-1);
@@ -143,5 +181,11 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jtech-popup-toast {
+    animation: none;
   }
 }

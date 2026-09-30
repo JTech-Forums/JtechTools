@@ -4,9 +4,8 @@
 #
 # Requires the upstream discourse/discourse-translator plugin to be installed
 # alongside jtech-tools — this script enqueues its DetectTranslatableLanguage
-# job. The script lives here because the rest of alltechdev's tweaks to that
-# plugin are applied at boot from sub_plugins/translator_tweaks.rb, so it
-# made sense to bundle the one-shot script with them.
+# job. It lives here next to the other translator tweak
+# (sub_plugins/translator_tweaks.rb).
 #
 # Finds posts written in non-Latin script that have never had language detection
 # run on them (no row in discourse_translator_post_locales), and enqueues the

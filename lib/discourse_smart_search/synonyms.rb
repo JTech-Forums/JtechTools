@@ -19,8 +19,8 @@ module ::DiscourseSmartSearch
   # The fallback contract documented at the top of
   # `lib/discourse_smart_search/search_extension.rb` depends on it.
   #
-  # An in-memory LRU cache (default 2000 entries) protects against
-  # repeated lookups during a single Search execution chain.
+  # An in-memory LRU cache (default 2000 entries per site) protects
+  # against repeated lookups.
   module Synonyms
     DEFAULT_PATH =
       ::File.expand_path("../../config/dictionaries/smart_search_synonyms.yml", __dir__)
@@ -48,20 +48,25 @@ module ::DiscourseSmartSearch
         result
       end
 
-      # Forces a fresh load of the YAML overlay + clears the cache.
-      # Used by specs; in production the dictionary loads once at boot.
-      def reload!(path: DEFAULT_PATH, extras: nil)
-        groups = load_groups(path)
-        groups.concat(extras) if extras.is_a?(Array)
-        @overlay_index = build_index(groups)
+      # Clears the cached dictionary; the next lookup re-reads it.
+      def reload!
+        @indexes = {}
         @cache = {}
         nil
       end
 
-      # Exposed for tests; the overlay alone (without WordNet) so a
-      # spec can assert the curated entries directly.
+      # The shipped dictionary plus this site's smart_search_extra_synonyms,
+      # built once per site and setting value, so every process (web and
+      # Sidekiq alike) and every site on a multisite picks up a change on
+      # its next search.
       def overlay_index
-        @overlay_index ||= build_index(load_groups(DEFAULT_PATH))
+        extras = extra_groups_setting
+        key = [current_db, extras]
+        @indexes ||= {}
+        @indexes[key] ||= begin
+          @indexes.clear if @indexes.size > 50
+          build_index(shipped_groups + parse_extra_groups(extras))
+        end
       end
 
       # True when the rwordnet backend is available + DB loaded.
@@ -86,7 +91,7 @@ module ::DiscourseSmartSearch
       private
 
       def lookup_uncached(key)
-        # 1. Overlay (curated tech jargon).
+        # 1. Overlay (curated tech jargon, plus this site's own groups).
         hit = overlay_index[key]
         return hit if hit
 
@@ -122,7 +127,11 @@ module ::DiscourseSmartSearch
           .each do |lemma|
             lemma.synsets.each do |synset|
               synset.words.each do |w|
-                normalized = w.to_s.gsub("_", " ").downcase.strip
+                # Skip multi-word entries ("side_by_side") and strip
+                # WordNet's adjective markers ("future(a)").
+                word = w.to_s.sub(/\([a-z]+\)\z/, "")
+                next if word.include?("_")
+                normalized = word.downcase.strip
                 next unless normalized.length.between?(2, 60)
                 next if seen.include?(normalized)
                 seen << normalized
@@ -142,11 +151,12 @@ module ::DiscourseSmartSearch
         []
       end
 
-      # Lazily-allocated LRU cache. Using Hash's insertion-order
-      # iteration as the LRU primitive — `cache.shift` removes the
-      # oldest entry, `cache[key] = value` re-orders on overwrite.
+      # Lazily-allocated LRU cache, per site (sites can have different
+      # extra synonyms). Hash insertion order is the LRU primitive —
+      # `shift` removes the oldest entry.
       def cache
         @cache ||= {}
+        @cache[[current_db, extra_groups_setting]] ||= {}
       end
 
       def cache_set(key, value)
@@ -155,6 +165,28 @@ module ::DiscourseSmartSearch
         c[key] = value
         c.shift while c.size > CACHE_LIMIT
         value
+      end
+
+      def current_db
+        defined?(::RailsMultisite) ? ::RailsMultisite::ConnectionManagement.current_db : "default"
+      end
+
+      def extra_groups_setting
+        ::SiteSetting.smart_search_extra_synonyms.to_s
+      rescue StandardError
+        ""
+      end
+
+      # "a,b|c,d" → [["a", "b"], ["c", "d"]]
+      def parse_extra_groups(value)
+        value
+          .split("|")
+          .map { |row| row.split(",").map(&:strip).reject(&:empty?) }
+          .select { |group| group.size >= 2 }
+      end
+
+      def shipped_groups
+        @shipped_groups ||= load_groups(DEFAULT_PATH).freeze
       end
 
       def load_groups(path)
@@ -169,15 +201,17 @@ module ::DiscourseSmartSearch
         []
       end
 
+      # word → [word, *its synonyms in the order the groups list them].
+      # Order matters: the query expander swaps in the first synonym, so the
+      # dictionary's first-listed (clearest) term wins.
       def build_index(groups)
         table = {}
         groups.each do |group|
           normalized = group.map { |w| w.to_s.downcase.strip }.reject(&:empty?).uniq
           next if normalized.size < 2
-          set = normalized.sort.freeze
-          normalized.each { |w| (table[w] ||= []).concat(set) }
+          normalized.each { |w| (table[w] ||= [w]).concat(normalized - [w]) }
         end
-        table.each_with_object({}) { |(k, v), out| out[k] = v.uniq.sort.freeze }.freeze
+        table.transform_values { |v| v.uniq.freeze }.freeze
       end
     end
   end

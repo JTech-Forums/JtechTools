@@ -24,6 +24,18 @@ module DiscourseModCategories
       super || DiscourseModCategories::Whisper.whisper?(self)
     end
 
+    # Whisper.prime! remembers a post's whisper fields; changing or
+    # reloading the post forgets them.
+    def save_custom_fields(*)
+      DiscourseModCategories::Whisper.forget!(self)
+      super
+    end
+
+    def reload(*)
+      DiscourseModCategories::Whisper.forget!(self)
+      super
+    end
+
     def publish_change_to_clients!(type, opts = {})
       opts = opts.merge(skip_topic_stats: true) if DiscourseModCategories::Whisper.whisper?(self)
       super(type, opts)
