@@ -95,7 +95,7 @@ RSpec.describe "REQ-PM", reqpm_prompt: true do
     shot("06_user_modal_request")
     find(".reqpm-user-modal__request").click
     expect(page).to have_css(".reqpm-callout--success")
-    expect(page).to have_css(".reqpm-status", text: "It's up to alice_k")
+    expect(page).to have_css(".reqpm-status", text: "Requested")
     shot("07_user_modal_requested")
 
     # Alice sees the badge and answers from the REQ-PM page.
