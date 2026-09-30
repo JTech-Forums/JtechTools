@@ -585,6 +585,12 @@ en:
           all_settings: All settings
   admin_js:
     admin:
+      logs:
+        staff_actions:
+          actions:
+            jtech_admin_action: "run Jtech Tools action"
+            mod_post_made_whisper: "turn post into whisper"
+            mod_whisper_made_public: "make whisper public"
       jtech_tools:
         actions:
           title: Maintenance actions

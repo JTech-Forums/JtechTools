@@ -7,6 +7,7 @@ require_relative "../lib/discourse_mod_categories/guardian_extensions"
 require_relative "../lib/discourse_mod_categories/whisper"
 require_relative "../lib/discourse_mod_categories/core_whisper_patches"
 require_relative "../lib/discourse_mod_categories/whisper_query_filter"
+require_relative "../lib/discourse_mod_categories/whisper_unread"
 require_relative "../lib/discourse_mod_categories/staff_notifier"
 require_relative "../lib/discourse_mod_categories/user_action_whisper_filter"
 require_relative "../lib/discourse_mod_categories/search_indexer_extension"
@@ -292,11 +293,6 @@ module ::DiscourseModCategories
   # as group targets.
   POST_WHISPER_TARGET_BADGES_FIELD = "mod_whisper_target_badge_ids"
   TOPIC_WHISPER_PARTICIPANTS_FIELD = "mod_whisper_participant_ids"
-  # ISO8601 timestamp of the latest NON-whisper post in the topic. Written
-  # alongside the highest_post_number rollback so the topic-list query
-  # modifier can sort non-audience users by this value instead of the live
-  # Topic#bumped_at, while audience members keep the actual bump time.
-  TOPIC_NON_WHISPER_BUMPED_AT_FIELD = "mod_non_whisper_bumped_at"
   # JSON array of `{user_id, username, name, avatar_template, viewed_at}`
   # entries — staff who have rendered the mod-note panel on the topic.
   # Used by the "👁 Viewed by N" pill at the bottom of the panel. Re-view
@@ -374,20 +370,11 @@ after_initialize do
     DiscourseModCategories::TOPIC_PRIVATE_NOTE_ACTIVITY_FIELD,
     :string,
   )
-  register_topic_custom_field_type(
-    DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD,
-    :string,
-  )
   register_topic_custom_field_type(DiscourseModCategories::TOPIC_NOTE_VIEWERS_FIELD, :json)
 
-  # Preload the two custom fields the audience-aware bumped_at serializer
-  # below reads. Without these, Discourse's HasCustomFields::PreloadedProxy
-  # raises NotPreloadedError when the serializer touches the fields on a
-  # topic-list row (the guard exists to prevent N+1 queries — preloading
-  # is the documented way to declare you intend to use the field for
-  # every topic on the list).
+  # Preloaded on topic lists so reading it from a list row can't raise
+  # HasCustomFields::NotPreloadedError (or cost a query per row).
   add_preloaded_topic_list_custom_field(DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD)
-  add_preloaded_topic_list_custom_field(DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD)
   register_user_custom_field_type(DiscourseModCategories::USER_NOTES_SEEN_FIELD, :string)
   register_user_custom_field_type(DiscourseModCategories::USER_CHECKLIST_VERSION_FIELD, :integer)
   register_user_custom_field_type(DiscourseModCategories::USER_TARGETED_CHECKLIST_FIELD, :json)
@@ -741,17 +728,7 @@ after_initialize do
     topic = post.topic
     next unless topic
 
-    unless DiscourseModCategories::Whisper.whisper?(post)
-      # A public post bumps the topic for everyone again, so the legacy
-      # "non-whisper bump time" override is obsolete for this topic.
-      if topic.custom_fields.key?(DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD)
-        ::TopicCustomField.where(
-          topic_id: topic.id,
-          name: DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD,
-        ).delete_all
-      end
-      next
-    end
+    next unless DiscourseModCategories::Whisper.whisper?(post)
 
     DiscourseModCategories::Whisper.refresh_topic_counters(topic)
     if post.reply_to_post_number.present?
@@ -800,53 +777,6 @@ after_initialize do
         post_id: post.id,
         recipient_ids: recipient_ids,
       )
-    end
-  end
-
-  # Audience-aware ordering on the topic list — legacy data only. New
-  # whispers never bump a topic (core treats them as whispers via the
-  # Post#whisper? override below), but topics bumped by a whisper before
-  # that fix still carry the whisper time in Topic#bumped_at, with the last
-  # public post time stored in TOPIC_NON_WHISPER_BUMPED_AT_FIELD. Everyone
-  # but staff is sorted by that stored time; the field is dropped as soon as
-  # a public post bumps the topic again.
-  #
-  # Wrapped in `rescue StandardError` so a future Discourse change can't
-  # break /latest; the regex guard keeps bad data from failing the query.
-  register_modifier(:topic_query_create_list_topics) do |scope, _options, topic_query|
-    begin
-      next scope unless SiteSetting.mod_whisper_audience_aware_topic_list
-
-      user = topic_query.user
-      next scope if user&.staff?
-
-      nwba_field_quoted =
-        ::ActiveRecord::Base.connection.quote(
-          DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD,
-        )
-
-      scope =
-        scope.joins(
-          "LEFT OUTER JOIN topic_custom_fields nwba " \
-            "ON nwba.topic_id = topics.id AND nwba.name = #{nwba_field_quoted}",
-        )
-
-      effective_bumped_at = <<~SQL.squish
-        CASE
-          WHEN nwba.value IS NOT NULL
-               AND nwba.value <> ''
-               AND nwba.value ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
-            THEN LEAST(nwba.value::timestamp, topics.bumped_at)
-          ELSE topics.bumped_at
-        END
-      SQL
-
-      scope.reorder(::Arel.sql("(#{effective_bumped_at}) DESC, topics.id DESC"))
-    rescue StandardError => e
-      ::Rails.logger.warn(
-        "[jtech-tools] topic_query audience-aware sort fell back: #{e.class}: #{e.message}",
-      )
-      scope
     end
   end
 
@@ -938,39 +868,12 @@ after_initialize do
     end,
   ) { object.custom_fields[DiscourseModCategories::CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD] }
 
-  # Audience-aware highest_post_number for the topic list. Returns the max
-  # post_number in the topic that the CURRENT user can see — whispers are
-  # excluded for non-audience viewers and included for the audience (staff,
-  # explicit targets, group targets, topic participants). This is what makes
-  # the topic-list `(highest - last_read)` math audience-aware: non-audience
-  # viewers never see a badge bump from a whisper they can't read.
-  add_to_serializer(:listable_topic, :highest_post_number) do
-    raw = object.highest_post_number
-    next raw unless SiteSetting.mod_whisper_audience_aware_topic_list
-
-    visible_max = DiscourseModCategories.whisper_audience_max_post_number(object, scope&.user)
-    visible_max || raw
-  end
-
-  # Audience-aware bumped_at for the topic list's "Activity" column — legacy
-  # data only, mirroring the sort above: non-staff see the last public bump
-  # time for topics a pre-fix whisper bumped.
-  add_to_serializer(:listable_topic, :bumped_at) do
-    raw = object.bumped_at
-    next raw unless SiteSetting.mod_whisper_audience_aware_topic_list
-    next raw if scope&.user&.staff?
-
-    # HasCustomFields::PreloadedProxy raises NotPreloadedError if the
-    # preload registration hasn't taken effect; fall through to raw.
-    begin
-      nwba = object.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD]
-      next raw if nwba.blank?
-
-      parsed = ::Time.zone.parse(nwba.to_s)
-      parsed && raw && parsed < raw ? parsed : raw
-    rescue StandardError
-      raw
-    end
+  # Audience-aware unread counts on the topic list and in read tracking —
+  # see DiscourseModCategories::WhisperUnread.
+  reloadable_patch do
+    ::ListableTopicSerializer.prepend(DiscourseModCategories::WhisperUnread::SerializerExtension)
+    ::PostTiming.singleton_class.prepend(DiscourseModCategories::WhisperUnread::PostTimingExtension)
+    ::User.prepend(DiscourseModCategories::WhisperUnread::UserExtension)
   end
 
   # ---------------------------------------------------------------------
@@ -1020,9 +923,8 @@ after_initialize do
         alert_key: "discourse_mod_categories.post_deleted_notification_alert",
         url: topic ? "#{topic.relative_url}/#{post.post_number}" : "/",
         excerpt: post.raw.to_s,
-        topic_id: topic&.id,
+        topic: topic,
         post_number: post.post_number,
-        topic_title: topic&.title,
       )
     rescue StandardError => e
       # The notify side effect must never block the underlying delete.
@@ -1116,6 +1018,7 @@ after_initialize do
         alert_key: alert_key,
         url: "/review/#{reviewable.id}",
         excerpt: excerpt,
+        reviewable: reviewable,
       )
     rescue StandardError => e
       ::Rails.logger.warn(
@@ -1186,36 +1089,34 @@ after_initialize do
   # from request specs with transactional fixtures. The downside —
   # firing the notification when a creating transaction is later
   # rolled back — is acceptable because the controller commits the row
-  # before returning a successful response. Reloadable so dev-mode
-  # code reloads don't pile up duplicate callbacks.
-  reloadable_patch do
-    if defined?(::ReviewableNote)
-      ::ReviewableNote.after_create do
-        next unless DiscourseModCategories.enabled?
-        next unless SiteSetting.mod_notify_staff_on_flag_notes
+  # before returning a successful response. add_model_callback keeps
+  # dev-mode reloads from piling up duplicate callbacks and skips the hook
+  # while the plugin is off.
+  add_model_callback("ReviewableNote", :after_create) do
+    next unless DiscourseModCategories.enabled?
+    next unless SiteSetting.mod_notify_staff_on_flag_notes
 
-        author = ::User.find_by(id: user_id)
-        reviewable = ::Reviewable.find_by(id: reviewable_id)
-        next if author.blank? || reviewable.blank?
+    author = ::User.find_by(id: user_id)
+    reviewable = ::Reviewable.find_by(id: reviewable_id)
+    next if author.blank? || reviewable.blank?
 
-        target_user = reviewable.target_created_by
-        target_label = target_user&.username || reviewable.type.to_s.sub(/^Reviewable/, "")
+    target_user = reviewable.target_created_by
+    target_label = target_user&.username || reviewable.type.to_s.sub(/^Reviewable/, "")
 
-        begin
-          DiscourseModCategories::StaffNotifier.fan_out(
-            acting_user: author,
-            kind: DiscourseModCategories::StaffNotifier::KIND_FLAG_NOTE,
-            message_key: "discourse_mod_categories.flag_note_notification",
-            title_key: "discourse_mod_categories.flag_note_notification_title",
-            alert_key: "discourse_mod_categories.flag_note_notification_alert",
-            url: "/review/#{reviewable.id}",
-            excerpt: content.to_s,
-            target_username: target_label,
-          )
-        rescue StandardError => e
-          ::Rails.logger.warn("[jtech-tools] flag_note notify failed: #{e.class}: #{e.message}")
-        end
-      end
+    begin
+      DiscourseModCategories::StaffNotifier.fan_out(
+        acting_user: author,
+        kind: DiscourseModCategories::StaffNotifier::KIND_FLAG_NOTE,
+        message_key: "discourse_mod_categories.flag_note_notification",
+        title_key: "discourse_mod_categories.flag_note_notification_title",
+        alert_key: "discourse_mod_categories.flag_note_notification_alert",
+        url: "/review/#{reviewable.id}",
+        excerpt: content.to_s,
+        reviewable: reviewable,
+        target_username: target_label,
+      )
+    rescue StandardError => e
+      ::Rails.logger.warn("[jtech-tools] flag_note notify failed: #{e.class}: #{e.message}")
     end
   end
 
@@ -1368,6 +1269,7 @@ after_initialize do
     module ::DiscourseModCategories
       module NotificationsControllerTypeFilter
         def index
+          return super unless SiteSetting.jtech_enabled
           return super unless SiteSetting.mod_notification_type_filter_enabled
 
           requested_type = params[:type].to_s.strip

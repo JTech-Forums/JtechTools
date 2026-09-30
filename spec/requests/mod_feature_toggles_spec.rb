@@ -200,23 +200,6 @@ RSpec.describe "Moderator feature toggles" do
     end
   end
 
-  describe "moderator category powers" do
-    it "revokes category creation when its toggle is off" do
-      SiteSetting.mod_moderators_can_create_categories = false
-      expect(Guardian.new(moderator).can_create_category?).to eq(false)
-    end
-
-    it "grants category creation by default" do
-      expect(Guardian.new(moderator).can_create_category?).to eq(true)
-    end
-
-    it "revokes category deletion when its toggle is off" do
-      SiteSetting.mod_moderators_can_delete_categories = false
-      category = Fabricate(:category)
-      expect(Guardian.new(moderator).can_delete_category?(category)).to eq(false)
-    end
-  end
-
   describe "serializer gating" do
     fab!(:footer_topic, :topic)
 

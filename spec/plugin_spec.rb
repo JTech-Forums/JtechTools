@@ -45,8 +45,13 @@ RSpec.describe "DiscourseModCategories plugin.rb" do
     context "when enabled" do
       before { SiteSetting.mod_categories_enabled = true }
 
-      it "grants moderators category create/edit/delete" do
+      it "leaves moderator category management to core's setting" do
         empty_category = Fabricate(:category)
+        guardian = Guardian.new(moderator)
+        expect(guardian.can_create_category?).to eq(false)
+        expect(guardian.can_edit_category?(empty_category)).to eq(false)
+
+        SiteSetting.moderators_manage_categories = true
         guardian = Guardian.new(moderator)
         expect(guardian.can_create_category?).to eq(true)
         expect(guardian.can_edit_category?(empty_category)).to eq(true)
@@ -98,9 +103,6 @@ RSpec.describe "DiscourseModCategories plugin.rb" do
   describe "per-feature moderator toggle registration" do
     it "registers a toggle for every moderator grant, defaulting to current behavior" do
       %i[
-        mod_moderators_can_create_categories
-        mod_moderators_can_edit_categories
-        mod_moderators_can_delete_categories
         mod_whisper_add_participant_enabled
         mod_whisper_convert_enabled
         mod_whisper_badge_targeting_enabled

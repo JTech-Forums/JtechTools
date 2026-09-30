@@ -16,6 +16,8 @@ module ::DiscourseModCategories
     requires_plugin "jtech-tools"
     requires_login
 
+    before_action :ensure_module_enabled
+
     NS = DiscourseModCategories::CHECKLIST_STORE_NAMESPACE
     KEY = DiscourseModCategories::CHECKLIST_STORE_KEY
     LOG_KEY = DiscourseModCategories::CHECKLIST_LOG_KEY
@@ -67,7 +69,9 @@ module ::DiscourseModCategories
     # `null`. The frontend polls this when the composer opens so a checklist
     # version bumped mid-session is gated without a hard page refresh.
     def owed
-      topic_id = params[:topic_id].presence
+      # A topic the user can't see has no checklist as far as they know.
+      topic = Topic.find_by(id: params[:topic_id]) if params[:topic_id].present?
+      topic_id = topic&.id if topic && guardian.can_see_topic?(topic)
       render json: {
                checklist:
                  DiscourseModCategories.owed_checklist_for(current_user, topic_id: topic_id),
@@ -81,6 +85,7 @@ module ::DiscourseModCategories
     def accept
       kind = params[:kind].to_s
       submitted = params[:version].to_i
+      RateLimiter.new(current_user, "mod-checklist-accept", 20, 1.minute).performed!
 
       # Match the per-kind feature gates the other endpoints use — with a
       # feature off, its acceptance store must not be writable either.
@@ -96,33 +101,43 @@ module ::DiscourseModCategories
       if kind == "targeted"
         checklist =
           DiscourseModCategories.targeted_checklists.find { |c| c["id"] == params[:id].to_s }
-        raise Discourse::NotFound unless checklist
+        # Only the users a targeted checklist names can accept it.
+        unless checklist && Array(checklist["user_ids"]).map(&:to_i).include?(current_user.id)
+          raise Discourse::NotFound
+        end
 
         accepted_version = [submitted, checklist["version"].to_i].min
         map = current_user.custom_fields[TARGETED_FIELD]
         map = {} unless map.is_a?(Hash)
-        map[checklist["id"]] = accepted_version
-        current_user.custom_fields[TARGETED_FIELD] = map
-        current_user.save_custom_fields(true)
-        append_log_entry(accepted_version, kind: "targeted", id: checklist["id"])
+        if map[checklist["id"]] != accepted_version
+          map[checklist["id"]] = accepted_version
+          current_user.custom_fields[TARGETED_FIELD] = map
+          current_user.save_custom_fields(true)
+          append_log_entry(accepted_version, kind: "targeted", id: checklist["id"])
+        end
       elsif kind == "topic"
-        topic_id = params[:id].to_i
-        checklist = DiscourseModCategories.topic_prompt_checklist(topic_id)
+        topic = Topic.find_by(id: params[:id])
+        raise Discourse::NotFound if topic.nil? || !guardian.can_see_topic?(topic)
+        checklist = DiscourseModCategories.topic_prompt_checklist(topic.id)
         raise Discourse::NotFound unless checklist
 
         accepted_version = [submitted, checklist["version"].to_i].min
         map = current_user.custom_fields[USER_TOPIC_FIELD]
         map = {} unless map.is_a?(Hash)
-        map[topic_id.to_s] = accepted_version
-        current_user.custom_fields[USER_TOPIC_FIELD] = map
-        current_user.save_custom_fields(true)
-        append_log_entry(accepted_version, kind: "topic", id: topic_id.to_s)
+        if map[topic.id.to_s] != accepted_version
+          map[topic.id.to_s] = accepted_version
+          current_user.custom_fields[USER_TOPIC_FIELD] = map
+          current_user.save_custom_fields(true)
+          append_log_entry(accepted_version, kind: "topic", id: topic.id.to_s)
+        end
       else
         current = DiscourseModCategories.checklist_config&.dig("version").to_i
         accepted_version = [submitted, current].min
-        current_user.custom_fields[VERSION_FIELD] = accepted_version
-        current_user.save_custom_fields(true)
-        append_log_entry(accepted_version, kind: "global")
+        if current_user.custom_fields[VERSION_FIELD].to_i != accepted_version
+          current_user.custom_fields[VERSION_FIELD] = accepted_version
+          current_user.save_custom_fields(true)
+          append_log_entry(accepted_version, kind: "global")
+        end
       end
 
       render json: success_json
@@ -204,8 +219,7 @@ module ::DiscourseModCategories
     # shape the editor expects. Empty/absent stores return zeroed fields
     # so the editor can render an empty form.
     def show_topic
-      topic = Topic.find_by(id: params[:topic_id])
-      raise Discourse::NotFound unless topic
+      topic = find_topic!
       guardian.ensure_can_manage_mod_messages!
       ensure_feature!(:mod_topic_prompt_checklist_enabled)
 
@@ -219,8 +233,7 @@ module ::DiscourseModCategories
     # the two legacy `mod_topic_reply_prompt*` custom fields are cleared
     # so the new config wins outright.
     def update_topic
-      topic = Topic.find_by(id: params[:topic_id])
-      raise Discourse::NotFound unless topic
+      topic = find_topic!
       guardian.ensure_can_manage_mod_messages!
       ensure_feature!(:mod_topic_prompt_checklist_enabled)
 
@@ -259,8 +272,7 @@ module ::DiscourseModCategories
 
     # Clears the per-topic prompt checklist.
     def delete_topic
-      topic = Topic.find_by(id: params[:topic_id])
-      raise Discourse::NotFound unless topic
+      topic = find_topic!
       guardian.ensure_can_manage_mod_messages!
       ensure_feature!(:mod_topic_prompt_checklist_enabled)
 
@@ -271,6 +283,16 @@ module ::DiscourseModCategories
     end
 
     private
+
+    def ensure_module_enabled
+      raise Discourse::NotFound unless DiscourseModCategories.enabled?
+    end
+
+    def find_topic!
+      topic = Topic.find_by(id: params[:topic_id])
+      raise Discourse::NotFound if topic.nil? || !guardian.can_see_topic?(topic)
+      topic
+    end
 
     # 404s when a per-feature toggle is off, so each checklist flavour can be
     # revoked individually from the plugin settings.
@@ -304,17 +326,21 @@ module ::DiscourseModCategories
 
     # Appends one acceptance to the audit log, keeping the most recent
     # LOG_LIMIT entries.
+    # The log is one plugin-store row, so concurrent accepts are serialized
+    # to keep one from overwriting another's entry.
     def append_log_entry(version, kind: "global", id: nil)
-      raw = PluginStore.get(NS, LOG_KEY)
-      entries = raw.is_a?(Array) ? raw : []
-      entries << {
-        "user_id" => current_user.id,
-        "version" => version,
-        "at" => Time.zone.now.iso8601,
-        "kind" => kind,
-        "checklist_id" => id,
-      }
-      PluginStore.set(NS, LOG_KEY, entries.last(LOG_LIMIT))
+      DistributedMutex.synchronize("mod_checklist_acceptance_log") do
+        raw = PluginStore.get(NS, LOG_KEY)
+        entries = raw.is_a?(Array) ? raw : []
+        entries << {
+          "user_id" => current_user.id,
+          "version" => version,
+          "at" => Time.zone.now.iso8601,
+          "kind" => kind,
+          "checklist_id" => id,
+        }
+        PluginStore.set(NS, LOG_KEY, entries.last(LOG_LIMIT))
+      end
     end
 
     # The acceptance audit log, newest first, with usernames resolved.

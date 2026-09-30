@@ -33,6 +33,26 @@ module ::DiscourseModCategories
     # controller. Specs in spec/requests/staff_event_integration_spec.rb
     # exercise this contract by injecting `fan_out` raises and asserting
     # the user's endpoint still returns success.
+    # Staff members other than `except` who may see what the alert is
+    # about. Moderators don't see every private message, every restricted
+    # category or every review item (some are admin-only), and an alert
+    # carries the title and an excerpt — so it goes only to staff who could
+    # open the thing it points at.
+    def self.staff_recipients(except:, topic: nil, reviewable: nil)
+      staff = ::User.where(admin: true).or(::User.where(moderator: true))
+      staff = staff.where.not(id: except.id) if except
+
+      Enumerator.new do |yielder|
+        staff.find_each do |staff_user|
+          next if topic && !::Guardian.new(staff_user).can_see_topic?(topic)
+          if reviewable && !::Reviewable.viewable_by(staff_user).where(id: reviewable.id).exists?
+            next
+          end
+          yielder << staff_user
+        end
+      end
+    end
+
     def self.fan_out(
       acting_user:,
       kind:,
@@ -41,75 +61,77 @@ module ::DiscourseModCategories
       alert_key:,
       url:,
       excerpt: nil,
-      topic_id: nil,
+      topic: nil,
+      reviewable: nil,
       post_number: nil,
-      topic_title: nil,
       target_username: nil
     )
       return if acting_user.blank?
 
       acting_username = acting_user.username
       truncated_excerpt = excerpt.to_s.truncate(300)
+      topic_id = topic&.id
+      topic_title = topic&.title
 
-      ::User
-        .where(admin: true)
-        .or(::User.where(moderator: true))
-        .where.not(id: acting_user.id)
-        .find_each do |staff_user|
-          # Idempotency check: skip when this staff member already has a
-          # mod-note notification of the same kind anchored on the same
-          # target (topic+post for topic-anchored kinds, URL for review/
-          # user-notes kinds) created in the last 30 seconds. Protects
-          # against the event hook firing twice in quick succession
-          # (event-bus retry, a future Discourse refactor calling the
-          # event twice, race with another plugin) without suppressing
-          # the legitimate "moderator added two real notes in a row"
-          # case, which still creates distinct rows because the second
-          # is anchored on a different reply_id / different note row.
-          if recent_duplicate?(
-               staff_user: staff_user,
-               kind: kind,
-               topic_id: topic_id,
-               post_number: post_number,
-               url: url,
-             )
-            next
-          end
-
-          data = {
-            display_username: acting_username,
-            mod_note: true,
-            mod_note_kind: kind,
-            excerpt: truncated_excerpt,
-            url: url,
-            message: message_key,
-            title: title_key,
-          }
-          data[:topic_title] = topic_title if topic_title.present?
-          data[:target_username] = target_username if target_username.present?
-
-          ::Notification.create!(
-            notification_type: ::Notification.types[:custom],
-            user_id: staff_user.id,
-            topic_id: topic_id,
-            post_number: post_number,
-            high_priority: true,
-            data: data.to_json,
-          )
-
-          publish_alert(
-            staff_user,
-            alert_key: alert_key,
-            url: url,
-            excerpt: truncated_excerpt,
-            username: acting_username,
-            topic_id: topic_id,
-            post_number: post_number,
-            topic_title: topic_title,
-            target_username: target_username,
-          )
-          staff_user.publish_notifications_state
+      staff_recipients(
+        except: acting_user,
+        topic: topic,
+        reviewable: reviewable,
+      ).each do |staff_user|
+        # Idempotency check: skip when this staff member already has a
+        # mod-note notification of the same kind anchored on the same
+        # target (topic+post for topic-anchored kinds, URL for review/
+        # user-notes kinds) created in the last 30 seconds. Protects
+        # against the event hook firing twice in quick succession
+        # (event-bus retry, a future Discourse refactor calling the
+        # event twice, race with another plugin) without suppressing
+        # the legitimate "moderator added two real notes in a row"
+        # case, which still creates distinct rows because the second
+        # is anchored on a different reply_id / different note row.
+        if recent_duplicate?(
+             staff_user: staff_user,
+             kind: kind,
+             topic_id: topic_id,
+             post_number: post_number,
+             url: url,
+           )
+          next
         end
+
+        data = {
+          display_username: acting_username,
+          mod_note: true,
+          mod_note_kind: kind,
+          excerpt: truncated_excerpt,
+          url: url,
+          message: message_key,
+          title: title_key,
+        }
+        data[:topic_title] = topic_title if topic_title.present?
+        data[:target_username] = target_username if target_username.present?
+
+        ::Notification.create!(
+          notification_type: ::Notification.types[:custom],
+          user_id: staff_user.id,
+          topic_id: topic_id,
+          post_number: post_number,
+          high_priority: true,
+          data: data.to_json,
+        )
+
+        publish_alert(
+          staff_user,
+          alert_key: alert_key,
+          url: url,
+          excerpt: truncated_excerpt,
+          username: acting_username,
+          topic_id: topic_id,
+          post_number: post_number,
+          topic_title: topic_title,
+          target_username: target_username,
+        )
+        staff_user.publish_notifications_state
+      end
     rescue StandardError => e
       ::Rails.logger.warn(
         "[jtech-tools] staff_notifier fan_out (#{kind}) failed: #{e.class}: #{e.message}",

@@ -8,6 +8,16 @@ module ::DiscourseModCategories
     requires_plugin "jtech-tools"
     requires_login
 
+    # Whispers and notification auto-mark have their own switches and keep
+    # working with the module off; everything else here is the module.
+    before_action :ensure_module_enabled,
+                  except: %i[
+                    update_post_whisper
+                    add_whisper_participant
+                    mark_topic_notifications_seen
+                    mark_review_notifications_seen
+                  ]
+
     TOPIC_FOOTER_FIELD = DiscourseModCategories::TOPIC_FOOTER_FIELD
     TOPIC_REPLY_PROMPT_FIELD = DiscourseModCategories::TOPIC_REPLY_PROMPT_FIELD
     TOPIC_PINNED_POST_FIELD = DiscourseModCategories::TOPIC_PINNED_POST_FIELD
@@ -26,8 +36,7 @@ module ::DiscourseModCategories
     TOPIC_WHISPER_PARTICIPANTS_FIELD = DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
 
     def update_topic
-      topic = Topic.find_by(id: params[:topic_id])
-      raise Discourse::NotFound unless topic
+      topic = find_topic!
 
       guardian.ensure_can_manage_mod_messages!
 
@@ -115,16 +124,19 @@ module ::DiscourseModCategories
              }
     end
 
+    # The per-category new-topic prompt is a moderator message, not a
+    # category setting, so it needs the moderator-message right (and a
+    # category they can see), not the right to edit the category itself.
     def update_category
       category = Category.find_by(id: params[:category_id])
-      raise Discourse::NotFound unless category
+      raise Discourse::NotFound if category.nil? || !guardian.can_see_category?(category)
 
-      # Editing a category is already a moderator-granted ability in this
-      # plugin; reuse that gate for the per-category prompt.
-      guardian.ensure_can_edit_category!(category)
+      guardian.ensure_can_manage_mod_messages!
       ensure_feature!(:precheck_new_topic_enabled)
 
-      category.custom_fields[CATEGORY_NEW_TOPIC_PROMPT_FIELD] = params[:new_topic_prompt].to_s
+      if params.key?(:new_topic_prompt)
+        category.custom_fields[CATEGORY_NEW_TOPIC_PROMPT_FIELD] = params[:new_topic_prompt].to_s
+      end
 
       if params.key?(:new_topic_prompt_max_tl)
         category.custom_fields[CATEGORY_NEW_TOPIC_PROMPT_TL_FIELD] = normalize_max_tl(
@@ -142,8 +154,7 @@ module ::DiscourseModCategories
 
     # Appends a staff reply to the topic's private moderator note thread.
     def add_note_reply
-      topic = Topic.find_by(id: params[:topic_id])
-      raise Discourse::NotFound unless topic
+      topic = find_topic!
 
       guardian.ensure_can_manage_mod_messages!
       ensure_feature!(:mod_topic_private_notes_enabled)
@@ -169,8 +180,7 @@ module ::DiscourseModCategories
 
     # Edits the `raw` body of a single reply in the note thread.
     def update_note_reply
-      topic = Topic.find_by(id: params[:topic_id])
-      raise Discourse::NotFound unless topic
+      topic = find_topic!
 
       guardian.ensure_can_manage_mod_messages!
       ensure_feature!(:mod_topic_private_notes_enabled)
@@ -194,8 +204,7 @@ module ::DiscourseModCategories
 
     # Removes a single reply from the note thread.
     def delete_note_reply
-      topic = Topic.find_by(id: params[:topic_id])
-      raise Discourse::NotFound unless topic
+      topic = find_topic!
 
       guardian.ensure_can_manage_mod_messages!
       ensure_feature!(:mod_topic_private_notes_enabled)
@@ -216,8 +225,7 @@ module ::DiscourseModCategories
 
     # Clears the note body, its author/created-at, and its whole reply thread.
     def delete_note
-      topic = Topic.find_by(id: params[:topic_id])
-      raise Discourse::NotFound unless topic
+      topic = find_topic!
 
       guardian.ensure_can_manage_mod_messages!
       ensure_feature!(:mod_topic_private_notes_enabled)
@@ -252,8 +260,13 @@ module ::DiscourseModCategories
       raise Discourse::NotFound unless post
       raise Discourse::InvalidAccess.new("staff_only") unless current_user.staff?
       raise Discourse::InvalidAccess.new("cannot_edit") unless guardian.can_edit?(post)
+      # Hiding or publishing another staff member's post is an admin call.
+      if !current_user.admin? && post.user&.staff? && post.user_id != current_user.id
+        raise Discourse::InvalidAccess.new("other_staff_post")
+      end
 
       armed = ActiveModel::Type::Boolean.new.cast(params[:mod_whisper])
+      was_whisper = DiscourseModCategories::Whisper.whisper?(post)
 
       # A topic's first post can't be a whisper: title, excerpt and new-topic
       # notifications are public by nature.
@@ -268,9 +281,10 @@ module ::DiscourseModCategories
       badges_field = DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD
 
       if armed
-        user_ids = sanitize_ids(params[:mod_whisper_target_user_ids])
-        group_ids = sanitize_ids(params[:mod_whisper_target_group_ids])
-        badge_ids = sanitize_ids(params[:mod_whisper_target_badge_ids])
+        cap = DiscourseModCategories::MAX_WHISPER_TARGETS
+        user_ids = sanitize_ids(params[:mod_whisper_target_user_ids]).first(cap)
+        group_ids = sanitize_ids(params[:mod_whisper_target_group_ids]).first(cap)
+        badge_ids = sanitize_ids(params[:mod_whisper_target_badge_ids]).first(cap)
         badge_ids = [] unless SiteSetting.mod_whisper_badge_targeting_enabled
 
         # Validate IDs against the DB so a typo / stale ID doesn't end up
@@ -310,6 +324,14 @@ module ::DiscourseModCategories
       # in sub_plugins/mod_categories.rb.
       DiscourseEvent.trigger(:mod_whisper_state_changed, post, armed)
 
+      if armed != was_whisper
+        StaffActionLogger.new(current_user).log_custom(
+          armed ? "mod_post_made_whisper" : "mod_whisper_made_public",
+          post_id: post.id,
+          topic_id: post.topic_id,
+        )
+      end
+
       render json: serialized_post_whisper_state(post.reload)
     end
 
@@ -319,8 +341,7 @@ module ::DiscourseModCategories
     # `viewers` array drives the "👁 Viewed by N" pill at the bottom of
     # the panel, refreshed inline without a topic reload.
     def record_note_view
-      topic = Topic.find_by(id: params[:topic_id])
-      raise Discourse::NotFound unless topic
+      topic = find_topic!
 
       guardian.ensure_can_manage_mod_messages!
       ensure_feature!(:mod_note_view_tracking_enabled)
@@ -369,8 +390,7 @@ module ::DiscourseModCategories
     # message key) so unrelated custom notifications another plugin might
     # attach to the same topic are left alone.
     def mark_topic_notifications_seen
-      topic = Topic.find_by(id: params[:topic_id])
-      raise Discourse::NotFound unless topic
+      topic = find_topic!
 
       # Cheap no-op instead of an error when disabled: the frontend pings
       # this on every topic open, and stale clients shouldn't 4xx-spam logs.
@@ -516,7 +536,14 @@ module ::DiscourseModCategories
       # recency sort below ties on identical timestamps, and Ruby's stable
       # sort falls back to insertion order; without this, the panel
       # surfaces oldest-first instead of newest-first.
-      topics_by_id = Topic.where(id: topic_ids).index_by(&:id)
+      # Only topics this staff member can read: an admin's note on a private
+      # message or an admin-only topic must not surface for moderators.
+      topics_by_id =
+        Topic
+          .includes(:category)
+          .where(id: topic_ids)
+          .select { |topic| guardian.can_see_topic?(topic) }
+          .index_by(&:id)
       topic_notes =
         topic_ids
           .map do |id|
@@ -556,8 +583,17 @@ module ::DiscourseModCategories
           .order(created_at: :desc)
           .limit(50)
 
+      hidden_topic_ids =
+        Topic
+          .includes(:category)
+          .where(id: event_rows.map(&:topic_id).compact.uniq)
+          .reject { |topic| guardian.can_see_topic?(topic) }
+          .map(&:id)
+          .to_set
+
       events =
-        event_rows.map do |n|
+        event_rows.filter_map do |n|
+          next if n.topic_id && hidden_topic_ids.include?(n.topic_id)
           data =
             begin
               JSON.parse(n.data.to_s)
@@ -669,8 +705,7 @@ module ::DiscourseModCategories
       raise Discourse::NotFound unless SiteSetting.mod_whisper_enabled
       raise Discourse::NotFound unless SiteSetting.mod_whisper_add_participant_enabled
 
-      topic = Topic.find_by(id: params[:topic_id])
-      raise Discourse::NotFound unless topic
+      topic = find_topic!
 
       # Whisper-scoped guard, not ensure_can_manage_mod_messages! — that
       # Guardian rides on mod_categories_enabled, and whispers are
@@ -714,6 +749,20 @@ module ::DiscourseModCategories
     end
 
     private
+
+    def ensure_module_enabled
+      raise Discourse::NotFound unless DiscourseModCategories.enabled?
+    end
+
+    # Every topic endpoint works only on topics the caller can see: a
+    # moderator must not set a footer, reply approval, note or checklist on
+    # (or read the note of) a private message or restricted topic they can't
+    # read.
+    def find_topic!
+      topic = Topic.find_by(id: params[:topic_id])
+      raise Discourse::NotFound if topic.nil? || !guardian.can_see_topic?(topic)
+      topic
+    end
 
     # 404s when a per-feature toggle is off — same shape the whisper
     # endpoints already use for their master switch.
@@ -779,11 +828,9 @@ module ::DiscourseModCategories
       note = topic.custom_fields[TOPIC_PRIVATE_NOTE_FIELD].to_s
       note_url = "#{topic.relative_url}/#{topic.highest_post_number}#mod-private-note"
 
-      User
-        .where(admin: true)
-        .or(User.where(moderator: true))
-        .where.not(id: current_user.id)
-        .find_each do |staff_user|
+      DiscourseModCategories::StaffNotifier
+        .staff_recipients(except: current_user, topic: topic)
+        .each do |staff_user|
           data = {
             topic_title: topic.title,
             display_username: current_user.username,
@@ -825,11 +872,9 @@ module ::DiscourseModCategories
       reply_url =
         "#{topic.relative_url}/#{topic.highest_post_number}#mod-private-note-reply-#{reply_id}"
 
-      User
-        .where(admin: true)
-        .or(User.where(moderator: true))
-        .where.not(id: current_user.id)
-        .find_each do |staff_user|
+      DiscourseModCategories::StaffNotifier
+        .staff_recipients(except: current_user, topic: topic)
+        .each do |staff_user|
           data = {
             topic_title: topic.title,
             display_username: current_user.username,

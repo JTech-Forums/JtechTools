@@ -285,7 +285,8 @@ jtech_mini_mod:
 # Jtech — Mod (master switch + the moderator category powers)
 #
 # The master gates every moderator power in this module (Guardian#
-# mod_categories_grant?). It does NOT gate whispers, the notification type
+# mod_categories_grant?). Category management for moderators is core's
+# moderators_manage_categories. It does NOT gate whispers, the notification type
 # filter, or notification auto-mark — those are independent by design and
 # say so in their descriptions.
 # ───────────────────────────────────────────────────────────────────────────
@@ -293,24 +294,6 @@ jtech_mod:
   mod_categories_enabled:
     default: true
     client: true
-
-  # Guardian grants: these change what EVERY moderator can do, site-wide,
-  # beyond what Discourse core allows.
-  mod_moderators_can_create_categories:
-    default: true
-    client: false
-    depends_on:
-      - "mod_categories_enabled"
-  mod_moderators_can_edit_categories:
-    default: true
-    client: false
-    depends_on:
-      - "mod_categories_enabled"
-  mod_moderators_can_delete_categories:
-    default: true
-    client: false
-    depends_on:
-      - "mod_categories_enabled"
 
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech — Mod: Topic tools
