@@ -303,8 +303,8 @@ RSpec.describe "Moderator whisper" do
     end
   end
 
-  context "staff add a user to the whisper conversation" do
-    before { make_whisper_post([recipient.id]) }
+  context "staff add a user to a whisper" do
+    let!(:whisper) { make_whisper_post([recipient.id]) }
 
     it "adds a user via the whisper post admin menu" do
       sign_in(admin)
@@ -338,9 +338,7 @@ RSpec.describe "Moderator whisper" do
       expect(page).to have_no_css(".mod-whisper-add-participant-modal", wait: 10)
       shot("81_whisper_participant_added")
 
-      expect(Array(topic.reload.custom_fields[participants_field]).map(&:to_i)).to include(
-        stranger.id,
-      )
+      expect(Array(whisper.reload.custom_fields[targets_field]).map(&:to_i)).to include(stranger.id)
     end
   end
 
@@ -350,14 +348,15 @@ RSpec.describe "Moderator whisper" do
       SiteSetting.mod_whisper_enabled = false
     end
 
-    it "shows the (former) whisper post to everyone" do
+    it "keeps existing whispers private" do
       sign_in(stranger)
       visit("/t/#{topic.slug}/#{topic.id}")
       expect(page).to have_css("#topic-title", wait: 10)
-      # With the feature off, the post is a plain post visible to all.
-      expect(page).to have_css(".topic-post", minimum: 2, wait: 10)
-      expect(page).to have_no_css(".mod-whisper-banner")
-      shot("74_plugin_disabled_visible_to_all")
+      # Switching the feature off stops new whispers; it never publishes
+      # the existing ones.
+      expect(page).to have_css(".topic-post", count: 1, wait: 10)
+      expect(page).to have_no_content("A staff whisper for the audience.")
+      shot("74_plugin_disabled_still_private")
     end
   end
 end

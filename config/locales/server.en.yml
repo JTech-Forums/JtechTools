@@ -8,6 +8,7 @@ en:
     reaction_notice: "reacted %{emoji}"
     test_message: "✅ <b>%{site}</b> can reach this group. The conversation is at %{url}"
     reports:
+      whisper_hidden: "(Whisper — its text is private. Open it in Discourse to review.)"
       approve: Approve
       deny: Deny
       more: More
@@ -372,8 +373,7 @@ en:
 
     mod_notify_whisper_targets: Sends a bell notification to a whisper's
       audience when one is posted, and to a user when staff add them to a
-      topic's whisper conversation. Off means whispers still work but arrive
-      silently.
+      whisper. Off means whispers still work but arrive silently.
 
     mod_auto_mark_notifications_seen: Opening a topic, or the review queue,
       marks THIS plugin's own note and whisper notifications for it as read.
@@ -387,17 +387,15 @@ en:
       page. Independent of the Enable Mod master switch.
 
     # ── Jtech — Mod: Whispers ──────────────────────────────────────────────
-    mod_whisper_enabled: Master switch for whispers — independent of Enable
-      Mod, so whispers keep working when the rest of the module is off. Staff
-      post in-topic messages visible only to staff, the author, the topic's
-      whisper participants and any explicit targets. WARNING — turning this
-      OFF does not delete existing whispers; it makes every one of them
-      visible to anyone who can read the topic, and re-indexes them for
-      search.
+    mod_whisper_enabled: Master switch for creating whispers — independent of
+      Enable Mod, so whispers keep working when the rest of the module is off.
+      A whisper is visible only to staff, its author and the users, groups and
+      badges it names. Turning this OFF stops new whispers; existing whispers
+      stay private (convert one to public to publish it).
 
-    mod_whisper_add_participant_enabled: Lets staff add a user to a topic's
-      whisper conversation. The user is notified and can then read every
-      whisper in that topic, including ones written before they were added.
+    mod_whisper_add_participant_enabled: Lets staff add users to an existing
+      whisper. They are notified and can read that whisper and replies that
+      keep its audience — not other whispers in the topic.
 
     mod_whisper_convert_enabled: Lets staff turn an existing post into a
       whisper and back, and retarget its audience. Converting to public
@@ -970,6 +968,9 @@ en:
         reserved Discourse path
 
   discourse_mod_categories:
+    whisper:
+      first_post_not_allowed: "A new topic can't start with a whisper, or quote a whisper — its title and first post are public. Reply inside an existing topic instead."
+      add_participant_needs_whisper: "Choose a whisper post to add the user to."
     note_notification_alert: '%{username} added a moderator note on "%{topic}"'
     note_reply_notification_alert: '%{username} replied to a moderator note on "%{topic}"'
     post_deleted_notification_alert: '%{username} deleted a post in "%{topic}"'

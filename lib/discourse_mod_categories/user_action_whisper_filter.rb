@@ -13,8 +13,6 @@ module DiscourseModCategories
   #           OR viewer id appears in the post's explicit user targets
   #           OR viewer is a member of one of the post's target groups
   #           OR viewer holds one of the post's target badges
-  #           OR viewer id appears in the topic's cumulative whisper
-  #             participants list (TOPIC_WHISPER_PARTICIPANTS_FIELD)
   #
   # Anything that doesn't match is filtered. Anonymous viewers never see
   # whispers.
@@ -33,10 +31,9 @@ module DiscourseModCategories
     # `post_id` and `target_topic_id`) for `viewer` (User or nil).
     # Returns a new array containing only rows whose target_post is visible
     # to viewer per the whisper visibility rules above. Falls back to the
-    # original array on any error so an upstream Discourse change can't
-    # 500 the /u/{user}/activity page.
+    # "hide every whisper" on any error so an upstream Discourse change can
+    # neither 500 the /u/{user}/activity page nor leak through it.
     def apply(rows, viewer)
-      return rows unless SiteSetting.mod_whisper_enabled
       return rows if rows.blank?
       return rows if viewer&.staff?
 
@@ -51,33 +48,24 @@ module DiscourseModCategories
         pid && blocked_post_ids.include?(pid)
       end
     rescue StandardError => e
+      # Fail CLOSED: if the precise filter breaks, hide every whisper row
+      # rather than showing them all.
       ::Rails.logger.warn(
         "[jtech-tools] UserActionWhisperFilter fell back: #{e.class}: #{e.message}",
       )
-      rows
+      begin
+        whisper_ids = DiscourseModCategories::Whisper.whisper_post_ids(post_ids || []).to_set
+        rows.reject { |r| r.respond_to?(:post_id) && whisper_ids.include?(r.post_id) }
+      rescue StandardError
+        # Can't even tell which rows are whispers: show no post rows at all.
+        rows.reject { |r| r.respond_to?(:post_id) && r.post_id }
+      end
     end
 
     # Of `post_ids`, return the subset that are whispers NOT visible to
-    # `viewer`. A single SQL round trip — joins post_custom_fields to find
-    # the whisper-marked posts, then narrows with the same visibility
-    # predicate WhisperQueryFilter#apply uses, inverted.
+    # `viewer`.
     def blocked_whisper_post_ids(post_ids, viewer)
-      targets_field = DiscourseModCategories::POST_WHISPER_TARGETS_FIELD
-      whisper_post_ids =
-        ::PostCustomField.where(post_id: post_ids, name: targets_field).pluck(:post_id).uniq
-      return [] if whisper_post_ids.empty?
-
-      visible_ids = visible_whisper_post_ids(whisper_post_ids, viewer)
-      whisper_post_ids - visible_ids
-    end
-
-    def visible_whisper_post_ids(whisper_post_ids, viewer)
-      return [] if whisper_post_ids.empty?
-      return [] if viewer.nil?
-
-      scope = ::Post.where(id: whisper_post_ids)
-      filtered = DiscourseModCategories::WhisperQueryFilter.apply(scope, viewer)
-      filtered.pluck(:id)
+      DiscourseModCategories::Whisper.hidden_post_ids(post_ids, viewer)
     end
   end
 end

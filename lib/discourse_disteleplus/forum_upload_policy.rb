@@ -8,6 +8,8 @@ module DiscourseDisteleplus
     def self.eligible?(post)
       return false if post.nil? || post.deleted_at.present? || post.hidden?
       return false unless post.post_type == ::Post.types[:regular]
+      # A whisper's attachments are as private as its text.
+      return false if DiscourseModCategories::Whisper.whisper?(post)
 
       topic = post.topic
       return false if topic.nil? || topic.deleted_at.present? || !topic.visible?
@@ -30,6 +32,7 @@ module DiscourseDisteleplus
           .joins(:topic)
           .where(deleted_at: nil, hidden: false, post_type: ::Post.types[:regular])
           .where(topics: { deleted_at: nil, visible: true, archetype: Archetype.default })
+          .where("NOT #{DiscourseModCategories::WhisperQueryFilter.is_whisper_sql("posts")}")
 
       category_ids = SiteSetting.disteleplus_forum_upload_category_ids_map.reject(&:zero?)
       scope = scope.where(topics: { category_id: category_ids }) if category_ids.present?

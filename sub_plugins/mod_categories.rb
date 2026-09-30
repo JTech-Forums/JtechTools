@@ -4,6 +4,8 @@
 # so DSL methods (after_initialize, register_asset, on, …) work unchanged.
 
 require_relative "../lib/discourse_mod_categories/guardian_extensions"
+require_relative "../lib/discourse_mod_categories/whisper"
+require_relative "../lib/discourse_mod_categories/core_whisper_patches"
 require_relative "../lib/discourse_mod_categories/whisper_query_filter"
 require_relative "../lib/discourse_mod_categories/staff_notifier"
 require_relative "../lib/discourse_mod_categories/user_action_whisper_filter"
@@ -75,12 +77,15 @@ module ::DiscourseModCategories
   # the `update_topic` controller response so a freshly-pinned post renders
   # the bottom copy live, without a page reload, even when the post isn't in
   # the currently-loaded post-stream window.
-  def self.serialized_pinned_post(topic)
+  def self.serialized_pinned_post(topic, guardian)
     return nil unless topic
     id = topic.custom_fields[TOPIC_PINNED_POST_FIELD]
     return nil if id.blank?
     post = topic.posts.find_by(id: id.to_i)
     return nil unless post
+    # Never render a copy of a post the viewer can't see (a whisper, a
+    # hidden or deleted post).
+    return nil unless guardian&.can_see_post?(post)
     user = post.user
     {
       id: post.id,
@@ -311,7 +316,8 @@ module ::DiscourseModCategories
   # participants) see the whisper post count toward unread.
   def self.whisper_audience_max_post_number(topic, user)
     return nil unless topic
-    scope = ::Post.where(topic_id: topic.id, deleted_at: nil)
+    scope =
+      ::Post.where(topic_id: topic.id, deleted_at: nil, post_type: ::Topic.visible_post_types(user))
     scope = WhisperQueryFilter.apply(scope, user)
     scope.maximum(:post_number)
   end
@@ -433,7 +439,7 @@ after_initialize do
     :topic_view,
     :mod_topic_pinned_post,
     include_condition: -> { DiscourseModCategories.enabled? && SiteSetting.mod_pin_post_enabled },
-  ) { DiscourseModCategories.serialized_pinned_post(object.topic) }
+  ) { DiscourseModCategories.serialized_pinned_post(object.topic, scope) }
   add_to_serializer(
     :topic_view,
     :mod_topic_require_reply_approval,
@@ -624,6 +630,35 @@ after_initialize do
     manager.enqueue("mod_topic_requires_reply_approval")
   end
 
+  # Runs before every other NewPostManager handler (and before core's own
+  # approval checks): a non-staff post that answers a whisper — a reply to
+  # it, or a quote of it — is marked armed, so if it ends up in the approval
+  # queue the queued payload says "whisper". That keeps it out of the review
+  # queue for non-staff reviewers and out of the Telegram reports chat, and
+  # it is still created as a whisper once approved. Never short-circuits.
+  NewPostManager.add_handler(10_000) do |manager|
+    user = manager.user
+    args = manager.args
+    next nil if user.nil? || user.staff? || args[:topic_id].blank?
+
+    stub =
+      DiscourseModCategories::Whisper::PostStub.new(
+        args[:topic_id].to_i,
+        args[:reply_to_post_number],
+        args[:raw],
+      )
+    armed_key = DiscourseModCategories::POST_WHISPER_ARMED_PARAM
+    armed =
+      ::ActiveModel::Type::Boolean.new.cast(DiscourseModCategories::Whisper.opt(args, armed_key))
+    if armed || DiscourseModCategories::Whisper.answered_whispers(stub, {}, user).any?
+      args[armed_key] = "true"
+    end
+    nil
+  rescue StandardError => e
+    Rails.logger.warn("[jtech-tools] whisper queue marker failed: #{e.class}: #{e.message}")
+    nil
+  end
+
   # Expose the per-category prompt on every serialized category so the
   # composer can read it for the category a new topic is being created in.
   #
@@ -649,21 +684,6 @@ after_initialize do
   # Moderator whisper
   # ---------------------------------------------------------------------
 
-  # Merge new non-staff participant ids into a topic's cumulative whisper-
-  # participant list and persist immediately (the topic is already saved).
-  merge_whisper_participants =
-    lambda do |topic, new_ids|
-      existing =
-        Array(topic.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]).map(
-          &:to_i
-        )
-      merged = (existing + new_ids.map(&:to_i)).reject { |i| i <= 0 }.uniq
-      next if merged.sort == existing.sort
-
-      topic.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD] = merged
-      topic.save_custom_fields(true)
-    end
-
   register_post_custom_field_type(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD, :json)
   register_post_custom_field_type(DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD, :json)
   register_post_custom_field_type(DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD, :json)
@@ -674,176 +694,81 @@ after_initialize do
   # Permitted as a scalar (:string) — `add_permitted_post_create_param` only
   # special-cases :array/:hash, and an unrecognized type would drop the param
   # entirely. The value arrives as the string "true"/"false" and is cast with
-  # ActiveModel::Type::Boolean in the before_create_post handler below.
+  # ActiveModel::Type::Boolean in DiscourseModCategories::Whisper.prepare_new_post!.
   add_permitted_post_create_param(DiscourseModCategories::POST_WHISPER_ARMED_PARAM, :string)
 
-  # Expose the topic's cumulative whisper participants so the composer can
-  # tell whether the current (non-staff) user may whisper back.
+  # The topic's recorded whisper participants (non-staff users staff have
+  # whispered to here — they may whisper back to staff). Staff only: the list
+  # says who has been whispered to, which is itself private.
   add_to_serializer(
     :topic_view,
     :mod_whisper_participant_ids,
-    include_condition: -> { SiteSetting.mod_whisper_enabled },
+    include_condition: -> { SiteSetting.mod_whisper_enabled && scope.is_staff? },
   ) do
     raw = object.topic.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]
-    Array(raw).map(&:to_i)
+    DiscourseModCategories::Whisper.normalize_ids(raw)
   end
+
+  # Make core treat plugin whispers as whispers wherever that hides more —
+  # see lib/discourse_mod_categories/core_whisper_patches.rb.
+  reloadable_patch { DiscourseModCategories.apply_core_whisper_patches! }
+
+  # A whisper that has to wait in the approval queue must still be a whisper
+  # once approved — carry the arming params through the queued payload.
+  allow_new_queued_post_payload_attribute(DiscourseModCategories::POST_WHISPER_ARMED_PARAM)
+  allow_new_queued_post_payload_attribute(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+  allow_new_queued_post_payload_attribute(DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD)
+  allow_new_queued_post_payload_attribute(DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD)
 
   # Filter whispers out of the topic stream for viewers who are not in the
   # audience. Staff bypass this; the Guardian override is the parallel gate.
+  # Unconditional — never gated on a setting.
   TopicView.apply_custom_default_scope do |scope, tv|
     DiscourseModCategories::WhisperQueryFilter.apply(scope, tv.guardian&.user)
   end
 
-  # Mark a new post as a whisper BEFORE PostCreator saves it, so the custom
-  # field is persisted atomically by HasCustomFields' after_save callback.
-  #
-  # The `mod_whisper` boolean armed flag is THE gate: a whisper is created
-  # only when the composer explicitly armed one. Whisper-ness is no longer
-  # inferred from the target count or from topic-participant membership — an
-  # empty target list is a valid staff-only whisper, and a participant's
-  # normal (un-armed) reply stays a normal public post.
-  on(:before_create_post) do |post, opts|
-    next unless SiteSetting.mod_whisper_enabled
+  # Whether a new post is a whisper (and who its audience is) is decided in
+  # DiscourseModCategories::Whisper.prepare_new_post!, called from a
+  # PostCreator#setup_post prepend (core_whisper_patches.rb) — NOT from the
+  # :before_create_post event, which core skips whenever skip_validations is
+  # set (approving a queued post, imports, some API calls).
 
-    armed =
-      ::ActiveModel::Type::Boolean.new.cast(opts[DiscourseModCategories::POST_WHISPER_ARMED_PARAM])
-    next unless armed
-
-    normalize_ids =
-      lambda do |raw|
-        Array(raw)
-          .map { |v| v.is_a?(Numeric) || v.is_a?(String) ? v.to_i : 0 }
-          .reject { |i| i <= 0 }
-          .uniq
-          .first(DiscourseModCategories::MAX_WHISPER_TARGETS)
-      end
-
-    requested_ids = normalize_ids.call(opts[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD])
-    requested_group_ids =
-      normalize_ids.call(opts[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD])
-    requested_badge_ids =
-      normalize_ids.call(opts[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD])
-
-    author = post.user
+  # Once the whisper exists: undo the public side effects core applied
+  # because it is a regular post, and notify its audience. A global listener
+  # (not the plugin-gated `on`), so the counter repair also runs while the
+  # bundle is switched off.
+  DiscourseEvent.on(:post_created) do |post, opts, user|
     topic = post.topic
-    next unless author && topic
+    next unless topic
 
-    if author.staff?
-      # Staff whisper: keep only ids that map to real users / real groups /
-      # real badges. An EMPTY user AND group AND badge list is valid and
-      # means a staff-only whisper.
-      valid_ids = ::User.where(id: requested_ids).pluck(:id)
-      valid_group_ids = ::Group.where(id: requested_group_ids).pluck(:id)
-      valid_badge_ids = ::Badge.where(id: requested_badge_ids).pluck(:id)
-
-      post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD] = valid_ids
-      post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD] = valid_group_ids
-      post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD] = valid_badge_ids
-
-      # Record the non-staff targets (explicit users + current badge holders)
-      # as cumulative topic participants so they keep visibility on later
-      # whispers in the topic even after a badge revoke.
-      non_staff_ids = ::User.where(id: valid_ids).where(admin: false, moderator: false).pluck(:id)
-      if valid_badge_ids.any?
-        non_staff_ids +=
-          ::User
-            .joins(:user_badges)
-            .where(user_badges: { badge_id: valid_badge_ids })
-            .where(admin: false, moderator: false)
-            .distinct
-            .pluck(:id)
-        non_staff_ids.uniq!
+    unless DiscourseModCategories::Whisper.whisper?(post)
+      # A public post bumps the topic for everyone again, so the legacy
+      # "non-whisper bump time" override is obsolete for this topic.
+      if topic.custom_fields.key?(DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD)
+        ::TopicCustomField.where(
+          topic_id: topic.id,
+          name: DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD,
+        ).delete_all
       end
-      merge_whisper_participants.call(topic, non_staff_ids) if non_staff_ids.any?
-    else
-      # Non-staff: only an existing topic whisper participant may whisper,
-      # and only ever staff-only (forced empty targets). A non-participant
-      # who somehow arms a whisper does not whisper (defense in depth).
-      participant_ids =
-        Array(topic.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]).map(
-          &:to_i
-        )
-      next if participant_ids.exclude?(author.id)
-
-      post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD] = []
-      post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD] = []
-      post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD] = []
+      next
     end
-  end
 
-  # Notify the whisper audience once the post exists. Staff-authored whispers
-  # notify the chosen targets; a non-staff whisper-back notifies all staff.
-  on(:post_created) do |post, opts, user|
-    next unless SiteSetting.mod_whisper_enabled
+    DiscourseModCategories::Whisper.refresh_topic_counters(topic)
+    if post.reply_to_post_number.present?
+      ::Topic
+        .where(id: topic.id)
+        .where("reply_count > 0")
+        .update_all("reply_count = reply_count - 1")
+    end
+
     next unless SiteSetting.mod_notify_whisper_targets
-    next unless post.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+    next if post.instance_variable_get(:@mod_whisper_quiet)
 
-    target_ids =
-      Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
-    target_group_ids =
-      Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).map(
-        &:to_i
-      )
-    target_badge_ids =
-      Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(
-        &:to_i
-      )
-
-    topic = post.topic
-
-    # Roll back Topic#highest_post_number so non-audience viewers do not see
-    # a topic-list "+1 unread" badge for a whisper they can't read. The
-    # :listable_topic serializer override adds the bump back for audience
-    # members on serialization, so they still see the badge. Runs for EVERY
-    # whisper (including staff-only whisper-backs with no recipients).
-    #
-    # Also stamp the latest non-whisper post's created_at into a topic custom
-    # field, which the :topic_query_create_list_topics modifier below uses
-    # to sort the /latest list audience-aware: audience members see the
-    # topic bumped to the whisper time (Topic#bumped_at), non-audience
-    # users see it at the non-whisper time. Topic#bumped_at itself is left
-    # alone so the DB column keeps reflecting the actual latest activity.
-    if topic
-      non_whisper_scope =
-        ::Post
-          .where(topic_id: topic.id, deleted_at: nil)
-          .where.not(
-            id:
-              ::PostCustomField.where(
-                name: DiscourseModCategories::POST_WHISPER_TARGETS_FIELD,
-              ).select(:post_id),
-          )
-      non_whisper_max = non_whisper_scope.maximum(:post_number) || 0
-      non_whisper_created_at = non_whisper_scope.maximum(:created_at)
-
-      if non_whisper_max > 0 && non_whisper_max < topic.highest_post_number
-        ::Topic.where(id: topic.id).update_all(highest_post_number: non_whisper_max)
-      end
-
-      if non_whisper_created_at
-        topic.custom_fields[
-          DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD
-        ] = non_whisper_created_at.iso8601
-        topic.save_custom_fields(true)
-      end
-    end
-
-    recipient_ids =
-      if user&.staff?
-        ids = target_ids.dup
-        ids +=
-          ::GroupUser.where(group_id: target_group_ids).pluck(:user_id) if target_group_ids.any?
-        ids +=
-          ::UserBadge.where(badge_id: target_badge_ids).pluck(:user_id) if target_badge_ids.any?
-        ids
-      else
-        ::User.where(admin: true).or(::User.where(moderator: true)).pluck(:id)
-      end
-    recipient_ids = recipient_ids.uniq - [post.user_id]
+    recipient_ids = DiscourseModCategories::Whisper.notification_recipient_ids(post)
     next if recipient_ids.empty?
 
     data = {
-      topic_title: topic&.title,
+      topic_title: topic.title,
       display_username: user&.username,
       # Stable marker so MessagesController#mark_topic_notifications_seen
       # can scope its read-flip to OUR notifications without touching
@@ -857,22 +782,18 @@ after_initialize do
       Notification.create!(
         notification_type: Notification.types[:custom],
         user_id: recipient_id,
-        topic_id: topic&.id,
+        topic_id: topic.id,
         post_number: post.post_number,
         data: data,
       )
     end
 
-    # Dedupe: PostAlerter runs asynchronously and creates standard
-    # :replied / :posted / :quoted / :mentioned notifications for the
-    # topic author, watchers, and mentioned users. If any of those users
-    # are also in our whisper audience, they see TWO bell rows for the
-    # same post — one custom whisper from us, one core reply from
-    # PostAlerter. We schedule a 5-second delayed cleanup that removes
-    # the core duplicates only for users who got our custom whisper.
-    # Done as a delayed job because PostAlerter runs in its own Sidekiq
-    # job after :post_created, so we'd race it if we cleaned up inline.
-    if topic && post.persisted?
+    # Dedupe: PostAlerter creates standard :replied / :quoted / :mentioned
+    # notifications for audience members too. Remove the core duplicates for
+    # users who got our custom whisper notification. (Non-audience users
+    # never get core notifications for a whisper — PostAlerter's
+    # can_receive_post_notifications? gate runs our Guardian check.)
+    if post.persisted?
       ::Jobs.enqueue_in(
         5.seconds,
         :dedupe_mod_whisper_notifications,
@@ -882,92 +803,40 @@ after_initialize do
     end
   end
 
-  # Audience-aware ordering on the topic list. The DB column Topic#bumped_at
-  # is left at the actual latest-activity time (including whispers), and the
-  # `on(:post_created)` hook above writes the latest non-whisper post's
-  # created_at into a topic custom field. This modifier patches the
-  # `/latest` (and friends) topic-list query to use that custom field as
-  # the effective sort key for users who are NOT in the topic's whisper
-  # audience, while audience members keep the live `bumped_at`.
+  # Audience-aware ordering on the topic list — legacy data only. New
+  # whispers never bump a topic (core treats them as whispers via the
+  # Post#whisper? override below), but topics bumped by a whisper before
+  # that fix still carry the whisper time in Topic#bumped_at, with the last
+  # public post time stored in TOPIC_NON_WHISPER_BUMPED_AT_FIELD. Everyone
+  # but staff is sorted by that stored time; the field is dropped as soon as
+  # a public post bumps the topic again.
   #
-  # Audience criterion in this modifier: staff OR the user_id appears in
-  # the topic's `mod_whisper_participant_ids` custom field (the cumulative
-  # whisper-conversation participants of the topic). Explicit per-whisper
-  # user/group/badge targets are folded into the participants list by the
-  # composer flow (see TOPIC_WHISPER_PARTICIPANTS_FIELD writes elsewhere
-  # in this file), so this single check covers all four audience kinds.
-  #
-  # The modifier is wrapped in `rescue StandardError` so any breakage from
-  # a future Discourse upgrade (renamed hook, query shape change, schema
-  # change) falls back to the unmodified scope instead of breaking
-  # /latest entirely. The fallback is Option B — whispers bump for
-  # everyone — which is annoying but recoverable. CI exercises the path
-  # via specs in whisper_unread_badge_spec.rb so we'd see breakage early.
+  # Wrapped in `rescue StandardError` so a future Discourse change can't
+  # break /latest; the regex guard keeps bad data from failing the query.
   register_modifier(:topic_query_create_list_topics) do |scope, _options, topic_query|
     begin
-      # With whispers off there is nothing to hide — skip the JOIN + reorder
-      # entirely instead of rewriting every topic-list query for nothing.
-      # The audience-aware toggle is the escape hatch that keeps whispers
-      # while dropping this query rewrite.
-      next scope unless SiteSetting.mod_whisper_enabled
       next scope unless SiteSetting.mod_whisper_audience_aware_topic_list
 
       user = topic_query.user
-
-      # Staff are in the audience for every whisper — sort by live bumped_at.
       next scope if user&.staff?
 
-      user_id = user&.id
-      nwba_field = DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD
-      participants_field = DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD
-
-      connection = ::ActiveRecord::Base.connection
-      nwba_field_quoted = connection.quote(nwba_field)
-      participants_field_quoted = connection.quote(participants_field)
+      nwba_field_quoted =
+        ::ActiveRecord::Base.connection.quote(
+          DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD,
+        )
 
       scope =
         scope.joins(
           "LEFT OUTER JOIN topic_custom_fields nwba " \
             "ON nwba.topic_id = topics.id AND nwba.name = #{nwba_field_quoted}",
-        ).joins(
-          "LEFT OUTER JOIN topic_custom_fields part " \
-            "ON part.topic_id = topics.id AND part.name = #{participants_field_quoted}",
         )
 
-      is_audience_sql =
-        if user_id
-          # The participants field is registered as :json, so its `value`
-          # column holds a JSON-serialized array of integer user_ids.
-          # `value::jsonb @> '<id>'::jsonb` is the safe containment check:
-          # `[5,7]::jsonb @> 5::jsonb` is true, no false positives from
-          # substring overlap (e.g., 15 doesn't match 5). The LIKE guard
-          # skips obviously-malformed legacy rows so the ::jsonb cast
-          # cannot raise mid-query.
-          "(part.value IS NOT NULL AND part.value <> '' " \
-            "AND part.value LIKE '[%]' " \
-            "AND part.value::jsonb @> '#{user_id.to_i}'::jsonb)"
-        else
-          "FALSE"
-        end
-
-      # The regex guard `~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'` ensures the
-      # ::timestamp cast only runs on values that LOOK like ISO8601 dates,
-      # so a corrupted or human-edited custom-field value (e.g. legacy
-      # data, a typo, the literal string "not-a-time") falls through to
-      # topics.bumped_at instead of blowing up the entire /latest query.
-      # The outer `rescue StandardError` below is a last-resort net for
-      # Ruby-level errors raised while BUILDING the modifier scope (e.g.
-      # a future Discourse refactor changing AR method signatures); it
-      # cannot catch SQL execution errors because the reorder is lazy
-      # and runs after the modifier returns. The regex guard is the
-      # primary defense against bad data.
       effective_bumped_at = <<~SQL.squish
         CASE
-          WHEN #{is_audience_sql} THEN topics.bumped_at
           WHEN nwba.value IS NOT NULL
                AND nwba.value <> ''
                AND nwba.value ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
-            THEN nwba.value::timestamp
+            THEN LEAST(nwba.value::timestamp, topics.bumped_at)
           ELSE topics.bumped_at
         END
       SQL
@@ -981,17 +850,15 @@ after_initialize do
     end
   end
 
-  add_to_serializer(:post, :mod_is_whisper) do
-    object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
-  end
-  add_to_serializer(:post, :include_mod_is_whisper?) { SiteSetting.mod_whisper_enabled }
+  # Whisper fields are serialized whether or not whispers are switched on:
+  # existing whispers stay private either way, so they keep their banner.
+  add_to_serializer(:post, :mod_is_whisper) { DiscourseModCategories::Whisper.whisper?(object) }
 
   add_to_serializer(:post, :mod_whisper_target_user_ids) do
     Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
   end
   add_to_serializer(:post, :include_mod_whisper_target_user_ids?) do
-    SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+    DiscourseModCategories::Whisper.whisper?(object)
   end
 
   add_to_serializer(:post, :mod_whisper_target_group_ids) do
@@ -1000,8 +867,7 @@ after_initialize do
     )
   end
   add_to_serializer(:post, :include_mod_whisper_target_group_ids?) do
-    SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+    DiscourseModCategories::Whisper.whisper?(object)
   end
 
   add_to_serializer(:post, :mod_whisper_target_groups) do
@@ -1012,8 +878,7 @@ after_initialize do
     ::Group.where(id: ids).map { |g| { id: g.id, name: g.name } }
   end
   add_to_serializer(:post, :include_mod_whisper_target_groups?) do
-    SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+    DiscourseModCategories::Whisper.whisper?(object)
   end
 
   add_to_serializer(:post, :mod_whisper_target_badge_ids) do
@@ -1022,8 +887,7 @@ after_initialize do
     )
   end
   add_to_serializer(:post, :include_mod_whisper_target_badge_ids?) do
-    SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+    DiscourseModCategories::Whisper.whisper?(object)
   end
 
   add_to_serializer(:post, :mod_whisper_target_badges) do
@@ -1034,8 +898,7 @@ after_initialize do
     ::Badge.where(id: ids).map { |b| { id: b.id, name: b.display_name } }
   end
   add_to_serializer(:post, :include_mod_whisper_target_badges?) do
-    SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+    DiscourseModCategories::Whisper.whisper?(object)
   end
 
   add_to_serializer(:post, :mod_whisper_targets) do
@@ -1046,8 +909,7 @@ after_initialize do
       .map { |u| { id: u.id, username: u.username, avatar_template: u.avatar_template } }
   end
   add_to_serializer(:post, :include_mod_whisper_targets?) do
-    SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+    DiscourseModCategories::Whisper.whisper?(object)
   end
 
   # A whisper with no user targets AND no group targets AND no badge
@@ -1060,14 +922,12 @@ after_initialize do
       Array(object.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).empty?
   end
   add_to_serializer(:post, :include_mod_whisper_is_staff_only?) do
-    SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+    DiscourseModCategories::Whisper.whisper?(object)
   end
 
   add_to_serializer(:post, :mod_whisper_author_is_staff) { !!object.user&.staff? }
   add_to_serializer(:post, :include_mod_whisper_author_is_staff?) do
-    SiteSetting.mod_whisper_enabled &&
-      object.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
+    DiscourseModCategories::Whisper.whisper?(object)
   end
 
   add_to_serializer(
@@ -1086,46 +946,28 @@ after_initialize do
   # viewers never see a badge bump from a whisper they can't read.
   add_to_serializer(:listable_topic, :highest_post_number) do
     raw = object.highest_post_number
-    next raw unless SiteSetting.mod_whisper_enabled
     next raw unless SiteSetting.mod_whisper_audience_aware_topic_list
 
     visible_max = DiscourseModCategories.whisper_audience_max_post_number(object, scope&.user)
     visible_max || raw
   end
 
-  # Audience-aware bumped_at for the topic list's "Activity" column. The
-  # topic-list query modifier already SORTS non-audience viewers by the
-  # non-whisper bump time, but the displayed Activity column read the raw
-  # `topics.bumped_at` and showed e.g. "5m" for a whisper they can't see.
-  # Mirror the same audience check here so the displayed time matches the
-  # sort position: audience members (staff + topic participants) see the
-  # actual bump time; non-audience viewers see the non-whisper bump time
-  # stored in the custom field. Falls through to raw on missing/malformed
-  # field values so an upgrade to a topic without the stamp still works.
+  # Audience-aware bumped_at for the topic list's "Activity" column — legacy
+  # data only, mirroring the sort above: non-staff see the last public bump
+  # time for topics a pre-fix whisper bumped.
   add_to_serializer(:listable_topic, :bumped_at) do
     raw = object.bumped_at
-    next raw unless SiteSetting.mod_whisper_enabled
     next raw unless SiteSetting.mod_whisper_audience_aware_topic_list
+    next raw if scope&.user&.staff?
 
-    user = scope&.user
-    next raw if user&.staff?
-
-    # All custom-field access wrapped together: HasCustomFields::PreloadedProxy
-    # raises NotPreloadedError if `add_preloaded_topic_list_custom_field`
-    # registrations above haven't taken effect (e.g. early in boot, or
-    # after a Discourse release reshapes the preloader). Falling through
-    # to `raw` keeps /latest responsive in that case — the worst outcome
-    # is the pre-fix "stranger sees the whisper time" display, which is
-    # recoverable on the next request.
+    # HasCustomFields::PreloadedProxy raises NotPreloadedError if the
+    # preload registration hasn't taken effect; fall through to raw.
     begin
-      participants = object.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD]
-      next raw if user && participants.is_a?(Array) && participants.map(&:to_i).include?(user.id)
-
       nwba = object.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD]
       next raw if nwba.blank?
 
       parsed = ::Time.zone.parse(nwba.to_s)
-      parsed || raw
+      parsed && raw && parsed < raw ? parsed : raw
     rescue StandardError
       raw
     end
@@ -1399,7 +1241,6 @@ after_initialize do
       module UserActionStreamWhisperFilterPatch
         def stream(opts = nil)
           rows = super
-          return rows unless SiteSetting.mod_whisper_enabled
           return rows if rows.blank?
 
           guardian = opts.is_a?(Hash) ? opts[:guardian] : nil
@@ -1426,50 +1267,17 @@ after_initialize do
   # and we narrow it to audience-only when the post is one of OUR whispers.
   register_modifier(:topic_tracking_state_publish_unread_scope) do |scope, post|
     begin
-      next scope unless SiteSetting.mod_whisper_enabled
       next scope unless post.is_a?(::Post)
-      next scope unless post.custom_fields.key?(DiscourseModCategories::POST_WHISPER_TARGETS_FIELD)
-
-      # Build the audience: staff (admins + moderators) + post author +
-      # explicit user targets + group target members + badge holders +
-      # topic participants.
-      audience_ids = ::User.where(admin: true).or(::User.where(moderator: true)).pluck(:id)
-      audience_ids << post.user_id if post.user_id
-
-      target_user_ids =
-        Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGETS_FIELD]).map(&:to_i)
-      target_group_ids =
-        Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD]).map(
-          &:to_i
-        )
-      target_badge_ids =
-        Array(post.custom_fields[DiscourseModCategories::POST_WHISPER_TARGET_BADGES_FIELD]).map(
-          &:to_i
-        )
-
-      audience_ids += target_user_ids
-      audience_ids +=
-        ::GroupUser.where(group_id: target_group_ids).pluck(:user_id) if target_group_ids.any?
-      audience_ids +=
-        ::UserBadge.where(badge_id: target_badge_ids).pluck(:user_id) if target_badge_ids.any?
-
-      if post.topic
-        participants =
-          Array(
-            post.topic.custom_fields[DiscourseModCategories::TOPIC_WHISPER_PARTICIPANTS_FIELD],
-          ).map(&:to_i)
-        audience_ids += participants
-      end
-
-      audience_ids = audience_ids.compact.uniq.reject { |id| id <= 0 }
-      next scope if audience_ids.empty?
+      audience_ids = DiscourseModCategories::Whisper.audience_user_ids(post)
+      next scope if audience_ids.nil?
 
       scope.where(user_id: audience_ids)
     rescue StandardError => e
+      # Fail CLOSED: nobody gets a live unread bump rather than everybody.
       ::Rails.logger.warn(
-        "[jtech-tools] tracking-state whisper filter fell back: #{e.class}: #{e.message}",
+        "[jtech-tools] tracking-state whisper filter failed: #{e.class}: #{e.message}",
       )
-      scope
+      scope.none
     end
   end
 
@@ -1507,18 +1315,41 @@ after_initialize do
   # we also fire one explicitly here to close the window between the arm
   # and the next natural re-index (post edit, cook, etc.).
   DiscourseEvent.on(:mod_whisper_state_changed) do |post, armed|
-    next unless SiteSetting.mod_whisper_enabled
     next unless post.is_a?(::Post)
 
     begin
       if armed
         ::PostSearchData.where(post_id: post.id).delete_all
+        # Links inside the post feed the public topic map ("links" in the
+        # topic summary); a whisper's links are as private as its text.
+        ::TopicLink.where(post_id: post.id).delete_all
+        topic = post.topic
+        if topic
+          # A pinned copy renders the post's cooked HTML for every viewer.
+          pinned_id = topic.custom_fields[DiscourseModCategories::TOPIC_PINNED_POST_FIELD]
+          if pinned_id.to_i == post.id
+            topic.custom_fields.delete(DiscourseModCategories::TOPIC_PINNED_POST_FIELD)
+            topic.save_custom_fields(true)
+          end
+          DiscourseModCategories::Whisper.refresh_topic_counters(topic)
+        end
+        # Other posts may carry a baked link preview of this post.
+        DiscourseModCategories::Whisper.rebake_linking_posts(post)
+        # The Telegram bridge may already have mirrored it while public.
+        if defined?(::DiscourseDisteleplus)
+          ::Jobs.enqueue(:disteleplus_retract_whisper, post_id: post.id)
+        end
       else
         ::SearchIndexer.index(post, force: true)
+        ::TopicLink.extract_from(post)
+        ::Topic.reset_highest(post.topic_id) if post.topic_id
       end
+      DiscourseModCategories::Whisper.refresh_reply_counts(
+        ::PostReply.where(reply_post_id: post.id).pluck(:post_id),
+      )
     rescue StandardError => e
       ::Rails.logger.warn(
-        "[jtech-tools] whisper search-index toggle failed for post=#{post.id}: " \
+        "[jtech-tools] whisper state side effects failed for post=#{post.id}: " \
           "#{e.class}: #{e.message}",
       )
     end
@@ -1574,6 +1405,21 @@ after_initialize do
 
         private
 
+        # The user whose notifications are being listed, with core's own
+        # permission check (self or admin). Without it any signed-in user
+        # could read anyone's notifications through ?username=…&type=….
+        def mod_notifications_user
+          user =
+            if params[:username].present?
+              ::User.find_by(username_lower: params[:username].to_s.downcase)
+            else
+              current_user
+            end
+          raise Discourse::NotFound unless user
+          guardian.ensure_can_see_notifications!(user)
+          user
+        end
+
         # Mirrors the response shape of NotificationsController#index's
         # paginated branch (see discourse/discourse:app/controllers/
         # notifications_controller.rb) exactly — the Ember store.find
@@ -1587,7 +1433,7 @@ after_initialize do
         # type filter needs to be applied here. Same response envelope
         # the user-notifications template binds against.
         def render_type_filtered_index(type_sym)
-          user = fetch_user_from_params
+          user = mod_notifications_user
           limit = 60
           offset = params[:offset].to_i
           type_id = ::Notification.types[type_sym]
@@ -1628,7 +1474,7 @@ after_initialize do
         end
 
         def render_mod_notes_index
-          user = fetch_user_from_params
+          user = mod_notifications_user
           limit = 60
           offset = params[:offset].to_i
 

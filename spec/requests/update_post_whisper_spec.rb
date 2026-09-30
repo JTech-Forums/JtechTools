@@ -22,6 +22,7 @@ RSpec.describe "Update post whisper" do
   fab!(:badge) { Fabricate(:badge, name: "WhisperEditBadge") }
   fab!(:badge_holder, :user)
   fab!(:topic)
+  fab!(:op) { Fabricate(:post, topic: topic, user: author) }
   fab!(:post_record) { Fabricate(:post, topic: topic, user: author) }
 
   let(:targets_field) { DiscourseModCategories::POST_WHISPER_TARGETS_FIELD }
@@ -76,7 +77,7 @@ RSpec.describe "Update post whisper" do
       expect(post_record.reload.custom_fields[badges_field]).to eq([badge.id])
     end
 
-    it "adds new audience members to the topic's cumulative participants list" do
+    it "records explicitly targeted non-staff users (only) as topic participants" do
       topic.custom_fields[participants_field] = [admin.id]
       topic.save_custom_fields(true)
       sign_in(moderator)
@@ -90,7 +91,20 @@ RSpec.describe "Update post whisper" do
           }
 
       participants = Array(topic.reload.custom_fields[participants_field]).map(&:to_i)
-      expect(participants).to include(admin.id, target.id, group_member.id, badge_holder.id)
+      expect(participants).to include(admin.id, target.id)
+      # Group members and badge holders see the whisper through their
+      # membership, which is re-checked on every read — they are not
+      # recorded (a participant never gains visibility anyway).
+      expect(participants).not_to include(group_member.id, badge_holder.id)
+    end
+
+    it "refuses to turn a topic's first post into a whisper" do
+      sign_in(moderator)
+
+      put "/discourse-mod-categories/post/#{op.id}/whisper.json", params: { mod_whisper: true }
+
+      expect(response.status).to eq(400)
+      expect(op.reload.custom_fields.key?(targets_field)).to eq(false)
     end
 
     it "returns the new whisper state in the response body" do

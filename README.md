@@ -32,7 +32,7 @@ A private one-room chat inside Discourse for staff (or any groups you allow), mi
 - Setup is done from inside Telegram with `/disteleplus_setup`; there's a "send test message" button and problems show on the admin dashboard.
 
 ### Moderator tools
-- **Whispers** — reply to specific people inside a topic; others don't see it.
+- **Whispers** — reply to specific people (users, groups or badge holders) inside a topic. A whisper is visible only to staff, its author and the people it names — nobody else, anywhere: not in the topic, search, activity, e-mails, notifications, link previews, RSS, the /dumb app or the Telegram bridge. Replies to and quotes of a whisper stay private to the same people automatically. Turning whispers off stops new ones; existing whispers stay private.
 - **Private notes** on topics, with reply threads, visible to staff only.
 - **Staff alerts** — every moderator is told when someone deletes a post, approves/rejects a queued post, adds a user note or a flag note. Shows in the bell and in a shield tab.
 - **Checklists** — first-post checklists, targeted checklists for specific users/groups, topic prompt checklists.

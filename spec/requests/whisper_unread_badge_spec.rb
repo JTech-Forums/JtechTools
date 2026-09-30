@@ -49,9 +49,9 @@ RSpec.describe "Whisper unread badge" do
       )
     end
 
-    it "returns the whisper's post_number for a cumulative topic participant" do
+    it "ignores the whisper for a topic participant it doesn't name" do
       expect(DiscourseModCategories.whisper_audience_max_post_number(topic, participant)).to eq(
-        whisper_post.post_number,
+        regular_reply.post_number,
       )
     end
 
@@ -134,13 +134,15 @@ RSpec.describe "Whisper unread badge" do
       expect(topic.highest_post_number).to eq(regular_reply.post_number)
     end
 
-    it "stamps non_whisper_bumped_at into a topic custom field on whisper creation" do
-      # Backdate BOTH non-whisper posts so the max(:created_at) is
-      # deterministically regular_reply (15 min ago) — op was fabricated
-      # at ~now, so without the older backdate it would win the max() and
-      # the stamp wouldn't match what the assertion expects.
+    it "doesn't bump the topic, change its last poster or count the whisper as a reply" do
       op.update_columns(created_at: 30.minutes.ago)
       regular_reply.update_columns(created_at: 15.minutes.ago)
+      ::Topic.where(id: topic.id).update_all(
+        bumped_at: 15.minutes.ago,
+        last_posted_at: 15.minutes.ago,
+        last_post_user_id: regular_reply.user_id,
+      )
+      before = topic.reload.slice(:bumped_at, :last_posted_at, :last_post_user_id, :posts_count)
 
       sign_in(moderator)
       post "/posts.json",
@@ -152,10 +154,14 @@ RSpec.describe "Whisper unread badge" do
            }
       expect(response.status).to eq(200)
 
-      stamped =
-        topic.reload.custom_fields[DiscourseModCategories::TOPIC_NON_WHISPER_BUMPED_AT_FIELD].to_s
-      expect(stamped).not_to be_empty
-      expect(Time.zone.parse(stamped)).to be_within(1.second).of(regular_reply.reload.created_at)
+      after = topic.reload.slice(:bumped_at, :last_posted_at, :last_post_user_id, :posts_count)
+      expect(after["bumped_at"]).to be_within(1.second).of(before["bumped_at"])
+      expect(after["last_posted_at"]).to be_within(1.second).of(before["last_posted_at"])
+      expect(after["last_post_user_id"]).to eq(before["last_post_user_id"])
+      expect(after["posts_count"]).to eq(
+        Post.where(topic_id: topic.id).count -
+          DiscourseModCategories::Whisper.whisper_post_numbers(topic.id).size,
+      )
     end
   end
 
@@ -198,10 +204,9 @@ RSpec.describe "Whisper unread badge" do
       expect(ids.index(topic.id)).to be < ids.index(public_topic.id)
     end
 
-    it "keeps the whispered topic at the top of /latest for a whisper participant" do
-      # Participant is in TOPIC_WHISPER_PARTICIPANTS_FIELD per the outer before.
+    it "demotes the whispered topic for a topic participant too" do
       ids = latest_topic_ids(participant)
-      expect(ids.index(topic.id)).to be < ids.index(public_topic.id)
+      expect(ids.index(public_topic.id)).to be < ids.index(topic.id)
     end
 
     it "demotes the whispered topic below the public topic for a non-audience viewer" do
@@ -209,7 +214,7 @@ RSpec.describe "Whisper unread badge" do
       expect(ids.index(public_topic.id)).to be < ids.index(topic.id)
     end
 
-    it "serializes audience-aware bumped_at on /latest (audience sees actual, stranger sees non-whisper)" do
+    it "serializes the legacy non-whisper bumped_at on /latest to everyone but staff" do
       sign_in(stranger)
       get "/latest.json"
       stranger_view = response.parsed_body["topic_list"]["topics"].find { |t| t["id"] == topic.id }
@@ -217,11 +222,10 @@ RSpec.describe "Whisper unread badge" do
         regular_reply.reload.created_at,
       )
 
-      sign_in(target)
+      sign_in(admin)
       get "/latest.json"
-      audience_view = response.parsed_body["topic_list"]["topics"].find { |t| t["id"] == topic.id }
-      # Audience members still see the live bump (5 min ago via the outer before).
-      expect(Time.zone.parse(audience_view["bumped_at"])).to be_within(2.seconds).of(
+      staff_view = response.parsed_body["topic_list"]["topics"].find { |t| t["id"] == topic.id }
+      expect(Time.zone.parse(staff_view["bumped_at"])).to be_within(2.seconds).of(
         topic.reload.bumped_at,
       )
     end

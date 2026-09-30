@@ -21,6 +21,9 @@ RSpec.describe "Whisper edit toggle (frontend save chain)" do
   fab!(:author, :user)
   fab!(:target, :user)
   fab!(:topic) { Fabricate(:topic, title: "Edit whisper toggle e2e demo") }
+  # A topic's first post can never be a whisper, so the posts toggled below
+  # are replies.
+  fab!(:op) { Fabricate(:post, topic: topic, user: author, raw: "Opening post of the demo topic.") }
 
   let(:targets_field) { DiscourseModCategories::POST_WHISPER_TARGETS_FIELD }
   let(:groups_field) { DiscourseModCategories::POST_WHISPER_TARGET_GROUPS_FIELD }

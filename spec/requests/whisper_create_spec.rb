@@ -177,12 +177,21 @@ RSpec.describe "Whisper creation" do
   end
 
   describe "non-participant non-staff user" do
-    it "creates a plain post even when the whisper flag is armed" do
+    # Someone who armed a whisper expects privacy: the post is never made
+    # public. It becomes a staff-only whisper (their targets are ignored) and
+    # doesn't page the staff.
+    it "creates a staff-only whisper, ignoring the targets, when the flag is armed" do
+      Jobs.run_immediately!
+      admin_baseline = Notification.where(user_id: admin.id).count
+
       create_post_for(stranger, { armed_param => true, targets_field => [target.id] })
       expect(response.status).to eq(200)
 
       created = Post.find(response.parsed_body["id"])
-      expect(created.custom_fields.key?(targets_field)).to eq(false)
+      expect(created.custom_fields.key?(targets_field)).to eq(true)
+      expect(created.custom_fields[targets_field]).to eq([])
+      expect(Guardian.new(target).can_see_post?(created)).to eq(false)
+      expect(Notification.where(user_id: admin.id).count).to eq(admin_baseline)
     end
   end
 end

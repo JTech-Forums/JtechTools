@@ -23,27 +23,37 @@ module DiscourseModCategories
   # code paths (post reloaded from cache, custom fields not preloaded).
   # A single indexed lookup keyed on (post_id, name) is cheap.
   #
-  # rescue StandardError → fall back to `super` so a schema change to
-  # `post_custom_fields` (or a NULL post argument) can never break search
-  # indexing for public posts.
+  # rescue StandardError → skip indexing that post (fail closed) and keep
+  # indexing non-post objects, so a schema change can neither leak a whisper
+  # into the index nor break topic/user/category indexing.
+  #
+  # Enforced regardless of mod_whisper_enabled: switching the feature off
+  # must not start indexing existing whispers.
   module SearchIndexerExtension
     def index(obj, force: false)
-      if whisper_post?(obj)
+      whisper =
+        begin
+          whisper_post?(obj)
+        rescue StandardError => e
+          ::Rails.logger.warn(
+            "[jtech-tools] SearchIndexer whisper gate failed: #{e.class}: #{e.message}",
+          )
+          # Fail CLOSED for posts: when we cannot tell whether a post is a
+          # whisper it is not indexed (it will be on the next good pass).
+          return if obj.is_a?(::Post)
+          false
+        end
+
+      if whisper
         ::PostSearchData.where(post_id: obj.id).delete_all
         return
       end
-      super
-    rescue StandardError => e
-      ::Rails.logger.warn(
-        "[jtech-tools] SearchIndexer whisper gate fell back: #{e.class}: #{e.message}",
-      )
       super
     end
 
     private
 
     def whisper_post?(obj)
-      return false unless defined?(::SiteSetting) && ::SiteSetting.mod_whisper_enabled
       return false unless obj.is_a?(::Post)
       return false unless obj.id
 

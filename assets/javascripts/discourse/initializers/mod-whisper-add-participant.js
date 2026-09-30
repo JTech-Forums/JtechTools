@@ -3,8 +3,8 @@ import ModWhisperAddParticipantModal from "../components/mod-whisper-add-partici
 
 // Adds an "Add user to whisper" button to a whisper post's admin menu,
 // visible only to staff while whispers are enabled. It opens a user chooser
-// modal that adds the chosen users to the topic's whisper conversation, so
-// they see every whisper in the topic from then on.
+// modal that adds the chosen users to THAT whisper's audience (never to
+// other whispers in the topic).
 export default {
   name: "discourse-mod-whisper-add-participant",
 
@@ -23,7 +23,7 @@ export default {
 
     const modal = container.lookup("service:modal");
 
-    withPluginApi("1.0", (api) => {
+    withPluginApi((api) => {
       api.addPostAdminMenuButton((post) => {
         if (!post?.mod_is_whisper) {
           return;
