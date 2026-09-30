@@ -186,6 +186,16 @@ export function screenSoftkey(which: "left" | "right"): boolean {
   return true;
 }
 
+// The screen's own soft-key actions, repeated in the menu for phones whose
+// soft keys never reach the page.
+export function screenSoftActions(): SoftAction[] {
+  if (!active) return [];
+  const out: SoftAction[] = [];
+  if (active.left) out.push(active.left);
+  if (active.right) out.push(active.right);
+  return out;
+}
+
 export function registerGlobalAction(name: string, fn: ActionHandler): void {
   globalActions[name] = fn;
 }

@@ -113,6 +113,25 @@ a stable `data-key` so Back can restore focus to them.
 - Open layers (sheets, dialogs, the drawer) own the keys and get a history
   entry, so the phone's Back closes them.
 
+### Phone keys (keys.ts, views/phone-keys.ts)
+
+Browsers disagree on soft keys. KaiOS names them `SoftLeft`/`SoftRight`;
+Android flip-phone browsers often keep them for themselves (Chrome never
+passes Menu or Back to a page) or send them nameless. So:
+
+- `keyOf` reads `key`, then `code`, then `keyCode`. A keydown that comes as
+  an anonymous `229` is finished on keyup, where Android names the key.
+- Any key that reaches the page can be taught on the Phone keys screen
+  (`/phone-keys`); taught keys are stored per device in `prefs.keymap` and
+  checked first. In a text field, a taught key that types a character types
+  it.
+- For phones whose soft keys never reach the page, the screen's soft-key
+  actions are repeated at the top of the menu (`*` or the ☰ button), so
+  everything stays reachable with the D-pad and OK. The phone's own Back
+  goes through history, which Dumbcourse already follows.
+- The first unknown key pressed on a phone-sized screen gets a one-time
+  toast pointing to Phone keys.
+
 ## Security notes
 
 - The page's CSP allows scripts only from this site plus the inlined early

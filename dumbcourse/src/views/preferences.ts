@@ -162,6 +162,7 @@ export function preferencesRoute(ctx: RouteContext): void {
           labelOf(SOFTKEYS, prefs.softkeys),
           "keypad"
         )}
+        ${linkRow("/phone-keys", "Phone keys", "keypad")}
       </ul>
       <h2 class="section-title">Behaviour</h2>
       <ul class="rows">

@@ -306,6 +306,47 @@ RSpec.describe "Dumbcourse" do
       end
     end
 
+    it "repeats the screen's soft-key actions in the menu" do
+      phone do
+        visit "/dumb/"
+        expect(page).to have_css("#softkeys .sk-right", text: "Options")
+        press("*")
+        find(".layer-drawer .menu-item[data-menu=screen]", text: "Options").click
+        expect(page).to have_css(".sheet-item", text: "New topic")
+      end
+    end
+
+    it "learns a soft key the phone sends under another name" do
+      phone do
+        visit "/dumb/phone-keys"
+        find(".row[data-which=softleft]").click
+        expect(page).to have_css("#pk-softleft", text: "Press it now")
+        press(:f9)
+        expect(page).to have_css("#pk-softleft", text: "F9")
+        expect(page).to have_css("#pkLast", text: "Left soft key")
+        visit "/dumb/"
+        press(:f9)
+        expect(page).to have_css(".layer-drawer .menu-item", text: "Notifications")
+      end
+    end
+
+    it "takes soft keys that some Android browsers only name on keyup" do
+      phone do
+        visit "/dumb/"
+        expect(page).to have_css("#softkeys .sk-left")
+        page.execute_script(<<~JS)
+          function fire(type, key, keyCode) {
+            var e = new KeyboardEvent(type, { key: key, bubbles: true, cancelable: true });
+            Object.defineProperty(e, "keyCode", { get: function () { return keyCode; } });
+            document.body.dispatchEvent(e);
+          }
+          fire("keydown", "Unidentified", 229);
+          fire("keyup", "SoftLeft", 0);
+        JS
+        expect(page).to have_css(".layer-drawer .menu-item", text: "Notifications")
+      end
+    end
+
     it "remembers the theme and text size" do
       phone do
         visit "/dumb/preferences"

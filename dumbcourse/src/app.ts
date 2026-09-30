@@ -6,7 +6,14 @@ import { closest } from "./compat.ts";
 import { APP_ROOT, settings } from "./config.ts";
 import { $, byId, setHtml, show, toggleClass } from "./dom.ts";
 import { html, type SafeHtml } from "./html.ts";
-import { isTypingTarget, keyOf, type Key } from "./keys.ts";
+import {
+  isDeferred,
+  isTypingTarget,
+  keyOf,
+  keySignature,
+  setCustomKeys,
+  type Key,
+} from "./keys.ts";
 import {
   activeScope,
   currentKey,
@@ -28,6 +35,7 @@ import {
   beginScreen,
   runAction,
   screenKey,
+  screenSoftActions,
   screenSoftkey,
   setComposeHook,
   setTitleHook,
@@ -203,6 +211,23 @@ export function openMenu(): void {
   if (menuLayer && topLayer() === menuLayer) return;
   const u = user;
   const items: SafeHtml[] = [];
+  const screenActions = screenSoftActions();
+  screenActions.forEach((a, i) =>
+    items.push(
+      html`<li>
+        <button
+          type="button"
+          class="menu-item"
+          data-menu="screen"
+          data-index="${i}"
+        >
+          ${icon("more")}<span class="menu-label">${a.label}</span>
+        </button>
+      </li>`
+    )
+  );
+  if (screenActions.length)
+    items.push(html`<li class="menu-sep" role="separator"></li>`);
   if (u) {
     items.push(menuItem("/", "Home", "home"));
     items.push(menuItem("/categories", "Categories", "grid"));
@@ -313,7 +338,12 @@ export function openMenu(): void {
     const btn = closest(e.target, "[data-menu]");
     if (!btn) return;
     const what = btn.getAttribute("data-menu");
-    if (what === "theme") {
+    if (what === "screen") {
+      const a =
+        screenActions[parseInt(btn.getAttribute("data-index") || "0", 10)];
+      closeTop();
+      if (a) a.run();
+    } else if (what === "theme") {
       const next =
         prefs.theme === "auto"
           ? "dark"
@@ -385,12 +415,60 @@ function centerKey(): void {
   if (el && el !== document.body) el.click();
 }
 
+// Whether the last keydown was an anonymous one to finish on keyup.
+let deferredDown = false;
+let suggestedPhoneKeys = false;
+
 function onKeydown(e: KeyboardEvent): void {
-  const key = keyOf(e);
-  if (!key) return;
   const target = document.activeElement as HTMLElement | null;
   const typing = isTypingTarget(target);
+  const key = keyOf(e, typing);
+  deferredDown = !key && isDeferred(e);
+  if (!key) {
+    if (!deferredDown && !typing) suggestPhoneKeys(e);
+    return;
+  }
+  dispatchKey(key, e, target, typing);
+}
 
+function onKeyup(e: KeyboardEvent): void {
+  if (!deferredDown) return;
+  deferredDown = false;
+  const target = document.activeElement as HTMLElement | null;
+  const typing = isTypingTarget(target);
+  const key = keyOf(e, typing);
+  if (!key) {
+    if (!typing) suggestPhoneKeys(e);
+    return;
+  }
+  // In a text field the keyboard owns everything but the soft keys.
+  if (typing && key !== "softleft" && key !== "softright") return;
+  dispatchKey(key, e, target, typing);
+}
+
+// A key Dumbcourse can tell apart but has no use for, on a phone-sized
+// screen: likely a soft key under a name we don't know. Say once where to
+// teach it.
+const NOT_SOFT_KEYS =
+  /^(Shift|Control|Alt|AltGraph|Meta|OS|CapsLock|NumLock|ScrollLock|Fn|FnLock|Tab|Home|End|PageUp|PageDown|Insert|Delete|Clear|Audio.*|Volume.*|Media.*|Power|F([3-9]|1\d))$/;
+
+function suggestPhoneKeys(e: KeyboardEvent): void {
+  if (suggestedPhoneKeys || !softkeysVisible() || topLayer()) return;
+  const sig = keySignature(e);
+  if (!sig || router.currentPath() === "/phone-keys") return;
+  const name = e.key || "";
+  if (name.length === 1 || NOT_SOFT_KEYS.test(name)) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  suggestedPhoneKeys = true;
+  toast("Unknown key. Set it up in Preferences › Phone keys.");
+}
+
+function dispatchKey(
+  key: Key,
+  e: KeyboardEvent,
+  target: HTMLElement | null,
+  typing: boolean
+): void {
   const handled = (): void => {
     e.preventDefault();
     e.stopPropagation();
@@ -611,7 +689,10 @@ export function mountShell(): void {
     });
 
   mountSoftkeys({ left: softLeft, center: centerKey, right: softRight });
+  setCustomKeys(prefs.keymap);
+  onPrefsChange(() => setCustomKeys(prefs.keymap));
   document.addEventListener("keydown", onKeydown, true);
+  document.addEventListener("keyup", onKeyup, true);
   document.addEventListener("click", onClick, false);
   window.addEventListener("resize", () => applyPrefs());
   window.addEventListener("offline", () =>
