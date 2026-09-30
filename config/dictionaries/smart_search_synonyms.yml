@@ -1,167 +1,114 @@
 # Smart-search tech-jargon overlay.
 #
-# Only entries WordNet DOESN'T know go here — abbreviations, brand names,
-# protocol initialisms, and other shop-floor vocabulary. General English
-# (bug ↔ defect ↔ glitch, fast ↔ quick ↔ rapid, …) is handled by the
-# WordNet backend automatically; adding those words here would only
-# create maintenance debt without improving recall.
+# Only entries WordNet doesn't know go here: abbreviations, product names,
+# protocol initialisms and forum shorthand. General English is handled by
+# WordNet.
 #
 # Editing notes:
-#   * All entries MUST be lowercase ASCII. Lookup downcases at query
-#     time.
-#   * Symmetric: every word in a row is a synonym of every other word
-#     in that row.
-#   * Avoid groups longer than ~6 words — extras dilute precision.
-#   * Don't group words that share spelling but not meaning.
-#   * Verify with `DiscourseSmartSearch::Synonyms.for("your-word")` in
-#     a Rails console after restart.
+#   * Lowercase ASCII; lookups are downcased.
+#   * Every word in a row is a synonym of every other word in that row, and
+#     a search for one may be retried with the FIRST other word of its row,
+#     so put the clearest term first.
+#   * Real synonyms only — "ubuntu" is not "debian", "npm" is not "pnpm".
+#   * No everyday English words (go, do, next, rest, shell, idea, member…):
+#     every search containing one would be retried as jargon.
+#   * Check with `DiscourseSmartSearch::Synonyms.for("word")` in a Rails
+#     console after a restart.
 
-# --- Languages (abbreviations ↔ full names) ---
-- [js, javascript, node, nodejs]
-- [ts, typescript]
-- [py, python, python3]
-- [rb, ruby]
-- [cpp, cplusplus, c++]
-- [csharp, "c#", dotnet]
-- [go, golang]
-- [rs, rust]
-- [kt, kotlin]
-- [sh, bash, shell]
-- [pwsh, powershell]
+# --- Languages ---
+- [javascript, js]
+- [typescript, ts]
+- [python, py, python3]
+- [cplusplus, cpp, "c++"]
+- [csharp, "c#"]
+- [golang, "go-lang"]
+- [kotlin, kt]
+- [powershell, pwsh]
+- [nodejs, node.js]
 
-# --- Frameworks / runtimes ---
-- [reactjs, react]
-- [vuejs, vue]
-- [nextjs, next]
-- [angularjs, angular]
-- [sveltekit, svelte]
-- [expressjs, express]
-- [rails, ror, rubyonrails]
-- [springboot, spring]
-- [discoursecore, discourse]
+# --- Frameworks ---
+- [reactjs, react.js]
+- [vuejs, vue.js]
+- [nextjs, next.js]
+- [rails, rubyonrails, ror]
 
-# --- DevOps / cloud / containers ---
-- [k8s, kubernetes, kube]
-- [tf, terraform, opentofu]
-- [oci, dockerfile]
-- [gha, githubactions]
-- [gh, github]
-- [glab, gitlab]
-- [cicd, ci, continuous-integration]
-- [iac, infrastructureascode]
-- [faas, serverless, lambda]
-- [k3s, k0s, microk8s]
-
-# --- Cloud providers ---
-- [aws, amazonws]
+# --- DevOps / cloud ---
+- [kubernetes, k8s]
+- [terraform, tf]
+- [github, gh]
+- [gitlab, glab]
+- [cicd, "ci/cd"]
+- [aws, amazonwebservices]
 - [gcp, googlecloud]
-- [az, azure]
-- [do, digitalocean]
+- [digitalocean, "digital-ocean"]
 
 # --- Databases ---
-- [pg, postgres, postgresql, psql]
-- [mariadb, mysql]
-- [nosql, mongodb, mongo]
-- [es, elasticsearch, elastic, opensearch]
-- [redis, valkey]
+- [postgresql, postgres, psql, pg]
+- [elasticsearch, opensearch]
+- [mongodb, mongo]
 - [sqlite, sqlite3]
 
-# --- Networking / protocols ---
-- [dns, nameserver]
+# --- Networking ---
 - [tls, ssl]
-- [http, hypertext]
-- [https, http-secure]
-- [ws, websocket]
-- [grpc, http2-rpc]
-- [rest, restful]
-- [gql, graphql]
-- [cdn, edge]
-- [vpc, virtualprivatecloud]
-- [vpn, wireguard]
-- [ipv4, ipv6]
+- [websocket, websockets]
+- [graphql, gql]
+- [ipv6, "ip6"]
 
-# --- Hardware abbreviations ---
-- [pc, desktop, rig]
+# --- Hardware ---
 - [cpu, processor]
-- [gpu, videocard]
-- [ram, memory]
+- [gpu, graphicscard, videocard]
 - [ssd, solidstatedrive]
 - [hdd, harddrive, harddisk]
-- [vps, vm, virtualmachine]
-- [ap, accesspoint]
+- [vps, virtualserver]
+- [vm, virtualmachine]
 
 # --- Device management / enterprise IT ---
-- [mdm, "mobile-device-management", "device-management"]
+- [mdm, "mobile-device-management"]
 - [emm, "enterprise-mobility-management"]
 - [byod, "bring-your-own-device"]
 - [rmm, "remote-monitoring-management"]
 - [siem, "security-information-event-management"]
-- [edr, endpoint-detection, "endpoint-protection"]
-- [sso, singlesignon, federated]
-- [ad, "active-directory"]
-- [ldap, directory]
+- [edr, "endpoint-detection"]
+- [sso, singlesignon, "single-sign-on"]
+- [ldap, "active-directory"]
 - [gpo, "group-policy"]
 
-# --- OSes / distros ---
+# --- OSes ---
 - [macos, osx]
-- [winnt, windows]
-- [ubuntu, debian]
-- [rhel, redhat, centos]
-- [arch, archlinux, manjaro]
-- [iphoneos, ios]
+- [rhel, redhat]
+- [archlinux, "arch-linux"]
 
-# --- Editors / IDEs ---
-- [vsc, vscode]
-- [nvim, neovim]
-- [idea, intellij, jetbrains]
+# --- Editors ---
+- [vscode, vsc]
+- [neovim, nvim]
+- [intellij, jetbrains]
 
 # --- Package managers ---
-- [npm, pnpm]
-- [pip, pipenv, poetry]
-- [gem, bundler]
-- [apt, dpkg]
-- [dnf, yum]
-- [brew, homebrew]
+- [homebrew, brew]
 
 # --- Auth / security ---
-- [2fa, mfa, twofactor, otp]
-- [sso, singlesignon]
-- [oauth, oauth2, oidc]
+- [2fa, mfa, twofactor, "two-factor"]
+- [oauth, oauth2]
 - [csrf, xsrf]
 - [xss, "cross-site-scripting"]
 - [sqli, "sql-injection"]
 - [cve, vulnerability, vuln]
 
 # --- File formats ---
-- [md, markdown]
-- [yml, yaml]
+- [markdown, md]
+- [yaml, yml]
 - [jsonl, ndjson]
-- [tarball, tar]
-- [tsv, csv]
 
-# --- Tech-meaning overrides for ambiguous common English words ---
-# WordNet returns these words' synonyms across ALL senses including
-# unrelated ones (bug→badger, issue→consequence, setup→apparatus).
-# Override here with the senses a tech-forum user actually means.
-- [bug, defect, error, glitch, fault, "issue"]
-- [error, "issue", problem, fault, "exception"]
-- [crash, "error", failure, "exception"]
-- [fix, resolve, repair, patch]
-- [setup, configuration, installation, install, "configure"]
-- [config, configuration, settings, conf]
-- [problem, "issue", error, trouble]
-- [slow, sluggish, laggy]
-- [fast, "quick", responsive]
-- [broken, "broken", failed, failing]
+# --- Tech senses of words WordNet gets wrong ---
+# WordNet mixes every sense (bug→badger, setup→apparatus), so these override
+# it with what a tech-forum user means.
+- [bug, defect, glitch]
+- [crash, freeze, hang]
+- [setup, configuration, installation]
+- [config, configuration, settings]
+- [slow, laggy, sluggish]
 
-# --- Forum-specific shorthand ---
-- [op, originalpost]
-- [pm, dm, directmessage, privatemessage]
-- [tl0, newuser]
-- [tl1, basicuser]
-- [tl2, member]
-- [tl3, regular]
-- [tl4, leader]
-- [foss, opensource, libre]
-- [ooo, "out-of-office"]
-- [tldr, "too-long-didnt-read", summary]
+# --- Forum shorthand ---
+- [pm, dm, "private-message", "direct-message"]
+- [foss, opensource]
+- [tldr, "too-long-didnt-read"]

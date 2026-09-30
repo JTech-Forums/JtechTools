@@ -28,6 +28,7 @@ type PopupSiteSettings = SiteSettingsService & {
 };
 
 type PopupCurrentUser = User & {
+  id: number;
   username: string;
   jtech_popup_notifications_enabled?: boolean;
 };
@@ -55,8 +56,15 @@ export default class JtechDesktopPopupNotifications extends Component<JtechDeskt
   @service declare siteSettings: PopupSiteSettings;
   @service declare currentUser: PopupCurrentUser;
 
+  // A personal display preference: shown only on your own account page (on
+  // someone else's, staff would otherwise see and save their own value).
   get available(): boolean {
-    return this.siteSettings.popup_notifications_enabled;
+    const model = this.args.outletArgs?.model as { id?: number } | undefined;
+    return (
+      this.siteSettings.popup_notifications_enabled &&
+      !!this.currentUser &&
+      (!model || model.id === this.currentUser.id)
+    );
   }
 
   get enabled(): boolean {

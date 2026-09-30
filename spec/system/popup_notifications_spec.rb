@@ -146,4 +146,27 @@ RSpec.describe "Desktop pop-up notifications" do
     find("#post_1 .cooked").click
     expect(page).to have_no_css(".jtech-popup-toast")
   end
+
+  it "closes one card with its close button without opening it" do
+    set_pref(true)
+    sign_in(recipient)
+    open_topic
+
+    publish_reply_until_toast
+
+    find(".jtech-popup-toast__close").click
+    expect(page).to have_no_css(".jtech-popup-toast")
+    expect(page).to have_current_path(%r{/t/#{topic.slug}/#{topic.id}})
+  end
+
+  it "stays quiet during Do Not Disturb" do
+    set_pref(true)
+    recipient.do_not_disturb_timings.create!(starts_at: 1.hour.ago, ends_at: 1.hour.from_now)
+    sign_in(recipient)
+    open_topic
+
+    publish_reply
+
+    expect(page).to have_no_css(".jtech-popup-toast", wait: 5)
+  end
 end

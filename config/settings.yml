@@ -475,13 +475,6 @@ jtech_translator:
     default: true
     client: false
 
-  # Checked per Guardian call, so this takes effect immediately.
-  translator_tweaks_hide_untranslatable:
-    default: true
-    client: false
-    depends_on:
-      - "translator_tweaks_enabled"
-
   # The value the module used to hard-code. Blank means "leave upstream
   # alone and call googleapis.com directly". Boot-time only: the endpoints
   # are Ruby constants, so a change needs an app restart. The confirmation
@@ -1219,16 +1212,6 @@ jtech_disteleplus:
     requires_confirmation: "simple_on_enable"
     depends_on:
       - "disteleplus_enabled"
-
-# ───────────────────────────────────────────────────────────────────────────
-# Jtech — Username avatar (default avatars derived from username, not email)
-# ───────────────────────────────────────────────────────────────────────────
-jtech_username_avatar:
-  # Master switch. Historical setting name kept verbatim from the original
-  # standalone plugin.
-  discourse_username_avatar_enabled:
-    default: true
-    client: false
 
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech — REQ-PM (request / send contact details instead of private messages)

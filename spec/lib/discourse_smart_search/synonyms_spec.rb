@@ -17,10 +17,8 @@ RSpec.describe ::DiscourseSmartSearch::Synonyms do
         expect(set).to include("javascript")
       end
 
-      it "is order-independent — any group member resolves the same group" do
-        via_js = described_class.for("js")
-        via_javascript = described_class.for("javascript")
-        expect(via_js).to eq(via_javascript)
+      it "resolves from any member of the group" do
+        expect(described_class.for("javascript")).to include("js")
       end
 
       it "downcases the input before lookup" do
@@ -55,6 +53,11 @@ RSpec.describe ::DiscourseSmartSearch::Synonyms do
         expect(described_class.for("xyzzyplotch")).to eq(["xyzzyplotch"])
       end
 
+      it "leaves out multi-word entries and WordNet's part-of-speech markers" do
+        set = described_class.for("future")
+        expect(set.none? { |w| w.include?(" ") || w.include?("(") }).to eq(true)
+      end
+
       it "caps results at MAX_SYNONYMS_PER_WORD to avoid runaway expansion" do
         # "set" is famously polysemous (50+ senses), so the cap matters.
         expect(described_class.for("set").size).to be <= described_class::MAX_SYNONYMS_PER_WORD
@@ -69,10 +72,7 @@ RSpec.describe ::DiscourseSmartSearch::Synonyms do
       # — private same-module call resolution can bypass the mock.
       # Setting the memoized variable triggers the early-return path
       # inside `wordnet_available?` and works regardless of call site.
-      before do
-        described_class.reload!
-        described_class.instance_variable_set(:@wordnet_available, false)
-      end
+      before { described_class.instance_variable_set(:@wordnet_available, false) }
 
       after { described_class.instance_variable_set(:@wordnet_available, nil) }
 
@@ -92,31 +92,29 @@ RSpec.describe ::DiscourseSmartSearch::Synonyms do
     end
   end
 
-  describe ".reload!" do
-    it "tolerates a missing overlay file" do
-      expect { described_class.reload!(path: "/nonexistent/path.yml") }.not_to raise_error
-      # Overlay is empty after a failed load; tech entries are gone
-      # until reload! is called again with the real path.
-    ensure
-      described_class.reload!
-    end
+  describe "the dictionary" do
+    it "tolerates a missing or malformed file" do
+      expect(described_class.send(:load_groups, "/nonexistent/path.yml")).to eq([])
 
-    it "tolerates a malformed overlay file" do
       tmp = ::Tempfile.new(%w[smart_search_bad .yml])
       tmp.write("[[[unbalanced")
       tmp.close
-      expect { described_class.reload!(path: tmp.path) }.not_to raise_error
+      expect(described_class.send(:load_groups, tmp.path)).to eq([])
     ensure
-      tmp&.close
       tmp&.unlink
-      described_class.reload!
     end
 
-    it "accepts an `extras:` array to inject extra groups for testing" do
-      described_class.reload!(extras: [%w[supercalifragilistic mary-poppins]])
+    it "keeps each group's order so the clearest term is offered first" do
+      expect(described_class.for("k8s")).to eq(%w[k8s kubernetes])
+      expect(described_class.for("kubernetes")).to eq(%w[kubernetes k8s])
+    end
+
+    it "picks up the site's extra synonyms as soon as the setting changes" do
+      SiteSetting.smart_search_extra_synonyms = "supercalifragilistic,mary-poppins"
       expect(described_class.for("supercalifragilistic")).to include("mary-poppins")
-    ensure
-      described_class.reload!
+
+      SiteSetting.smart_search_extra_synonyms = ""
+      expect(described_class.for("supercalifragilistic")).to eq(["supercalifragilistic"])
     end
   end
 

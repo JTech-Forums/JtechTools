@@ -1,62 +1,42 @@
 # frozen_string_literal: true
 
 module ::DiscourseSmartSearch
-  # Prepended onto ::Search. Runs the original term first, then — only
-  # when the original returned fewer than `smart_search_minimum_results`
-  # posts — runs each synonym-expanded variant and merges the new posts
-  # into the base result set.
+  # Prepended onto ::Search. Runs the search as normal; when the first page
+  # comes back with fewer than `smart_search_minimum_results` posts (and no
+  # further pages), it retries with synonym-swapped terms and adds the new
+  # posts to the same result set.
   #
-  # FALLBACK CONTRACT:
-  # The vanilla `super` runs FIRST and its result is captured in `base`
-  # before any smart-search code runs. From that point on, every smart-
-  # search code path — dictionary lookup, variant generation, inner
-  # variant search, merge — is wrapped in `rescue StandardError` and on
-  # any failure we return `base` (the vanilla result) unchanged. A
-  # broken dictionary, a Postgres error on a variant query, a future
-  # Discourse refactor of `Search#execute`, an exception in Synonyms.for,
-  # a SiteSetting read failure — none of these can cause `Search.execute`
-  # to raise. Search degrades to vanilla, never to broken.
+  # FALLBACK CONTRACT: core's search runs first and its result is kept. Every
+  # smart-search step after that is rescued, and on any failure the core
+  # result is returned unchanged — search degrades to vanilla, never to
+  # broken. Only core's own search can still raise.
   #
-  # The only path that can still raise is the original `super` itself —
-  # i.e. if vanilla Discourse search is broken, we cannot rescue that.
-  # That's correct: smart-search isn't a circuit breaker for core
-  # Discourse, only for its own expansion code.
-  #
-  # Recursion is prevented by setting `@opts[:smart_search_disable]`
-  # when constructing the inner Search instances; the prepend rechecks
-  # that flag and short-circuits, so the inner searches behave like
-  # plain Discourse search.
+  # The retries are ordinary Search instances with the same options (same
+  # guardian, context and type filter, so they can never see more than the
+  # original), marked with `smart_search_disable` so they don't expand
+  # again, aren't written to the search log and don't fire :user_search.
   module SearchExtension
     def execute(readonly_mode: ::Discourse.readonly_mode?)
-      base =
-        begin
-          super(readonly_mode: readonly_mode)
-        rescue ArgumentError
-          # Older Discourse versions used a positional or no-kwarg form
-          # of Search#execute. Retry without the kwarg so the prepend
-          # is forward-and-backward compatible.
-          super()
-        end
-
+      base = super
       return base unless smart_search_applies?
-      return base if smart_search_disabled?
 
       begin
-        threshold = ::SiteSetting.smart_search_minimum_results.to_i
-        return base if base.posts.size >= threshold
+        return base if base.posts.size >= ::SiteSetting.smart_search_minimum_results.to_i
+        return base if base.more_full_page_results || base.more_posts
 
+        # clean_term still carries the advanced-search operators
+        # (category:, tags:, @user, in:title, order:…), which QueryExpander
+        # passes through untouched; @term has them stripped.
         variants =
           ::DiscourseSmartSearch::QueryExpander.variants(
-            @term,
-            limit: ::SiteSetting.smart_search_variant_limit.to_i.clamp(1, 5),
+            clean_term,
+            limit: ::SiteSetting.smart_search_variant_limit.to_i.clamp(1, 2),
           )
-        return base if variants.empty?
-
         variants.each { |alt_term| merge_variant(base, alt_term, readonly_mode) }
         base
       rescue StandardError => e
         ::Rails.logger.warn(
-          "[smart-search] expansion failed for term=#{@term.inspect}: " \
+          "[smart-search] expansion failed for term=#{clean_term.inspect}: " \
             "#{e.class}: #{e.message}",
         )
         base
@@ -65,47 +45,52 @@ module ::DiscourseSmartSearch
 
     private
 
+    def log_query?(readonly_mode)
+      return false if smart_search_disabled?
+      super
+    end
+
+    def trigger_user_search_event(readonly_mode)
+      return if smart_search_disabled?
+      super
+    end
+
+    # Only the first page: later pages of a query with enough results never
+    # need it, and merging into page N would repeat or skip results.
     def smart_search_applies?
-      return false unless defined?(::SiteSetting)
-      return false unless ::SiteSetting.jtech_enabled
-      return false unless ::SiteSetting.smart_search_enabled
-      return false if @term.blank?
-      true
+      ::SiteSetting.jtech_enabled && ::SiteSetting.smart_search_enabled &&
+        !smart_search_disabled? && clean_term.present? && @page.to_i <= 1
     end
 
     def smart_search_disabled?
       @opts.is_a?(Hash) && @opts[:smart_search_disable]
     end
 
-    # Runs a fresh Search with the expanded term, marked so it does not
-    # itself re-enter smart-search (infinite recursion guard). The new
-    # search inherits the original `@opts` so guardian, search context,
-    # type filters, etc. are preserved.
     def merge_variant(base, alt_term, readonly_mode)
-      inner_opts = (@opts || {}).merge(smart_search_disable: true)
-      alt = self.class.new(alt_term, inner_opts)
-      alt_result =
-        begin
-          alt.execute(readonly_mode: readonly_mode)
-        rescue ArgumentError
-          alt.execute
-        end
-      merge_into!(base, alt_result)
+      inner_opts = @opts.merge(smart_search_disable: true)
+      # The header search also looks up users, categories and tags; only
+      # posts are merged, so the retry skips the rest.
+      inner_opts[:type_filter] ||= "topic"
+      merge_into!(base, self.class.new(alt_term, inner_opts).execute(readonly_mode: readonly_mode))
     end
 
+    # Results are one post per topic except when searching inside a topic,
+    # so a topic already listed isn't added again through another post.
     def merge_into!(base, alt)
       return unless base && alt
-      existing_ids = base.posts.map(&:id).to_set
+      per_topic = !@search_context.is_a?(::Topic)
+      post_ids = base.posts.map(&:id).to_set
+      topic_ids = base.posts.map(&:topic_id).to_set
+
       alt.posts.each do |post|
-        next if existing_ids.include?(post.id)
-        # Go through GroupedSearchResults#add, not `posts <<` — add enforces
-        # the search_page_size cap and sets more_full_page_results, so a
-        # merged page can never carry multiples of the page size.
+        next if post_ids.include?(post.id)
+        next if per_topic && topic_ids.include?(post.topic_id)
+        # GroupedSearchResults#add enforces the page size and sets the
+        # "more" flags.
         base.add(post)
-        existing_ids << post.id
+        post_ids << post.id
+        topic_ids << post.topic_id
       end
-    rescue StandardError => e
-      ::Rails.logger.warn("[smart-search] merge failed: #{e.class}: #{e.message}")
     end
   end
 end

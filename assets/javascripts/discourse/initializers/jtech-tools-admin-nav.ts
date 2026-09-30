@@ -62,10 +62,6 @@ const LINKS: AdminNavLink[] = [
     route: "adminPlugins.show.jtech-tools-disteleplus",
   },
   {
-    label: "jtech_tools.admin.tabs.username_avatar",
-    route: "adminPlugins.show.jtech-tools-username-avatar",
-  },
-  {
     label: "jtech_tools.admin.tabs.reqpm",
     route: "adminPlugins.show.jtech-tools-reqpm",
   },

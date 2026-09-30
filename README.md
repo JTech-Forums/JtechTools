@@ -1,6 +1,6 @@
 # Jtech Tools
 
-One Discourse plugin with everything JTech Forums runs on top of core. Eleven features, each with its own on/off switch in **Admin → Settings → Jtech**.
+One Discourse plugin with everything JTech Forums runs on top of core. Ten features, each with its own on/off switch in **Admin → Settings → Jtech**.
 
 ## Install
 
@@ -50,7 +50,7 @@ In categories you pick, likes (and discourse-reactions reactions) stop mattering
 When a search finds too little, it quietly retries with synonyms (English dictionary + a short list of tech abbreviations like `js`/`javascript`, `k8s`/`kubernetes`) and merges the results. Runs locally, no API keys. If anything goes wrong you just get normal search results.
 
 ### Desktop pop-up notifications
-A small card in the top-right corner when you get a notification, with the person's avatar, the topic title and a preview. Click it to jump there. Desktop only, each user turns it on in their account settings.
+A small card in the top-right corner when you get a notification, with the person's avatar, the topic title and a preview. Click it to jump there, or dismiss it; it stays while you hover over it. Desktop only, quiet during Do Not Disturb, and each user turns it on in their account settings.
 
 ### Dumbcourse — the forum for flip phones
 A light version of the forum at `/dumb` for flip phones, KaiOS and old Android browsers that can't run the full site. It works with the D-pad and keypad like the phone's own apps, and on any touch screen or computer too.
@@ -70,10 +70,10 @@ A light version of the forum at `/dumb` for flip phones, KaiOS and old Android b
 Send forum email through a different mail server than the one in `app.yml` — host, port, TLS, login, and optional "from" address rewriting, all from admin settings. Mail sent from a group's own inbox (group SMTP) keeps using that group's server. Test it with **Send test email** under Admin → Email; the dashboard warns if the relay is on without an address.
 
 ### Translator tweaks
-Small fixes on top of the official Translator plugin (better foreign-language detection, backfill for old posts).
+For sites running the official Translator plugin with Google: sends its Google requests through a proxy you run (`translator_tweaks_worker_url`), plus a one-off script to detect the language of old non-Latin posts. Newer Discourse ships translation through core content localization and Discourse AI, which don't need this.
 
-### Username avatar
-Default (non-uploaded) avatars are derived from a user's **username** instead of their email address, so they no longer depend on whether — or where — someone has a Gravatar. Users with a manually uploaded custom avatar are unaffected. Existing users keep their cached Gravatar-derived avatar until it's flushed; run `scripts/username_avatar_recalculate.rb` (see the file's header for the exact command) to reset everyone without a custom avatar to their username-based letter avatar.
+### Username avatar (removed — now core settings)
+The old module made Gravatar lookups fail on purpose so everyone got a letter avatar. Core does this directly: `automatically_download_gravatars` off stops the lookups, and `gravatar_enabled` off removes the Gravatar choice. The upgrade switches both off on sites that had the module on. To reset people who already have a Gravatar picture to their letter avatar, run `scripts/username_avatar_recalculate.rb` (see its header).
 
 ### REQ-PM — exchange contact details instead of private messages
 The forum has no PMs; REQ-PM is how members reach each other off the forum without anyone (members or staff) being able to read a conversation.
