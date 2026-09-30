@@ -60,18 +60,6 @@ jtech_dislike:
     client: false
     depends_on:
       - "discourse_no_likes_enabled"
-  # Only consulted while history is suppressed (the notification delete is
-  # part of hiding the like).
-  dislike_notification_cleanup_window_seconds:
-    default: 30
-    client: false
-    min: 5
-    max: 600
-    depends_on:
-      - "discourse_no_likes_enabled"
-    depends_on_values:
-      dislike_show_in_history:
-        - "false"
   dislike_count_in_leaderboard:
     default: false
     client: false

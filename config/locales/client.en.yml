@@ -614,9 +614,10 @@ en:
             done: Backfill queued.
           purge_phantom_likes:
             label: Purge phantom likes
-            confirm: This rewrites likes_given and likes_received for every
-              user who has liked in a restricted category, and deletes their
-              like history rows. It cannot be undone. Run the purge now?
+            confirm: This applies the Dislike settings to existing likes in
+              the restricted categories — removing their history rows and
+              notifications unless history is kept — and recalculates likes
+              given and received. It cannot be undone. Run it now?
             done: Purge queued.
       site_settings:
         categories:
@@ -663,14 +664,15 @@ en:
             official_api: LanguageTool cloud API
         requires_confirmation_messages:
           purge_phantom_likes_now:
-            prompt: This rewrites likes_given and likes_received for every
-              user who has liked in a restricted category, and deletes their
-              like history rows. It cannot be undone. Run the purge now?
+            prompt: This applies the Dislike settings to existing likes in
+              the restricted categories — removing their history rows and
+              notifications unless history is kept — and recalculates likes
+              given and received. It cannot be undone. Run it now?
             confirm: Run purge
           discourse_another_email_enabled:
-            prompt: This reroutes every outgoing forum email — including group
-              SMTP mail — through the relay configured on this tab. Enable
-              the alternate relay?
+            prompt: This sends every outgoing forum email through the relay
+              configured on this tab (group inbox mail keeps its own server).
+              Enable the alternate relay?
             confirm: Enable relay
           disteleplus_register_webhook_now:
             prompt: This calls Telegram's setWebhook with this forum's webhook

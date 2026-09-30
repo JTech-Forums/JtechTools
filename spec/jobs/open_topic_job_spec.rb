@@ -1,94 +1,26 @@
 # frozen_string_literal: true
 
-# Exercises the timer-based reopen path: Jobs::OpenTopic invokes
-# Guardian#can_open_topic? when a topic timer fires. The plugin's
-# can_open_topic? override should block the job from reopening when the
-# user is a mini-mod and the restriction is on, and allow it when the
-# restriction is off.
-RSpec.describe Jobs::OpenTopic do
-  fab!(:user)
+# The reopen restrictions (mini_mod_can_reopen_topics, tl4_can_reopen_topics)
+# must hold on every route to reopening a topic, not just the button: topic
+# timers too.
+RSpec.describe "Mini-mod reopen restrictions", type: :request do
+  fab!(:mini_mod) { Fabricate(:user, refresh_auto_groups: true) }
+  fab!(:tl4_user) { Fabricate(:trust_level_4, refresh_auto_groups: true) }
   fab!(:group)
   fab!(:category)
+  fab!(:other_category, :category)
   fab!(:closed_topic) { Fabricate(:topic, category: category, closed: true) }
+  fab!(:closed_elsewhere) { Fabricate(:topic, category: other_category, closed: true) }
 
   before do
     SiteSetting.mini_mod_enabled = true
     SiteSetting.enable_category_group_moderation = true
-    group.add(user)
+    group.add(mini_mod)
     Fabricate(:category_moderation_group, category: category, group: group)
   end
 
-  def schedule_open_timer(by_user)
-    Fabricate(
-      :topic_timer,
-      topic: closed_topic,
-      user: by_user,
-      status_type: TopicTimer.types[:open],
-      execute_at: 1.minute.ago,
-    )
-  end
-
-  describe "with the default restriction (mini_mod_can_reopen_topics: false)" do
-    it "destroys the timer and leaves the topic closed when scheduled by a mini-mod" do
-      timer = schedule_open_timer(user)
-      described_class.new.execute(topic_timer_id: timer.id)
-      expect(closed_topic.reload.closed).to eq(true)
-      expect(TopicTimer.where(id: timer.id)).not_to exist
-    end
-
-    it "still reopens the topic when the timer is scheduled by an admin" do
-      timer = schedule_open_timer(Fabricate(:admin))
-      described_class.new.execute(topic_timer_id: timer.id)
-      expect(closed_topic.reload.closed).to eq(false)
-    end
-
-    it "still reopens the topic when the timer is scheduled by a moderator" do
-      timer = schedule_open_timer(Fabricate(:moderator))
-      described_class.new.execute(topic_timer_id: timer.id)
-      expect(closed_topic.reload.closed).to eq(false)
-    end
-  end
-
-  # The plugin's Guardian#can_open_topic? override over-blocks: it
-  # returns false even when the gate setting is on or the plugin is
-  # disabled. The job correctly checks the guardian and destroys the
-  # timer, but the topic never reopens. Pre-existing on both fork and
-  # upstream main since long before the whisper PR — out of scope here.
-  PENDING_OPEN_TOPIC_GUARD =
-    "Pre-existing: mini-mod Guardian#can_open_topic? over-blocks the reopen gate"
-
-  context "when mini_mod_can_reopen_topics is enabled" do
-    before { SiteSetting.mini_mod_can_reopen_topics = true }
-
-    it "lets the mini-mod's timer reopen the topic" do
-      skip PENDING_OPEN_TOPIC_GUARD
-      timer = schedule_open_timer(user)
-      described_class.new.execute(topic_timer_id: timer.id)
-      expect(closed_topic.reload.closed).to eq(false)
-    end
-  end
-
-  context "when the plugin is disabled" do
-    before { SiteSetting.mini_mod_enabled = false }
-
-    it "lets the mini-mod's timer reopen the topic (falls back to core behavior)" do
-      skip PENDING_OPEN_TOPIC_GUARD
-      timer = schedule_open_timer(user)
-      described_class.new.execute(topic_timer_id: timer.id)
-      expect(closed_topic.reload.closed).to eq(false)
-    end
-  end
-
-  # Parallel coverage for the tl4_can_reopen_topics gate. The Guardian unit
-  # spec proves can_open_topic? returns false for TL4 users; this proves
-  # Jobs::OpenTopic actually honours that and destroys the timer instead of
-  # reopening when a TL4 user (who is not a mini-mod) scheduled the timer.
-  describe "TL4 timer reopen path" do
-    fab!(:tl4_user, :trust_level_4)
-    fab!(:other_category, :category)
-    fab!(:closed_in_other_category) { Fabricate(:topic, category: other_category, closed: true) }
-
-    def schedule_open_timer_for(topic, by_user)
+  def run_open_timer(topic, by_user)
+    timer =
       Fabricate(
         :topic_timer,
         topic: topic,
@@ -96,84 +28,76 @@ RSpec.describe Jobs::OpenTopic do
         status_type: TopicTimer.types[:open],
         execute_at: 1.minute.ago,
       )
+    Jobs::OpenTopic.new.execute(topic_timer_id: timer.id)
+    expect(TopicTimer.where(id: timer.id)).not_to exist
+    !topic.reload.closed
+  end
+
+  describe "open timers" do
+    it "don't reopen for a mini-mod by default" do
+      expect(run_open_timer(closed_topic, mini_mod)).to eq(false)
     end
 
-    context "with the default restriction (tl4_can_reopen_topics: false)" do
-      it "destroys the timer and leaves the topic closed when scheduled by a TL4 user" do
-        skip PENDING_OPEN_TOPIC_GUARD
-        timer = schedule_open_timer_for(closed_in_other_category, tl4_user)
-        described_class.new.execute(topic_timer_id: timer.id)
-        expect(closed_in_other_category.reload.closed).to eq(true)
-        expect(TopicTimer.where(id: timer.id)).not_to exist
-      end
-
-      it "blocks the TL4 timer even on a topic in a mini-mod category" do
-        skip PENDING_OPEN_TOPIC_GUARD
-        timer = schedule_open_timer_for(closed_topic, tl4_user)
-        described_class.new.execute(topic_timer_id: timer.id)
-        expect(closed_topic.reload.closed).to eq(true)
-        expect(TopicTimer.where(id: timer.id)).not_to exist
-      end
+    it "reopen once mini-mods may reopen" do
+      SiteSetting.mini_mod_can_reopen_topics = true
+      SiteSetting.topic_timers_allowed_groups = group.id.to_s
+      expect(run_open_timer(closed_topic, mini_mod)).to eq(true)
     end
 
-    context "when tl4_can_reopen_topics is enabled" do
-      before { SiteSetting.tl4_can_reopen_topics = true }
-
-      it "lets the TL4 user's timer reopen the topic" do
-        timer = schedule_open_timer_for(closed_in_other_category, tl4_user)
-        described_class.new.execute(topic_timer_id: timer.id)
-        expect(closed_in_other_category.reload.closed).to eq(false)
-      end
+    it "reopen for staff" do
+      expect(run_open_timer(closed_topic, Fabricate(:admin))).to eq(true)
+      closed_topic.update!(closed: true)
+      expect(run_open_timer(closed_topic, Fabricate(:moderator))).to eq(true)
     end
 
-    context "when the plugin is disabled" do
-      before { SiteSetting.mini_mod_enabled = false }
-
-      it "lets the TL4 user's timer reopen the topic (falls back to core behavior)" do
-        timer = schedule_open_timer_for(closed_in_other_category, tl4_user)
-        described_class.new.execute(topic_timer_id: timer.id)
-        expect(closed_in_other_category.reload.closed).to eq(false)
-      end
+    it "don't reopen for a TL4 user by default" do
+      expect(run_open_timer(closed_elsewhere, tl4_user)).to eq(false)
     end
 
-    # A TL4 user who is also a mini-mod must clear both gates for the timer
-    # to actually reopen the topic.
-    describe "TL4 user who is also a mini-mod" do
-      fab!(:tl4_mini_mod, :trust_level_4)
+    it "reopen for TL4 once allowed" do
+      SiteSetting.tl4_can_reopen_topics = true
+      expect(run_open_timer(closed_elsewhere, tl4_user)).to eq(true)
+    end
 
-      before { group.add(tl4_mini_mod) }
+    it "fall back to core with Mini-mod off" do
+      SiteSetting.mini_mod_enabled = false
+      expect(run_open_timer(closed_elsewhere, tl4_user)).to eq(true)
+    end
 
-      it "destroys the timer when neither gate is open" do
-        skip PENDING_OPEN_TOPIC_GUARD
-        timer = schedule_open_timer_for(closed_topic, tl4_mini_mod)
-        described_class.new.execute(topic_timer_id: timer.id)
-        expect(closed_topic.reload.closed).to eq(true)
-        expect(TopicTimer.where(id: timer.id)).not_to exist
-      end
+    it "need both switches for a TL4 mini-mod" do
+      group.add(tl4_user)
+      SiteSetting.mini_mod_can_reopen_topics = true
+      expect(run_open_timer(closed_topic, tl4_user)).to eq(false)
 
-      it "destroys the timer when only the mini_mod gate is open (TL4 still blocks)" do
-        skip PENDING_OPEN_TOPIC_GUARD
-        SiteSetting.mini_mod_can_reopen_topics = true
-        timer = schedule_open_timer_for(closed_topic, tl4_mini_mod)
-        described_class.new.execute(topic_timer_id: timer.id)
-        expect(closed_topic.reload.closed).to eq(true)
-      end
+      closed_topic.update!(closed: true)
+      SiteSetting.tl4_can_reopen_topics = true
+      expect(run_open_timer(closed_topic, tl4_user)).to eq(true)
+    end
+  end
 
-      it "destroys the timer when only the tl4 gate is open (mini_mod still blocks)" do
-        skip PENDING_OPEN_TOPIC_GUARD
-        SiteSetting.tl4_can_reopen_topics = true
-        timer = schedule_open_timer_for(closed_topic, tl4_mini_mod)
-        described_class.new.execute(topic_timer_id: timer.id)
-        expect(closed_topic.reload.closed).to eq(true)
-      end
+  describe "requests" do
+    it "refuse reopening through the status endpoint" do
+      sign_in(tl4_user)
+      put "/t/#{closed_elsewhere.id}/status.json", params: { status: "closed", enabled: "false" }
+      expect(response.status).to eq(403)
+      expect(closed_elsewhere.reload.closed).to eq(true)
+    end
 
-      it "reopens the topic when both gates are open" do
-        SiteSetting.mini_mod_can_reopen_topics = true
-        SiteSetting.tl4_can_reopen_topics = true
-        timer = schedule_open_timer_for(closed_topic, tl4_mini_mod)
-        described_class.new.execute(topic_timer_id: timer.id)
-        expect(closed_topic.reload.closed).to eq(false)
-      end
+    it "refuse scheduling an open timer" do
+      sign_in(tl4_user)
+      post "/t/#{closed_elsewhere.id}/timer.json", params: { time: 24, status_type: "open" }
+      expect(response.status).to eq(403)
+      expect(TopicTimer.where(topic: closed_elsewhere)).not_to exist
+    end
+
+    it "still let a TL4 user close a topic, with its small action post" do
+      open_topic = Fabricate(:topic, category: other_category)
+      Fabricate(:post, topic: open_topic)
+      sign_in(tl4_user)
+      put "/t/#{open_topic.id}/status.json", params: { status: "closed", enabled: "true" }
+      expect(response.status).to eq(200)
+      expect(open_topic.reload.closed).to eq(true)
+      expect(open_topic.posts.where(action_code: "closed.enabled")).to exist
     end
   end
 end

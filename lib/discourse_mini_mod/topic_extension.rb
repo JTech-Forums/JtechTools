@@ -1,29 +1,34 @@
 # frozen_string_literal: true
 
 module DiscourseMiniMod
-  # When a mini-mod closes a topic, TopicStatusUpdater synchronously creates a
-  # "@user closed this topic" small action post via Topic#add_moderator_post.
-  # By the time PostCreator runs its Guardian check, the topic has already been
-  # marked closed, so our can_create_post_on_topic? override blocks the small
-  # action post creation and the topic ends up closed but missing its
-  # announcement line.
+  # Closing a topic creates the "closed this topic" small-action post after
+  # the topic is already closed, so the closed-topic posting restriction
+  # would block that bookkeeping post and the topic would close silently.
+  # The user already passed the close permission check, so the post goes
+  # through for anyone the restriction covers (TL4 users and mini-mods).
   #
-  # The user already passed the operational permission check
-  # (ensure_can_close_topic! -> can_close_topic?) before reaching this method,
-  # so the Guardian check on the bookkeeping post is redundant. We pass
-  # skip_guardian: true on add_moderator_post for non-staff mini-mods so the
-  # small action post always lands.
+  # Also refuses "open" timers from users who may not reopen the topic.
   module TopicExtension
     def add_moderator_post(user, text, opts = nil)
       opts = (opts || {}).dup
 
-      if !opts.key?(:skip_guardian) && DiscourseMiniMod.enabled? &&
-           !SiteSetting.mini_mod_can_post_in_closed_topics && user.present? && !user.staff? &&
-           category.present? && Guardian.new(user).is_category_group_moderator?(category)
+      if !opts.key?(:skip_guardian) && user.present? &&
+           Guardian.new(user).mini_mod_closed_post_restricted?(self)
         opts[:skip_guardian] = true
       end
 
       super(user, text, opts)
+    end
+
+    # An "open" timer is a delayed reopen; users barred from reopening can't
+    # schedule one (clearing an existing timer is still fine).
+    def set_or_create_timer(status_type, time, by_user: nil, **opts)
+      creating = time.present? || opts[:duration_minutes].present?
+      if creating && status_type == TopicTimer.types[:open] && by_user &&
+           Guardian.new(by_user).mini_mod_reopen_restricted?(self)
+        raise Discourse::InvalidAccess
+      end
+      super
     end
   end
 end

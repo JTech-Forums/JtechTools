@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe "Bulk topic category change for mini-mods" do
-  fab!(:user)
+  fab!(:user) { Fabricate(:user, refresh_auto_groups: true) }
   fab!(:group)
   fab!(:source_category, :category)
   fab!(:target_category, :category)

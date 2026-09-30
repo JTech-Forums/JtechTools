@@ -40,10 +40,10 @@ A private one-room chat inside Discourse for staff (or any groups you allow), mi
 - Every one of these rights is its own toggle.
 
 ### Mini-mod
-Gives category moderators (people who moderate a category through a group) extra powers normally reserved for staff: create/edit categories, edit and move topics, manage tags, etc. Each power is a separate switch.
+Gives category moderators (people who moderate a category through a group) extra powers normally reserved for staff: create/edit categories, edit and move topics, manage tags, etc. Each power is a separate switch. They never reach a category they can't see, never delete categories, and can't change a category's security or moderators (new subcategories copy their parent's). It can also take away closing/reopening and posting in closed topics from category moderators and TL4 users.
 
 ### Dislike (phantom reactions)
-In categories you pick, likes stop mattering: they're hidden from history, don't count toward leaderboards, and the like notification is quietly removed. Optionally hide the like button entirely or allow it only for certain groups.
+In categories you pick, likes (and discourse-reactions reactions) stop mattering: the author isn't notified, they leave no "Likes Given/Received" history, and they don't count toward likes given/received in the user directory and on profiles. Each of those is its own switch. Optionally hide the like button entirely or allow it only for certain groups. The like count on the post itself, badges and trust levels are core's and still see the likes. **Purge phantom likes** (on the Dislike tab) applies the settings to likes made before a category was restricted.
 
 ### Smart search
 When a search finds too little, it quietly retries with synonyms (English dictionary + a short list of tech abbreviations like `js`/`javascript`, `k8s`/`kubernetes`) and merges the results. Runs locally, no API keys. If anything goes wrong you just get normal search results.
@@ -66,7 +66,7 @@ A light version of the forum at `/dumb` for flip phones, KaiOS and old Android b
 - Settings: **Admin → Plugins → Jtech Tools → Dumbcourse**.
 
 ### Another SMTP
-Send forum email through a different mail server than the one in `app.yml` — host, port, TLS, login, and optional "from" address rewriting, all from admin settings.
+Send forum email through a different mail server than the one in `app.yml` — host, port, TLS, login, and optional "from" address rewriting, all from admin settings. Mail sent from a group's own inbox (group SMTP) keeps using that group's server. Test it with **Send test email** under Admin → Email; the dashboard warns if the relay is on without an address.
 
 ### Translator tweaks
 Small fixes on top of the official Translator plugin (better foreign-language detection, backfill for old posts).
