@@ -4,6 +4,7 @@
 
 import { onMediaChange, prefersLight, prefersReducedMotion } from "./compat.ts";
 import { settings } from "./config.ts";
+import type { Key } from "./keys.ts";
 import { getJson, getRaw, removeRaw, setJson } from "./storage.ts";
 
 export type Theme = "auto" | "light" | "dark";
@@ -21,6 +22,8 @@ export interface Prefs {
   live: boolean;
   defaultView: string;
   hints: boolean;
+  // Keys taught on the Phone keys screen: key signature → key.
+  keymap: Record<string, Key>;
 }
 
 const KEY = "prefs";
@@ -42,6 +45,7 @@ function defaults(): Prefs {
     live: true,
     defaultView: "",
     hints: true,
+    keymap: {},
   };
 }
 

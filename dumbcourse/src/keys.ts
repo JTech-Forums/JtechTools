@@ -1,6 +1,8 @@
 // Normalises key presses across engines: modern `key` names, the older
-// "Up"/"Down" spellings, keyCode-only engines, KaiOS soft keys and the
-// phone keypad (0–9, *, #).
+// "Up"/"Down" spellings, `code`-only and keyCode-only engines, KaiOS soft
+// keys and the phone keypad (0–9, *, #). Phones whose soft keys arrive
+// under some other name can be taught them (see views/phone-keys.ts);
+// those custom keys are checked first.
 
 export type Key =
   | "up"
@@ -44,10 +46,13 @@ const BY_KEY: Record<string, Key> = {
   Escape: "escape",
   Esc: "escape",
   SoftLeft: "softleft",
+  Soft1: "softleft",
   F1: "softleft",
   SoftRight: "softright",
+  Soft2: "softright",
   F2: "softright",
   ContextMenu: "menu",
+  Menu: "menu",
   "*": "*",
   "#": "#",
   "?": "?",
@@ -65,15 +70,78 @@ const BY_CODE: Record<number, Key> = {
   113: "softright",
   93: "menu",
   106: "*",
+  // Gecko (KaiOS) keyCodes for the keypad's * and #.
+  170: "*",
+  163: "#",
 };
 
-export function keyOf(e: KeyboardEvent): Key | null {
-  if (e.ctrlKey || e.metaKey || e.altKey) return null;
+// Physical key codes, for engines that report `code` but no usable `key`.
+const BY_DOM_CODE: Record<string, Key> = {
+  ArrowUp: "up",
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  Enter: "enter",
+  NumpadEnter: "enter",
+  Backspace: "back",
+  BrowserBack: "back",
+  Escape: "escape",
+  F1: "softleft",
+  F2: "softright",
+  ContextMenu: "menu",
+  NumpadMultiply: "*",
+};
+
+let custom: Record<string, Key> = {};
+
+// Keys taught on this phone: signature (see keySignature) → key.
+export function setCustomKeys(map: Record<string, Key> | null): void {
+  custom = map || {};
+}
+
+// A stable name for the physical key behind an event, or null when the
+// engine gives nothing to tell it apart from other keys.
+export function keySignature(e: KeyboardEvent): string | null {
   const name = e.key;
-  if (name && name !== "Unidentified") {
+  if (name && name !== "Unidentified" && name !== "Process" && name !== "Dead")
+    return "key:" + name;
+  if (e.code) return "code:" + e.code;
+  const n = e.keyCode || e.which;
+  if (n && n !== 229) return "kc:" + n;
+  return null;
+}
+
+// Some Android browsers send keydown as an anonymous "229" and only name
+// the key on keyup; such presses are handled on keyup instead.
+export function isDeferred(e: KeyboardEvent): boolean {
+  return (e.keyCode || e.which) === 229 || !keySignature(e);
+}
+
+export function describeSignature(sig: string): string {
+  const i = sig.indexOf(":");
+  const kind = sig.slice(0, i);
+  const value = sig.slice(i + 1);
+  if (kind === "kc") return "Key " + value;
+  return value;
+}
+
+// `typing`: a text field has focus, so taught keys that type a character
+// (say, * taught as a soft key) type it instead.
+export function keyOf(e: KeyboardEvent, typing = false): Key | null {
+  if (e.ctrlKey || e.metaKey || e.altKey) return null;
+  const sig = keySignature(e);
+  const name = e.key;
+  if (sig && custom[sig] && !(typing && name && name.length === 1))
+    return custom[sig];
+  if (name && name !== "Unidentified" && name !== "Process") {
     if (BY_KEY[name]) return BY_KEY[name];
     if (name.length === 1 && name >= "0" && name <= "9") return name as Key;
     return null;
+  }
+  if (e.code) {
+    if (BY_DOM_CODE[e.code]) return BY_DOM_CODE[e.code];
+    const digit = /^(?:Digit|Numpad)(\d)$/.exec(e.code);
+    if (digit) return digit[1] as Key;
   }
   const code = e.keyCode || e.which;
   if (BY_CODE[code]) return BY_CODE[code];

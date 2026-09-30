@@ -37,6 +37,7 @@ import { categoriesRoute } from "./views/categories.ts";
 import { helpRoute } from "./views/help.ts";
 import { bookmarksRoute, draftsRoute, messagesRoute } from "./views/lists.ts";
 import { notificationsRoute } from "./views/notifications.ts";
+import { phoneKeysRoute } from "./views/phone-keys.ts";
 import {
   emailPrefsRoute,
   preferencesRoute,
@@ -80,6 +81,7 @@ route("/preferences", preferencesRoute, { public: true });
 route("/preferences/profile", profilePrefsRoute);
 route("/preferences/email", emailPrefsRoute);
 route("/help", helpRoute, { public: true });
+route("/phone-keys", phoneKeysRoute, { public: true });
 route("/link", linkRoute);
 route("/logout", logoutRoute, { public: true });
 route("/full-site", fullSiteRoute, { public: true });
