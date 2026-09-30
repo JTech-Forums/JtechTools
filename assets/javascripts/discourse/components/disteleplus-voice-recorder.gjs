@@ -181,16 +181,6 @@ export default class DisteleplusVoiceRecorder extends Component {
     return this.errorKey ? i18n(this.errorKey) : "";
   }
 
-  get stageHint() {
-    if (this.isRecording) {
-      return i18n("disteleplus.voice.recording_hint");
-    }
-    if (this.isRequesting) {
-      return i18n("disteleplus.voice.requesting");
-    }
-    return i18n("disteleplus.voice.tap_to_record");
-  }
-
   get recordButtonLabel() {
     return this.isRecording
       ? i18n("disteleplus.voice.stop")

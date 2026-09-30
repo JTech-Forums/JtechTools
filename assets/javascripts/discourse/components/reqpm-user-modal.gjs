@@ -344,9 +344,6 @@ export default class ReqpmUserModal extends Component {
                         kinds=(joinList this.incomingWanted)
                       }}</div>
                   {{/if}}
-                  <div class="reqpm-muted">{{i18n
-                      "reqpm.user_modal.they_asked_hint"
-                    }}</div>
                   <DButton
                     @action={{this.decline}}
                     @label="reqpm.user_modal.no_thanks"
@@ -456,10 +453,6 @@ export default class ReqpmUserModal extends Component {
                 <h3>{{i18n "reqpm.user_modal.your_details"}}</h3>
                 {{#if this.data.can_share}}
                   {{#if this.myMethods.length}}
-                    <p class="reqpm-muted">{{i18n
-                        "reqpm.user_modal.pick_hint"
-                        username=this.username
-                      }}</p>
                     <ul class="reqpm-share-list">
                       {{#each this.shareChoices as |choice|}}
                         <li>
@@ -518,10 +511,6 @@ export default class ReqpmUserModal extends Component {
                       class="btn-flat btn-small reqpm-user-modal__edit-card"
                     />
                   {{else}}
-                    <p class="reqpm-muted">{{i18n
-                        "reqpm.user_modal.no_methods"
-                        username=this.username
-                      }}</p>
                     <ReqpmCardEditor
                       @startAdding={{true}}
                       @onChange={{this.cardChanged}}

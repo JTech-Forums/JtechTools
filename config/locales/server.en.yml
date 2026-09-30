@@ -991,7 +991,7 @@ en:
 
   discourse_mod_categories:
     whisper:
-      first_post_not_allowed: "A new topic can't start with a whisper, or quote a whisper — its title and first post are public. Reply inside an existing topic instead."
+      first_post_not_allowed: "A new topic can't start with or quote a whisper."
       add_participant_needs_whisper: "Choose a whisper post to add the user to."
     note_notification_alert: '%{username} added a moderator note on "%{topic}"'
     note_reply_notification_alert: '%{username} replied to a moderator note on "%{topic}"'
@@ -1003,18 +1003,18 @@ en:
 
   reqpm:
     notifications:
-      request: "wants your contact details — choose what to send"
+      request: "wants your contact details"
       shared: "sent you their contact details"
     errors:
       not_allowed: "REQ-PM isn't available for your account."
       own_session_only: "REQ-PM only works from your own signed-in session."
       self: "That's you!"
       unavailable: "You can't exchange contact details with this member right now."
-      pending: "You already asked this member. They'll get back to you if they want to."
+      pending: "You already asked this member."
       cooldown: "You asked this member recently. You can ask again on %{date}."
       not_found: "That isn't there any more."
       nothing_selected: "Pick at least one way to be reached."
-      invalid_methods: "Some of those contact methods no longer exist. Reload and try again."
+      invalid_methods: "Some of those contact methods no longer exist. Reload the page."
       unreadable: "One of those contact methods needs to be re-entered before you can send it."
       too_many_methods: "You can keep up to %{max} contact methods."
       invalid_field: "%{problem}"

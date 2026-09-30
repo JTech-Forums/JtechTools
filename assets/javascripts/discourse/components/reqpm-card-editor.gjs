@@ -8,7 +8,7 @@ import ConditionalLoadingSpinner from "discourse/components/conditional-loading-
 import DButton from "discourse/components/d-button";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import { i18n } from "discourse-i18n";
-import { eq, not } from "truth-helpers";
+import { eq } from "truth-helpers";
 import { KINDS } from "../lib/reqpm-kinds";
 import ReqpmKindIcon from "./reqpm-kind-icon";
 import ReqpmMethodForm from "./reqpm-method-form";
@@ -222,8 +222,6 @@ export default class ReqpmCardEditor extends Component {
               </li>
             {{/each}}
           </ul>
-        {{else if (not this.editing)}}
-          <p class="reqpm-card-editor__empty">{{i18n "reqpm.editor.empty"}}</p>
         {{/if}}
 
         {{#if this.isPicking}}

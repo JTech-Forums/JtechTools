@@ -2,8 +2,6 @@ en:
   js:
     disteleplus:
       title: Disteleplus
-      subtitle: Telegram bridge · native JTech conversation
-      live: Live
       loading: Loading earlier messages…
       telegram_user: Telegram user
       edited: edited
@@ -14,13 +12,10 @@ en:
       delete: Delete
       delete_confirm: Delete this message here and from Telegram where possible?
       editing: Editing message
-      replying_to: Replying to
       attach: Attach files
       placeholder: Write a message…
       send: Send
-      composer_hint: Enter to send · Shift+Enter for a new line
       empty_title: Start the conversation
-      empty_body: Messages sent here appear in the connected Telegram conversation.
       new_messages:
         one: "%{count} new message"
         other: "%{count} new messages"
@@ -44,7 +39,7 @@ en:
         title:
           one: "%{count} reaction"
           other: "%{count} reactions"
-        remove_hint: Click to remove
+        remove_hint: Remove your reaction
         add: Add reaction
       poll:
         pick_one: Choose one
@@ -76,7 +71,7 @@ en:
           option_placeholder: Option…
           add_option: Add option
           remove_option: Remove option
-          multiple: Allow choosing multiple options
+          multiple: Allow multiple answers
           close_label: Automatically close
           close_none: Never
           close_one_hour: After 1 hour
@@ -112,29 +107,19 @@ en:
       yesterday: Yesterday
       voice:
         button: Record a voice note
-        stop: Stop recording
         title: Voice note
         start: Start recording
         stop: Stop
-        send: Send voice note
-        rerecord: Record again
-        try_again: Try again
-        sending: Sending…
-        requesting: Waiting for microphone permission…
-        tap_to_record: Tap to record
+        requesting: Waiting for the microphone…
         pause: Pause recording
         resume: Resume recording
         caption_placeholder: Add a message…
-        recording_hint: Recording — tap to stop
-        preview_hint: Listen back, then send or record again.
         errors:
-          unsupported: This browser cannot record audio. Try a current Chrome,
-            Firefox, Edge or Safari.
-          denied: Microphone access was blocked. Allow it for this site in your
-            browser's permissions and try again.
-          no_microphone: No microphone was found.
-          recording_failed: Recording failed. Please try again.
-          too_short: That was too short to send. Hold for at least a second.
+          unsupported: This browser can't record audio.
+          denied: Microphone access is blocked for this site.
+          no_microphone: No microphone found.
+          recording_failed: Recording failed.
+          too_short: Too short to send.
       player:
         voice_note: Voice note
         audio: Audio
@@ -156,9 +141,8 @@ en:
       preferences:
         nav: REQ-PM
         title: Your contact card
-        intro: The ways members can reach you. Nobody sees any of it until you send it to them.
         open_hub: Requests and contacts
-        not_yours: Only the member themselves can see or edit their REQ-PM card.
+        not_yours: Only the member can see their card.
       sidebar:
         text: REQ-PM
         title: Request and exchange contact details
@@ -178,55 +162,46 @@ en:
           name: Phone
           short: Phone
           placeholder: "(718) 555-0100"
-          hint: "Numbers without a country code are saved as +%{code}. Outside the US/Canada? Start with + and your country code."
         sms:
           field: Number
           name: Text message
           short: Text
           placeholder: "(718) 555-0100"
-          hint: "The number people can text. Without a country code it's saved as +%{code}."
         whatsapp:
           field: WhatsApp number
           name: WhatsApp
           short: WhatsApp
           placeholder: "(718) 555-0100"
-          hint: "Without a country code it's saved as +%{code}. Outside the US/Canada? Start with + and your country code."
         email:
           field: Address
           name: Email
           short: Email
           placeholder: you@example.com
-          hint: An address you check.
         website:
           field: Link
           name: Website
           short: Website
           placeholder: example.com
-          hint: Only http and https links are allowed.
         telegram:
           field: Username or number
           name: Telegram
           short: Telegram
           placeholder: "@username"
-          hint: Your Telegram username or number.
         signal:
           field: Number or username
           name: Signal
           short: Signal
           placeholder: "+1 718 555 0100 or name.01"
-          hint: Your Signal number or username.
         discord:
           field: Username
           name: Discord
           short: Discord
           placeholder: username
-          hint: Your Discord username.
         custom:
           field: Details
           name: Something else
           short: Other
           placeholder: How people can reach you
-          hint: Give it a name and an emoji — e.g. 🏢 Office, 📟 Pager, 🎙️ Zello.
       contact_list:
         copy: Copy
         copied: Copied
@@ -238,67 +213,62 @@ en:
         note: Note
         optional: (optional)
         note_placeholder: e.g. Evenings only, no calls on Shabbos
-        share_by_default: Tick this one by default when I send my details
+        share_by_default: Select by default when sending
+        country_code_hint: "Saved as +%{code} unless you add a country code."
         add: Add
         save: Save
         cancel: Cancel
       errors:
         generic: Something went wrong. Please try again.
       editor:
-        empty: You haven't added any way to reach you yet.
         pick_title: How can people reach you?
         add_first: Add a way to reach you
         add_another: Add another
-        limit_reached: "You've reached the limit of %{max} contact methods."
+        limit_reached: "Limit of %{max} reached."
         default_pill: default
-        default_title: Ticked by default when you send your details
-        unreadable: This couldn't be read after a server move — please edit it and enter it again.
+        default_title: Selected by default when sending
+        unreadable: Unreadable — edit and enter it again.
         move_up: Move up
         move_down: Move down
         edit: Edit
         delete: Remove
-        delete_confirm: "Remove %{name} from your card? Anyone you sent it to will no longer see it."
+        delete_confirm: "Remove %{name}? Anyone you sent it to will lose it too."
       user_modal:
         title: "REQ-PM with %{username}"
         their_details: Their details
         nothing_yet: "%{username} hasn't sent you any contact details yet."
         forget: Remove from my contacts
-        forget_confirm: "Remove %{username}'s details from your contacts? You'd need to ask again to get them back."
+        forget_confirm: "Remove %{username}'s details? You'd have to ask again."
         what_would_you_like: "Anything in particular? (optional)"
         request: Ask for their details
-        request_sent: "Asked. %{username} decides what, if anything, to send."
-        pending: "You asked on %{date}. It's up to %{username} whether to answer."
+        request_sent: Request sent.
+        pending: "Requested %{date}"
         withdraw: Withdraw request
-        cooldown: "You asked recently. You can ask again on %{date}."
+        cooldown: "You can ask again on %{date}."
         unavailable: "%{username} can't be asked for contact details right now."
         they_asked: "%{username} asked for your contact details"
         they_would_like: "They'd like: %{kinds}"
-        they_asked_hint: Tick what you're happy to send, or say no thanks — they won't be told.
         no_thanks: No thanks
-        declined: Request dismissed. They won't be told.
+        declined: Request dismissed.
         your_details: Your details
-        pick_hint: "Tick what %{username} may see. You can change it any time."
         send: Send selected
         update_share: Update what they see
         shared: Sent.
         stop_sharing: Stop sharing
-        stop_confirm: "Stop sharing your contact details with %{username}? They won't be told."
+        stop_confirm: "Stop sharing your details with %{username}?"
         stopped: "%{username} can no longer see your details."
         edit_card: Edit my card
-        no_methods: "Add a way to reach you first — then choose what %{username} can see."
         cannot_share: "You can't send contact details to %{username} right now."
         close: Close
       setup:
         title: Your contact card
-        lead: There are no private messages here — members swap contact details instead. Add a way to be reached; you choose who sees it.
-        point_private: Your details are encrypted, never shown publicly, and staff can't view them on the forum.
+        lead: Private messages are off here. Members swap contact details instead, and only people you choose see yours.
         done: All set
         later: Remind me later
         never: I'd rather not
-        required_note: Add at least one way to reach you to continue.
+        required_note: Add one to continue.
         log_out: Log out
       hub:
-        subtitle: Contact details you've exchanged with other members.
         tabs:
           requests: Requests
           contacts: Contacts
@@ -315,16 +285,13 @@ en:
           expired: Expired
         open: Open
         no_outgoing: You haven't asked anyone yet.
-        how_to_request: To ask someone, click their avatar or name anywhere on the forum and press REQ-PM.
+        how_to_request: Ask someone from their user card.
         filter: Filter by name…
         shared: shared
         send_yours: Send yours
         no_match: No one matches that.
         no_contacts: No one has sent you their details yet.
-        privacy_short: Encrypted, never public, and staff can't view it on the forum. You can take back anything you sent at any time.
         allow_requests: Let members request my contact details
-        allow_requests_hint: When off, nobody can send you a request. You can still send your details to people yourself.
-        shared_intro: These members can see some of your details. Change what they see or stop sharing any time.
         change: Change
         no_shared: You haven't sent your details to anyone yet.
     jtech_popup_notifications:
@@ -357,8 +324,6 @@ en:
         generic: Sent you a notification
       preference:
         title: Desktop Pop Up Notifications
-        instructions: Show a small pop-up card in the top-right corner when you
-          receive a new notification. Desktop only — this never appears on mobile.
         # NB: "on"/"off" MUST be quoted — YAML parses bare on/off as booleans,
         # which would make these i18n keys unreachable.
         "on": "On"
@@ -371,7 +336,6 @@ en:
           one: "%{count} reader"
           other: "%{count} readers"
         nobody: No logged-in readers yet
-        anon_note: Logged-in readers only — anonymous visitors leave no per-post trace.
       precheck:
         title: Before you post
         confirm: Post anyway
@@ -379,12 +343,7 @@ en:
       topic_prompt_checklist:
         menu_label: Prompt Checklist
         title: Prompt Checklist for this topic
-        intro: Users replying to this topic see a confirmation before their reply
-          is allowed through. Saving bumps the version, so any user who already accepted
-          is re-prompted.
         loading: Loading…
-        inactive: Inactive — no items in checklist mode (or blank statement in statement
-          mode) means replies are not gated.
         current_version: 'Current version: %{count}'
         item_label: Checkbox text
         item_url: Link URL (optional)
@@ -398,34 +357,21 @@ en:
         saved_toast: Topic prompt checklist saved
         cleared_toast: Topic prompt checklist cleared
         mode_label: Mode
-        mode_statement: Statement — one message, single accept button
-        mode_checklist: Checklist — multiple items, all must be ticked
         mode_title_statement: Statement
-        mode_desc_statement: One message, single accept button
         mode_title_checklist: Checklist
-        mode_desc_checklist: Multiple items, all must be ticked
         statement_label: Statement text
-        statement_placeholder: Write the confirmation message users see before their
-          reply is allowed through. Markdown is supported.
+        statement_placeholder: Markdown supported
         frequency_label: Show this prompt
         frequency_once: Once per user per topic
         frequency_every_reply: On every reply
         max_tl_label: Show this prompt to
-        legacy_migration_notice: This topic has an older reply-prompt set under "Moderator
-          Actions". It has been pre-filled below in Statement mode — review and click
-          Save to migrate.
+        legacy_migration_notice: Loaded from this topic's old reply prompt. Save to keep it.
       topic_messages:
         menu_label: Moderator Actions
         title: Moderator Actions for this topic
         footer_label: Pinned footer message
-        footer_hint: Shown in a banner at the bottom of this topic. Leave blank for
-          none.
         approval_label: Require approval for replies
-        approval_hint: When on, replies to this topic go to the review queue for a
-          moderator to approve. Staff replies are posted directly.
         note_label: Private moderator note
-        note_hint: Visible only to staff on this topic — never shown to regular users.
-          Leave blank for none.
         note_position_label: Show the note
         note_position_top: At the top of the topic
         note_position_bottom: At the bottom of the topic
@@ -530,9 +476,8 @@ en:
         tl3: Up to regulars (TL0 to TL3)
       first_post_checklist:
         modal_title: Before you post
-        intro: Please confirm each item below before posting for the first time.
         progress: "%{checked} of %{total} confirmed"
-        all_done: All set — you're good to go!
+        all_done: All confirmed
         last_updated: 'Last updated:'
         confirm: I agree, post
         cancel: Cancel
@@ -543,11 +488,7 @@ en:
         log_kind_all: All checklists
         log_kind_global: Global
         log_kind_topic: Topic prompt
-        editor_intro: New members must tick every item below before they can post.
-          Saving changes re-prompts everyone who already accepted.
         loading: Loading…
-        inactive: Inactive — with no items, users are not prompted. Add an item below
-          to start the checklist.
         item_label: Checkbox text
         item_url: Link URL (optional)
         add_item: Add item
@@ -556,7 +497,6 @@ en:
         move_down_item: Move item down
         save: Save checklist
         saved: Saved
-        empty: No items yet. Add one to start the checklist.
         audience_label: Who must accept before their next post
         button_label_label: Accept button text
         button_label_placeholder: I agree, post
@@ -572,9 +512,6 @@ en:
         require_reaccept: Require re-accept
         reaccept_done: '%{username} will be prompted again on their next post'
         targeted_title: Targeted checklists
-        targeted_intro: Separate checklists aimed at specific users. A targeted checklist
-          is always shown to its listed users — regardless of trust level or staff
-          status.
         targeted_add: Add targeted checklist
         targeted_name_label: Name
         targeted_users_label: Target users
@@ -583,8 +520,6 @@ en:
         targeted_saved: Targeted checklist saved
       category_settings:
         new_topic_prompt_label: Before-new-topic prompt
-        new_topic_prompt_hint: Shown as a confirmation when someone starts a new topic
-          in this category. Leave blank for none.
         preview_label: Preview
         save: Save message
         saved: Saved
@@ -596,11 +531,7 @@ en:
       whisper:
         toolbar_title: Whisper this reply
         modal_title: Whisper to users, groups, or badges
-        modal_instructions: Choose up to 10 users or groups who should see this reply.
-          Staff always see whispers.
-        modal_badge_instructions: Optionally also include everyone who currently holds one of these badges.
-          Membership is checked when the post is viewed, so future grants and
-          revokes update the audience automatically.
+        badge_label: Badge holders (optional)
         search_placeholder: Search for a user or group…
         badge_search_placeholder: Search for a badge…
         confirm: Whisper
@@ -614,14 +545,12 @@ en:
         convert_to_public:
           label: Convert to public post
           title: Remove the whisper status from this post so everyone can see it
-          confirm: Convert this whisper into a normal public post? Everyone who can read the topic will be able to see it.
+          confirm: Make this whisper public? Everyone who can read the topic will see it.
           done_toast: Converted to a public post
           failed_toast: Could not convert this post
         add_participant:
           menu_label: Add user to whisper
           modal_title: Add users to this whisper
-          modal_instructions: Choose the users to add to this whisper. They will see this
-            whisper and replies that keep its audience — not other whispers in the topic.
           search_placeholder: Search for a user…
           confirm: Add to whisper
           cancel: Cancel
@@ -631,9 +560,6 @@ en:
       pm_badge:
         button: Add badge group
         modal_title: Add badge holders as recipients
-        modal_instructions: Pick a badge. Every user who currently holds it
-          will be added as a recipient. The list is captured at send time,
-          so future badge changes don't affect this conversation.
         search_placeholder: Search for a badge…
         none: Choose a badge…
         confirm: Add recipients
@@ -662,9 +588,6 @@ en:
       jtech_tools:
         actions:
           title: Maintenance actions
-          hint: These run immediately as background jobs. Progress and results
-            appear in /logs under the [jtech-tools] tags; delivery failures
-            also surface on the admin dashboard.
           register_webhook:
             label: Register Telegram webhook
             confirm: This calls Telegram's setWebhook with this forum's webhook
@@ -673,16 +596,16 @@ en:
             done: Webhook registration queued.
           send_test_message:
             label: Send test message
-            done: Test message queued — check the bridged Telegram group.
+            done: Test message queued.
           sync_notifications:
             label: Sync channel notifications
-            done: Notification enrolment queued for every eligible member.
+            done: Notification sync queued.
           measure_forum_uploads:
             label: Measure upload archive
             confirm: This scans every eligible post for attachments and writes
               the totals to /logs. It sends nothing to Telegram. Run the
               measurement now?
-            done: Measurement queued — results land in /logs.
+            done: Measurement queued.
           backfill_forum_uploads:
             label: Start upload backfill
             confirm: This starts (or restarts from the beginning) copying

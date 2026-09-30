@@ -1503,7 +1503,6 @@ export default class DisteleplusConversation extends Component {
           <div class="disteleplus-empty">
             {{icon "comments"}}
             <h2>{{i18n "disteleplus.empty_title"}}</h2>
-            <p>{{i18n "disteleplus.empty_body"}}</p>
           </div>
         {{/each}}
       </div>

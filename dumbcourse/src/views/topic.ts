@@ -32,7 +32,6 @@ import type { Post, Topic } from "../types.ts";
 import { icon } from "../ui/icons.ts";
 import {
   actionSheet,
-  alertDialog,
   confirmDialog,
   promptDialog,
   toast,
@@ -218,9 +217,7 @@ function paintTopic(
               ${icon("reply")}Reply
             </button>`
           : t.closed
-            ? html`<p class="notice">
-                ${icon("lock")} This topic is closed for new replies.
-              </p>`
+            ? html`<p class="notice">${icon("lock")} Closed</p>`
             : ""}
         <div id="suggested"></div>
       </div>`
@@ -492,33 +489,37 @@ function wireTopic(
     );
   };
 
-  const edit = (p: Post) => {
-    get<{ raw?: string }>(`/posts/${p.id}.json`).then(
-      (d) =>
+  const edit = (p: { id: number; post_number?: number }) => {
+    get<{ raw?: string; post_number?: number }>(`/posts/${p.id}.json`).then(
+      (d) => {
+        const n = p.post_number || (d && d.post_number) || 0;
         openComposer({
           kind: "edit",
           topicId: t.id,
           topicTitle: decodeEntities(t.fancy_title || t.title),
           postId: p.id,
-          postNumber: p.post_number,
+          postNumber: n,
           raw: (d && d.raw) || "",
           categoryId: t.category_id || null,
           editTitle:
-            p.post_number === 1 && !!(t.details && t.details.can_edit)
+            n === 1 && !!(t.details && t.details.can_edit)
               ? decodeEntities(t.title)
               : null,
           onSaved: () => {
             void refreshPost(p.id);
-            if (p.post_number === 1) invalidate(`/t/${t.id}`);
+            if (n === 1) invalidate(`/t/${t.id}`);
           },
-        }),
+        });
+      },
       (e: unknown) => toast(errorMessage(e), "error")
     );
   };
 
   s.act("reply-topic", () => reply(null));
-  // Arriving from Drafts: reopen the saved reply.
+  // Arriving from Drafts: reopen the saved reply or edit.
   if (ctx.query.compose === "1") requestAnimationFrame(() => reply(null));
+  const editId = parseInt(ctx.query.edit || "", 10);
+  if (editId > 0) requestAnimationFrame(() => edit({ id: editId }));
   s.act("reply-post", (el) => reply(postFrom(el)));
 
   // ── Likes & reactions ───────────────────────────────────────────────
@@ -641,11 +642,7 @@ function wireTopic(
               flag_topic: false,
               message: message || undefined,
             }).then(
-              () =>
-                alertDialog(
-                  "Thanks — a moderator will take a look.",
-                  "Flag sent"
-                ),
+              () => toast("Flagged.", "success"),
               (e: unknown) => toast(errorMessage(e), "error")
             );
           if (f.require_message || f.is_custom_flag) {
@@ -813,7 +810,7 @@ function wireTopic(
     }
     if (p.reply_to_post_number)
       items.push({
-        label: `Go to #${p.reply_to_post_number}, the post it replies to`,
+        label: `In reply to #${p.reply_to_post_number}`,
         icon: "jump",
         run: () => jumpTo(p.reply_to_post_number as number),
       });

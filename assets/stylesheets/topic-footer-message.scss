@@ -54,12 +54,6 @@
     font-weight: 700;
   }
 
-  .mod-messages-hint {
-    margin: 0.15em 0 0.4em;
-    color: var(--primary-medium);
-    font-size: var(--font-down-1);
-  }
-
   textarea {
     width: 100%;
     box-sizing: border-box;
@@ -404,12 +398,6 @@
     font-weight: 700;
   }
 
-  .mod-messages-hint {
-    margin: 0.15em 0 0.4em;
-    color: var(--primary-medium);
-    font-size: var(--font-down-1);
-  }
-
   textarea {
     width: 100%;
     box-sizing: border-box;
@@ -431,11 +419,6 @@
 .mod-first-post-checklist-modal {
   .d-modal__container {
     max-width: 34rem;
-  }
-
-  .mod-checklist-intro {
-    margin: 0 0 0.75em;
-    color: var(--primary-high);
   }
 
   // Slim progress bar + "n of m confirmed" counter.
@@ -630,15 +613,6 @@
   margin: 1em auto;
   padding: 0 1em;
 
-  .mod-checklist-editor-intro {
-    color: var(--primary-medium);
-  }
-
-  .mod-checklist-empty {
-    color: var(--primary-medium);
-    font-style: italic;
-  }
-
   .mod-checklist-editor-actions {
     display: flex;
     align-items: center;
@@ -790,25 +764,12 @@
       background: var(--primary-very-low);
     }
   }
-
-  .mod-checklist-inactive,
-  .mod-topic-prompt-checklist-inactive {
-    margin: 0.75em 0;
-    padding: 0.85em 1em;
-    border: 1px dashed var(--primary-low-mid, var(--primary-low));
-    border-radius: var(--d-border-radius, 6px);
-    color: var(--primary-medium);
-  }
 }
 
 // Modal-only pieces: segmented mode toggle, statement textarea, notices.
 .mod-topic-prompt-checklist-modal {
   .d-modal__container {
     max-width: 40rem;
-  }
-
-  .mod-topic-prompt-checklist-intro {
-    color: var(--primary-medium);
   }
 
   .mod-topic-prompt-checklist-legacy-notice {
@@ -829,9 +790,8 @@
 
     button {
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.15em;
+      align-items: center;
+      gap: 0.5em;
       padding: 0.7em 0.85em;
       border: 1px solid var(--primary-low);
       border-radius: var(--d-border-radius, 6px);
@@ -842,7 +802,6 @@
 
       .d-icon {
         color: var(--primary-medium);
-        margin-bottom: 0.2em;
       }
 
       &:hover {
@@ -861,11 +820,6 @@
 
     &__title {
       font-weight: 700;
-    }
-
-    &__desc {
-      color: var(--primary-medium);
-      font-size: var(--font-down-1);
     }
   }
 
@@ -1061,14 +1015,6 @@
     margin: 0;
     padding: 0;
   }
-}
-
-.mod-checklist-inactive {
-  margin: 0.6em 0;
-  padding: 0.6em 0.8em;
-  border-left: 3px solid var(--danger);
-  background: var(--danger-low);
-  border-radius: 0 4px 4px 0;
 }
 
 .mod-checklist-version {

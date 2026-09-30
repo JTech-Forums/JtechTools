@@ -128,7 +128,7 @@ RSpec.describe "Moderator whisper" do
 
       whisper_toolbar_button.click
       expect(page).to have_css(".mod-whisper-target-modal", wait: 10)
-      expect(page).to have_css(".mod-whisper-target-modal__instructions")
+      expect(page).to have_css(".mod-whisper-target-modal .email-group-user-chooser")
       shot("63_whisper_target_modal_empty")
 
       chooser =

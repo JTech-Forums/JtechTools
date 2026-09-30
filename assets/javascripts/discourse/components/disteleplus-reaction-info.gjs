@@ -36,6 +36,10 @@ export default class DisteleplusReactionInfo extends Component {
     });
   }
 
+  get removeHint() {
+    return i18n("disteleplus.reaction_info.remove_hint");
+  }
+
   get totalCount() {
     return (this.message.reactions || []).reduce(
       (sum, reaction) => sum + (reaction.count || 0),
@@ -137,6 +141,7 @@ export default class DisteleplusReactionInfo extends Component {
               <button
                 type="button"
                 class={{if row.mine "is-mine"}}
+                title={{if row.mine this.removeHint}}
                 disabled={{unless row.mine "disabled"}}
                 {{on "click" (fn this.rowClick row)}}
               >
@@ -147,11 +152,6 @@ export default class DisteleplusReactionInfo extends Component {
                   <span class="disteleplus-reaction-info__name">
                     {{row.name}}
                   </span>
-                  {{#if row.mine}}
-                    <span class="disteleplus-reaction-info__hint">
-                      {{i18n "disteleplus.reaction_info.remove_hint"}}
-                    </span>
-                  {{/if}}
                 </span>
                 {{#if row.at}}
                   <span class="disteleplus-reaction-info__when">

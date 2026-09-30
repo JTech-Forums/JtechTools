@@ -81,7 +81,6 @@ export default class ModPmBadgePicker extends Component {
       class="mod-pm-badge-picker-modal"
     >
       <:body>
-        <p>{{i18n "discourse_mod_categories.pm_badge.modal_instructions"}}</p>
         <ComboBox
           @value={{this.selectedBadgeId}}
           @content={{this.badgeChoices}}

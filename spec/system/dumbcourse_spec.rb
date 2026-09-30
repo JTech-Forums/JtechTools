@@ -329,8 +329,8 @@ RSpec.describe "Dumbcourse" do
         find("a", text: "Contact details").click
         expect(page).to have_css("[data-act=ask]")
         find("[data-act=ask]").click
-        expect(page).to have_css(".toast", text: "Asked.")
-        expect(page).to have_css(".notice", text: "It's up to alice_k")
+        expect(page).to have_css(".toast", text: "Request sent.")
+        expect(page).to have_css(".notice", text: "Requested")
       end
       expect(DiscourseReqpm::Request.where(requester_id: bob.id, target_id: alice.id)).to exist
     end

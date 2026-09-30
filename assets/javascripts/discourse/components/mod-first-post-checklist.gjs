@@ -176,9 +176,6 @@ export default class ModFirstPostChecklist extends Component {
             </p>
           {{/if}}
         {{else}}
-          <p class="mod-checklist-intro">
-            {{i18n "discourse_mod_categories.first_post_checklist.intro"}}
-          </p>
           <div class="mod-checklist-progress {{if this.allChecked 'is-done'}}">
             <div class="mod-checklist-progress__bar">
               <span style={{this.progressStyle}}></span>

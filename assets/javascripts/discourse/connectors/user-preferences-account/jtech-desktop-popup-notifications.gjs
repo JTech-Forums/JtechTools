@@ -68,9 +68,6 @@ export default class JtechDesktopPopupNotifications extends Component {
             @value={{this.enabled}}
             @onChange={{this.onChange}}
           />
-          <div class="instructions">
-            {{i18n "jtech_popup_notifications.preference.instructions"}}
-          </div>
         </div>
       </div>
     {{/if}}

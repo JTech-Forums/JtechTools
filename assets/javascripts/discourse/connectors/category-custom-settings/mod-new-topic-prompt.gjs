@@ -94,11 +94,6 @@ export default class ModNewTopicPrompt extends Component {
           "discourse_mod_categories.category_settings.new_topic_prompt_label"
         }}
       </label>
-      <p class="mod-messages-hint">
-        {{i18n
-          "discourse_mod_categories.category_settings.new_topic_prompt_hint"
-        }}
-      </p>
       <textarea
         class="mod-new-topic-prompt-input"
         rows="3"

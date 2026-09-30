@@ -74,11 +74,6 @@ export default class ModWhisperAddParticipantModal extends Component {
       class="mod-whisper-add-participant-modal"
     >
       <:body>
-        <p class="mod-whisper-add-participant-modal__instructions">
-          {{i18n
-            "discourse_mod_categories.whisper.add_participant.modal_instructions"
-          }}
-        </p>
         <EmailGroupUserChooser
           @value={{this.selection}}
           @onChange={{this.updateSelection}}

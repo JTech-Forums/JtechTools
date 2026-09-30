@@ -63,9 +63,6 @@ export default class ModPostViewers extends Component {
             {{i18n "discourse_mod_categories.post_viewers.nobody"}}
           </p>
         {{/if}}
-        <p class="mod-post-viewers__note">
-          {{i18n "discourse_mod_categories.post_viewers.anon_note"}}
-        </p>
       </:body>
     </DModal>
   </template>

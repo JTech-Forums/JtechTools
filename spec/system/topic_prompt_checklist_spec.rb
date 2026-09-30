@@ -69,7 +69,7 @@ RSpec.describe "Per-topic prompt checklist" do
 
     find(".mod-topic-prompt-checklist-button").click
     expect(page).to have_css(".mod-topic-prompt-checklist-modal", wait: 10)
-    expect(page).to have_css(".mod-topic-prompt-checklist-inactive", wait: 10)
+    expect(page).to have_css(".mod-checklist-mode-toggle", wait: 10)
     shot("173_topic_prompt_checklist_modal_empty")
 
     find(".mod-checklist-add-inline").click

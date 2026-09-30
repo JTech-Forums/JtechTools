@@ -93,13 +93,13 @@ function busy(btn: HTMLElement | null, on: boolean, label?: string): void {
   }
 }
 
-function brand(sub: string): SafeHtml {
+function brand(sub = ""): SafeHtml {
   return html`<div class="auth-brand">
     ${settings.siteIcon
       ? html`<img src="${settings.siteIcon}" alt="" width="40" height="40" />`
       : icon("chat")}
     <h1>${settings.siteTitle}</h1>
-    <p>${sub}</p>
+    ${sub ? html`<p>${sub}</p>` : ""}
   </div>`;
 }
 
@@ -174,7 +174,7 @@ export function loginRoute(ctx: RouteContext): void {
 
   s.render(
     html`<section class="auth">
-      ${brand("Sign in to join the conversation.")}
+      ${brand()}
       <p
         id="authError"
         class="notice error"
@@ -215,8 +215,7 @@ export function loginRoute(ctx: RouteContext): void {
                   inputmode="numeric"
                   autocomplete="one-time-code"
                   maxlength="16"
-                />`,
-                "From your authenticator app, or a backup code."
+                />`
               )}
             </div>
             <button type="submit" class="btn primary block" data-login-btn>
@@ -307,7 +306,7 @@ export function loginRoute(ctx: RouteContext): void {
               d.security_key_enabled
             ) {
               showError(
-                "This account signs in with a security key, which this browser can't use. Sign in on the full site, or use Sign in with another device."
+                "Security keys don't work in this browser. Use Sign in with another device."
               );
               return;
             }
@@ -322,9 +321,7 @@ export function loginRoute(ctx: RouteContext): void {
             return;
           }
           if (d.reason === "not_activated") {
-            showError(
-              "Your account isn't activated yet. Check your email for the activation link."
-            );
+            showError("Account not activated yet. Check your email.");
             offerResend(login);
             return;
           }
@@ -401,7 +398,7 @@ export function emailLinkRoute(ctx: RouteContext): void {
   s.title("Email a sign-in link", { back: true });
   s.render(
     html`<section class="auth">
-      ${brand("We'll email you a link. Open it on this phone to sign in.")}
+      ${brand()}
       <p
         id="authError"
         class="notice error"
@@ -445,7 +442,7 @@ export function emailLinkRoute(ctx: RouteContext): void {
       (d) => {
         if (d && d.error) return showError(d.error);
         void alertDialog(
-          "If that account exists, a sign-in link is on its way. Open it on this phone.",
+          "If that account exists, a link is on its way.",
           "Check your email"
         );
       },
@@ -480,7 +477,7 @@ export function emailLoginTokenRoute(ctx: RouteContext): Promise<void> {
       if (!info.can_login) {
         s.render(
           html`<section class="auth">
-            ${brand("")}
+            ${brand()}
             <p class="notice error">
               ${info.error || "This link has expired or was already used."}
             </p>
@@ -495,7 +492,7 @@ export function emailLoginTokenRoute(ctx: RouteContext): Promise<void> {
       if (info.security_key_required && !info.backup_enabled) {
         s.render(
           html`<section class="auth">
-            ${brand("")}
+            ${brand()}
             <p class="notice error">
               This account needs a security key, which this browser can't use.
               Open the link on a computer, or use Sign in with another device.
@@ -569,7 +566,7 @@ export function emailCodeRoute(ctx: RouteContext): void {
   s.title("Email me a code", { back: true });
   s.render(
     html`<section class="auth">
-      ${brand("We'll email a 6-digit code. Type it here — no password needed.")}
+      ${brand()}
       <p
         id="authError"
         class="notice error"
@@ -689,9 +686,7 @@ export function emailCodeRoute(ctx: RouteContext): void {
         }
         if (d && d.error) return showError(String(d.error));
         if (d && (d.user_fields_required || d.name_required)) {
-          return showError(
-            "New accounts need a few more details — please use Create an account."
-          );
+          return showError("Finish signing up with Create an account.");
         }
         finishLogin(ctx);
       },
@@ -738,11 +733,9 @@ export function pairRoute(ctx: RouteContext): Promise<void> {
       let left = d.expires_in;
       s.render(
         html`<section class="auth pair">
-          <p class="pair-step">
-            On a phone or computer where you're already signed in, open:
-          </p>
+          <p class="pair-step">On a signed-in device, open</p>
           <p class="pair-url">${url}</p>
-          <p class="pair-step">and enter this code:</p>
+          <p class="pair-step">and enter</p>
           <p
             class="pair-code"
             tabindex="0"
@@ -751,10 +744,6 @@ export function pairRoute(ctx: RouteContext): Promise<void> {
             ${prettyCode(d.code)}
           </p>
           <p class="hint" id="pairLeft" aria-live="off"></p>
-          <p class="notice">
-            ${icon("shield")} Never share this code with anyone else. Only enter
-            it on your own device.
-          </p>
           <div class="btn-row" data-row>
             <button type="button" class="btn" data-act="pair-new">
               New code</button
@@ -833,16 +822,7 @@ export function linkRoute(ctx: RouteContext): void {
   s.title("Sign in another device", { back: true });
   s.render(
     html`<section class="auth">
-      ${brand(
-        "Sign in a flip phone or another browser without typing your password on it."
-      )}
-      <ol class="steps">
-        <li>
-          On the other device, open ${settings.siteTitle} and choose
-          <b>Sign in with another device</b>.
-        </li>
-        <li>Type the code it shows here.</li>
-      </ol>
+      ${brand()}
       <p
         id="authError"
         class="notice error"
@@ -868,8 +848,7 @@ export function linkRoute(ctx: RouteContext): void {
         <button type="submit" class="btn primary block">Continue</button>
       </form>
       <p class="notice">
-        ${icon("shield")} Only enter a code shown on your own device. Anyone who
-        gets you to enter their code gets into your account.
+        ${icon("shield")} Only enter a code from your own device.
       </p>
     </section>`
   );
@@ -889,7 +868,7 @@ export function linkRoute(ctx: RouteContext): void {
     ).then(
       (d) => {
         confirmDialog(
-          `Sign in this device as @${user ? user.username : ""}?\n\n${d.device}${d.approximate_location ? "\n" + d.approximate_location : ""}\nRequested just now.\n\nOnly continue if it's yours and you're holding it.`,
+          `Sign in this device as @${user ? user.username : ""}?\n\n${d.device}${d.approximate_location ? "\n" + d.approximate_location : ""}\n\nOnly approve a device you're holding.`,
           { title: "Approve sign-in", ok: "Yes, sign it in", cancel: "No" }
         ).then((ok) => {
           const action = ok ? "approve" : "deny";
@@ -927,7 +906,7 @@ export function signupRoute(ctx: RouteContext): void {
   if (!a.signup || a.inviteOnly) {
     s.render(
       html`<section class="auth">
-        ${brand("")}
+        ${brand()}
         <p class="notice">
           ${a.inviteOnly
             ? "This forum is invite-only."
@@ -976,7 +955,7 @@ export function signupRoute(ctx: RouteContext): void {
   const showName = a.fullNameVisible || a.fullNameRequired;
   s.render(
     html`<section class="auth">
-      ${brand(`Create your account on ${settings.siteTitle}.`)}
+      ${brand()}
       <p
         id="authError"
         class="notice error"
@@ -993,8 +972,7 @@ export function signupRoute(ctx: RouteContext): void {
             type="email"
             autocomplete="email"
             autocapitalize="off"
-          />`,
-          "Never shown publicly."
+          />`
         )}
         ${field(
           "suUser",
@@ -1007,8 +985,7 @@ export function signupRoute(ctx: RouteContext): void {
             autocorrect="off"
             spellcheck="false"
             maxlength="${a.usernameMax}"
-          />`,
-          `${a.usernameMin}–${a.usernameMax} letters, numbers, dots, dashes or underscores.`
+          />`
         )}
         ${showName
           ? field(
@@ -1024,15 +1001,13 @@ export function signupRoute(ctx: RouteContext): void {
             id="suPass"
             type="password"
             autocomplete="new-password"
-          />`,
-          `At least ${a.passwordMin} characters.`
+            placeholder="${a.passwordMin}+ characters"
+          />`
         )}
         ${extra}
         ${a.hcaptchaSiteKey
           ? html`<p class="notice">
-              This forum uses a captcha your browser may not support. If sign-up
-              fails, create your account on the full site from another device,
-              then sign in here.
+              Sign-up needs a captcha this browser may not support.
             </p>`
           : ""}
         <button type="submit" class="btn primary block" data-su-btn>
@@ -1129,7 +1104,7 @@ export function signupRoute(ctx: RouteContext): void {
             ).replace(/<[^>]*>/g, "");
             s.render(
               html`<section class="auth">
-                ${brand("Almost there")}
+                ${brand()}
                 <p class="notice ok">${msg}</p>
                 <a class="btn primary block" href="${href("/login")}"
                   >Go to sign in</a
@@ -1179,7 +1154,7 @@ export function forgotRoute(ctx: RouteContext): void {
   s.title("Reset password", { back: true });
   s.render(
     html`<section class="auth">
-      ${brand("We'll email you a link to set a new password.")}
+      ${brand()}
       <p
         id="authError"
         class="notice error"
@@ -1223,7 +1198,7 @@ export function forgotRoute(ctx: RouteContext): void {
       (d) => {
         if (d && d.error) return showError(d.error);
         void alertDialog(
-          "If that account exists, a reset link is on its way. Open it on this phone.",
+          "If that account exists, a link is on its way.",
           "Check your email"
         );
       },
@@ -1249,7 +1224,7 @@ export function resetTokenRoute(ctx: RouteContext): Promise<void> {
       if (!s.alive()) return;
       s.render(
         html`<section class="auth">
-          ${brand("Choose a new password.")}
+          ${brand()}
           <p
             id="authError"
             class="notice error"
@@ -1265,8 +1240,8 @@ export function resetTokenRoute(ctx: RouteContext): Promise<void> {
                 id="newPass"
                 type="password"
                 autocomplete="new-password"
-              />`,
-              `At least ${settings.auth.passwordMin} characters.`
+                placeholder="${settings.auth.passwordMin}+ characters"
+              />`
             )}
             ${info.second_factor_required || info.security_key_required
               ? field(
@@ -1317,10 +1292,9 @@ export function resetTokenRoute(ctx: RouteContext): Promise<void> {
               if (d.requires_approval) {
                 s.render(
                   html`<section class="auth">
-                    ${brand("")}
+                    ${brand()}
                     <p class="notice ok">
-                      Password saved. A moderator still needs to approve your
-                      account.
+                      Password saved. Your account is awaiting approval.
                     </p>
                   </section>`
                 );
@@ -1352,7 +1326,7 @@ export function activateRoute(ctx: RouteContext): void {
   s.title("Activate account", { back: false });
   s.render(
     html`<section class="auth">
-      ${brand("One last step.")}
+      ${brand()}
       <p
         id="authError"
         class="notice error"
@@ -1386,10 +1360,9 @@ export function activateRoute(ctx: RouteContext): void {
           if (d && d.needs_approval) {
             s.render(
               html`<section class="auth">
-                ${brand("")}
+                ${brand()}
                 <p class="notice ok">
-                  Activated. A moderator will approve your account soon — we'll
-                  email you.
+                  Activated. Your account is awaiting approval.
                 </p>
               </section>`
             );
@@ -1431,10 +1404,10 @@ export function logoutRoute(ctx: RouteContext): void {
     leave();
     return;
   }
-  confirmDialog(
-    `Log out of ${settings.siteTitle} on this phone? Your drafts here are deleted too.`,
-    { ok: "Log out", danger: true }
-  ).then((ok) => {
+  confirmDialog(`Log out? Drafts on this phone are deleted.`, {
+    ok: "Log out",
+    danger: true,
+  }).then((ok) => {
     if (ok) leave();
     else go("/", { replace: true });
   });

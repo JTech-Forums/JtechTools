@@ -76,7 +76,8 @@ RSpec.describe "First-post checklist" do
     sign_in(moderator)
 
     open_checklist_modal
-    expect(page).to have_css(".mod-checklist-inactive")
+    expect(page).to have_css(".mod-checklist-add-inline")
+    expect(page).to have_no_css(".mod-checklist-row")
     shot("51_checklist_editor_empty")
 
     find(".mod-checklist-add-inline").click
