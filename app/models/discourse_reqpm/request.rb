@@ -50,9 +50,9 @@ end
 #
 # Indexes
 #
-#  index_reqpm_requests_on_pair_and_created_at  (requester_id,target_id,created_at)
-#  index_reqpm_requests_on_target_id_and_status                       (target_id,status)
-#  index_reqpm_requests_one_pending_per_pair                          (requester_id,target_id) UNIQUE WHERE (status = 0)
+#  index_reqpm_requests_on_pair_and_created_at   (requester_id,target_id,created_at)
+#  index_reqpm_requests_on_target_id_and_status  (target_id,status)
+#  index_reqpm_requests_one_pending_per_pair     (requester_id,target_id) UNIQUE WHERE (status = 0)
 #
 # Foreign Keys
 #
