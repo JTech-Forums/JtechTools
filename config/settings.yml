@@ -1284,14 +1284,6 @@ jtech_reqpm:
       reqpm_setup_prompt:
         - "gentle"
 
-  # Where the entry points show.
-  reqpm_header_icon:
-    default: true
-    client: true
-    refresh: true
-    depends_on:
-      - "reqpm_enabled"
-
   # Card size.
   reqpm_max_methods:
     default: 10

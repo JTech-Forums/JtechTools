@@ -215,12 +215,12 @@ export default class ReqpmMethodForm extends Component {
           @icon="check"
           @disabled={{not this.canSave}}
           @isLoading={{this.saving}}
-          class="btn-primary"
+          class="btn-primary btn-small"
         />
         <DButton
           @action={{@onCancel}}
           @label="reqpm.form.cancel"
-          class="btn-flat"
+          class="btn-flat btn-small"
         />
       </div>
     </form>

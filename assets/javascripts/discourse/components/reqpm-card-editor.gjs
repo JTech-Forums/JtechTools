@@ -6,7 +6,6 @@ import { action } from "@ember/object";
 import { service } from "@ember/service";
 import ConditionalLoadingSpinner from "discourse/components/conditional-loading-spinner";
 import DButton from "discourse/components/d-button";
-import icon from "discourse/helpers/d-icon";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import { i18n } from "discourse-i18n";
 import { eq, not } from "truth-helpers";
@@ -165,10 +164,9 @@ export default class ReqpmCardEditor extends Component {
                     {{this.nameFor method}}
                     {{#if method.share_by_default}}
                       <span
-                        class="reqpm-pill"
+                        class="reqpm-card-editor__default"
                         title={{i18n "reqpm.editor.default_title"}}
-                      >{{icon "star"}}
-                        {{i18n "reqpm.editor.default_pill"}}</span>
+                      >{{i18n "reqpm.editor.default_pill"}}</span>
                     {{/if}}
                   </span>
                   {{#if method.unreadable}}
@@ -225,10 +223,7 @@ export default class ReqpmCardEditor extends Component {
             {{/each}}
           </ul>
         {{else if (not this.editing)}}
-          <div class="reqpm-card-editor__empty">
-            {{icon "address-card"}}
-            <p>{{i18n "reqpm.editor.empty"}}</p>
-          </div>
+          <p class="reqpm-card-editor__empty">{{i18n "reqpm.editor.empty"}}</p>
         {{/if}}
 
         {{#if this.isPicking}}
@@ -275,7 +270,7 @@ export default class ReqpmCardEditor extends Component {
                 "reqpm.editor.add_another"
                 "reqpm.editor.add_first"
               }}
-              class="btn-primary reqpm-card-editor__add"
+              class="btn-default btn-small reqpm-card-editor__add"
             />
           {{/unless}}
         {{else}}

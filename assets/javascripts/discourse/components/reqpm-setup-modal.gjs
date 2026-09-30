@@ -4,7 +4,6 @@ import { action } from "@ember/object";
 import { service } from "@ember/service";
 import DButton from "discourse/components/d-button";
 import DModal from "discourse/components/d-modal";
-import icon from "discourse/helpers/d-icon";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import { i18n } from "discourse-i18n";
 import ReqpmCardEditor from "./reqpm-card-editor";
@@ -88,14 +87,7 @@ export default class ReqpmSetupModal extends Component {
       <:body>
         <div class="reqpm-setup-modal__intro">
           <p class="reqpm-setup-modal__lead">{{i18n "reqpm.setup.lead"}}</p>
-          <ul class="reqpm-setup-modal__points">
-            <li>{{icon "hand"}}
-              <span>{{i18n "reqpm.setup.point_ask"}}</span></li>
-            <li>{{icon "check"}}
-              <span>{{i18n "reqpm.setup.point_choose"}}</span></li>
-            <li>{{icon "lock"}}
-              <span>{{i18n "reqpm.setup.point_private"}}</span></li>
-          </ul>
+          <p class="reqpm-muted">{{i18n "reqpm.setup.point_private"}}</p>
         </div>
 
         <ReqpmCardEditor @startAdding={{true}} @onChange={{this.cardChanged}} />
