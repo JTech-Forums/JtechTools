@@ -101,13 +101,16 @@ RSpec.describe "REQ-PM", reqpm_prompt: true do
     # Alice sees the badge and answers from the REQ-PM page.
     sign_in(alice)
     visit "/latest"
-    expect(page).to have_css(".reqpm-header-icon__badge", text: "1")
-    shot("08_header_badge")
-    find(".reqpm-header-icon a, .reqpm-header-icon button").click
+    # Nothing in the header; REQ-PM sits in the avatar menu.
+    expect(page).to have_no_css(".reqpm-header-icon")
+    find(".header-dropdown-toggle.current-user").click
+    find("#user-menu-button-profile").click
+    shot("08_avatar_menu")
+    find(".reqpm-menu-item a").click
 
     expect(page).to have_css(".reqpm-row--incoming", text: "bob_m")
     shot("09_hub_requests")
-    find(".reqpm-row--incoming .btn-primary").click
+    find(".reqpm-row--incoming .reqpm-row__answer").click
 
     expect(page).to have_css(".reqpm-user-modal .reqpm-callout--incoming", text: "WhatsApp")
     # What Bob asked for is pre-ticked, even though it is not a default.
@@ -202,5 +205,16 @@ RSpec.describe "REQ-PM", reqpm_prompt: true do
       expect(page).to have_css(".reqpm-user-modal .reqpm-contact-list__value", text: "+972")
       shot("17_mobile_user_modal")
     end
+  end
+
+  it "keeps your own card under Preferences → REQ-PM" do
+    add_method(alice, "phone", "+1 718 555 0100")
+    sign_in(alice)
+    visit "/u/alice_k/preferences/account"
+    find(".user-nav__preferences-reqpm a").click
+    expect(page).to have_current_path("/u/alice_k/preferences/reqpm")
+    expect(page).to have_css(".reqpm-card-editor__value", text: "+1 718 555 0100")
+    expect(page).to have_css(".reqpm-preferences .d-toggle-switch")
+    shot("18_preferences_tab")
   end
 end

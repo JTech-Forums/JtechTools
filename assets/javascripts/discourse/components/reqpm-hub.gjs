@@ -7,7 +7,6 @@ import didUpdate from "@ember/render-modifiers/modifiers/did-update";
 import { service } from "@ember/service";
 import ConditionalLoadingSpinner from "discourse/components/conditional-loading-spinner";
 import DButton from "discourse/components/d-button";
-import DToggleSwitch from "discourse/components/d-toggle-switch";
 import ageWithTooltip from "discourse/helpers/age-with-tooltip";
 import avatar from "discourse/helpers/avatar";
 import icon from "discourse/helpers/d-icon";
@@ -16,9 +15,9 @@ import getURL from "discourse/lib/get-url";
 import { i18n } from "discourse-i18n";
 import { eq } from "truth-helpers";
 import { modifier } from "ember-modifier";
-import ReqpmCardEditor from "./reqpm-card-editor";
 import ReqpmContactList from "./reqpm-contact-list";
 import ReqpmKindIcon from "./reqpm-kind-icon";
+import ReqpmPreferences from "./reqpm-preferences";
 
 const TABS = ["requests", "contacts", "card", "shared"];
 const TAB_ICONS = {
@@ -199,16 +198,6 @@ export default class ReqpmHub extends Component {
   }
 
   @action
-  async toggleAllowRequests() {
-    const next = !this.card.allow_requests;
-    try {
-      this.card = await this.reqpm.setAllowRequests(next);
-    } catch (e) {
-      popupAjaxError(e);
-    }
-  }
-
-  @action
   cardChanged(card) {
     this.card = card;
     if (card.methods.length) {
@@ -223,7 +212,7 @@ export default class ReqpmHub extends Component {
       {{didUpdate this.load @user}}
     >
       <header class="reqpm-hub__header">
-        <h1>{{icon "address-card"}} {{i18n "reqpm.title"}}</h1>
+        <h1>{{i18n "reqpm.title"}}</h1>
         <p class="reqpm-muted">{{i18n "reqpm.hub.subtitle"}}</p>
       </header>
 
@@ -259,7 +248,7 @@ export default class ReqpmHub extends Component {
                   <li class="reqpm-row reqpm-row--incoming">
                     <a href={{profileUrl req.user.username}}>{{avatar
                         req.user
-                        imageSize="medium"
+                        imageSize="small"
                       }}</a>
                     <div class="reqpm-row__body">
                       <div><strong>{{req.user.username}}</strong>
@@ -277,9 +266,8 @@ export default class ReqpmHub extends Component {
                     <div class="reqpm-row__actions">
                       <DButton
                         @action={{fn this.openUser req.user}}
-                        @icon="paper-plane"
                         @label="reqpm.hub.choose_what_to_send"
-                        class="btn-primary btn-small"
+                        class="btn-default btn-small reqpm-row__answer"
                       />
                       <DButton
                         @action={{fn this.decline req}}
@@ -301,7 +289,7 @@ export default class ReqpmHub extends Component {
                   <li class="reqpm-row">
                     <a href={{profileUrl req.user.username}}>{{avatar
                         req.user
-                        imageSize="medium"
+                        imageSize="small"
                       }}</a>
                     <div class="reqpm-row__body">
                       <div><strong>{{req.user.username}}</strong>
@@ -359,7 +347,7 @@ export default class ReqpmHub extends Component {
                     <header class="reqpm-contact-card__head">
                       <a href={{profileUrl row.user.username}}>{{avatar
                           row.user
-                          imageSize="medium"
+                          imageSize="small"
                         }}</a>
                       <div class="reqpm-contact-card__who">
                         <strong>{{row.user.username}}</strong>
@@ -376,7 +364,6 @@ export default class ReqpmHub extends Component {
                     <footer class="reqpm-contact-card__foot">
                       <DButton
                         @action={{fn this.openUser row.user}}
-                        @icon="paper-plane"
                         @label="reqpm.hub.send_yours"
                         class="btn-default btn-small"
                       />
@@ -401,34 +388,7 @@ export default class ReqpmHub extends Component {
           </section>
         {{else if (eq this.tab "card")}}
           <section class="reqpm-panel">
-            <div class="reqpm-privacy">
-              {{icon "shield-halved"}}
-              <div>
-                <strong>{{i18n "reqpm.hub.privacy_title"}}</strong>
-                <ul>
-                  <li>{{i18n "reqpm.hub.privacy_you_choose"}}</li>
-                  <li>{{i18n "reqpm.hub.privacy_encrypted"}}</li>
-                  <li>{{i18n "reqpm.hub.privacy_staff"}}</li>
-                  <li>{{i18n "reqpm.hub.privacy_revoke"}}</li>
-                </ul>
-              </div>
-            </div>
-
-            <h2>{{i18n "reqpm.hub.my_card_title"}}</h2>
-            <ReqpmCardEditor @onChange={{this.cardChanged}} />
-
-            {{#if this.card}}
-              <div class="reqpm-setting">
-                <DToggleSwitch
-                  @state={{this.card.allow_requests}}
-                  @label="reqpm.hub.allow_requests"
-                  {{on "click" this.toggleAllowRequests}}
-                />
-                <p class="reqpm-muted">{{i18n
-                    "reqpm.hub.allow_requests_hint"
-                  }}</p>
-              </div>
-            {{/if}}
+            <ReqpmPreferences @onChange={{this.cardChanged}} />
           </section>
         {{else if (eq this.tab "shared")}}
           <section class="reqpm-panel">
@@ -439,7 +399,7 @@ export default class ReqpmHub extends Component {
                   <li class="reqpm-row">
                     <a href={{profileUrl row.user.username}}>{{avatar
                         row.user
-                        imageSize="medium"
+                        imageSize="small"
                       }}</a>
                     <div class="reqpm-row__body">
                       <strong>{{row.user.username}}</strong>
@@ -455,7 +415,6 @@ export default class ReqpmHub extends Component {
                     <div class="reqpm-row__actions">
                       <DButton
                         @action={{fn this.openUser row.user}}
-                        @icon="pencil"
                         @label="reqpm.hub.change"
                         class="btn-default btn-small"
                       />

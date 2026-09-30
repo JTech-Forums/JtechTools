@@ -151,9 +151,14 @@ en:
       button:
         label: REQ-PM
         title: Request or send contact details
-      header:
-        title: REQ-PM — contact details
-        title_with_count: "REQ-PM — %{count} waiting for you"
+      menu:
+        label: REQ-PM contacts
+      preferences:
+        nav: REQ-PM
+        title: Your contact card
+        intro: The ways members can reach you. Nobody sees any of it until you send it to them.
+        open_hub: Requests and contacts
+        not_yours: Only the member themselves can see or edit their REQ-PM card.
       sidebar:
         text: REQ-PM
         title: Request and exchange contact details
@@ -255,27 +260,27 @@ en:
         delete_confirm: "Remove %{name} from your card? Anyone you sent it to will no longer see it."
       user_modal:
         title: "REQ-PM with %{username}"
-        their_details: "%{username}'s details"
+        their_details: Their details
         nothing_yet: "%{username} hasn't sent you any contact details yet."
         forget: Remove from my contacts
         forget_confirm: "Remove %{username}'s details from your contacts? You'd need to ask again to get them back."
-        what_would_you_like: What would you like? (optional — they decide what to send)
-        request: "Request %{username}'s contact details"
-        request_sent: "Request sent. %{username} will be notified and can choose what to send you."
+        what_would_you_like: "Anything in particular? (optional)"
+        request: Ask for their details
+        request_sent: "Asked. %{username} decides what, if anything, to send."
         pending: "You asked on %{date}. It's up to %{username} whether to answer."
         withdraw: Withdraw request
         cooldown: "You asked recently. You can ask again on %{date}."
         unavailable: "%{username} can't be asked for contact details right now."
         they_asked: "%{username} asked for your contact details"
         they_would_like: "They'd like: %{kinds}"
-        they_asked_hint: Tick what you're happy to send below — or say no thanks. They won't be told either way.
+        they_asked_hint: Tick what you're happy to send, or say no thanks — they won't be told.
         no_thanks: No thanks
         declined: Request dismissed. They won't be told.
         your_details: Your details
-        pick_hint: "Tick what %{username} may see. You can change this or stop sharing any time."
+        pick_hint: "Tick what %{username} may see. You can change it any time."
         send: Send selected
         update_share: Update what they see
-        shared: "Sent. %{username} can now see what you ticked."
+        shared: Sent.
         stop_sharing: Stop sharing
         stop_confirm: "Stop sharing your contact details with %{username}? They won't be told."
         stopped: "%{username} can no longer see your details."
@@ -284,10 +289,8 @@ en:
         cannot_share: "You can't send contact details to %{username} right now."
         close: Close
       setup:
-        title: Add a way for members to reach you
-        lead: This forum doesn't have private messages. Instead, members exchange contact details with REQ-PM.
-        point_ask: Anyone can ask for your details — you decide whether to answer.
-        point_choose: You choose exactly which details each person gets, and can take them back.
+        title: Your contact card
+        lead: There are no private messages here — members swap contact details instead. Add a way to be reached; you choose who sees it.
         point_private: Your details are encrypted, never shown publicly, and staff can't view them on the forum.
         done: All set
         later: Remind me later
@@ -295,7 +298,7 @@ en:
         required_note: Add at least one way to reach you to continue.
         log_out: Log out
       hub:
-        subtitle: Exchange contact details with other members — you always choose what to send.
+        subtitle: Contact details you've exchanged with other members.
         tabs:
           requests: Requests
           contacts: Contacts
@@ -318,12 +321,7 @@ en:
         send_yours: Send yours
         no_match: No one matches that.
         no_contacts: No one has sent you their details yet.
-        my_card_title: Ways to reach you
-        privacy_title: How REQ-PM keeps you safe
-        privacy_you_choose: Nobody sees anything until you send it to them, and they only see what you ticked.
-        privacy_encrypted: Your details are encrypted in the forum's database.
-        privacy_staff: Staff can't see them — there's no admin screen for them, and REQ-PM refuses API keys and admins impersonating you.
-        privacy_revoke: You can take back what you sent at any time.
+        privacy_short: Encrypted, never public, and staff can't view it on the forum. You can take back anything you sent at any time.
         allow_requests: Let members request my contact details
         allow_requests_hint: When off, nobody can send you a request. You can still send your details to people yourself.
         shared_intro: These members can see some of your details. Change what they see or stop sharing any time.

@@ -75,7 +75,7 @@ export default class ReqpmContactList extends Component {
               {{#if row.external}}
                 <a
                   href={{row.go.href}}
-                  class="btn btn-primary btn-small reqpm-contact-list__go"
+                  class="btn btn-default btn-small reqpm-contact-list__go"
                   target="_blank"
                   rel="noopener noreferrer nofollow"
                 >
@@ -85,7 +85,7 @@ export default class ReqpmContactList extends Component {
               {{else}}
                 <a
                   href={{row.go.href}}
-                  class="btn btn-primary btn-small reqpm-contact-list__go"
+                  class="btn btn-default btn-small reqpm-contact-list__go"
                 >
                   {{icon row.goIcon}}
                   <span class="d-button-label">{{row.goLabel}}</span>

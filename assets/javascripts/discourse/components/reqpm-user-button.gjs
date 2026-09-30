@@ -39,7 +39,7 @@ export default class ReqpmUserButton extends Component {
         @icon="address-card"
         @label="reqpm.button.label"
         @title="reqpm.button.title"
-        class="btn-primary reqpm-user-button"
+        class="btn-default btn-small reqpm-user-button"
       />
     {{/if}}
   </template>

@@ -41,6 +41,7 @@ export default class ReqpmUserModal extends Component {
   @service reqpm;
   @service dialog;
   @service router;
+  @service currentUser;
 
   @tracked data = null;
   @tracked loading = true;
@@ -295,7 +296,7 @@ export default class ReqpmUserModal extends Component {
   @action
   openHub() {
     this.args.closeModal();
-    this.router.transitionTo("reqpm", { queryParams: { tab: "card" } });
+    this.router.transitionTo("preferences.reqpm", this.currentUser.username);
   }
 
   <template>
@@ -310,7 +311,7 @@ export default class ReqpmUserModal extends Component {
             <div class="reqpm-user-modal__who">
               <a href={{this.profileUrl}}>{{avatar
                   this.user
-                  imageSize="large"
+                  imageSize="medium"
                 }}</a>
               <div>
                 <div
@@ -364,8 +365,7 @@ export default class ReqpmUserModal extends Component {
                 }}"
             >
               <section class="reqpm-section reqpm-section--theirs">
-                <h3>{{icon "id-card"}}
-                  {{i18n
+                <h3>{{i18n
                     "reqpm.user_modal.their_details"
                     username=this.username
                   }}</h3>
@@ -409,13 +409,9 @@ export default class ReqpmUserModal extends Component {
                     {{/if}}
                     <DButton
                       @action={{this.sendRequest}}
-                      @icon="hand"
-                      @translatedLabel={{i18n
-                        "reqpm.user_modal.request"
-                        username=this.username
-                      }}
+                      @label="reqpm.user_modal.request"
                       @isLoading={{this.busy}}
-                      class="btn-primary reqpm-user-modal__request"
+                      class="btn-default btn-small reqpm-user-modal__request"
                     />
                   </div>
                 {{else if (eq this.requestState "pending")}}
@@ -457,8 +453,7 @@ export default class ReqpmUserModal extends Component {
               </section>
 
               <section class="reqpm-section reqpm-section--send">
-                <h3>{{icon "paper-plane"}}
-                  {{i18n "reqpm.user_modal.your_details"}}</h3>
+                <h3>{{i18n "reqpm.user_modal.your_details"}}</h3>
                 {{#if this.data.can_share}}
                   {{#if this.myMethods.length}}
                     <p class="reqpm-muted">{{i18n
@@ -506,7 +501,7 @@ export default class ReqpmUserModal extends Component {
                         @label={{this.shareLabel}}
                         @disabled={{isEmpty this.selected}}
                         @isLoading={{this.busy}}
-                        class="btn-primary reqpm-user-modal__send"
+                        class="btn-primary btn-small reqpm-user-modal__send"
                       />
                       {{#if this.alreadyShared}}
                         <DButton

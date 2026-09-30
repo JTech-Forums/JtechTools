@@ -1,6 +1,6 @@
 import { withPluginApi } from "discourse/lib/plugin-api";
 import { i18n } from "discourse-i18n";
-import ReqpmHeaderIcon from "../components/reqpm-header-icon";
+import getURL from "discourse/lib/get-url";
 
 // Pages the setup prompt never covers: REQ-PM itself (the card editor is
 // right there), admin (so an admin can always reach the settings), and the
@@ -25,8 +25,9 @@ function markPrompted() {
   }
 }
 
-// REQ-PM entry points: the header icon, a sidebar link, the button on user
-// cards/profiles (connectors), and the "add your contact details" prompt.
+// REQ-PM entry points: an item in the avatar menu, a link in the sidebar's
+// "More" list, the button on user cards/profiles and the preferences tab
+// (connectors), and the "add your contact details" prompt.
 export default {
   name: "jtech-reqpm",
 
@@ -39,11 +40,14 @@ export default {
     const reqpm = container.lookup("service:reqpm");
 
     withPluginApi((api) => {
-      if (siteSettings.reqpm_header_icon) {
-        api.headerIcons.add("reqpm", ReqpmHeaderIcon, {
-          before: "search",
-        });
-      }
+      // Kept out of the header on purpose: REQ-PM lives in the avatar menu,
+      // the user's preferences, and the sidebar's "More" list.
+      api.addQuickAccessProfileItem({
+        icon: "address-card",
+        href: getURL("/reqpm"),
+        content: i18n("reqpm.menu.label"),
+        className: "reqpm-menu-item",
+      });
 
       api.addCommunitySectionLink((BaseSectionLink) => {
         return class ReqpmSectionLink extends BaseSectionLink {
@@ -71,9 +75,7 @@ export default {
             return reqpm.incomingCount ? String(reqpm.incomingCount) : null;
           }
         };
-      });
-
-      api.addDocumentTitleCounter(() => reqpm.incomingCount || 0);
+      }, true);
 
       const router = container.lookup("service:router");
       let open = false;
