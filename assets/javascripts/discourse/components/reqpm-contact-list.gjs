@@ -25,12 +25,16 @@ const GO_ICONS = {
 // plain text; the only links are the fixed-scheme ones from actionFor.
 export default class ReqpmContactList extends Component {
   @service toasts;
+  @service siteSettings;
 
   @tracked copiedId = null;
 
   get rows() {
     return (this.args.methods || []).map((method) => {
-      const go = actionFor(method);
+      const go = actionFor(
+        method,
+        this.siteSettings.reqpm_default_country_code
+      );
       return {
         method,
         name:

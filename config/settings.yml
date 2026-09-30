@@ -1284,6 +1284,16 @@ jtech_reqpm:
       reqpm_setup_prompt:
         - "gentle"
 
+  # Country code assumed for phone numbers typed without one ("+" or
+  # "00"). Blank turns the guess off.
+  reqpm_default_country_code:
+    default: "1"
+    client: true
+    regex: "^\\+?[0-9]{0,4}$"
+    regex_error: "site_settings.errors.reqpm_default_country_code_invalid"
+    depends_on:
+      - "reqpm_enabled"
+
   # Card size.
   reqpm_max_methods:
     default: 10

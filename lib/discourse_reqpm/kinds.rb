@@ -28,7 +28,7 @@ module DiscourseReqpm
     MAX_NOTE_LENGTH = 80
     MAX_URL_LENGTH = 300
 
-    PHONE_CHARS = /\A\+?[0-9][0-9 ().\-]*\z/
+    PHONE_CHARS = /\A\+?[0-9(][0-9 ().\-]*\z/
     HANDLE = /\A@?[A-Za-z0-9_.\-]{2,40}(#\d{4})?\z/
     # C0/C1 controls, bidi overrides and zero-width characters: nothing a
     # contact detail needs, and the usual tools for making a value display
@@ -100,7 +100,27 @@ module DiscourseReqpm
     def self.phone!(text)
       digits = text.count("0-9")
       raise Invalid.new(:value, :phone) if !text.match?(PHONE_CHARS) || !digits.between?(5, 15)
-      text.squeeze(" ")
+      with_country_code(text.squeeze(" "))
+    end
+
+    # A number typed without a country code gets the forum's default one
+    # (reqpm_default_country_code, "1" out of the box), so "646-820-1413"
+    # is stored as "+1 646-820-1413" — otherwise WhatsApp and friends read
+    # the leading digits as a country ("64" → New Zealand).
+    #
+    # "00…" is the international prefix and becomes "+". Numbers starting
+    # with 0 are local formats elsewhere (e.g. 052-…), and anything that is
+    # not a plain 10-digit national number is left alone rather than guessed.
+    def self.with_country_code(text)
+      return text if text.start_with?("+")
+      return "+#{text.delete_prefix("00").lstrip}" if text.start_with?("00")
+
+      code = SiteSetting.reqpm_default_country_code.to_s.delete("^0-9")
+      digits = text.delete("^0-9")
+      return text if code.empty? || digits.start_with?("0")
+      return "+#{code} #{text}" if digits.length == 10
+      return "+#{text}" if digits.start_with?(code) && digits.length == 10 + code.length
+      text
     end
 
     def self.email!(text)
