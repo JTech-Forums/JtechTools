@@ -1,18 +1,13 @@
 # frozen_string_literal: true
 
 module ::Jobs
-  # Removes core Discourse notifications (:replied, :posted, :quoted,
-  # :mentioned) for users who also received a custom mod_whisper
-  # notification for the same post. Scheduled with a small delay from
-  # the on(:post_created) hook so PostAlerter has had time to create
-  # the duplicates — PostAlerter runs in its own Sidekiq job after
-  # :post_created, so an inline cleanup races it.
+  # No longer enqueued: whisper recipients are now kept out of PostAlerter
+  # up front (the :post_alerter_before_mentions hook in
+  # sub_plugins/mod_categories.rb). Kept so jobs queued before the upgrade
+  # still run; safe to delete in a later release.
   #
-  # Failure mode: if the job runs before PostAlerter (rare — would mean
-  # PostAlerter is slower than 5s), the duplicates haven't been
-  # created yet and the delete is a no-op. The duplicates would then
-  # stay in the bell. Acceptable degradation; the worst case matches
-  # the pre-fix behavior.
+  # Removes core notifications (:replied, :posted, :quoted, :mentioned) for
+  # users who also received a custom mod_whisper notification for the post.
   class DedupeModWhisperNotifications < ::Jobs::Base
     def execute(args)
       post_id = args[:post_id]

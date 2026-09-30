@@ -508,7 +508,33 @@ module DiscourseModCategories
       []
     end
 
+    # Loads the whisper fields of many posts in one query and remembers them
+    # on each post, so the per-post checks that follow (Guardian, the post
+    # serializer) don't each query. Used for the posts of a topic page.
+    def prime!(posts)
+      posts = Array(posts).select { |p| p.is_a?(::Post) && p.id }
+      return if posts.empty?
+
+      by_post = Hash.new { |h, k| h[k] = {} }
+      ::PostCustomField
+        .where(post_id: posts.map(&:id), name: whisper_fields)
+        .pluck(:post_id, :name, :value)
+        .each { |post_id, name, value| by_post[post_id][name] = parse_json(value) }
+
+      posts.each { |p| p.instance_variable_set(:@mod_whisper_fields, by_post[p.id].freeze) }
+    end
+
+    def forget!(post)
+      if post.instance_variable_defined?(:@mod_whisper_fields)
+        post.remove_instance_variable(:@mod_whisper_fields)
+      end
+    end
+
     def post_fields(post)
+      if post.instance_variable_defined?(:@mod_whisper_fields)
+        return post.instance_variable_get(:@mod_whisper_fields)
+      end
+
       # A preloaded proxy only knows the keys somebody chose to preload, so
       # "key absent" there means nothing — read the rows directly.
       return db_fields(post) if preloaded?(post)
