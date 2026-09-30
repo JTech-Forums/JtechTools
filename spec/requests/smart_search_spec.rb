@@ -53,7 +53,8 @@ RSpec.describe "Smart search" do
 
   it "never shows posts the searcher can't see" do
     secret = Fabricate(:private_category, group: Fabricate(:group))
-    hidden = Fabricate(:post, topic: Fabricate(:topic, category: secret), raw: "quintessify internals")
+    hidden =
+      Fabricate(:post, topic: Fabricate(:topic, category: secret), raw: "quintessify internals")
     reindex(hidden)
 
     expect(post_ids("zorbleflux")).not_to include(hidden.id)
@@ -68,7 +69,9 @@ RSpec.describe "Smart search" do
   end
 
   it "only expands the first page" do
-    expect(post_ids("zorbleflux", search_type: :full_page, type_filter: "topic", page: 2)).to be_empty
+    expect(
+      post_ids("zorbleflux", search_type: :full_page, type_filter: "topic", page: 2),
+    ).to be_empty
   end
 
   it "doesn't expand a search that already found enough" do
