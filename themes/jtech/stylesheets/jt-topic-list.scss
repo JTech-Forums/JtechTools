@@ -34,3 +34,92 @@
 .nav-pills > li > a {
   font-weight: 500;
 }
+
+// ── Desktop list controls: filters · tabs · New Topic on one line ──
+// Core wraps the row when it runs out of room, which dropped "New Topic" onto
+// a line of its own. Here it never wraps: below 66rem the button keeps only
+// its icon (the header's + does the same), and if that's still not enough
+// the tabs scroll sideways, fading at whichever edge is cut off.
+@property --jt-tabs-fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --jt-tabs-fade-end {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@keyframes jt-tabs-fade {
+  0% {
+    --jt-tabs-fade-start: 0px;
+    --jt-tabs-fade-end: 2rem;
+  }
+
+  8% {
+    --jt-tabs-fade-start: 2rem;
+  }
+
+  92% {
+    --jt-tabs-fade-end: 2rem;
+  }
+
+  100% {
+    --jt-tabs-fade-start: 2rem;
+    --jt-tabs-fade-end: 0px;
+  }
+}
+
+html.desktop-view .list-controls .navigation-container {
+  flex-wrap: nowrap;
+
+  > .category-breadcrumb,
+  > .navigation-controls {
+    flex: none;
+  }
+
+  > .navigation-controls {
+    flex-wrap: nowrap;
+    margin-left: auto;
+  }
+
+  > #navigation-bar {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+
+    > li {
+      flex: none;
+    }
+
+    // only while the tabs actually scroll (no scroll timeline otherwise)
+    @supports (animation-timeline: scroll()) {
+      mask-image: linear-gradient(
+        to right,
+        transparent,
+        #000 var(--jt-tabs-fade-start),
+        #000 calc(100% - var(--jt-tabs-fade-end)),
+        transparent
+      );
+      animation: jt-tabs-fade linear both;
+      animation-timeline: scroll(self inline);
+    }
+  }
+
+  @media (width < 66rem) {
+    #create-topic {
+      .d-button-label {
+        display: none;
+      }
+
+      .d-icon {
+        margin: 0;
+      }
+    }
+  }
+}

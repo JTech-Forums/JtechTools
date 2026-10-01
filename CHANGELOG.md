@@ -10,6 +10,7 @@ What changed for forums running Jtech Tools. Newest first.
 - JTech theme: the forum's small theme components are built in, each with its own setting: first-reply prompt, code line numbers, last seen on user cards, first/last post buttons, hidden padlocks, the tablet composer full-screen button, and full-page links to the landing site from posts. It also styles core's category boxes. The theme docs list which components to detach and which to keep.
 - JTech theme: every icon in the header is the same size, including chat's and core's ☰, and on phones the search icon no longer has a box around it.
 - JTech theme: phones show the small (square) logo in the header, leaving room for the icons. A mobile logo uploaded in the site settings still wins. Setting: `mobile_small_logo`.
+- JTech theme: on desktop the list's filters, tabs and New Topic button stay on one line. On narrower windows New Topic shows just its icon, and if the tabs still don't fit they scroll sideways, keeping the current tab in view.
 - JTech theme: on wide screens the header's search field sits in the middle of the bar. On narrower screens, touch screens and while a topic's title is in the header it stays in the icon row.
 - JTech theme: a login gate for chosen categories and tags replaces the Gated Topics in Category component. Logged-out visitors see the topic's first lines fade into a card to log in or create an account, with a link to the open categories. Settings: `gated_categories`, `gated_tags`.
 

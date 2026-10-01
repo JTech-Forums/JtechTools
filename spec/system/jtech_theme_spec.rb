@@ -178,6 +178,21 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  it "keeps New Topic on the row of tabs when the window narrows" do
+    sign_in(member)
+    resize_window(width: 900) do
+      visit("/latest")
+      expect(page).to have_css("#create-topic")
+      tops = page.evaluate_script(<<~JS)
+        ["#navigation-bar", "#create-topic"]
+          .map((selector) => document.querySelector(selector).getBoundingClientRect().top)
+          .map(Math.round)
+      JS
+      expect(tops.uniq.size).to eq(1)
+      expect_no_theme_errors
+    end
+  end
+
   it "previews a topic's first post in Quick look" do
     sign_in(member)
     visit("/latest")
