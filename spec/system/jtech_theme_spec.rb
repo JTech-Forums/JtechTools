@@ -196,6 +196,82 @@ RSpec.describe "JTech theme" do
     expect(page).to have_css(".jt-footer a[href='/latest']:not([data-auto-route])")
   end
 
+  describe "what used to be separate components" do
+    fab!(:lonely_topic) do
+      Fabricate(:topic, category: category, user: admin, title: "A topic nobody answered yet")
+    end
+    fab!(:lonely_post) do
+      Fabricate(
+        :post,
+        topic: lonely_topic,
+        user: admin,
+        raw:
+          "Line one of the guide.\n\n```bash\necho one\necho two\necho three\n```\n\nSee [the homepage](/home) or [latest](/latest).",
+      )
+    end
+
+    it "prompts for the first reply and numbers code lines" do
+      sign_in(member)
+      visit(lonely_topic.relative_url)
+      expect(page).to have_css(".jt-first-reply", text: "Be the first to reply")
+      expect(page).to have_css("pre.jt-numbered .jt-lines", text: "1\n2\n3")
+      shot("first-reply")
+      expect_no_theme_errors
+    end
+
+    it "doesn't prompt once someone has replied" do
+      sign_in(member)
+      visit(topic.relative_url)
+      expect(page).to have_css(".topic-post")
+      expect(page).to have_no_css(".jt-first-reply")
+    end
+
+    it "opens links to non-forum pages in posts as a page load" do
+      visit(lonely_topic.relative_url)
+      expect(page).to have_css(".cooked a[href='/home'][data-auto-route='true']")
+      expect(page).to have_css(".cooked a[href='/latest']:not([data-auto-route])")
+    end
+
+    it "shows jump buttons under the timeline" do
+      sign_in(member)
+      visit(topic.relative_url)
+      expect(page).to have_css(".timeline-container .jt-jump .jt-jump__bottom")
+      expect_no_theme_errors
+    end
+
+    it "shows when someone was last seen on their user card" do
+      member.update!(last_seen_at: 2.hours.ago)
+      sign_in(admin)
+      visit(topic.relative_url)
+      find("#post_1 .main-avatar[data-user-card='#{member.username}']").click
+      expect(page).to have_css(".user-card .jt-last-seen")
+      expect_no_theme_errors
+    end
+
+    it "styles core's category boxes" do
+      SiteSetting.desktop_category_page_style = "categories_boxes"
+      visit("/categories")
+      expect(page).to have_css(".category-boxes .category-box")
+      shot("category-boxes")
+      expect_no_theme_errors
+    end
+
+    it "puts the menu button on the left on phones", mobile: true do
+      visit("/latest")
+      expect(page).to have_css(".hamburger-dropdown")
+      menu_x =
+        page.evaluate_script(
+          "document.querySelector('.hamburger-dropdown').getBoundingClientRect().left",
+        )
+      logo_x =
+        page.evaluate_script(
+          "document.querySelector('.home-logo-wrapper-outlet').getBoundingClientRect().left",
+        )
+      expect(menu_x).to be < logo_x
+      shot("menu-left")
+    end
+  end
+
   it "shows the dark palette when the browser prefers dark" do
     page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
     sign_in(member)

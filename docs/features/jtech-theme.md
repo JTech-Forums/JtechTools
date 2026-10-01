@@ -20,7 +20,7 @@ Installing or updating the plugin (a rebuild) installs the theme and keeps it up
 The plugin **never** makes it the default theme and never offers it to users. To use it, go to **Admin → Customize → Themes → JTech** and:
 
 1. Preview it as staff first (**Preview**, or `?preview_theme_id=<id>`).
-2. Attach the same components as your current theme, **except** "Header Glass Fork JUNIV" (JTech has its own header) and "Welcome Link Banner" (replaced by the hero; its four links are the hero's defaults).
+2. Attach the components you still want; [Your current components](#your-current-components) says which ones JTech already covers and which clash with it.
 3. Make it the default, or let users choose it.
 
 Your choices there stay put: the default and user-selectable choice, attached components, the theme's settings and any colour-palette or theme site-setting changes all survive updates. What doesn't survive is editing the theme's files in the admin theme editor (CSS, JS): the next update replaces them with the plugin's copy. Put local tweaks in a small component instead, or change `themes/jtech` in the plugin.
@@ -28,6 +28,33 @@ Your choices there stay put: the default and user-selectable choice, attached co
 - **Already had JTech installed by hand** (from its old Git repo)? The first install takes that theme over and updates it in place, so its default status, components and settings carry on and you don't get a second "JTech". It stops following the Git repo from then on.
 - **Deleting the theme** keeps it deleted. To bring it back, turn `jtech_theme_install` off and on again, or run `rake jtech:theme:install`.
 - **Turning off `jtech_theme_install`** stops installs and updates. The installed theme stays as it is. Turning it back on installs straight away (it doesn't wait for a rebuild).
+
+## Your current components
+
+Several components on the forum's Default theme are built into JTech, and some clash with it. Detach those when you switch; the rest keep working as they are.
+
+**Built in (detach the component; the JTech setting is on by default):**
+
+| Component | JTech setting | Notes |
+| --- | --- | --- |
+| Header Glass Fork JUNIV | — | JTech's own header. |
+| Welcome Link Banner | `hero_*` | The hero; its four links are the hero's defaults. |
+| Landing page links (leave the forum) | — | Header, hero, footer and links in posts all open non-forum pages as a page load. |
+| Be the first to reply | `first_reply_prompt` | Copy the component's hidden categories into `first_reply_prompt_hidden_categories` (13, 15, 22, 25, 28, 29, 30, 31, 34, 49 on the forum today). |
+| Discourse Code Block Line Numbers | `code_line_numbers` | A gutter beside the code, so copying a block copies only the code. |
+| Hide Lock Badge Icon | `hide_lock_icons` | |
+| Last Seen User Card | `user_card_last_seen` | People who turn on "hide my public profile and presence" are left out. That preference also replaces the CSS that hides it for one user. |
+| Discourse Jump Buttons | `topic_jump_buttons` | Under the timeline, and beside the progress button on phones. |
+| Unhide composer fullscreen toggle for tablets | — | Always on. |
+| discourse-left-side-burger | `mobile_menu_left` | |
+| Sidebar Theme Toggle | `color_mode_toggle` | Keep the component only if people should also be able to switch to another theme. |
+| Modern Category + Group Boxes | — | Set the site setting `desktop_category_page_style` to **Boxes**: JTech styles core's category boxes, which already show each category's icon. |
+
+**Clash with JTech (detach):** Discourse Avatar Component (JTech sets avatar shape), Full width (JTech sets the page width), Density Toggle (JTech's type scale), Topic List Item Click Animation (JTech's cards have their own press feedback), User Card Directory and Users Top Nav (JTech's People page).
+
+**Keep as they are:** Admin Warnings, Auto linkify words, Copy post button, DiscoTOC, Highlight to Search, Sidebar Menu Reorder, Wikipedia Lookup, Messages section for sidebar, Post Badges, Post Image Carousel, QR Code Shareables, Quick Profile Links Menu, Reader Mode, Reply Templates, Shared Draft Button, Topic PDF Download Button, Unanswered Filter, Voice Recorder. JTech's styles cover the ones that draw in the page.
+
+**Not real restrictions:** "Gated Topics in Category" and "Restricted reactions (like) by group" only hide things in the browser. The topics are still sent to logged-out visitors (`/t/….json` reads them), and the like API still accepts likes. If those need to hold, they belong on the server, in category permissions or the plugin.
 
 ## Settings
 

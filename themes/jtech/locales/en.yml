@@ -25,6 +25,12 @@ en:
     likes:
       one: "%{count} like"
       other: "%{count} likes"
+    first_reply:
+      title: "Be the first to reply"
+      description: "No one has replied yet. Start the conversation."
+    jump:
+      top: "Jump to the first post"
+      bottom: "Jump to the last post"
     hero:
       search: "Search"
       quick_links: "Quick links"
@@ -83,6 +89,13 @@ en:
       command_menu: "⌘K / Ctrl+K command menu: jump to pages, categories, topics and people, or run an action."
       card_thumbnails: "Show the topic's first image beside its title on topic cards."
       code_language_labels: "Header showing the language on code blocks whose author named one (```bash)."
+      code_line_numbers: "Line numbers in a gutter beside code blocks of two or more lines. Copying a block copies the code only."
+      first_reply_prompt: "Under a topic's first post, while nobody has replied and the reader can: a short prompt to be the first to reply. Not shown in messages."
+      first_reply_prompt_hidden_categories: "Categories where the first-reply prompt isn't shown."
+      user_card_last_seen: "Show when someone was last seen on their user card. People who hide their profile and presence are left out."
+      topic_jump_buttons: "First-post and last-post buttons under the topic timeline, and beside the progress button on phones."
+      hide_lock_icons: "Hide the padlock on private categories' badges and links (everyone who sees the category already has access)."
+      mobile_menu_left: "On phones, put the ☰ menu button on the left of the logo instead of at the far right."
       quick_look: "Add a Quick look button to topic cards that previews the first post in a dialog. Signed-in members only, so it can't get round a login gate."
       reading_progress: "Thin bar under the header showing how far through a topic you are."
       external_link_icon: "Mark links in posts that go to other sites with a small arrow."

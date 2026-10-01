@@ -167,6 +167,9 @@ card_thumbnails:
 code_language_labels:
   type: bool
   default: true
+code_line_numbers:
+  type: bool
+  default: true
 internal_hosts:
   type: list
   list_type: simple
@@ -175,5 +178,24 @@ reading_progress:
   type: bool
   default: true
 quick_look:
+  type: bool
+  default: true
+first_reply_prompt:
+  type: bool
+  default: true
+first_reply_prompt_hidden_categories:
+  type: list
+  list_type: category
+  default: ""
+user_card_last_seen:
+  type: bool
+  default: true
+topic_jump_buttons:
+  type: bool
+  default: true
+hide_lock_icons:
+  type: bool
+  default: true
+mobile_menu_left:
   type: bool
   default: true
