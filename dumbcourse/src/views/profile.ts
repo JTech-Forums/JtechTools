@@ -151,19 +151,27 @@ function paint(
     user.can_send_private_messages
   ) {
     actions.push(
-      html`<button type="button" class="btn" data-act="message-user">
+      html`<button
+        type="button"
+        class="btn"
+        data-act="message-user"
+        data-key="message"
+      >
         ${icon("mail")}Message
       </button>`
     );
   }
   if (me) {
     actions.push(
-      html`<a class="btn" href="${href("/preferences")}"
+      html`<a class="btn" href="${href("/preferences")}" data-key="prefs"
         >${icon("gear")}Preferences</a
       >`
     );
     actions.push(
-      html`<a class="btn" href="${href("/preferences/profile")}"
+      html`<a
+        class="btn"
+        href="${href("/preferences/profile")}"
+        data-key="edit-profile"
         >${icon("edit")}Edit profile</a
       >`
     );

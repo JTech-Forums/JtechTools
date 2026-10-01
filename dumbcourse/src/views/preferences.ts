@@ -8,7 +8,7 @@ import { $, byId } from "../dom.ts";
 import { html, type SafeHtml } from "../html.ts";
 import { focusContent } from "../nav.ts";
 import { prefs, setPref, TEXT_SIZES, type Prefs } from "../prefs.ts";
-import { href, type RouteContext } from "../router.ts";
+import { href, reload, type RouteContext } from "../router.ts";
 import { user } from "../session.ts";
 import { icon } from "../ui/icons.ts";
 import {
@@ -233,7 +233,9 @@ export function preferencesRoute(ctx: RouteContext): void {
     }));
     actionSheet(title, items);
   };
-  const again = () => go(ctx.path, { replace: true });
+  // Re-render in place, keeping scroll and the focused row: a fresh render
+  // would put focus back on the first row (Theme) after every change.
+  const again = () => reload();
 
   s.act("pref", (el) => {
     const key = el.getAttribute("data-pref");
@@ -524,7 +526,8 @@ export function emailPrefsRoute(ctx: RouteContext): Promise<void> {
         put(`/u/${encodeURIComponent(u.username)}.json`, body).then(
           () => {
             toast("Saved.", "success");
-            go(ctx.path, { replace: true });
+            // In place, so focus stays on the row just changed.
+            reload();
           },
           (e: unknown) => toast(errorMessage(e), "error")
         );

@@ -19,6 +19,7 @@ import {
   currentKey,
   focus,
   focusByKey,
+  focusContent,
   move,
   moveInRow,
   switchTab,
@@ -53,8 +54,9 @@ import { avatar } from "./site.ts";
 import { icon } from "./ui/icons.ts";
 import {
   closeTop,
-  discardAll,
+  dropLayers,
   handlePop,
+  leaveScreen,
   openLayer,
   setNavigator,
   toast,
@@ -66,8 +68,7 @@ import { currentSoftkeys, mountSoftkeys } from "./ui/softkeys.ts";
 export function go(path: string, opts: { replace?: boolean } = {}): void {
   let p = path;
   if (p.indexOf(APP_ROOT) === 0) p = p.slice(APP_ROOT.length) || "/";
-  const replace = discardAll() || !!opts.replace;
-  router.navigate(p, { replace });
+  leaveScreen(!!opts.replace, (replace) => router.navigate(p, { replace }));
 }
 
 // ── Shell markup ──────────────────────────────────────────────────────
@@ -732,7 +733,7 @@ export function mountShell(): void {
       return true;
     },
     render: (view, ctx) => {
-      discardAll();
+      dropLayers();
       refreshCountsIfQuiet();
       const screen = beginScreen();
       void screen;
@@ -742,7 +743,9 @@ export function mountShell(): void {
           const r = ctx.restore;
           requestAnimationFrame(() => {
             window.scrollTo(0, r.scroll);
-            if (r.focusKey) focusByKey(r.focusKey);
+            // Views skip their first focus when restoring; if the remembered
+            // item is gone (or none was), don't leave the D-pad on nothing.
+            if (!r.focusKey || !focusByKey(r.focusKey)) focusContent();
           });
         }
       };
