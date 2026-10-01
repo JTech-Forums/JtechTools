@@ -16,6 +16,7 @@ A light version of the forum at `/dumb` for flip phones, KaiOS and old Android b
   - Anywhere: `*` menu, `#` search, `0` help, `1`/`7` top and bottom, `2`/`8` page up and down, `4` back.
   - In a topic: `3` reply, `5` like, `9` jump to post.
   - Soft keys that a phone names oddly can be taught under Preferences → Phone keys.
+  - In the Android app on a keypad phone, the app draws the soft-key bar and handles the soft keys itself. Preferences → Phone keys → Detect soft keys finds keys it doesn't know.
 - **Looks.** Light, dark or automatic; text size; compact layout; avatars on or off; data saver. All chosen per phone.
 - **Old phones find it by themselves.** Browsers that can't run the full forum are sent to the matching Dumbcourse page, including links in emails. Search engines never are (`dumbcourse_redirect_legacy_browsers`).
 - **Safe by construction.**
