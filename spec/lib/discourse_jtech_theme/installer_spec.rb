@@ -75,12 +75,15 @@ RSpec.describe ::DiscourseJtechTheme::Installer do
     end
   end
 
-  describe "a JTech theme installed by hand before the plugin shipped it" do
+  describe "a JTech theme installed by hand from Git before the plugin shipped it" do
     fab!(:hand_installed) do
+      repo =
+        RemoteTheme.create!(
+          remote_url: "https://github.com/example/jtech-theme.git",
+          about_url: "https://jtechforums.org",
+        )
       theme = Fabricate(:theme, name: "JTech")
-      theme.update!(
-        remote_theme: RemoteTheme.create!(remote_url: "", about_url: "https://jtechforums.org"),
-      )
+      theme.update!(remote_theme: repo)
       theme
     end
 
@@ -95,11 +98,34 @@ RSpec.describe ::DiscourseJtechTheme::Installer do
       expect(installed.color_schemes.pluck(:name)).to contain_exactly("JTech Light", "JTech Dark")
     end
 
+    it "stops following the Git repo, so core's theme updates can't pull it back" do
+      described_class.sync_now
+
+      expect(installed.id).to eq(hand_installed.id)
+      expect(installed.remote_theme).to be_nil
+    end
+
     it "leaves an unrelated theme that happens to be called JTech alone" do
       hand_installed.remote_theme.update!(about_url: "https://example.com")
 
       expect { described_class.sync_now }.to change { Theme.count }.by(1)
       expect(installed.id).not_to eq(hand_installed.id)
+      expect(hand_installed.reload.remote_theme).to be_present
+    end
+  end
+
+  describe "a JTech theme uploaded by hand (zip or theme CLI) before the plugin shipped it" do
+    fab!(:hand_installed) { RemoteTheme.import_theme_from_directory(described_class.directory) }
+
+    it "is updated in place, though core links no RemoteTheme to an upload" do
+      expect(hand_installed.reload.remote_theme).to be_nil
+      hand_installed.set_default!
+
+      result = nil
+      expect { result = described_class.sync_now }.not_to change { Theme.count }
+      expect(result).to eq(:adopted)
+      expect(installed.id).to eq(hand_installed.id)
+      expect(SiteSetting.default_theme_id).to eq(hand_installed.id)
     end
   end
 

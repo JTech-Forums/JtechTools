@@ -107,16 +107,33 @@ module ::DiscourseJtechTheme
       install(theme_id: id || existing&.id, digest: digest, adopted: existing.present?)
     end
 
+    # Core links a RemoteTheme only for a Git import. A theme uploaded as a zip
+    # or synced with the discourse_theme CLI has none, so its about_url is read
+    # from about.json, which core keeps as a theme field for every install.
     def self.adoptable_theme
+      themes = Theme.where(component: false, name: THEME_NAME).includes(:remote_theme).to_a
+      about_json =
+        ThemeField
+          .where(theme_id: themes.map(&:id), target_id: Theme.targets[:about], name: "about")
+          .pluck(:theme_id, :value)
+          .to_h
       candidates =
-        Theme
-          .where(component: false, name: THEME_NAME)
-          .includes(:remote_theme)
-          .select { |t| t.remote_theme&.about_url == ABOUT_URL }
+        themes.select do |t|
+          (about_url(about_json[t.id]) || t.remote_theme&.about_url) == ABOUT_URL
+        end
       candidates.first if candidates.size == 1
     end
 
+    def self.about_url(json)
+      JSON.parse(json)["about_url"].presence if json.present?
+    rescue JSON::ParserError
+      nil
+    end
+
     def self.install(theme_id:, digest:, adopted: false)
+      # An adopted Git install would otherwise keep pulling the old repo over
+      # this copy whenever that repo gets a commit (core's themes:update).
+      Theme.find(theme_id).update!(remote_theme: nil) if adopted
       theme =
         RemoteTheme.import_theme_from_directory(
           directory,
