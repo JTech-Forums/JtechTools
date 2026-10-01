@@ -35,11 +35,16 @@
   font-weight: 500;
 }
 
-// ── Desktop list controls: filters · tabs · New Topic on one line ──
-// Core wraps the row when it runs out of room, which dropped "New Topic" onto
-// a line of its own. Here it never wraps: below 66rem the button keeps only
-// its icon (the header's + does the same), and if that's still not enough
-// the tabs scroll sideways, fading at whichever edge is cut off.
+// ── Desktop list controls: filters · tabs · New Topic ──
+// Core wraps the row item by item when it runs out of room, which dropped
+// "New Topic" onto a line of its own. Here the tabs and the buttons always
+// share a line. When the whole row doesn't fit, the filters move up to a line
+// of their own: the row runs right to left and wraps upwards, so the filters
+// are what breaks off. The tabs are never wider than the room beside the
+// buttons (--jt-list-buttons, kept by api-initializers/jt-list-controls), so
+// they can't part from them either; below that they scroll sideways, fading
+// at whichever edge is cut off. Below 66rem New Topic keeps only its icon
+// (the header's + does the same).
 @property --jt-tabs-fade-start {
   syntax: "<length>";
   inherits: false;
@@ -73,22 +78,29 @@
 }
 
 html.desktop-view .list-controls .navigation-container {
-  flex-wrap: nowrap;
+  --jt-list-gap: var(--space-3);
+  flex-flow: row-reverse wrap-reverse;
+  gap: var(--jt-list-gap);
 
-  > .category-breadcrumb,
-  > .navigation-controls {
-    flex: none;
+  // `order` runs right to left here; anything a plugin adds after the
+  // filters (outlet after-breadcrumbs) stays between them and the tabs
+  > * {
+    order: 3;
   }
 
   > .navigation-controls {
+    order: 1;
+    flex: none;
     flex-wrap: nowrap;
     margin-left: auto;
   }
 
   > #navigation-bar {
+    order: 2;
     flex: 1 1 auto;
     flex-wrap: nowrap;
     min-width: 0;
+    max-width: calc(100% - var(--jt-list-buttons, 25rem) - var(--jt-list-gap));
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
@@ -109,6 +121,14 @@ html.desktop-view .list-controls .navigation-container {
       animation: jt-tabs-fade linear both;
       animation-timeline: scroll(self inline);
     }
+  }
+
+  > .category-breadcrumb {
+    order: 4;
+    flex: none;
+
+    // left-aligned when it's alone on its line
+    margin-right: auto;
   }
 
   @media (width < 66rem) {

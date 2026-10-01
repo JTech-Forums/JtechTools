@@ -123,6 +123,12 @@
   display: none;
 }
 
+// New's All / Topics / Replies switch, just above the list, would otherwise
+// sit on the first card's border. Same gap as between cards.
+.topic-replies-toggle-wrapper:has(~ .topic-list.jt-cards) {
+  margin-bottom: var(--space-3);
+}
+
 .jt-card {
   display: flex;
   flex-direction: column;
