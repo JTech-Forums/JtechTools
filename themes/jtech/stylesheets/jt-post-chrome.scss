@@ -240,6 +240,26 @@ nav.post-controls {
   border-radius: var(--jt-radius-control);
 }
 
+// "Me too" (shared issues) is a reaction, but the plugin gives it a row of
+// its own above the post menu. Floated, it sits at the start of the menu row
+// instead: the menu's flex row steps aside for it, next to the like count.
+// Where the post buttons don't fit beside them they drop to a second line
+// (still on the right) rather than run past the post's edge. Phones keep the
+// plugin's own row.
+@media (width >= 64rem) {
+  .post__contents > .solved-shared-issue-row {
+    float: left;
+
+    // top: core's .post-menu-area margin, so both start on the same line
+    margin: 20px var(--space-2) 0 0;
+  }
+
+  .post__contents:has(> .solved-shared-issue-row) nav.post-controls {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+  }
+}
+
 // ── Topic events (pinned, closed, moved …) ────────────────
 .small-action {
   .topic-avatar {
