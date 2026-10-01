@@ -33,7 +33,7 @@ So a sub-plugin file reads like any `plugin.rb` body: `after_initialize`, `on(:e
 | `assets/stylesheets/` | SCSS |
 | `dumbcourse/` | The Dumbcourse app source (TypeScript, built to `public/`) — see [dumbcourse.md](dumbcourse.md) |
 | `public/` | Built Dumbcourse files, committed |
-| `scripts/` | One-off `rails runner` scripts |
+| `scripts/` | One-off `rails runner` scripts (Ruby); theme sync and checks (`scripts/theme/`); the README images (`pnpm readme:images`) |
 | `spec/` | RSpec: `lib/`, `requests/`, `jobs/`, `system/` |
 | `types/` | TypeScript declarations for Discourse modules |
 

@@ -10,8 +10,10 @@
     "eslint": "10.6.0",
     "espree": "10.4.0",
     "jiti": "^2.7.0",
+    "playwright-core": "1.63.0",
     "postcss": "8.5.23",
     "prettier": "3.8.1",
+    "sharp": "0.35.5",
     "stylelint": "17.5.0",
     "typescript": "5.9.3"
   },
@@ -29,7 +31,11 @@
     "dumbcourse:check": "tsc -p dumbcourse/tsconfig.json && tsc -p dumbcourse/tsconfig.node.json && node --experimental-strip-types --no-warnings dumbcourse/build.ts --check",
     "dumbcourse:test": "node --experimental-strip-types --no-warnings --test \"dumbcourse/test/*.test.ts\"",
     "lint:dumbcourse": "pnpm dumbcourse:check && pnpm dumbcourse:test",
-    "lint:theme": "eslint themes/jtech/javascripts --cache && prettier \"themes/jtech/javascripts/**/*.{js,gjs}\" \"themes/jtech/{common,stylesheets}/*.scss\" --check && stylelint \"themes/jtech/**/*.scss\""
+    "lint:theme": "eslint themes/jtech/javascripts --cache && prettier \"themes/jtech/javascripts/**/*.{js,gjs}\" \"themes/jtech/{common,stylesheets}/*.scss\" --check && stylelint \"themes/jtech/**/*.scss\"",
+    "lint:scripts": "tsc -p scripts/tsconfig.json && prettier \"scripts/**/*.mts\" --check",
+    "lint:scripts:fix": "prettier \"scripts/**/*.mts\" -w",
+    "theme:check": "node --experimental-strip-types --no-warnings scripts/theme/check.mts",
+    "readme:images": "node --experimental-strip-types --no-warnings scripts/make-readme-images.mts"
   },
   "engines": {
     "node": ">= 22",

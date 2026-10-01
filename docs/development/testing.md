@@ -18,7 +18,7 @@ From this repo:
 
 ```bash
 pnpm install
-pnpm lint          # ESLint, Prettier, Stylelint, TypeScript, Dumbcourse build check + tests
+pnpm lint          # ESLint, Prettier, Stylelint, TypeScript, Dumbcourse build check + tests, scripts
 pnpm lint:fix      # fixes what it can
 ```
 
