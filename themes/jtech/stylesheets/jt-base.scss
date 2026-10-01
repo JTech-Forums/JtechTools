@@ -130,6 +130,27 @@ h4 {
   border: 1px solid var(--d-button-primary-bg-color);
 }
 
+// ── One right edge ────────────────────────────────────────
+// The header, the page content and the footer share one pair of walls
+// (core's .wrap). Core narrows a few blocks inside it on its own: the
+// suggested topics under a topic stop at 965px, and the search page insets
+// its header, result count and results by 10% a side. They run wall to wall
+// like the rest. Posts keep their reading width; the timeline fills the rest.
+.more-topics__container {
+  max-width: none;
+}
+
+.search-container {
+  .search-header,
+  .search-advanced .search-results {
+    padding-inline: 0;
+  }
+
+  .search-advanced .search-info {
+    margin-inline: 0;
+  }
+}
+
 // ── Print ─────────────────────────────────────────────────
 // Page chrome stays off paper, and dark mode prints dark text on white
 // (browsers drop the black background, which would leave white text).

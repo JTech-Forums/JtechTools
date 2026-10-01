@@ -4,18 +4,9 @@
   margin-top: var(--space-12, 4rem);
 
   // the last line clears the iPhone home indicator
-  padding: var(--space-10, 3rem) var(--d-wrap-padding-x, 1rem)
+  padding: 0 var(--d-wrap-padding-x, 1rem)
     max(var(--space-6), env(safe-area-inset-bottom));
   color: var(--jt-text-muted);
-  border-top: 1px solid;
-  border-image: linear-gradient(
-      to right,
-      transparent,
-      var(--jt-border) 15%,
-      var(--jt-border) 85%,
-      transparent
-    )
-    1;
 
   // Edge to edge with the page above: core's .wrap width (wider by the
   // sidebar on sidebar pages) less the side padding both share
@@ -30,10 +21,14 @@
     }
   }
 
+  // The divider sits on the content, so it stops at the page's walls like
+  // the line above the copyright, instead of fading across the window
   &__inner {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
     gap: var(--space-8);
+    padding-top: var(--space-10, 3rem);
+    border-top: 1px solid var(--jt-border);
 
     @include viewport.until(md) {
       grid-template-columns: minmax(0, 1fr);

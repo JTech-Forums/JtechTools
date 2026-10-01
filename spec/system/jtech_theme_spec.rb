@@ -247,6 +247,31 @@ RSpec.describe "JTech theme" do
     expect(footer_edges[1]).to be_within(1).of(page_edges[1])
   end
 
+  def horizontal_edges(*selectors)
+    page.evaluate_script(<<~JS)
+      #{selectors.to_json}
+        .map((selector) => document.querySelector(selector).getBoundingClientRect())
+        .map((r) => [Math.round(r.left), Math.round(r.right)])
+    JS
+  end
+
+  # Suggested topics and the search page used to stop short of the right
+  # edge the header, content and footer share
+  it "runs suggested topics and the search page to the page's edges" do
+    sign_in(member)
+
+    visit(topic.relative_url)
+    expect(page).to have_css(".more-topics__container .topic-list")
+    wall, suggested = horizontal_edges("#main-outlet", ".more-topics__container")
+    expect(suggested[1]).to be_within(1).of(wall[1])
+
+    visit("/search?q=filter")
+    expect(page).to have_css(".search-header .search-bar")
+    wall, bar = horizontal_edges("#main-outlet", ".search-header .search-bar")
+    expect(bar).to eq(wall)
+    expect_no_theme_errors
+  end
+
   it "previews a topic's first post in Quick look" do
     sign_in(member)
     visit("/latest")
