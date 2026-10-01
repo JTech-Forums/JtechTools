@@ -59,7 +59,8 @@ jobs:
       - run: pnpm lint:theme
 
   # The TypeScript scripts under scripts/ (theme check, README images) run on
-  # a developer's machine, so nothing else type-checks them.
+  # a developer's machine, so nothing else type-checks them. Also holds the
+  # repo to Ruby, TypeScript and SCSS (AGENTS.md).
   scripts:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -72,3 +73,4 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint:scripts
+      - run: pnpm lint:languages

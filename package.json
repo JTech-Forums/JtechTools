@@ -35,6 +35,7 @@
     "lint:theme": "eslint themes/jtech/javascripts --cache && prettier \"themes/jtech/javascripts/**/*.{ts,gts}\" \"themes/jtech/{common,stylesheets}/*.scss\" --check && stylelint \"themes/jtech/**/*.scss\"",
     "lint:scripts": "tsc -p scripts/tsconfig.json && prettier \"scripts/**/*.mts\" --check",
     "lint:scripts:fix": "prettier \"scripts/**/*.mts\" -w",
+    "lint:languages": "node --experimental-strip-types --no-warnings scripts/check-languages.mts",
     "theme:check": "node --experimental-strip-types --no-warnings scripts/theme/check.mts",
     "readme:images": "node --experimental-strip-types --no-warnings scripts/make-readme-images.mts"
   },

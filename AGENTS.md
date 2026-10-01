@@ -35,6 +35,7 @@ If core, or a plugin bundled with core, already does it, use that and delete our
 - The frontend is TypeScript (`.ts`, `.gts`), the bundled theme in `themes/jtech/` included; no `.js`/`.gjs`. `pnpm lint:types` passes with no `@ts-ignore`. The theme also passes `pnpm lint:theme`.
 - Ruby follows `rubocop-discourse` and `stree`. Frontend follows `@discourse/lint-configs`.
 - Dumbcourse compiles to ES5 and must keep working on Chrome 30 / Firefox 30 / Android 4.4. `pnpm dumbcourse:check` enforces it.
+- Three languages: Ruby, TypeScript, SCSS. Nothing is written by hand in JavaScript, CSS, HTML, Python or shell; scripts are Ruby or TypeScript (`.mts`). Build output that browsers need (Dumbcourse's files in `public/`) is marked `linguist-generated` in `.gitattributes`. `pnpm lint:languages` enforces it.
 - Comments explain *why*, not *what*.
 - Match the code around you.
 
