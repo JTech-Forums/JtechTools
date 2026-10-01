@@ -17,10 +17,17 @@
     )
     1;
 
+  // Edge to edge with the page above: core's .wrap width (wider by the
+  // sidebar on sidebar pages) less the side padding both share
   &__inner,
   &__base {
-    max-width: var(--d-max-width);
+    --jt-footer-wrap: var(--d-max-width);
+    max-width: calc(var(--jt-footer-wrap) - 2 * var(--d-wrap-padding-x, 1rem));
     margin: 0 auto;
+
+    body.has-sidebar-page & {
+      --jt-footer-wrap: calc(var(--d-sidebar-width) + var(--d-max-width));
+    }
   }
 
   &__inner {
@@ -103,8 +110,13 @@
     gap: var(--space-4);
     margin-top: var(--space-8);
     padding-top: var(--space-4);
-    font-size: var(--jt-text-xs);
     color: var(--jt-text-subtle);
     border-top: 1px solid var(--jt-border);
+
+    // on the text, not the box: core's --d-sidebar-width is in em, so a
+    // smaller font here would shrink this line's width
+    > * {
+      font-size: var(--jt-text-xs);
+    }
   }
 }

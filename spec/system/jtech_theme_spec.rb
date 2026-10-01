@@ -217,6 +217,36 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  it "puts the tracking menu in the topic's row of buttons, without the explanation" do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css("#topic-footer-buttons .notifications-tracking-trigger")
+    expect(page).to have_no_css("#topic-footer-buttons .reason .text")
+    tracking, reply = page.evaluate_script(<<~JS)
+      ["#topic-footer-buttons .notifications-tracking-trigger", "#topic-footer-buttons .create"]
+        .map((selector) => document.querySelector(selector).getBoundingClientRect())
+        .map((r) => [Math.round(r.top), Math.round(r.left)])
+    JS
+    expect(tracking[0]).to eq(reply[0])
+    expect(tracking[1]).to be < reply[1]
+    expect_no_theme_errors
+  end
+
+  it "lines the footer up with the page above it" do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css(".jt-footer__inner")
+    page_edges, footer_edges = page.evaluate_script(<<~JS)
+      [[".sidebar-wrapper", "#main-outlet"], [".jt-footer__inner", ".jt-footer__inner"]]
+        .map(([left, right]) => [
+          document.querySelector(left).getBoundingClientRect().left,
+          document.querySelector(right).getBoundingClientRect().right,
+        ])
+    JS
+    expect(footer_edges[0]).to be_within(1).of(page_edges[0])
+    expect(footer_edges[1]).to be_within(1).of(page_edges[1])
+  end
+
   it "previews a topic's first post in Quick look" do
     sign_in(member)
     visit("/latest")
