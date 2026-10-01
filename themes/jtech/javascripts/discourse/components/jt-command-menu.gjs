@@ -3,9 +3,11 @@ import { tracked } from "@glimmer/tracking";
 import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
+import { cancel } from "@ember/runloop";
 import { service } from "@ember/service";
 import { modifier } from "ember-modifier";
 import { themePrefix } from "virtual:theme";
+import KeyboardShortcutsHelp from "discourse/components/modal/keyboard-shortcuts-help";
 import { ajax } from "discourse/lib/ajax";
 import discourseDebounce from "discourse/lib/debounce";
 import DiscourseURL from "discourse/lib/url";
@@ -14,6 +16,7 @@ import DModal from "discourse/ui-kit/d-modal";
 import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
+import { colorToggleAvailable, toggleColorMode } from "../lib/jt-color-mode";
 
 const t = (key, opts) => i18n(themePrefix(`jt.cmdk.${key}`), opts);
 
@@ -22,12 +25,13 @@ const LIMITS = { commands: 5, categories: 4, topics: 6, users: 3 };
 // ⌘K / Ctrl+K: jump to pages, categories, topics and people, or run an
 // action, from anywhere. Opened by api-initializers/jt-command-menu.
 export default class JtCommandMenu extends Component {
+  @service capabilities;
   @service currentUser;
   @service site;
   @service siteSettings;
   @service composer;
   @service interfaceColor;
-  @service keyboardShortcuts;
+  @service modal;
 
   @tracked query = "";
   @tracked selected = 0;
@@ -45,21 +49,35 @@ export default class JtCommandMenu extends Component {
     }
   });
 
+  isSelected = (index) => index === this.selected;
+
+  #searchTimer = null;
+
+  willDestroy() {
+    super.willDestroy(...arguments);
+    cancel(this.#searchTimer);
+  }
+
   get commands() {
     const user = this.currentUser;
     const list = [
-      user && {
-        icon: "plus",
-        label: t("new_topic"),
-        keywords: "create post write",
-        run: () => this.composer.openNewTopic({}),
-      },
+      user?.can_create_topic &&
+        !this.site.isReadOnly && {
+          icon: "plus",
+          label: t("new_topic"),
+          keywords: "create post write",
+          run: () => this.composer.openNewTopic({}),
+        },
       { icon: "list", label: t("latest"), url: "/latest" },
       user && { icon: "bolt", label: t("new"), url: "/new" },
       user && { icon: "circle-dot", label: t("unread"), url: "/unread" },
       { icon: "arrow-trend-up", label: t("top"), url: "/top" },
       { icon: "layer-group", label: t("categories"), url: "/categories" },
-      { icon: "tag", label: t("tags"), url: "/tags" },
+      this.siteSettings.tagging_enabled && {
+        icon: "tag",
+        label: t("tags"),
+        url: "/tags",
+      },
       user && {
         icon: "bookmark",
         label: t("bookmarks"),
@@ -78,17 +96,17 @@ export default class JtCommandMenu extends Component {
         keywords: "settings account",
         url: "/my/preferences",
       },
-      this.interfaceColor.selectorAvailable && {
+      colorToggleAvailable(this.interfaceColor) && {
         icon: "circle-half-stroke",
         label: t("toggle_theme"),
         keywords: "dark light mode appearance color",
-        run: () => this.toggleTheme(),
+        run: () => toggleColorMode(this.interfaceColor),
       },
-      {
+      this.capabilities.hasKeyboard && {
         icon: "keyboard",
         label: t("shortcuts"),
         keywords: "keys hotkeys help",
-        run: () => this.keyboardShortcuts.showHelpModal(),
+        run: () => this.modal.show(KeyboardShortcutsHelp),
       },
       // Only on lists that offer it (core's header button, hidden on cards)
       document.querySelector("button.bulk-select") && {
@@ -106,33 +124,6 @@ export default class JtCommandMenu extends Component {
     return this.query.trim().toLowerCase();
   }
 
-  // Prefix matches first, then word starts, then anywhere.
-  rank(text, extra = "") {
-    const hay = text.toLowerCase();
-    const term = this.term;
-    if (hay.startsWith(term)) {
-      return 0;
-    }
-    if (hay.includes(` ${term}`)) {
-      return 1;
-    }
-    if (hay.includes(term) || extra.toLowerCase().includes(term)) {
-      return 2;
-    }
-    return null;
-  }
-
-  filtered(items, textOf, extraOf = () => "") {
-    if (!this.term) {
-      return items;
-    }
-    return items
-      .map((item) => ({ item, r: this.rank(textOf(item), extraOf(item)) }))
-      .filter(({ r }) => r !== null)
-      .sort((a, b) => a.r - b.r)
-      .map(({ item }) => item);
-  }
-
   // Categories load lazily on this forum, so the client only knows some of
   // them: match the loaded ones instantly, then add the server's matches.
   get categoryItems() {
@@ -145,7 +136,8 @@ export default class JtCommandMenu extends Component {
       (c) => c.name,
       (c) => c.parentCategory?.name || ""
     );
-    const remote = this.resultsFor === this.term ? this.results?.categories || [] : [];
+    const remote =
+      this.resultsFor === this.term ? this.results?.categories || [] : [];
     const items = [];
     for (const c of [...loaded, ...remote]) {
       if (seen.has(c.id) || items.length >= LIMITS.categories) {
@@ -243,32 +235,59 @@ export default class JtCommandMenu extends Component {
     return `jt-cmdk-item-${this.selected}`;
   }
 
+  // Prefix matches first, then word starts, then anywhere.
+  rank(text, extra = "") {
+    const hay = text.toLowerCase();
+    const term = this.term;
+    if (hay.startsWith(term)) {
+      return 0;
+    }
+    if (hay.includes(` ${term}`)) {
+      return 1;
+    }
+    if (hay.includes(term) || extra.toLowerCase().includes(term)) {
+      return 2;
+    }
+    return null;
+  }
+
+  filtered(items, textOf, extraOf = () => "") {
+    if (!this.term) {
+      return items;
+    }
+    return items
+      .map((item) => ({ item, r: this.rank(textOf(item), extraOf(item)) }))
+      .filter(({ r }) => r !== null)
+      .sort((a, b) => a.r - b.r)
+      .map(({ item }) => item);
+  }
+
   @action
   onInput(event) {
     this.query = event.target.value;
     this.selected = 0;
     const min = this.siteSettings.min_search_term_length || 3;
-    if (this.term.length >= min) {
+    if (this.site.can_search && this.term.length >= min) {
       this.loading = true;
-      discourseDebounce(this, this.search, this.term, 200);
+      // Core's search menu waits as long; anonymous search is rate limited.
+      this.#searchTimer = discourseDebounce(this, this.search, this.term, 400);
     } else {
+      cancel(this.#searchTimer);
       this.loading = false;
     }
   }
 
   async search(term) {
-    if (term !== this.term) {
+    if (term !== this.term || this.isDestroying) {
       return;
     }
     try {
-      const results = await ajax("/search/query", {
-        data: { term, include_blurbs: false },
-      });
-      const ids = [
-        ...(results.topics || []).map((topic) => topic.category_id),
-        ...(results.categories || []).map((c) => c.parent_category_id),
-      ].filter(Boolean);
-      await Category.asyncFindByIds([...new Set(ids)]).catch(() => {});
+      const results = await ajax("/search/query", { data: { term } });
+      // With lazily loaded categories the response carries the ones its
+      // topics need, as core's search menu uses them.
+      results.grouped_search_result?.extra?.categories?.forEach((category) =>
+        this.site.updateCategory(category)
+      );
       if (term === this.term && !this.isDestroying) {
         this.results = results;
         this.resultsFor = term;
@@ -288,10 +307,13 @@ export default class JtCommandMenu extends Component {
     if (event.key === "ArrowDown" || (event.key === "n" && event.ctrlKey)) {
       event.preventDefault();
       this.selected = count ? (this.selected + 1) % count : 0;
-    } else if (event.key === "ArrowUp" || (event.key === "p" && event.ctrlKey)) {
+    } else if (
+      event.key === "ArrowUp" ||
+      (event.key === "p" && event.ctrlKey)
+    ) {
       event.preventDefault();
       this.selected = count ? (this.selected - 1 + count) % count : 0;
-    } else if (event.key === "Enter") {
+    } else if (event.key === "Enter" && !event.isComposing) {
       event.preventDefault();
       const item = this.items[this.selected];
       if (item) {
@@ -320,63 +342,60 @@ export default class JtCommandMenu extends Component {
     }
   }
 
-  toggleTheme() {
-    const dark = this.interfaceColor.colorModeIsDark
-      ? true
-      : this.interfaceColor.colorModeIsLight
-        ? false
-        : window.matchMedia("(prefers-color-scheme: dark)").matches;
-    if (dark) {
-      this.interfaceColor.forceLightMode();
-    } else {
-      this.interfaceColor.forceDarkMode();
-    }
-  }
-
-  isSelected = (index) => index === this.selected;
-
   <template>
     <DModal
+      aria-label={{t "sidebar_label"}}
       class="jt-cmdk"
-      @hideHeader={{true}}
-      @closeModal={{@closeModal}}
       @bodyClass="jt-cmdk__body"
+      @closeModal={{@closeModal}}
+      @hideHeader={{true}}
     >
       <div class="jt-cmdk__search">
         {{dIcon "magnifying-glass"}}
         <input
-          class="jt-cmdk__input"
-          type="text"
-          role="combobox"
-          aria-expanded="true"
-          aria-controls="jt-cmdk-list"
           aria-activedescendant={{this.activeId}}
+          aria-controls="jt-cmdk-list"
+          aria-expanded="true"
           aria-label={{t "placeholder"}}
-          placeholder={{t "placeholder"}}
           autocomplete="off"
+          class="jt-cmdk__input"
+          placeholder={{t "placeholder"}}
+          role="combobox"
           spellcheck="false"
+          type="text"
           value={{this.query}}
           {{on "input" this.onInput}}
           {{on "keydown" this.onKeydown}}
           {{this.focusInput}}
         />
-        <kbd class="jt-cmdk__esc">esc</kbd>
+        <button
+          aria-label={{i18n "close"}}
+          class="jt-cmdk__esc"
+          type="button"
+          {{on "click" @closeModal}}
+        >
+          <kbd>esc</kbd>
+          {{dIcon "xmark"}}
+        </button>
       </div>
 
       <div class="jt-cmdk__list" id="jt-cmdk-list" role="listbox">
         {{#each this.groups as |group|}}
-          <div class="jt-cmdk__group" role="group" aria-label={{group.label}}>
+          <div aria-label={{group.label}} class="jt-cmdk__group" role="group">
             {{#if group.label}}
               <div class="jt-cmdk__group-label">{{group.label}}</div>
             {{/if}}
             {{#each group.items as |item|}}
+              {{! listbox > group > option is valid ARIA; the rule only knows listbox }}
+              {{! eslint-disable ember/template-require-context-role }}
               <button
-                type="button"
+                aria-selected={{if (this.isSelected item.index) "true" "false"}}
+                class="jt-cmdk__item
+                  {{if (this.isSelected item.index) '--active'}}"
                 id="jt-cmdk-item-{{item.index}}"
                 role="option"
-                aria-selected={{if (this.isSelected item.index) "true" "false"}}
-                class="jt-cmdk__item {{if (this.isSelected item.index) '--active'}}"
                 tabindex="-1"
+                type="button"
                 {{on "click" (fn this.run item)}}
                 {{on "mousemove" (fn this.hover item.index)}}
                 {{this.keepInView (this.isSelected item.index)}}
@@ -392,8 +411,9 @@ export default class JtCommandMenu extends Component {
                 {{#if item.hint}}
                   <span class="jt-cmdk__hint">{{item.hint}}</span>
                 {{/if}}
-                <span class="jt-cmdk__enter" aria-hidden="true">↵</span>
+                <span aria-hidden="true" class="jt-cmdk__enter">↵</span>
               </button>
+              {{! eslint-enable ember/template-require-context-role }}
             {{/each}}
           </div>
         {{/each}}
@@ -403,7 +423,7 @@ export default class JtCommandMenu extends Component {
         {{/if}}
       </div>
 
-      <div class="jt-cmdk__foot" aria-hidden="true">
+      <div aria-hidden="true" class="jt-cmdk__foot">
         <span><kbd>↑</kbd><kbd>↓</kbd> {{t "navigate"}}</span>
         <span><kbd>↵</kbd> {{t "open"}}</span>
         <span><kbd>ctrl</kbd><kbd>↵</kbd> {{t "new_tab"}}</span>

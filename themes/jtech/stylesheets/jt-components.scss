@@ -65,7 +65,7 @@ html.admin-area .sidebar-wrapper .admin-panel {
 
     .d-icon {
       font-size: 0.85em;
-      color: currentColor;
+      color: currentcolor;
     }
 
     &:hover,
@@ -122,7 +122,7 @@ html.admin-area .sidebar-wrapper .admin-panel {
     width: 1.35rem;
     height: 1.35rem;
     margin: 0 !important;
-    color: currentColor !important;
+    color: currentcolor !important;
   }
 
   .emoji {
@@ -193,11 +193,7 @@ html .custom-gated-topic-container {
   justify-content: center;
   align-items: flex-start;
   min-height: 55%;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    var(--jt-surface) 9rem
-  );
+  background: linear-gradient(to bottom, transparent, var(--jt-surface) 9rem);
   border-top: 0;
 }
 
@@ -273,7 +269,11 @@ html .custom-gated-topic-content {
   position: fixed;
   z-index: z("timeline");
   right: max(1.25rem, env(safe-area-inset-right));
-  bottom: max(1.25rem, env(safe-area-inset-bottom));
+
+  // above the minimised composer bar when there is one
+  bottom: calc(
+    max(1.25rem, env(safe-area-inset-bottom)) + var(--composer-height, 0px)
+  );
   width: 2.5rem;
   height: 2.5rem;
   padding: 0;
@@ -302,7 +302,14 @@ html .custom-gated-topic-content {
   }
 
   .d-icon {
-    color: currentColor;
+    color: currentcolor;
+  }
+
+  // Above core's footer nav (PWA / DiscourseHub)
+  html.footer-nav-visible & {
+    bottom: calc(
+      var(--footer-nav-height, 49px) + env(safe-area-inset-bottom) + 1.25rem
+    );
   }
 
   // Out of the composer's way

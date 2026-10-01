@@ -249,13 +249,13 @@
 
   a > span:first-child,
   :is(
-      .helpful-flags,
-      .flags,
-      .deleted-posts,
-      .warnings-received,
-      .suspended,
-      .silenced
-    ) {
+    .helpful-flags,
+    .flags,
+    .deleted-posts,
+    .warnings-received,
+    .suspended,
+    .silenced
+  ) {
     min-width: 1.4em;
     margin-right: 0.3em;
     padding: 0 0.35em;

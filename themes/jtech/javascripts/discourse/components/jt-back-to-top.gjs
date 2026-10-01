@@ -33,18 +33,21 @@ export default class JtBackToTop extends Component {
 
   @action
   toTop() {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
     window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
   }
 
   <template>
     {{#unless this.onTopic}}
       <button
-        type="button"
-        class="jt-to-top btn no-text {{if this.visible '--visible'}}"
+        aria-hidden={{if this.visible "false" "true"}}
         aria-label={{i18n (themePrefix "jt.back_to_top")}}
-        title={{i18n (themePrefix "jt.back_to_top")}}
+        class="jt-to-top btn no-text {{if this.visible '--visible'}}"
         tabindex={{if this.visible "0" "-1"}}
+        title={{i18n (themePrefix "jt.back_to_top")}}
+        type="button"
         {{on "click" this.toTop}}
         {{this.watchScroll}}
       >{{dIcon "arrow-up"}}</button>

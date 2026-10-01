@@ -22,7 +22,45 @@
   }
 }
 
+// Phones with the keyboard up: core sizes dialogs to the visible area
+// (--composer-vh); keep the menu inside it instead of 12dvh further down.
+html.keyboard-visible.mobile-view .d-modal.jt-cmdk .d-modal__container {
+  height: auto;
+  max-height: calc(var(--composer-vh, 1dvh) * 100 - var(--space-4));
+  margin-top: var(--space-2);
+}
+
 .jt-cmdk {
+  // Closes the menu: "esc" on keyboards, an × to tap on touch screens
+  &__esc {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    padding: 0;
+    color: var(--jt-text-subtle);
+    background: none;
+    border: 0;
+    cursor: pointer;
+
+    > .d-icon {
+      display: none;
+      font-size: 1rem;
+    }
+
+    @media (hover: none) {
+      width: 2rem;
+      height: 2rem;
+
+      > kbd {
+        display: none;
+      }
+
+      > .d-icon {
+        display: block;
+      }
+    }
+  }
+
   kbd {
     display: inline-grid;
     place-items: center;

@@ -83,7 +83,9 @@ export default class JtScrollbar extends Component {
 
     const onPointerMove = (event) => {
       if (drag) {
-        window.scrollTo({ top: drag.scroll + (event.clientY - drag.y) * drag.ratio });
+        window.scrollTo({
+          top: drag.scroll + (event.clientY - drag.y) * drag.ratio,
+        });
       }
     };
 
@@ -122,7 +124,7 @@ export default class JtScrollbar extends Component {
   });
 
   <template>
-    <div class="jt-scrollbar --off" aria-hidden="true" {{this.install}}>
+    <div aria-hidden="true" class="jt-scrollbar --off" {{this.install}}>
       <div class="jt-scrollbar__thumb"></div>
     </div>
   </template>

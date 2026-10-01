@@ -22,7 +22,9 @@ export default apiInitializer((api) => {
 
   api.decorateCookedElement(
     (element) => {
-      for (const code of element.querySelectorAll("pre > code[class*='lang-']")) {
+      for (const code of element.querySelectorAll(
+        "pre > code[class*='lang-']"
+      )) {
         const lang = code.className.match(/(?:^|\s)lang-([\w+#.-]+)/)?.[1];
         if (lang && !SKIP.has(lang.toLowerCase())) {
           code.parentElement.dataset.jtLang =

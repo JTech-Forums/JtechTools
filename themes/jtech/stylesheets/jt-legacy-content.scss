@@ -1,7 +1,6 @@
 // Ported verbatim from prod's "Default" theme (id 1) so existing posts that
 // use these wrappers keep rendering. The header-background override was
 // dropped on purpose: the header belongs to jt-header.scss now.
-
 [data-wrap="ghbtn"] {
   text-align: center;
 }
@@ -70,7 +69,6 @@
 
 /* Hide "Seen" and "Posted" on ars18's user card */
 .card-content:has(a.user-profile-link[href="/u/ars18"]) .last-seen-metadata,
-.card-content:has(a.user-profile-link[href="/u/ars18"])
-  .metadata__last-posted {
+.card-content:has(a.user-profile-link[href="/u/ars18"]) .metadata__last-posted {
   display: none !important;
 }

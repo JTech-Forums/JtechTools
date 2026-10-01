@@ -21,15 +21,15 @@ export default class JtReadingProgress extends Component {
     this.appEvents.off("topic:current-post-scrolled", this, this.onScrolled);
   }
 
-  onScrolled(event) {
-    this.percent = Math.max(0, Math.min(1, event?.percent || 0));
-  }
-
   get style() {
     return trustHTML(`--jt-progress: ${this.percent}`);
   }
 
+  onScrolled(event) {
+    this.percent = Math.max(0, Math.min(1, event?.percent || 0));
+  }
+
   <template>
-    <div class="jt-progress" style={{this.style}} aria-hidden="true"></div>
+    <div aria-hidden="true" class="jt-progress" style={{this.style}}></div>
   </template>
 }

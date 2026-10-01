@@ -22,6 +22,7 @@ import JtQuickLook from "./jt-quick-look";
 // One topic as a card: meta row, title, excerpt, people + stats footer.
 // Rendered as the only cell of the row (see api-initializers/jt-topic-cards).
 export default class JtTopicCard extends Component {
+  @service currentUser;
   @service modal;
 
   get topic() {
@@ -63,6 +64,12 @@ export default class JtTopicCard extends Component {
     );
     const pick = sizes.find((t) => t.width >= 240) || sizes.at(-1);
     return pick?.url || this.topic.image_url || null;
+  }
+
+  // Signed-in only: the forum's "Gated Topics" component blurs topics for
+  // visitors, and Quick look would hand them the whole first post.
+  get showQuickLook() {
+    return settings.quick_look && this.currentUser;
   }
 
   @action
@@ -118,7 +125,7 @@ export default class JtTopicCard extends Component {
 
       <div class="jt-card__body">
         <div class="jt-card__text">
-          <div class="jt-card__title" role="heading" aria-level="2">
+          <div aria-level="2" class="jt-card__title" role="heading">
             <TopicStatus @context="topic-list" @topic={{@topic}} />
             <TopicLink
               class="raw-link raw-topic-link"
@@ -145,11 +152,11 @@ export default class JtTopicCard extends Component {
 
         {{#if this.thumbnail}}
           <img
-            class="jt-card__thumb"
-            src={{this.thumbnail}}
             alt=""
-            loading="lazy"
+            class="jt-card__thumb"
             decoding="async"
+            loading="lazy"
+            src={{this.thumbnail}}
           />
         {{/if}}
       </div>
@@ -171,10 +178,7 @@ export default class JtTopicCard extends Component {
           {{#if this.hasReplies}}
             <span
               class="jt-card__stat"
-              title={{i18n
-                (themePrefix "jt.replies")
-                count=@topic.replyCount
-              }}
+              title={{i18n (themePrefix "jt.replies") count=@topic.replyCount}}
             >
               {{dIcon "far-comment"}}
               {{dNumber @topic.replyCount}}
@@ -196,12 +200,12 @@ export default class JtTopicCard extends Component {
               {{dNumber @topic.like_count}}
             </span>
           {{/if}}
-          {{#if settings.quick_look}}
+          {{#if this.showQuickLook}}
             <button
-              type="button"
+              aria-label={{i18n (themePrefix "jt.quick_look")}}
               class="btn btn-flat no-text jt-card__peek"
               title={{i18n (themePrefix "jt.quick_look")}}
-              aria-label={{i18n (themePrefix "jt.quick_look")}}
+              type="button"
               {{on "click" this.quickLook}}
             >{{dIcon "expand"}}</button>
           {{/if}}

@@ -1,5 +1,4 @@
 // Post chrome: author block, post menu, reactions, solved answer, topic events.
-
 :root {
   --d-post-control-text-color: var(--jt-text-muted);
   --d-post-control-text-color--hover: var(--jt-text);
@@ -172,8 +171,7 @@ nav.post-controls {
   }
 }
 
-.discourse-reactions-my-reaction .discourse-reactions-counter,
-.discourse-reactions-actions.my-reaction .discourse-reactions-counter {
+.discourse-reactions-actions.has-reacted .discourse-reactions-counter {
   border-color: var(--jt-text-subtle);
 }
 
@@ -198,13 +196,6 @@ nav.post-controls {
       background: var(--d-selected);
     }
   }
-}
-
-.discourse-reactions-state-panel,
-.discourse-reactions-state-panel-reaction {
-  background: var(--jt-surface-raised);
-  border-color: var(--jt-border);
-  border-radius: var(--jt-radius-lg);
 }
 
 // ── Solved answer ─────────────────────────────────────────

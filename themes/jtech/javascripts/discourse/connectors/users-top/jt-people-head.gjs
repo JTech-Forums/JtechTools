@@ -46,16 +46,16 @@ export default class JtPeopleHead extends Component {
         {{/if}}
       </h1>
       <div
+        aria-label={{i18n (themePrefix "jt.people.period")}}
         class="jt-seg"
         role="radiogroup"
-        aria-label={{i18n (themePrefix "jt.people.period")}}
       >
         {{#each this.periods as |p|}}
           <button
-            type="button"
-            role="radio"
             aria-checked={{if p.active "true" "false"}}
             class="jt-seg__item {{if p.active '--active'}}"
+            role="radio"
+            type="button"
             {{on "click" (fn this.choose p.id)}}
           >{{p.label}}</button>
         {{/each}}

@@ -2,7 +2,10 @@
 
 .jt-footer {
   margin-top: var(--space-12, 4rem);
-  padding: var(--space-10, 3rem) var(--d-wrap-padding-x, 1rem) var(--space-6);
+
+  // the last line clears the iPhone home indicator
+  padding: var(--space-10, 3rem) var(--d-wrap-padding-x, 1rem)
+    max(var(--space-6), env(safe-area-inset-bottom));
   color: var(--jt-text-muted);
   border-top: 1px solid;
   border-image: linear-gradient(

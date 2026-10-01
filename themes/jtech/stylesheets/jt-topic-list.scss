@@ -1,5 +1,4 @@
 .topic-list {
-
   .main-link a.title {
     color: var(--jt-text);
     font-weight: 500;
@@ -19,12 +18,17 @@
   }
 }
 
-.badge-notification.new-topic,
 .badge-notification.unread-posts,
 .badge-notification.new-posts {
   background: var(--jt-accent);
   color: var(--jt-on-accent);
   font-weight: 600;
+}
+
+// "New topic" is a dot (core draws it with ::before on a clear badge); a pill
+// background behind it turned it into a blob.
+.badge-notification.new-topic::before {
+  background: var(--jt-accent);
 }
 
 .nav-pills > li > a {

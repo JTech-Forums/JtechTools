@@ -1,5 +1,6 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
+import { schedule } from "@ember/runloop";
 import { trustHTML } from "@ember/template";
 import { modifier } from "ember-modifier";
 import { eq } from "discourse/truth-helpers";
@@ -14,13 +15,22 @@ import dIcon from "discourse/ui-kit/helpers/d-icon";
 export default class JtCategoryIcon extends Component {
   @tracked tile = null;
 
+  // Modifiers run while the outlet renders, and the template has just read
+  // `tile`; setting it in the same pass is a backtracking re-render (Ember
+  // asserts in development). Set it once that render is done.
   findTile = modifier((marker) => {
-    const tile = marker
-      .closest(".custom-category-boxes .category-box-inner")
-      ?.querySelector(":scope > .category-logo.no-logo-present");
-    if (tile !== this.tile) {
-      this.tile = tile || null;
-    }
+    schedule("afterRender", () => {
+      if (this.isDestroying) {
+        return;
+      }
+      const tile =
+        marker
+          .closest(".custom-category-boxes .category-box-inner")
+          ?.querySelector(":scope > .category-logo.no-logo-present") || null;
+      if (tile !== this.tile) {
+        this.tile = tile;
+      }
+    });
   });
 
   get category() {
@@ -39,7 +49,7 @@ export default class JtCategoryIcon extends Component {
     <span hidden {{this.findTile}}></span>
     {{#if this.tile}}
       {{#in-element this.tile insertBefore=null}}
-        <span class="jt-cat-icon" aria-hidden="true">
+        <span aria-hidden="true" class="jt-cat-icon">
           {{#if (eq this.styleType "icon")}}
             {{dIcon this.category.icon}}
           {{else if (eq this.styleType "emoji")}}

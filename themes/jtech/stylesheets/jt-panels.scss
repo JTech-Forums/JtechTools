@@ -4,19 +4,30 @@
 // open, and a border on it draws a stray line under the content
 .user-card.show,
 .group-card.show,
-.fk-d-menu,
+// core draws d-menus on the inner box; the outer one is just a positioner
+.fk-d-menu__inner-content,
 .select-kit .select-kit-body,
-.search-menu .results,
 .popup-menu {
   border: 1px solid var(--jt-border);
   border-radius: var(--jt-radius-lg);
   box-shadow: var(--jt-shadow-menu);
 }
 
+// Full-height slide-in panels (phones, narrow windows) sit against the
+// screen edge: no rounded corners there.
+.menu-panel.slide-in {
+  border-radius: 0;
+}
+
 .d-modal__container {
   background: var(--jt-surface-raised);
   border-radius: var(--jt-radius-xl);
   box-shadow: var(--jt-shadow-modal);
+}
+
+// Phone dialogs are bottom sheets: round the top only.
+html.mobile-view .d-modal:not(.jt-cmdk) .d-modal__container {
+  border-radius: var(--jt-radius-xl) var(--jt-radius-xl) 0 0;
 }
 
 .d-modal__header,

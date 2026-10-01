@@ -6,6 +6,8 @@ import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
+import { toggleColorMode } from "../lib/jt-color-mode";
+import { needsFullPageLoad } from "../lib/jt-links";
 
 const count = new Intl.NumberFormat(undefined, { notation: "compact" });
 
@@ -57,6 +59,10 @@ export default class JtHeaderIcon extends Component {
     return this.unread > 0 ? count.format(this.unread) : null;
   }
 
+  get fullPage() {
+    return needsFullPageLoad(this.router, this.args.href);
+  }
+
   get tab() {
     return this.kind === "messages" ? "messages" : "all-notifications";
   }
@@ -64,7 +70,7 @@ export default class JtHeaderIcon extends Component {
   @action
   activate() {
     if (this.kind === "theme") {
-      return this.toggleTheme();
+      return toggleColorMode(this.interfaceColor);
     }
 
     const tabButton = () =>
@@ -90,6 +96,9 @@ export default class JtHeaderIcon extends Component {
       } else if (--frames > 0) {
         requestAnimationFrame(pick);
       } else {
+        if (this.header.userVisible) {
+          document.getElementById("toggle-current-user")?.click(); // close
+        }
         this.router.transitionTo(
           this.kind === "messages" ? "/my/messages" : "/my/notifications"
         );
@@ -98,34 +107,22 @@ export default class JtHeaderIcon extends Component {
     schedule("afterRender", () => requestAnimationFrame(pick));
   }
 
-  toggleTheme() {
-    const dark = this.interfaceColor.colorModeIsDark
-      ? true
-      : this.interfaceColor.colorModeIsLight
-        ? false
-        : window.matchMedia("(prefers-color-scheme: dark)").matches;
-    if (dark) {
-      this.interfaceColor.forceLightMode();
-    } else {
-      this.interfaceColor.forceDarkMode();
-    }
-  }
-
   <template>
     <li class="header-dropdown-toggle jt-header-{{this.kind}}">
       {{#if @href}}
         <a
-          class="btn btn-flat no-text icon jt-header-icon"
-          href={{@href}}
           aria-label={{this.label}}
+          class="btn btn-flat no-text icon jt-header-icon"
+          data-auto-route={{if this.fullPage "true"}}
+          href={{@href}}
           title={{this.label}}
         >{{dIcon this.icon}}</a>
       {{else}}
         <button
-          type="button"
-          class="btn btn-flat no-text icon jt-header-icon"
           aria-label={{this.label}}
+          class="btn btn-flat no-text icon jt-header-icon"
           title={{this.label}}
+          type="button"
           {{on "click" this.activate}}
         >
           {{dIcon this.icon}}

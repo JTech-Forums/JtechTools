@@ -217,19 +217,25 @@
 }
 
 // ── Table card ────────────────────────────────────────────
+// The card is drawn on core's scroller, not on the grid: with many columns
+// the grid is wider than the page and core scrolls it sideways inside
+// .horizontal-scroll-sync__content. Clipping the grid itself would cut off
+// the right-hand columns with no way to reach them.
 .users-directory {
-  .directory-table {
+  .horizontal-scroll-sync__content {
     box-sizing: border-box; // the border inside its 100%: no phantom overflow
-    margin-top: 0;
-    overflow: hidden;
+    overflow-x: auto;
     background: var(--jt-surface-raised);
     border: 1px solid var(--jt-border);
     border-radius: var(--jt-radius-xl);
   }
 
+  .directory-table {
+    margin-top: 0;
+  }
+
   .directory-table__column-header,
   .directory-table__cell,
-  .directory-table__cell--empty,
   .directory-table__cell--user-field {
     justify-content: flex-end;
     padding: 0 var(--space-5);
@@ -376,7 +382,8 @@
       }
     }
 
-    .directory-table__cell {
+    .directory-table__cell,
+    .directory-table__cell--user-field {
       justify-content: flex-start;
       min-height: 0;
       padding: 0;

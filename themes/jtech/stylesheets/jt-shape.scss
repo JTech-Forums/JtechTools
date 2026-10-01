@@ -1,7 +1,6 @@
 // Shape + edges. Corner radii come from the `corner_style` setting; the rest
 // is the JTech Market edge recipe: translucent hairlines, dividers that fade
 // out instead of stopping dead, glass on layered surfaces, press feedback.
-
 :root {
   @if $corner_style == "sharp" {
     --jt-radius-sm: 6px;
@@ -140,10 +139,15 @@
   background-repeat: no-repeat;
 }
 
-// Rounded hover pill on list rows
-.topic-list:not(.jt-cards) .topic-list-item {
-  background: transparent !important;
+// Rounded hover pill on list rows. Row backgrounds go through core's own
+// variables: an !important background would also kill the fade on newly
+// arrived topics (.highlighted) and the bulk-selected tint.
+.topic-list:not(.jt-cards) {
+  --topic-list-item-background-color: transparent;
+  --topic-list-item-background-color--visited: transparent;
+}
 
+.topic-list:not(.jt-cards) .topic-list-item {
   > td {
     transition: background-color var(--jt-motion);
   }
@@ -164,8 +168,7 @@
 // Post separators: fade in from the avatar side, out on the far side
 .topic-post {
   .topic-avatar {
-    border-image: linear-gradient(to right, transparent, var(--jt-border))
-      1;
+    border-image: linear-gradient(to right, transparent, var(--jt-border)) 1;
   }
 
   .topic-body {
@@ -203,6 +206,12 @@ aside.onebox,
   overflow: hidden;
 }
 
+// Phones position the composer's category / tag dropdowns absolutely, hanging
+// out of the composer; clipping would cut them off.
+html.mobile-view #reply-control {
+  overflow: visible;
+}
+
 .timeline-container .topic-timeline .timeline-handle {
   border-radius: var(--jt-radius-pill);
 }
@@ -211,7 +220,7 @@ aside.onebox,
 // Glass is for chrome (the header). Menus and cards carry dense text, so they
 // stay solid — the marketplace rule for reading surfaces.
 .menu-panel,
-.fk-d-menu,
+.fk-d-menu__inner-content,
 // .show: core keeps an empty, zero-height card in the page while none is
 // open, and a border on it draws a stray line under the content
 .user-card.show,
@@ -254,5 +263,6 @@ aside.onebox,
   ::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

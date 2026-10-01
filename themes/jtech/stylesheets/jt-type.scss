@@ -1,7 +1,6 @@
 // Typography. Geist throughout; the scale mirrors JTech Market (15px body,
 // 1.55 leading, -0.006em tracking) so the forum and the marketplace read as one.
 // Sizes are rem so they follow the user's text-size preference.
-
 :root {
   // Root: 15px (core's "normal" is 16px). Other text-size prefs keep the same
   // relative steps.
@@ -29,7 +28,6 @@
   --jt-tracking-ui: -0.011em;
   --jt-tracking-heading: -0.02em;
   --jt-tracking-display: -0.032em;
-
   --line-height-large: 1.55;
   --cooked-line-height: 1.7;
 }
@@ -76,7 +74,9 @@ table {
   letter-spacing: var(--jt-tracking-ui);
 }
 
-.btn {
+// :where keeps this at zero specificity, so .btn-large / .btn-small and
+// buttons that size themselves (login, chat, composer) still win.
+:where(.btn) {
   font-size: var(--jt-text-md);
   letter-spacing: var(--jt-tracking-ui);
 }
