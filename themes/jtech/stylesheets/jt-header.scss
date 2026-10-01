@@ -73,6 +73,9 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
   display: none;
 }
 
+// Every icon in the row gets the same box, glyph size and colour: the
+// theme's own, core's (☰, search) and other plugins' and components' (chat),
+// which otherwise come in at core's larger font-up-4 size.
 .d-header .d-header-icons {
   display: flex;
   align-items: center;
@@ -82,9 +85,10 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
     margin: 0;
   }
 
-  .jt-header-icon.btn,
-  #toggle-hamburger-menu,
+  > li > .icon,
+  > li > .btn.no-text,
   #toggle-current-user {
+    position: relative;
     display: grid;
     place-items: center;
     box-sizing: border-box;
@@ -92,25 +96,23 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
     height: 2.2rem;
     padding: 0;
     border-radius: var(--jt-radius-control);
+
+    // one cell: core's ☰ carries an empty spacer span after its icon
+    > * {
+      grid-area: 1 / 1;
+    }
   }
 
-  // core sizes every header icon (width: 100%, font-up-4)
-  .jt-header-search__button .d-icon,
-  .jt-header-icon .d-icon {
-    width: 1em;
-    height: 1em;
-    line-height: 1;
-  }
-
-  .jt-header-search__button .d-icon {
-    font-size: 0.9rem;
-  }
-
-  .jt-header-icon.btn {
+  > li:not(.current-user) > .icon,
+  > li:not(.current-user) > .btn.no-text {
     color: var(--jt-text-muted);
 
     .d-icon {
+      width: 1em;
+      height: 1em;
+      margin: 0;
       font-size: 1rem;
+      line-height: 1;
       color: currentcolor;
     }
 
@@ -121,9 +123,41 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
     }
   }
 
+  .jt-header-search__button .d-icon {
+    width: 1em;
+    height: 1em;
+    font-size: var(--jt-search-glyph, 0.9rem);
+    line-height: 1;
+  }
+
   #toggle-current-user img.avatar {
     width: 1.75rem;
     height: 1.75rem;
+  }
+}
+
+// The search field shrinks to a plain icon, the same as its neighbours, on
+// narrow screens and touch, and below 64rem while a topic's title is in the
+// header (it needs the room).
+@mixin jt-search-icon-only {
+  --jt-search-glyph: 1rem;
+  justify-content: center;
+  width: 2.2rem;
+  padding: 0;
+  color: var(--jt-text-muted);
+  background: transparent;
+  border-color: transparent;
+
+  .jt-header-search__label,
+  .jt-header-search__keys {
+    display: none;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: var(--jt-text);
+    background: var(--jt-hover);
+    border-color: transparent;
   }
 }
 
@@ -186,30 +220,14 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
     box-shadow: 0 0 0 1px var(--jt-focus);
   }
 
-  // Narrow screens and touch: icon only. Below 64rem too while a topic's
-  // title is in the header, which needs the room.
   @media (width < 48rem), (hover: none) {
-    justify-content: center;
-    width: 2.2rem;
-    padding: 0;
-
-    .jt-header-search__label,
-    .jt-header-search__keys {
-      display: none;
-    }
+    @include jt-search-icon-only;
   }
 }
 
 @media (width < 64rem) {
   .d-header:has(.extra-info-wrapper) .jt-header-search__button {
-    justify-content: center;
-    width: 2.2rem;
-    padding: 0;
-
-    .jt-header-search__label,
-    .jt-header-search__keys {
-      display: none;
-    }
+    @include jt-search-icon-only;
   }
 }
 
