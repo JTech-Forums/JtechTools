@@ -1,0 +1,79 @@
+// JTech design tokens. Mode-dependent values come from color_definitions.scss;
+// this file maps them onto core's hooks so core components follow along.
+//
+// Also declared on <body>: core's "modernize foundation" upcoming change sets
+// many of these same variables on `body.uc-modernize-foundation-theme`, which
+// would otherwise override :root for everything on the page.
+:root,
+body {
+  --jt-font-sans:
+    Geist, ui-sans-serif, system-ui, -apple-system, "Segoe UI", roboto,
+    "Helvetica Neue", arial, sans-serif;
+  --jt-font-mono:
+    "Geist Mono", ui-monospace, sfmono-regular, "SF Mono", menlo, consolas,
+    monospace;
+  --jt-ease: cubic-bezier(0.175, 0.885, 0.32, 1.1);
+
+  // Type
+  --font-family: var(--jt-font-sans);
+  --heading-font-family: var(--jt-font-sans);
+  --d-font-family--monospace: var(--jt-font-mono);
+
+  // Borders
+  --token-color-border-default: var(--jt-border);
+  --token-color-border-input: var(--jt-border-strong);
+  --token-color-border-focused: var(--jt-focus);
+  --content-border-color: var(--jt-border);
+  --input-border-color: var(--jt-border-strong);
+
+  // Buttons: primary is the inverse of the page (white on black / black on white)
+  --d-button-primary-bg-color: var(--jt-text);
+  --d-button-primary-text-color: var(--jt-surface);
+  --d-button-primary-icon-color: var(--jt-surface);
+  --d-button-primary-bg-color--hover: var(--tertiary-hover);
+  --d-button-primary-text-color--hover: var(--jt-surface);
+  --d-button-primary-icon-color--hover: var(--jt-surface);
+  --d-button-default-bg-color: var(--jt-fill);
+  --d-button-default-text-color: var(--jt-text);
+  --d-button-default-icon-color: var(--jt-text-muted);
+  --d-button-default-border: 1px solid var(--jt-border-strong);
+  --d-button-default-bg-color--hover: var(--jt-hover);
+  --d-button-default-text-color--hover: var(--jt-text);
+  --d-button-default-icon-color--hover: var(--jt-text);
+  --d-button-default-border--hover: 1px solid var(--jt-text-subtle);
+  --d-button-flat-icon-color: var(--jt-text-muted);
+  --d-button-flat-icon-color--hover: var(--jt-text);
+
+  // Inputs
+  --d-input-bg-color: var(--jt-fill);
+  --d-input-border: 1px solid var(--jt-border-strong);
+  --d-input-focused-color: var(--jt-text-subtle);
+
+  // Header
+  --d-header-icon-color: var(--jt-text-muted);
+  --d-header-icon-color--hover: var(--jt-text);
+  --d-header-icon-background--hover: var(--jt-hover);
+
+  // Nav: underline tabs, not pills
+  --d-nav-color: var(--jt-text-muted);
+  --d-nav-color--hover: var(--jt-text);
+  --d-nav-color--active: var(--jt-text);
+  --d-nav-bg-color--hover: transparent;
+  --d-nav-bg-color--active: transparent;
+  --d-nav-border-color--active: var(--jt-text);
+  --d-nav-underline-height: 2px;
+
+  // Topic list
+  --d-topic-list-header-text-color: var(--jt-text-subtle);
+  --d-topic-list-header-background-color: transparent;
+
+  // Content
+  --d-post-aside-background: var(--jt-surface-sunken);
+  --d-post-aside-border-left: 2px solid var(--jt-border-strong);
+  --d-unread-notification-background: var(--d-selected);
+}
+
+#discourse-tooltip {
+  --d-tooltip-background: var(--jt-surface-raised);
+  --d-tooltip-border: 1px solid var(--jt-border);
+}

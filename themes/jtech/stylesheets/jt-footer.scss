@@ -1,0 +1,107 @@
+@use "lib/viewport";
+
+.jt-footer {
+  margin-top: var(--space-12, 4rem);
+  padding: var(--space-10, 3rem) var(--d-wrap-padding-x, 1rem) var(--space-6);
+  color: var(--jt-text-muted);
+  border-top: 1px solid;
+  border-image: linear-gradient(
+      to right,
+      transparent,
+      var(--jt-border) 15%,
+      var(--jt-border) 85%,
+      transparent
+    )
+    1;
+
+  &__inner,
+  &__base {
+    max-width: var(--d-max-width);
+    margin: 0 auto;
+  }
+
+  &__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: var(--space-8);
+
+    @include viewport.until(md) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  &__brand {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    align-content: start;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  &__mark .jt-mark {
+    display: block;
+    height: 1.25rem;
+    width: auto;
+    color: var(--jt-text);
+  }
+
+  &__name {
+    font-size: var(--jt-text-md);
+    font-weight: 600;
+    letter-spacing: var(--jt-tracking-ui);
+    color: var(--jt-text);
+  }
+
+  &__tagline {
+    grid-column: 1 / -1;
+    max-width: 34ch;
+    margin: var(--space-1) 0 0;
+    font-size: var(--jt-text-sm);
+    line-height: 1.55;
+  }
+
+  &__columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: var(--space-6);
+  }
+
+  &__heading {
+    margin: 0 0 var(--space-3);
+    font-size: var(--jt-text-xs);
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--jt-text);
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  a {
+    font-size: var(--jt-text-sm);
+    color: var(--jt-text-muted);
+    transition: color var(--jt-motion);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--jt-text);
+    }
+  }
+
+  &__base {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-top: var(--space-8);
+    padding-top: var(--space-4);
+    font-size: var(--jt-text-xs);
+    color: var(--jt-text-subtle);
+    border-top: 1px solid var(--jt-border);
+  }
+}

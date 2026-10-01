@@ -1,0 +1,275 @@
+// Post chrome: author block, post menu, reactions, solved answer, topic events.
+
+:root {
+  --d-post-control-text-color: var(--jt-text-muted);
+  --d-post-control-text-color--hover: var(--jt-text);
+  --d-post-control-icon-color: var(--jt-text-subtle);
+  --d-post-control-icon-color--hover: var(--jt-text);
+  --d-post-control-background--hover: var(--jt-hover);
+}
+
+// ── Author block ──────────────────────────────────────────
+.topic-post {
+  .topic-avatar .avatar {
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px var(--jt-border);
+  }
+
+  .topic-meta-data {
+    align-items: center;
+    gap: var(--space-2);
+
+    .names {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-1) var(--space-2);
+      line-height: 1.3;
+
+      span {
+        margin-right: 0;
+      }
+
+      .first a,
+      .first {
+        color: var(--jt-text);
+      }
+
+      .second a,
+      .second {
+        color: var(--jt-text-muted);
+        font-weight: 400;
+      }
+
+      .user-title,
+      .user-title a {
+        display: inline-flex;
+        align-items: center;
+        padding: 0 0.55em;
+        font-size: var(--jt-text-2xs);
+        font-weight: 500;
+        line-height: 1.7;
+        color: var(--jt-text-muted);
+        border: 1px solid var(--jt-border);
+        border-radius: var(--jt-radius-pill);
+      }
+
+      .user-title a {
+        padding: 0;
+        border: 0;
+      }
+
+      .svg-icon-title .d-icon {
+        color: var(--jt-text-subtle);
+      }
+    }
+
+    .post-infos {
+      gap: var(--space-2);
+
+      .post-date,
+      .post-date a {
+        color: var(--jt-text-subtle);
+      }
+
+      .reply-to-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35em;
+        padding: 0.1em 0.55em 0.1em 0.35em;
+        font-size: var(--jt-text-xs);
+        color: var(--jt-text-muted);
+        border: 1px solid var(--jt-border);
+        border-radius: var(--jt-radius-pill);
+
+        .avatar {
+          width: 16px;
+          height: 16px;
+        }
+
+        &:hover {
+          color: var(--jt-text);
+          border-color: var(--jt-border-strong);
+        }
+      }
+
+      .read-state .d-icon {
+        color: var(--jt-text);
+      }
+    }
+  }
+}
+
+// ── Post menu ─────────────────────────────────────────────
+nav.post-controls {
+  .actions {
+    gap: 2px;
+
+    .btn {
+      border-radius: var(--jt-radius-control);
+    }
+  }
+
+  .actions .post-action-menu__reply {
+    padding-inline: 0.8em;
+    border: 1px solid var(--jt-border);
+
+    &:hover {
+      border-color: var(--jt-border-strong);
+    }
+  }
+
+  .show-replies,
+  .post-action-menu__show-replies {
+    border-radius: var(--jt-radius-control);
+    border: 1px solid var(--jt-border);
+  }
+}
+
+// ── Reactions ─────────────────────────────────────────────
+// The plugin paints hover/used states with --love-low / --primary-low, which
+// come out as a mid-grey slab in this palette. Re-point them in its container.
+.discourse-reactions-actions {
+  --love: var(--jt-text);
+  --love-low: var(--jt-hover);
+  --primary-low: var(--jt-hover);
+  --primary-low-mid: var(--jt-text-muted);
+}
+
+.discourse-reactions-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  height: 2rem;
+  padding: 0 0.7em 0 0.45em;
+  background: var(--jt-fill);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-pill);
+  transition:
+    border-color var(--jt-motion),
+    background-color var(--jt-motion);
+
+  &:hover {
+    background: var(--jt-hover);
+    border-color: var(--jt-border-strong);
+  }
+
+  .reactions-counter {
+    font-size: var(--jt-text-sm);
+    font-weight: 500;
+    color: var(--jt-text);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.discourse-reactions-list {
+  .reactions .discourse-reactions-list-emoji {
+    margin-right: -0.3em;
+    padding: 1px;
+    background: var(--jt-surface-raised);
+    box-shadow: 0 0 0 1.5px var(--jt-surface);
+    border-radius: 50%;
+  }
+}
+
+.discourse-reactions-my-reaction .discourse-reactions-counter,
+.discourse-reactions-actions.my-reaction .discourse-reactions-counter {
+  border-color: var(--jt-text-subtle);
+}
+
+.discourse-reactions-picker .discourse-reactions-picker-container {
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-lg);
+  box-shadow: var(--jt-shadow-menu);
+
+  .pickable-reaction {
+    border-radius: var(--jt-radius-md);
+    transition:
+      background-color var(--jt-motion),
+      transform var(--jt-motion);
+
+    &:hover {
+      background: var(--jt-hover);
+      transform: scale(1.12);
+    }
+
+    &.is-used {
+      background: var(--d-selected);
+    }
+  }
+}
+
+.discourse-reactions-state-panel,
+.discourse-reactions-state-panel-reaction {
+  background: var(--jt-surface-raised);
+  border-color: var(--jt-border);
+  border-radius: var(--jt-radius-lg);
+}
+
+// ── Solved answer ─────────────────────────────────────────
+// Same specificity as the plugin (.accepted-answers.d-post-accordion) so load
+// order decides; the plugin paints the header solid green.
+.accepted-answers.d-post-accordion {
+  --d-post-accordion-radius: var(--jt-radius-lg);
+  --d-post-accordion-background: var(--jt-surface-raised);
+  --d-post-accordion-border-color: var(--jt-border);
+  --d-post-accordion-header-color: var(--jt-text);
+  --d-post-accordion-header-background: var(--jt-surface-sunken);
+  --d-post-accordion-header-border-color: var(--jt-border);
+  --d-post-accordion-item-header-background: transparent;
+  --d-post-accordion-item-header-color: var(--jt-text-muted);
+  --d-post-accordion-item-username-color: var(--jt-text);
+  --d-post-accordion-item-link-color: var(--jt-text);
+  --d-post-accordion-item-control-color: var(--jt-text-subtle);
+
+  .accepted-answers__title {
+    font-size: var(--jt-text-sm);
+    font-weight: 600;
+    letter-spacing: var(--jt-tracking-ui);
+    text-transform: none;
+
+    .d-icon {
+      color: var(--success);
+    }
+  }
+
+  .accepted-answers__solution-count {
+    color: var(--jt-text-muted);
+  }
+
+  .d-post-accordion-item__content {
+    border-left: 0;
+    background: none;
+  }
+}
+
+.post-controls .accepted-text,
+.post-controls .extra-buttons .accepted {
+  border-radius: var(--jt-radius-control);
+}
+
+// ── Topic events (pinned, closed, moved …) ────────────────
+.small-action {
+  .topic-avatar {
+    border-top: 0;
+
+    .d-icon {
+      color: var(--jt-text-subtle);
+    }
+  }
+
+  .small-action-desc {
+    color: var(--jt-text-muted);
+    font-size: var(--jt-text-sm);
+    border-top: 0;
+  }
+}
+
+// ── Post notices ("first post", "returning user") ─────────
+.post-notice {
+  color: var(--jt-text-muted);
+  background: var(--jt-surface-sunken);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-lg);
+}

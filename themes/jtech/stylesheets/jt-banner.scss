@@ -1,0 +1,111 @@
+@use "lib/viewport";
+
+// Category / tag banner (components/jt-context-banner)
+.jt-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-5);
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-xl);
+
+  @include viewport.until(sm) {
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  &__tile {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 3.25rem;
+    height: 3.25rem;
+    font-family: var(--jt-font-mono);
+    font-size: var(--jt-text-lg);
+    font-weight: 500;
+    color: var(--jt-text);
+    background: var(--jt-surface-sunken);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-lg);
+    overflow: hidden;
+
+    .d-icon {
+      font-size: 1.25rem;
+      color: var(--jt-text);
+    }
+
+    .emoji {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    img:not(.emoji) {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    @include viewport.until(sm) {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  &__parent {
+    font-size: var(--jt-text-xs);
+    color: var(--jt-text-muted);
+
+    &:hover {
+      color: var(--jt-text);
+    }
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--jt-text-2xl);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: var(--jt-tracking-display);
+    color: var(--jt-text);
+    overflow-wrap: anywhere;
+  }
+
+  &__desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-width: 70ch;
+    margin: var(--space-1) 0 0;
+    font-size: var(--jt-text-md);
+    line-height: 1.55;
+    color: var(--jt-text-muted);
+  }
+
+  &__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-top: var(--space-2);
+    font-size: var(--jt-text-xs);
+    color: var(--jt-text-subtle);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// The banner shows the category logo itself; don't stack core's heading.
+.discovery-list-controls-above-outlet:has(.jt-banner.--has-logo)
+  ~ .list-controls
+  .category-heading.--has-logo,
+#main-outlet:has(.jt-banner.--has-logo) .category-heading.--has-logo {
+  display: none;
+}

@@ -1,0 +1,76 @@
+// Ported verbatim from prod's "Default" theme (id 1) so existing posts that
+// use these wrappers keep rendering. The header-background override was
+// dropped on purpose: the header belongs to jt-header.scss now.
+
+[data-wrap="ghbtn"] {
+  text-align: center;
+}
+
+[data-wrap="logos"] {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+[data-wrap="logos"] a {
+  background: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  display: inline-flex;
+}
+
+[data-wrap="logos"] img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+[data-wrap="logos"] img:nth-child(2) {
+  transform: translateY(-10px);
+}
+
+[data-wrap="ghbtn"] p {
+  margin: 0 0 14px;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+[data-wrap="ghbtn"] a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  padding: 10px 20px;
+  font-weight: 600;
+  color: #fff !important;
+  text-decoration: none !important;
+  background: linear-gradient(180deg, #2ea043, #238636);
+  border-radius: 8px;
+}
+
+[data-wrap="ghbtn"] a:hover {
+  filter: brightness(1.08);
+}
+
+[data-wrap="ghbtn"] a[href*="nightly.link"] {
+  background: linear-gradient(180deg, #6e7681, #57606a);
+}
+
+[data-wrap="ghbtn"] a[href*="t.me"] {
+  background: linear-gradient(180deg, #2aabee, #229ed9);
+}
+
+[data-wrap="ghbtn"] a .badge-notification.clicks {
+  display: none !important;
+}
+
+/* Hide "Seen" and "Posted" on ars18's user card */
+.card-content:has(a.user-profile-link[href="/u/ars18"]) .last-seen-metadata,
+.card-content:has(a.user-profile-link[href="/u/ars18"])
+  .metadata__last-posted {
+  display: none !important;
+}

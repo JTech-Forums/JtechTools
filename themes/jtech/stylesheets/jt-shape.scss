@@ -1,0 +1,258 @@
+// Shape + edges. Corner radii come from the `corner_style` setting; the rest
+// is the JTech Market edge recipe: translucent hairlines, dividers that fade
+// out instead of stopping dead, glass on layered surfaces, press feedback.
+
+:root {
+  @if $corner_style == "sharp" {
+    --jt-radius-sm: 6px;
+    --jt-radius-md: 8px;
+    --jt-radius-lg: 12px;
+    --jt-radius-xl: 14px;
+    --jt-radius-control: 6px;
+    --jt-radius-pill: 6px;
+  } @else if $corner_style == "soft" {
+    --jt-radius-sm: 8px;
+    --jt-radius-md: 10px;
+    --jt-radius-lg: 16px;
+    --jt-radius-xl: 20px;
+    --jt-radius-control: 10px;
+    --jt-radius-pill: 999px;
+  } @else if $corner_style == "round" {
+    --jt-radius-sm: 10px;
+    --jt-radius-md: 14px;
+    --jt-radius-lg: 18px;
+    --jt-radius-xl: 24px;
+    --jt-radius-control: 999px;
+    --jt-radius-pill: 999px;
+  } @else {
+    // squircle: superellipse corners via `corner-shape`. A squircle hugs the
+    // corner more tightly than a circle, so it takes bigger radii to read the
+    // same size; browsers without it get plain radii a bit over half as big.
+    --jt-radius-sm: 6px;
+    --jt-radius-md: 8px;
+    --jt-radius-lg: 13px;
+    --jt-radius-xl: 16px;
+    --jt-radius-control: 8px;
+    --jt-radius-pill: 6px;
+
+    @supports (corner-shape: squircle) {
+      --jt-radius-sm: 10px;
+      --jt-radius-md: 14px;
+      --jt-radius-lg: 22px;
+      --jt-radius-xl: 28px;
+      --jt-radius-control: 12px;
+      --jt-radius-pill: 10px;
+    }
+  }
+
+  --d-border-radius: var(--jt-radius-sm);
+  --d-border-radius-large: var(--jt-radius-lg);
+  --d-button-border-radius: var(--jt-radius-control);
+  --d-input-border-radius: var(--jt-radius-md);
+  --d-nav-pill-border-radius: var(--jt-radius-control);
+  --d-tag-border-radius: var(--jt-radius-pill);
+  --d-post-control-border-radius: var(--jt-radius-control);
+  --token-radius-normal: var(--jt-radius-sm);
+  --token-radius-large: var(--jt-radius-lg);
+  --jt-fade: min(2.5rem, 20%);
+  --jt-motion: 0.18s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@if $corner_style == "squircle" {
+  @supports (corner-shape: squircle) {
+    * {
+      corner-shape: squircle;
+    }
+
+    // Things that are meant to be true circles
+    .avatar,
+    .avatar-flair,
+    .user-image,
+    [class*="avatar"] img,
+    input[type="radio"],
+    .emoji,
+    .d-icon,
+    .badge-notification,
+    .d-toggle-switch__checkbox-slider,
+    .spinner,
+    .loading-spinner {
+      corner-shape: round;
+    }
+  }
+}
+
+// Horizontal hairline that dissolves at both ends
+@mixin jt-rule-x($color: var(--jt-border)) {
+  border-image: linear-gradient(
+      to right,
+      transparent,
+      #{$color} var(--jt-fade),
+      #{$color} calc(100% - var(--jt-fade)),
+      transparent
+    )
+    1;
+}
+
+@mixin jt-glass($bg: var(--jt-glass)) {
+  background-color: $bg;
+  backdrop-filter: blur(16px) saturate(180%);
+}
+
+// ── Faded dividers ────────────────────────────────────────
+.d-header {
+  @include jt-rule-x;
+}
+
+// Table rows can't take border-image, so each cell paints its own 1px line and
+// the end cells fade it in/out. (Card lists draw their own surfaces.)
+.topic-list:not(.jt-cards) .topic-list-item,
+.latest-topic-list-item {
+  > td {
+    border-bottom: 0 !important;
+    background-image: linear-gradient(var(--jt-border), var(--jt-border));
+    background-size: 100% 1px;
+    background-position: bottom;
+    background-repeat: no-repeat;
+  }
+
+  > td:first-child {
+    background-image: linear-gradient(
+      to right,
+      transparent,
+      var(--jt-border) 2.5rem
+    );
+  }
+
+  > td:last-child {
+    background-image: linear-gradient(
+      to left,
+      transparent,
+      var(--jt-border) 2.5rem
+    );
+  }
+}
+
+.topic-list:not(.jt-cards) .topic-list-header th {
+  border-bottom: 0;
+  background-image: linear-gradient(var(--jt-border), var(--jt-border));
+  background-size: 100% 1px;
+  background-position: bottom;
+  background-repeat: no-repeat;
+}
+
+// Rounded hover pill on list rows
+.topic-list:not(.jt-cards) .topic-list-item {
+  background: transparent !important;
+
+  > td {
+    transition: background-color var(--jt-motion);
+  }
+
+  > td:first-child {
+    border-radius: var(--jt-radius-md) 0 0 var(--jt-radius-md);
+  }
+
+  > td:last-child {
+    border-radius: 0 var(--jt-radius-md) var(--jt-radius-md) 0;
+  }
+
+  &:hover > td {
+    background-color: var(--jt-hover);
+  }
+}
+
+// Post separators: fade in from the avatar side, out on the far side
+.topic-post {
+  .topic-avatar {
+    border-image: linear-gradient(to right, transparent, var(--jt-border))
+      1;
+  }
+
+  .topic-body {
+    border-image: linear-gradient(
+        to right,
+        var(--jt-border) calc(100% - var(--jt-fade)),
+        transparent
+      )
+      1;
+  }
+}
+
+// ── Radii on surfaces core doesn't tokenise ───────────────
+.d-header .d-header-icons .icon,
+.header-sidebar-toggle button {
+  border-radius: var(--jt-radius-control);
+}
+
+.topic-map,
+.alert,
+aside.quote,
+aside.onebox,
+.cooked pre code,
+.cooked table,
+.select-kit .select-kit-header:not(.btn) {
+  border-radius: var(--jt-radius-md);
+}
+
+.cooked img:not(.emoji, .avatar, .site-icon) {
+  border-radius: var(--jt-radius-sm);
+}
+
+#reply-control {
+  border-radius: var(--jt-radius-xl) var(--jt-radius-xl) 0 0;
+  overflow: hidden;
+}
+
+.timeline-container .topic-timeline .timeline-handle {
+  border-radius: var(--jt-radius-pill);
+}
+
+// ── Layered surfaces ──────────────────────────────────────
+// Glass is for chrome (the header). Menus and cards carry dense text, so they
+// stay solid — the marketplace rule for reading surfaces.
+.menu-panel,
+.fk-d-menu,
+// .show: core keeps an empty, zero-height card in the page while none is
+// open, and a border on it draws a stray line under the content
+.user-card.show,
+.group-card.show,
+.select-kit .select-kit-body,
+.search-menu .results {
+  background-color: var(--jt-surface-raised);
+}
+
+// ── Motion: every press answers ───────────────────────────
+.btn,
+.sidebar-section-link,
+.nav-pills > li > a,
+.d-header-icons .icon,
+.category-box,
+.select-kit-header {
+  transition:
+    background-color var(--jt-motion),
+    border-color var(--jt-motion),
+    color var(--jt-motion),
+    transform var(--jt-motion);
+}
+
+// Press feedback moves the content, never the button box: menus and popups
+// anchor to the trigger's box on mousedown, so moving it leaves them 1px off.
+.btn > :is(.d-icon, .d-button-label),
+.d-header-icons .icon > .d-icon {
+  transition: transform var(--jt-motion);
+}
+
+.btn:active:not(:disabled, .disabled) > :is(.d-icon, .d-button-label),
+.d-header-icons .icon:active > .d-icon,
+.category-box:active {
+  transform: translateY(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

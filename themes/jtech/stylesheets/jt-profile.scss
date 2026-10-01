@@ -1,0 +1,672 @@
+@use "lib/viewport";
+
+// User profiles. The header (.about + .secondary) renders on every /u/* tab;
+// .stats-section / .top-section / .badges-section are the summary page.
+// Same vocabulary as the rest of the theme: raised cards with hairlines,
+// muted labels over strong values, sentence-case titles, quiet controls.
+
+// ── Header card ───────────────────────────────────────────
+.user-main .about {
+  box-sizing: border-box; // core sets width: 100% on phones; padding goes inside
+  max-width: 100%;
+  margin-bottom: var(--space-4);
+  padding: var(--space-5) var(--space-6) var(--space-4);
+  background-color: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-xl);
+  overflow: hidden;
+
+  @include viewport.until(sm) {
+    padding: var(--space-4);
+  }
+
+  // Header photo (core's .user-profile-image): a cover banner across the
+  // top of the card, the avatar overlapping its lower edge
+  &:not(.has-background) .user-profile-image {
+    display: none;
+  }
+
+  &.has-background .user-profile-image {
+    height: 10rem;
+    margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-6)) var(--space-4);
+    background-size: cover;
+    background-position: center;
+    border-bottom: 1px solid var(--jt-border);
+
+    @include viewport.until(sm) {
+      height: 7rem;
+      margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-4);
+    }
+  }
+
+  // After the staff strip, which already took the card's top padding:
+  // strip and banner meet edge to edge
+  &.has-background .staff-counters:has(+ .user-profile-image) {
+    margin-bottom: 0;
+  }
+
+  &.has-background .staff-counters + .user-profile-image {
+    margin-top: 0 !important; // beats the banner's bleed-to-top margin
+  }
+
+  &.has-background:not(.collapsed-info) .user-profile-avatar img.avatar {
+    margin-top: -3.5rem;
+    border: 3px solid var(--jt-surface-raised);
+    box-sizing: content-box;
+  }
+
+  .details {
+    padding: 0;
+    background: none;
+  }
+
+  // Expanded (summary): avatar on the left, names then controls beside it
+  &:not(.collapsed-info) .details .primary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "avatar text"
+      "avatar controls";
+    align-items: start;
+    gap: var(--space-4) var(--space-5);
+
+    @include viewport.until(sm) {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "avatar"
+        "text"
+        "controls";
+    }
+
+    .user-profile-avatar {
+      grid-area: avatar;
+    }
+
+    .primary-textual {
+      grid-area: text;
+    }
+
+    .controls {
+      grid-area: controls;
+    }
+  }
+
+  .user-profile-avatar {
+    width: auto;
+    margin: 0;
+
+    img.avatar {
+      width: 6rem;
+      height: 6rem;
+      border: 1px solid var(--jt-border);
+      border-radius: var(--jt-radius-xl);
+    }
+  }
+
+  .primary-textual {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: 0;
+  }
+
+  .user-profile-names__primary {
+    margin: 0;
+    font-size: var(--jt-text-3xl);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: var(--jt-tracking-display, -0.035em);
+    color: var(--jt-text);
+  }
+
+  .user-profile-names__secondary,
+  .user-profile-names .title {
+    font-size: var(--jt-text-body);
+    color: var(--jt-text-muted);
+  }
+
+  .location-and-website,
+  .user-location {
+    font-size: var(--jt-text-sm);
+    color: var(--jt-text-muted);
+
+    .d-icon {
+      color: var(--jt-text-subtle);
+    }
+
+    a {
+      color: var(--jt-text);
+    }
+  }
+
+  .bio {
+    max-width: 62ch;
+    font-size: var(--jt-text-body);
+    line-height: 1.6;
+    color: var(--jt-text-muted);
+  }
+
+  // Controls: a row of quiet buttons sized to their labels (core makes
+  // each 9em wide, which overflows the compact header on other tabs)
+  .controls {
+    ul {
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      margin: 0;
+    }
+
+    ul > li {
+      flex: 0 0 auto;
+    }
+
+    .btn {
+      width: auto;
+      min-width: 0;
+    }
+  }
+
+  // Compact header (every tab but the summary): avatar, name and buttons on
+  // one line when there's room; below xl the buttons take their own line,
+  // left-aligned, instead of breaking into a ragged right-aligned stack
+  &.collapsed-info .details .primary {
+    align-items: center;
+    column-gap: var(--space-4);
+
+    @include viewport.until(xl) {
+      flex-wrap: wrap;
+      row-gap: var(--space-3);
+
+      .controls {
+        flex: 1 0 100%;
+        max-width: none;
+        margin: 0;
+
+        ul {
+          justify-content: flex-start;
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  // Expanded (summary): the row sits under the names, not a tower at right
+  &:not(.collapsed-info) .controls {
+    max-width: none;
+    margin: 0;
+    align-self: end;
+  }
+
+  // jtech-tools' REQ-PM: btn-small (sized for the user card) and without
+  // the <li> core wraps its own controls in. Same size as its neighbours.
+  .controls ul > .reqpm-user-button.btn {
+    width: auto;
+    padding: 0.5em 0.65em;
+    font-size: var(--jt-text-md);
+  }
+
+  // The notification-level dropdown: core sizes it in em at 15px (taller,
+  // wider) against 14px buttons
+  .controls .select-kit.user-notifications-dropdown {
+    font-size: var(--jt-text-md);
+
+    .select-kit-header {
+      min-height: 0;
+      padding: 0.5em 0.65em;
+      font-size: inherit;
+      line-height: normal;
+    }
+  }
+}
+
+// Staff counters: a slim strip across the top of the card, neutral numbers
+// instead of green / orange / red (the labels say what they are)
+.user-main .about .staff-counters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-6)) var(--space-5);
+  padding: var(--space-2) var(--space-6);
+  font-size: var(--jt-text-sm);
+  color: var(--jt-text-muted);
+  background: var(--jt-surface-sunken);
+  border: 0;
+  border-bottom: 1px solid var(--jt-border);
+  border-radius: 0;
+
+  @include viewport.until(sm) {
+    margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) var(--space-4);
+    padding-inline: var(--space-4);
+  }
+
+  a {
+    color: var(--jt-text-muted);
+
+    &:hover {
+      color: var(--jt-text);
+    }
+  }
+
+  a > span:first-child,
+  :is(
+      .helpful-flags,
+      .flags,
+      .deleted-posts,
+      .warnings-received,
+      .suspended,
+      .silenced
+    ) {
+    min-width: 1.4em;
+    margin-right: 0.3em;
+    padding: 0 0.35em;
+    font-variant-numeric: tabular-nums;
+    color: var(--jt-text);
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-sm);
+  }
+}
+
+// Meta strip (Joined, Last post, Seen, Views, Trust level…): small muted
+// labels over strong values, below a hairline
+.user-main .about .secondary {
+  margin-top: var(--space-5);
+  padding: var(--space-4) 0 0;
+  background: none;
+  border-top: 1px solid var(--jt-border);
+
+  dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-6);
+    margin: 0;
+    padding: 0;
+  }
+
+  dl > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+  }
+
+  dt {
+    display: block;
+    margin: 0;
+    font-size: var(--jt-text-xs);
+    font-weight: 400;
+    color: var(--jt-text-subtle);
+  }
+
+  dd {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    font-size: var(--jt-text-md);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--jt-text);
+
+    a {
+      color: var(--jt-text);
+    }
+  }
+
+  // "Email [Show]": a minor inline action, not the page's primary button
+  dd.email .btn.btn-primary {
+    padding: 0.15em 0.5em;
+    font-size: var(--jt-text-xs);
+    color: var(--jt-text);
+    background: var(--jt-fill);
+    border: 1px solid var(--jt-border-strong);
+
+    .d-icon {
+      color: var(--jt-text-muted);
+    }
+
+    &:hover {
+      background: var(--jt-hover);
+    }
+  }
+}
+
+// ── Summary ───────────────────────────────────────────────
+.user-content {
+  .top-section {
+    margin: 0 0 var(--space-6);
+  }
+
+  // Section titles (Stats, Top replies…): sentence case, not shouting caps
+  h3.stats-title {
+    margin: 0 0 var(--space-3);
+    font-size: var(--jt-text-body);
+    font-weight: 600;
+    letter-spacing: var(--jt-tracking-heading);
+    text-transform: none;
+    color: var(--jt-text);
+  }
+
+  // Stats: a grid of tiles, value over label
+  .stats-section > ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    > li {
+      display: flex;
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+    }
+
+    > li > a {
+      display: flex;
+      flex: 1;
+      margin: 0;
+      padding: 0; // core pads linked stats, which pushed their tiles down
+      color: inherit;
+    }
+
+    .user-stat {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: var(--space-1);
+      padding: var(--space-3) var(--space-4);
+      background: var(--jt-surface-raised);
+      border: 1px solid var(--jt-border);
+      border-radius: var(--jt-radius-lg);
+      transition:
+        border-color 0.12s ease-out,
+        background-color 0.12s ease-out;
+    }
+
+    .value {
+      font-size: var(--jt-text-2xl);
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      color: var(--jt-text);
+
+      .number {
+        font-size: inherit;
+        font-weight: inherit;
+      }
+    }
+
+    .label {
+      font-size: var(--jt-text-xs);
+      color: var(--jt-text-muted);
+
+      .d-icon {
+        font-size: 0.85em;
+        color: var(--jt-text-subtle);
+      }
+    }
+
+    > li > a:hover .user-stat {
+      background: var(--jt-hover);
+      border-color: var(--jt-border-strong);
+    }
+  }
+
+  // Two-up sections become a grid of cards (core floats them, with a
+  // clearfix that would otherwise become a stray grid cell)
+  .top-section:has(> .top-sub-section) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--space-4);
+
+    &::before,
+    &::after {
+      content: none;
+    }
+
+    @include viewport.until(lg) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .top-sub-section {
+    float: none;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-xl);
+
+    &:only-child {
+      grid-column: 1 / -1;
+    }
+
+    > h3.stats-title {
+      box-sizing: border-box;
+      width: auto;
+      margin: 0;
+      padding: var(--space-3) var(--space-5);
+      font-size: var(--jt-text-md);
+      border-bottom: 1px solid var(--jt-border);
+    }
+
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    ul > li {
+      margin: 0;
+      padding: var(--space-3) var(--space-5);
+      border: 0;
+      border-top: 1px solid var(--jt-border);
+      transition: background-color 0.12s ease-out;
+
+      &:first-child {
+        border-top: 0;
+      }
+
+      &:hover {
+        background: var(--jt-hover);
+      }
+    }
+
+    // "More replies", "No topics yet"…: the card's footer
+    > p,
+    > div > p {
+      margin: 0;
+      padding: var(--space-3) var(--space-5);
+      font-size: var(--jt-text-sm);
+      color: var(--jt-text-muted);
+      border-top: 1px solid var(--jt-border);
+
+      a {
+        color: var(--jt-text);
+      }
+    }
+  }
+
+  // Replies / topics: title first, then date · likes
+  :is(.replies-section, .topics-section) ul > li {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 2px;
+
+    br {
+      display: none;
+    }
+
+    > a {
+      font-size: var(--jt-text-md);
+      font-weight: 500;
+      line-height: 1.4;
+      color: var(--jt-text);
+    }
+
+    .topic-info {
+      font-size: var(--jt-text-xs);
+      color: var(--jt-text-subtle);
+
+      .d-icon {
+        font-size: 0.85em;
+        color: var(--jt-text-subtle);
+      }
+    }
+  }
+
+  // Links: title first, then the address in mono, one line
+  .links-section ul > li {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 2px;
+    min-width: 0;
+
+    br {
+      display: none;
+    }
+
+    > a:not(.domain) {
+      font-size: var(--jt-text-md);
+      font-weight: 500;
+      color: var(--jt-text);
+    }
+
+    a.domain {
+      display: block;
+      overflow: hidden;
+      font-family: var(--jt-font-mono);
+      font-size: var(--jt-text-xs);
+      color: var(--jt-text-subtle);
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // People (most replied to / liked by / liked): avatar, name, count at right
+  .summary-user-list ul > li {
+    padding-block: var(--space-2);
+  }
+
+  .summary-user-list .user-info.small {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin: 0;
+
+    .user-image,
+    .user-image-inner {
+      width: 2rem;
+      height: 2rem;
+
+      img.avatar {
+        width: 2rem;
+        height: 2rem;
+      }
+    }
+
+    .user-detail {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      min-width: 0;
+    }
+
+    .name-line {
+      font-size: var(--jt-text-md);
+      font-weight: 500;
+
+      a {
+        color: var(--jt-text);
+      }
+    }
+
+    .title:empty {
+      display: none;
+    }
+
+    .details {
+      flex-shrink: 0;
+      font-size: var(--jt-text-sm);
+      font-variant-numeric: tabular-nums;
+      color: var(--jt-text-muted);
+
+      .d-icon {
+        color: var(--jt-text-subtle);
+      }
+    }
+  }
+
+  // Top categories: a table that fills its card
+  .summary-category-list table {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+
+    th,
+    td {
+      padding: var(--space-2) var(--space-5);
+      border: 0;
+    }
+
+    th {
+      font-size: var(--jt-text-xs);
+      font-weight: 500;
+      color: var(--jt-text-subtle);
+      text-align: right;
+      border-bottom: 1px solid var(--jt-border);
+
+      &.category-link {
+        text-align: left;
+      }
+    }
+
+    tbody tr + tr td {
+      border-top: 1px solid var(--jt-border);
+    }
+
+    td:not(.category-link) {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+
+      a {
+        color: var(--jt-text-muted);
+      }
+    }
+  }
+
+  // Badges: cards like everything else
+  .badges-section .badge-group-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: var(--space-2);
+
+    .badge-card {
+      width: auto;
+      margin: 0;
+      background: var(--jt-surface-raised);
+      border: 1px solid var(--jt-border);
+      border-radius: var(--jt-radius-lg);
+      box-shadow: none;
+
+      h3 {
+        font-size: var(--jt-text-body);
+        font-weight: 600;
+        line-height: 1.3;
+      }
+
+      .badge-summary {
+        font-size: var(--jt-text-sm);
+        color: var(--jt-text-muted);
+      }
+    }
+  }
+}

@@ -1,0 +1,244 @@
+.d-header {
+  @include jt-glass(var(--jt-header-blur-bg));
+  box-shadow: none;
+  border-bottom: 1px solid var(--jt-border);
+}
+
+.d-header .d-header-icons .icon {
+  border-radius: var(--jt-radius-sm);
+}
+
+// Reading progress (components/jt-reading-progress): fixed just under the
+// header, scaled rather than resized so it never triggers layout.
+.jt-progress {
+  position: fixed;
+  top: var(--header-offset, 4rem);
+  left: 0;
+  z-index: 999;
+  width: 100%;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--jt-text-subtle) 25%,
+    var(--jt-text)
+  );
+  transform: scaleX(var(--jt-progress, 0));
+  transform-origin: 0 50%;
+  transition: transform 0.15s linear;
+}
+
+// Desktop with the sidebar docked (48rem+, core's own threshold): no ☰ —
+// the sidebar stays put and the logo sits at the left wall, on the same
+// line as the sidebar's search row. Narrower windows keep the ☰, which is
+// the only way to open the slide-out sidebar there.
+@media (min-width: 48rem) {
+  html.desktop-view {
+    .d-header .header-sidebar-toggle {
+      display: none;
+    }
+
+    .d-header > .wrap {
+      padding-left: 0.5333rem;
+    }
+
+    // A header component reserves 3.7em left of the logo for the ☰
+    .d-header .home-logo-wrapper-outlet {
+      margin-left: 0;
+    }
+
+    &.rtl .d-header .title {
+      margin-right: 0;
+    }
+  }
+}
+
+// ── Right side: search field · new topic · avatar ─────────
+// One height (2.2rem) and one gap for everything; core's magnifier stays in
+// the DOM, hidden, so its "/" shortcut still has an anchor.
+.d-header .d-header-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  > li {
+    margin: 0;
+  }
+
+  .search-dropdown {
+    display: none;
+  }
+
+  .jt-header-icon.btn,
+  #toggle-hamburger-menu,
+  #toggle-current-user {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    border-radius: var(--jt-radius-control);
+  }
+
+  // core sizes every header icon (width: 100%, font-up-4)
+  .jt-header-search__button .d-icon,
+  .jt-header-icon .d-icon {
+    width: 1em;
+    height: 1em;
+    line-height: 1;
+  }
+
+  .jt-header-search__button .d-icon {
+    font-size: 0.9rem;
+  }
+
+  .jt-header-icon.btn {
+    color: var(--jt-text-muted);
+
+    .d-icon {
+      font-size: 1rem;
+      color: currentColor;
+    }
+
+    &:hover,
+    &:focus-visible {
+      color: var(--jt-text);
+      background: var(--jt-hover);
+    }
+  }
+
+  #toggle-current-user img.avatar {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+}
+
+.jt-header-search__button {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  box-sizing: border-box;
+  width: 15rem;
+  height: 2.2rem;
+  padding: 0 0.35rem 0 0.7rem;
+  font-size: var(--jt-text-md);
+  color: var(--jt-text-subtle);
+  text-align: left;
+  background: var(--jt-fill);
+  border: 1px solid var(--jt-border-strong);
+  border-radius: var(--jt-radius-control);
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease-out,
+    color 0.12s ease-out;
+
+  .d-icon {
+    color: currentColor;
+  }
+
+  .jt-header-search__label {
+    flex: 1;
+  }
+
+  .jt-header-search__keys {
+    display: inline-flex;
+    gap: 2px;
+
+    kbd {
+      display: inline-grid;
+      place-items: center;
+      min-width: 1.3rem;
+      height: 1.3rem;
+      padding: 0 0.25rem;
+      font-family: var(--jt-font-sans);
+      font-size: var(--jt-text-2xs);
+      line-height: 1;
+      color: var(--jt-text-subtle);
+      background: var(--jt-surface-sunken);
+      border: 1px solid var(--jt-border);
+      border-radius: 5px;
+      box-shadow: none;
+    }
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: var(--jt-text-muted);
+    border-color: var(--jt-text-subtle);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--jt-focus);
+  }
+
+  // Narrow screens and touch: icon only
+  @media (width < 48rem), (hover: none) {
+    justify-content: center;
+    width: 2.2rem;
+    padding: 0;
+
+    .jt-header-search__label,
+    .jt-header-search__keys {
+      display: none;
+    }
+  }
+}
+
+// Unread counts: a small inverse pill on the icon's corner
+.jt-header-icon.btn {
+  position: relative;
+}
+
+.jt-header-icon__badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
+  font-size: 0.6667rem; // 10px
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--jt-surface);
+  background: var(--jt-text);
+  border: 2px solid var(--jt-surface);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+// The bell carries the count now; the avatar's own badge would repeat it
+.d-header-icons:has(.jt-header-notifications) .current-user .badge-notification {
+  display: none;
+}
+
+// Narrower windows keep the essentials (search, notifications, avatar);
+// phones also drop "+" (the list has its own) and the ☰ takes the menu
+@media (width < 64rem) {
+  .jt-header-home,
+  .jt-header-messages,
+  .jt-header-theme {
+    display: none;
+  }
+}
+
+html.mobile-view {
+  .jt-header-home,
+  .jt-header-messages,
+  .jt-header-theme,
+  .jt-header-new-topic {
+    display: none;
+  }
+
+  // Core's phone header isn't a flex row, so the gap needs spelling out
+  .d-header-icons .jt-header-notifications,
+  .d-header-icons .current-user {
+    margin-left: 0.4rem;
+  }
+}

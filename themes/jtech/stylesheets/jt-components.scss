@@ -1,0 +1,329 @@
+// Restyles for third-party components JTech shares with Default. Done here in
+// CSS (not via component settings) so Default keeps looking the way it does.
+
+// Topic timeline: hairline track, solid handle
+.timeline-container .topic-timeline {
+  .timeline-scrollarea {
+    border-left-color: var(--jt-border-strong);
+  }
+
+  .timeline-handle {
+    background-color: var(--jt-text);
+  }
+}
+
+// Admin sidebar: core paints it with a grey "hovered" surface
+// (.admin-area sits on <html> itself)
+html.admin-area .sidebar-wrapper .admin-panel {
+  --d-sidebar-admin-background: var(--jt-surface);
+  --d-sidebar-active-background: var(--jt-active);
+  --d-sidebar-highlight-background: var(--jt-hover);
+  --scrollbarThumbBg: var(--jt-border-strong);
+}
+
+.admin-sidebar-nav-link__dot {
+  color: var(--jt-text);
+}
+
+// Info alerts ("Outgoing email has been disabled…"): hairline card, not a grey slab
+.alert.alert-info {
+  background: var(--jt-surface-sunken);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-lg);
+  color: var(--jt-text);
+}
+
+// Site notices: text, then the × (core's own, or api-initializers/jt-notice-
+// dismiss) at the right edge as a quiet ghost button
+.global-notice .alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  &:has(.close) {
+    padding-right: var(--space-2);
+  }
+
+  .text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .close {
+    position: static;
+    float: none;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    margin: -0.25rem 0;
+    padding: 0;
+    color: var(--jt-text-subtle);
+    border-radius: var(--jt-radius-sm);
+    opacity: 1;
+
+    .d-icon {
+      font-size: 0.85em;
+      color: currentColor;
+    }
+
+    &:hover,
+    &:focus-visible {
+      color: var(--jt-text);
+      background: var(--jt-hover);
+    }
+  }
+}
+
+// Modern Category + Group Boxes component
+.custom-category-boxes .category-box {
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-lg);
+  box-shadow: none !important;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--jt-border-strong);
+  }
+
+  .category-logo {
+    border-radius: calc(var(--jt-radius-lg) - 1px) 0 0
+      calc(var(--jt-radius-lg) - 1px);
+  }
+
+  .category-box-heading h3 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+}
+
+// Category Boxes tiles: the category's own icon (connectors/category-title-
+// before/jt-category-icon) as an app-icon chip, replacing the two letters.
+.custom-category-boxes .category-logo.no-logo-present:has(.jt-cat-icon) {
+  .category-abbreviation {
+    display: none !important;
+  }
+}
+
+.jt-cat-icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  color: var(--jt-text);
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border-strong);
+  border-radius: var(--jt-radius-lg);
+  box-shadow: 0 1px 0 var(--jt-glow) inset;
+
+  .d-icon {
+    width: 1.35rem;
+    height: 1.35rem;
+    margin: 0 !important;
+    color: currentColor !important;
+  }
+
+  .emoji {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  &__square {
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 4px;
+  }
+}
+
+// Empty lists ("Nothing new… check back soon"): a quiet icon chip instead of
+// core's clip-art (rocket, sparkles, dashed trails). Keyed to core's two
+// illustrated states; anything else keeps core's art.
+$jt-empty-check: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E";
+$jt-empty-envelope: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2.5'/%3E%3Cpath d='M3.5 7.5 12 13l8.5-5.5'/%3E%3C/svg%3E";
+
+.empty-state__container:is(.--empty-topic-filter, .--empty-channels-list) {
+  .empty-state__image {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin: 0 auto var(--space-4);
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-lg);
+    box-shadow: 0 1px 0 var(--jt-glow) inset;
+
+    > svg {
+      display: none;
+    }
+
+    &::after {
+      content: "";
+      width: 1.5rem;
+      height: 1.5rem;
+      background: var(--jt-text);
+      mask: url($jt-empty-check) center / contain no-repeat;
+    }
+  }
+
+  &.--empty-channels-list .empty-state__image::after {
+    mask-image: url($jt-empty-envelope);
+  }
+
+  .empty-state__title {
+    font-size: var(--jt-text-lg);
+    font-weight: 600;
+    letter-spacing: var(--jt-tracking-heading);
+    color: var(--jt-text);
+  }
+
+  .empty-state__body,
+  .empty-state__tip {
+    color: var(--jt-text-muted);
+  }
+}
+
+// Gated Topics in Category: the panel fades in over the post instead of a
+// grey slab with a hard 5px edge, and the message sits on a card.
+html .custom-gated-topic-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 55%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--jt-surface) 9rem
+  );
+  border-top: 0;
+}
+
+html .custom-gated-topic-content {
+  max-width: 28rem;
+  margin: 9rem var(--space-4) 0;
+  padding: var(--space-6) var(--space-6) var(--space-5);
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-xl);
+
+  &--header {
+    margin-bottom: var(--space-2);
+    font-size: var(--jt-text-2xl);
+    letter-spacing: var(--jt-tracking-display);
+    color: var(--jt-text);
+  }
+
+  &--text {
+    font-size: var(--jt-text-md);
+    color: var(--jt-text-muted);
+  }
+
+  &--cta {
+    margin-top: var(--space-5);
+
+    &__login #cta-login-link {
+      color: var(--jt-text-muted);
+    }
+  }
+}
+
+// 404: "Try searching instead" sits on a hairline card, not a grey slab
+.page-not-found-search {
+  background: var(--jt-surface-sunken);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-xl);
+}
+
+// User directory: your own row gets the same quiet tint as the active
+// sidebar link instead of a solid highlight bar. Core paints both the row
+// (narrow layout) and its cells from this one variable.
+.directory-table {
+  --highlight-low-or-medium: var(--d-hover);
+}
+
+// Emoji picker: the category rail blends into the picker
+.emoji-picker__sections-nav-wrap {
+  --fade-color: var(--jt-surface-sunken);
+  background: var(--jt-surface-sunken);
+}
+
+// "Last visit" divider: a neutral hairline, not a red rule
+.small-action.topic-post-visited .topic-post-visited-line {
+  border-bottom-color: var(--jt-border-strong);
+  color: var(--jt-text-subtle);
+}
+
+// JtechTools pinned post under a topic
+.topic-footer-pinned-post {
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-xl);
+}
+
+// First-reply prompt component
+.first-reply-statement {
+  border-top-color: var(--jt-border);
+}
+
+// Back to top (components/jt-back-to-top.gjs)
+.jt-to-top.btn {
+  position: fixed;
+  z-index: z("timeline");
+  right: max(1.25rem, env(safe-area-inset-right));
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  color: var(--jt-text);
+  background: var(--jt-glass);
+  border: 1px solid var(--jt-border-strong);
+  border-radius: var(--jt-radius-lg);
+  box-shadow: var(--jt-shadow-menu);
+  backdrop-filter: blur(12px) saturate(1.4);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(0.5rem);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s var(--jt-ease),
+    background-color 0.15s ease;
+
+  &.--visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  &:hover {
+    background: var(--jt-surface-raised);
+  }
+
+  .d-icon {
+    color: currentColor;
+  }
+
+  // Out of the composer's way
+  body:has(#reply-control.open) & {
+    display: none;
+  }
+}
+
+// Loading: a hairline ring and a 2px top bar instead of core's 4px ring / 3px bar
+.spinner {
+  border-width: 2px;
+  border-color: var(--jt-border-strong);
+  border-top-color: var(--jt-text);
+  animation-duration: 0.75s;
+
+  &:not(.small, .medium) {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+.loading-indicator-container {
+  height: 2px;
+}

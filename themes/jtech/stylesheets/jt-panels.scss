@@ -1,0 +1,35 @@
+// Menus, cards, modals: flat surface, hairline border, no heavy shadows
+.menu-panel,
+// .show: core keeps an empty, zero-height card in the page while none is
+// open, and a border on it draws a stray line under the content
+.user-card.show,
+.group-card.show,
+.fk-d-menu,
+.select-kit .select-kit-body,
+.search-menu .results,
+.popup-menu {
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-lg);
+  box-shadow: var(--jt-shadow-menu);
+}
+
+.d-modal__container {
+  background: var(--jt-surface-raised);
+  border-radius: var(--jt-radius-xl);
+  box-shadow: var(--jt-shadow-modal);
+}
+
+.d-modal__header,
+.d-modal__footer {
+  border-color: var(--jt-border);
+}
+
+// Not while closed: core keeps a zero-height composer at the bottom of the
+// window, and its border drew a hairline along the bottom of every page.
+#reply-control {
+  box-shadow: none;
+
+  &:not(.closed) {
+    border-top: 1px solid var(--jt-border);
+  }
+}

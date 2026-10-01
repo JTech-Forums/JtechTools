@@ -1,0 +1,176 @@
+monochrome_categories:
+  type: bool
+  default: true
+monochrome_letter_avatars:
+  type: bool
+  default: true
+monochrome_heatmap:
+  type: bool
+  default: true
+corner_style:
+  type: enum
+  default: squircle
+  choices:
+    - squircle
+    - sharp
+    - soft
+    - round
+topic_cards:
+  type: bool
+  default: true
+hero_enabled:
+  type: bool
+  default: true
+hero_title:
+  type: string
+  default: "Welcome to JTech Forums"
+hero_subtitle:
+  type: string
+  default: "The most precise, accurate and up-to-date tech and filtering information for the Jewish community. Join a conversation, and remember to be kind and helpful."
+hero_search_placeholder:
+  type: string
+  default: "Search phones, filters, guides…"
+hero_dismissible:
+  type: bool
+  default: true
+hero_links:
+  type: objects
+  default:
+    - title: JTech Homepage
+      description: Guides, tools and downloads
+      url: https://jtechforums.org/home
+      icon: desktop
+    - title: Contact us
+      description: Reach the JTech team
+      url: https://jtechforums.org/home/contact
+      icon: address-book
+    - title: eGate filter
+      description: Set up and manage eGate
+      url: https://jtechforums.org/home/egate
+      icon: robot
+    - title: Dumbcourse
+      description: Android on a dumbphone
+      url: https://jtechforums.org/dumb
+      icon: fab-android
+  schema:
+    name: link
+    identifier: title
+    properties:
+      title:
+        type: string
+        required: true
+        validations:
+          min_length: 1
+          max_length: 80
+      description:
+        type: string
+        validations:
+          max_length: 160
+      url:
+        type: string
+        required: true
+        validations:
+          min_length: 1
+          max_length: 2048
+      icon:
+        type: string
+        validations:
+          max_length: 100
+footer_enabled:
+  type: bool
+  default: true
+footer_tagline:
+  type: string
+  default: "Precise, up-to-date tech and filtering information for the Jewish community."
+footer_links:
+  type: objects
+  default:
+    - section: Forum
+      title: Latest
+      url: /latest
+    - section: Forum
+      title: Categories
+      url: /categories
+    - section: Forum
+      title: Guidelines
+      url: /guidelines
+    - section: Forum
+      title: About
+      url: /about
+    - section: JTech
+      title: Homepage
+      url: https://jtechforums.org/home
+    - section: JTech
+      title: Contact
+      url: https://jtechforums.org/home/contact
+    - section: JTech
+      title: eGate filter
+      url: https://jtechforums.org/home/egate
+    - section: JTech
+      title: Dumbcourse
+      url: https://jtechforums.org/dumb
+    - section: Legal
+      title: Terms
+      url: https://jtechforums.org/terms
+    - section: Legal
+      title: Privacy
+      url: https://jtechforums.org/privacy-policy
+  schema:
+    name: link
+    identifier: title
+    properties:
+      section:
+        type: string
+        required: true
+        validations:
+          min_length: 1
+          max_length: 40
+      title:
+        type: string
+        required: true
+        validations:
+          min_length: 1
+          max_length: 60
+      url:
+        type: string
+        required: true
+        validations:
+          min_length: 1
+          max_length: 2048
+category_banners:
+  type: bool
+  default: true
+tag_banners:
+  type: bool
+  default: true
+external_link_icon:
+  type: bool
+  default: true
+header_home_url:
+  type: string
+  default: "/home"
+overlay_scrollbar:
+  type: bool
+  default: true
+back_to_top:
+  type: bool
+  default: true
+command_menu:
+  type: bool
+  default: true
+card_thumbnails:
+  type: bool
+  default: true
+code_language_labels:
+  type: bool
+  default: true
+internal_hosts:
+  type: list
+  list_type: simple
+  default: "jtechforums.org|forums.jtechforums.org|forums.jtechforums.com|forums.mitmachim.com"
+reading_progress:
+  type: bool
+  default: true
+quick_look:
+  type: bool
+  default: true
