@@ -27,13 +27,13 @@ dumbcourse/
     ui/             icons, layers (sheets/dialogs/drawer/toasts), soft keys,
                     topic rows, posts
     views/          one file per screen (or family of screens)
-  styles/         plain CSS with custom properties, concatenated in order
+  styles/         SCSS with CSS custom properties, compiled in name order
   test/           Node unit tests
   build.ts        the build
   css.ts          the stylesheet build
+  page.ts         the page template the server fills in
 public/
-  dumbcourse.js, dumbcourse-early.js, dumbcourse.css   ← built, committed
-  index.html      page template the server fills in
+  dumbcourse.js, dumbcourse-early.js, dumbcourse.css, index.html   ← built, committed
 app/controllers/discourse_dumbcourse/
   app_controller.rb     serves the page + static files, boot data, CSP
   pair_controller.rb    "Sign in with another device"
@@ -47,7 +47,7 @@ lib/discourse_dumbcourse/
 
 ```bash
 pnpm install
-pnpm dumbcourse:build   # writes public/dumbcourse.js, -early.js, .css
+pnpm dumbcourse:build   # writes public/dumbcourse.js, -early.js, .css, index.html
 pnpm dumbcourse:check   # type-check + fail if the committed build is stale
 pnpm dumbcourse:test    # unit tests (Node's test runner, TypeScript directly)
 ```
@@ -59,7 +59,8 @@ The pipeline: **esbuild** bundles `src/main.ts` into one file →
 **TypeScript** lowers it to ES5 (async/await included; tagged templates are
 rewritten to plain calls so their strings aren't stored twice) → esbuild
 minifies it, still ES5 → **espree** parses the result as ECMAScript 5, and
-the build fails if anything newer slipped in.
+the build fails if anything newer slipped in. The styles go through **Sass**
+first, then the `var()` fallbacks below.
 
 What stops newer *APIs* (not just syntax) from reaching old phones:
 
