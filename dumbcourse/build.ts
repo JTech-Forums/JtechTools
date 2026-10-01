@@ -1,7 +1,8 @@
-// Builds Dumbcourse from TypeScript into the two files the plugin serves:
+// Builds Dumbcourse from TypeScript and SCSS into the files the plugin serves:
 //
 //   public/dumbcourse.js   one ES5 script (no ES2015+ syntax at all)
 //   public/dumbcourse.css  one stylesheet whose var() uses carry fallbacks
+//   public/index.html      the page template (page.ts)
 //
 // The pipeline is esbuild (bundle the modules into one IIFE) → TypeScript
 // (lower everything to ES5, async/await included) → esbuild (minify, still
@@ -20,6 +21,7 @@ import * as esbuild from "esbuild";
 import * as espree from "espree";
 import ts from "typescript";
 import { buildCss } from "./css.ts";
+import { PAGE } from "./page.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -27,6 +29,7 @@ const srcDir = join(here, "src");
 const outJs = join(root, "public", "dumbcourse.js");
 const outEarly = join(root, "public", "dumbcourse-early.js");
 const outCss = join(root, "public", "dumbcourse.css");
+const outPage = join(root, "public", "index.html");
 const check = process.argv.includes("--check");
 
 const BANNER =
@@ -217,6 +220,7 @@ async function main(): Promise<void> {
     writeOrCheck(outJs, js),
     writeOrCheck(outEarly, early),
     writeOrCheck(outCss, css),
+    writeOrCheck(outPage, PAGE),
   ].every(Boolean);
   if (!ok) process.exit(1);
 }

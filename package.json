@@ -13,6 +13,7 @@
     "playwright-core": "1.63.0",
     "postcss": "8.5.23",
     "prettier": "3.8.1",
+    "sass": "1.105.1",
     "sharp": "0.35.5",
     "stylelint": "17.5.0",
     "typescript": "5.9.3"
@@ -24,8 +25,8 @@
     "lint:css:fix": "pnpm stylelint assets/stylesheets/**/*.scss --fix --allow-empty-input",
     "lint:js": "eslint {assets,admin/assets,test}/javascripts types --cache --no-error-on-unmatched-pattern",
     "lint:js:fix": "eslint {assets,admin/assets,test}/javascripts types --fix --no-error-on-unmatched-pattern",
-    "lint:prettier": "pnpm prettier assets/stylesheets/**/*.scss {assets,admin/assets,test}/javascripts/**/*.{ts,gts} dumbcourse/**/*.ts dumbcourse/styles/*.css --check --no-error-on-unmatched-pattern",
-    "lint:prettier:fix": "pnpm prettier assets/stylesheets/**/*.scss {assets,admin/assets,test}/javascripts/**/*.{ts,gts} dumbcourse/**/*.ts dumbcourse/styles/*.css -w --no-error-on-unmatched-pattern",
+    "lint:prettier": "pnpm prettier assets/stylesheets/**/*.scss {assets,admin/assets,test}/javascripts/**/*.{ts,gts} dumbcourse/**/*.ts dumbcourse/styles/*.scss --check --no-error-on-unmatched-pattern",
+    "lint:prettier:fix": "pnpm prettier assets/stylesheets/**/*.scss {assets,admin/assets,test}/javascripts/**/*.{ts,gts} dumbcourse/**/*.ts dumbcourse/styles/*.scss -w --no-error-on-unmatched-pattern",
     "lint:types": "ember-tsc -b",
     "dumbcourse:build": "node --experimental-strip-types --no-warnings dumbcourse/build.ts",
     "dumbcourse:check": "tsc -p dumbcourse/tsconfig.json && tsc -p dumbcourse/tsconfig.node.json && node --experimental-strip-types --no-warnings dumbcourse/build.ts --check",

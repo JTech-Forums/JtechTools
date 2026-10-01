@@ -13,5 +13,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["build.ts", "css.ts", "espree.d.ts", "test/**/*.ts"]
+  "include": ["build.ts", "css.ts", "page.ts", "espree.d.ts", "test/**/*.ts"]
 }

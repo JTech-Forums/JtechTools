@@ -1,14 +1,16 @@
-// Stylesheet build. The sources use CSS custom properties for the themes;
-// browsers older than Chrome 49 / Firefox 31 do not understand var(), so
-// every declaration that uses one gets a plain fallback in front of it
-// (resolved against the dark theme), and the light theme is repeated as
-// plain rules inside `@supports not (--a: 0)` — a block only engines
-// without custom properties apply.
+// Stylesheet build. The sources are SCSS, compiled file by file in name
+// order (partials, `_*.scss`, only come in through `@use`). They use CSS
+// custom properties for the themes; browsers older than Chrome 49 / Firefox
+// 31 do not understand var(), so every declaration that uses one gets a plain
+// fallback in front of it (resolved against the dark theme), and the light
+// theme is repeated as plain rules inside `@supports not (--a: 0)` — a block
+// only engines without custom properties apply.
 
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import * as esbuild from "esbuild";
 import postcss from "postcss";
+import * as sass from "sass";
 
 type Vars = Record<string, string>;
 
@@ -125,9 +127,12 @@ export function transformCss(source: string): string {
 
 export async function buildCss(dir: string): Promise<string> {
   const source = readdirSync(dir)
-    .filter((name) => name.endsWith(".css"))
+    .filter((name) => name.endsWith(".scss") && !name.startsWith("_"))
     .sort()
-    .map((name) => readFileSync(join(dir, name), "utf8"))
+    .map(
+      (name) =>
+        sass.compile(join(dir, name), { style: "expanded", charset: false }).css
+    )
     .join("\n");
   const transformed = transformCss(source);
   const minified = await esbuild.transform(transformed, {
