@@ -24,6 +24,8 @@ export interface Prefs {
   images: ImageMode;
   excerpts: boolean;
   softkeys: Toggle3;
+  // Set once this device presses a D-pad or soft key.
+  keypad: boolean;
   live: boolean;
   defaultView: string;
   hints: boolean;
@@ -47,6 +49,7 @@ function defaults(): Prefs {
     images: "show",
     excerpts: true,
     softkeys: "auto",
+    keypad: false,
     live: true,
     defaultView: "",
     hints: true,
@@ -101,11 +104,24 @@ export function isLight(): boolean {
 export function softkeysVisible(): boolean {
   if (prefs.softkeys === "on") return true;
   if (prefs.softkeys === "off") return false;
-  // Feature phones are small and mostly keypad-only. Modern touch phones
-  // are also under 480 px wide, so touch only counts as a feature phone at
-  // keypad-phone widths (240/320 px).
+  // Touch phones are as narrow as feature phones, so on a touch screen
+  // wait until the phone shows it has a keypad.
   const w = window.innerWidth || document.documentElement.clientWidth;
-  return w <= 480 && (w <= 320 || !hasTouch());
+  return w <= 480 && (prefs.keypad || !hasTouch());
+}
+
+const NAV_KEYS: Key[] = [
+  "up",
+  "down",
+  "left",
+  "right",
+  "softleft",
+  "softright",
+];
+
+export function noteKey(key: Key, typing: boolean): void {
+  if (prefs.keypad || typing || NAV_KEYS.indexOf(key) < 0) return;
+  setPref("keypad", true);
 }
 
 export function applyPrefs(): void {

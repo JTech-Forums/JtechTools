@@ -105,7 +105,7 @@ const IMAGES: Array<[Prefs["images"], string]> = [
   ["hide", "Hide"],
 ];
 const SOFTKEYS: Array<[Prefs["softkeys"], string]> = [
-  ["auto", "Small screens"],
+  ["auto", "Keypad phones"],
   ["on", "Always"],
   ["off", "Never"],
 ];

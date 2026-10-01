@@ -28,6 +28,7 @@ import {
   onPrefsChange,
   prefs,
   setPref,
+  noteKey,
   softkeysVisible,
 } from "./prefs.ts";
 import * as router from "./router.ts";
@@ -469,6 +470,7 @@ function dispatchKey(
   target: HTMLElement | null,
   typing: boolean
 ): void {
+  noteKey(key, typing);
   const handled = (): void => {
     e.preventDefault();
     e.stopPropagation();

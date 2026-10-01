@@ -10,6 +10,7 @@
     density?: string;
     avatars?: boolean;
     softkeys?: string;
+    keypad?: boolean;
   } = {};
   try {
     prefs = JSON.parse(window.localStorage.getItem("dc:prefs") || "{}") || {};
@@ -41,7 +42,7 @@
     "ontouchstart" in window ||
     (nav.maxTouchPoints || 0) > 0 ||
     (nav.msMaxTouchPoints || 0) > 0;
-  const small = w <= 480 && (w <= 320 || !touch);
+  const small = w <= 480 && (prefs.keypad === true || !touch);
   if (prefs.softkeys === "on" || (prefs.softkeys !== "off" && small))
     classes.push("with-softkeys");
   root.className = classes.join(" ");
