@@ -67,8 +67,11 @@
   display: none !important;
 }
 
-/* Hide "Seen" and "Posted" on ars18's user card */
+/* Hide "Seen" and "Posted" on ars18's user card. Core's own "hide my public
+   profile and presence" preference does this properly, on every theme. */
+
 .card-content:has(a.user-profile-link[href="/u/ars18"]) .last-seen-metadata,
+.card-content:has(a.user-profile-link[href="/u/ars18"]) .jt-last-seen,
 .card-content:has(a.user-profile-link[href="/u/ars18"]) .metadata__last-posted {
   display: none !important;
 }

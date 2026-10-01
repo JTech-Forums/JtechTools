@@ -39,7 +39,9 @@
   }
 
   .category-list td.category,
-  .category-list .category-box {
+  .category-list .category-box,
+  .category-boxes .category-box,
+  .category-boxes-with-topics .category-box {
     border-color: var(--jt-border) !important;
   }
 }

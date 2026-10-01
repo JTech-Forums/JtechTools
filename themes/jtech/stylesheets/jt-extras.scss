@@ -1,0 +1,196 @@
+@use "lib/viewport";
+
+// Pieces that used to be separate theme components on the forum.
+
+// ── Category boxes (core's "Boxes" category page style) ───
+// Hairline cards like the topic cards; the category colour stays a thin
+// accent on the left only when categories aren't monochrome.
+.category-boxes,
+.category-boxes-with-topics {
+  --d-category-border-box-width: 1px;
+  --d-category-border-accent-width: #{if(
+      $monochrome_categories == "true",
+      1px,
+      3px
+    )};
+
+  .category-box {
+    border-radius: var(--jt-radius-lg);
+    transition: border-color var(--jt-motion);
+
+    .category-box-inner {
+      background: var(--jt-surface-raised);
+      border-color: var(--jt-border);
+      border-radius: 0 var(--jt-radius-lg) var(--jt-radius-lg) 0;
+    }
+
+    &:hover .category-box-inner {
+      border-color: var(--jt-border-strong);
+    }
+
+    h3 {
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .description {
+      color: var(--jt-text-muted);
+    }
+  }
+}
+
+// ── First-reply prompt (components/jt-first-reply) ────────
+.jt-first-reply {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: calc(
+    var(--topic-avatar-width) + var(--topic-body-width) +
+      (var(--topic-body-width-padding) * 2)
+  );
+  margin: var(--space-4) 0;
+  padding: var(--space-4) var(--space-5);
+  color: var(--jt-text-muted);
+  background: var(--jt-surface-sunken);
+  border: 1px dashed var(--jt-border-strong);
+  border-radius: var(--jt-radius-lg);
+
+  &__icon .d-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--jt-text-subtle);
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: var(--jt-text-md);
+
+    strong {
+      font-weight: 600;
+      color: var(--jt-text);
+    }
+  }
+}
+
+// ── First / last post buttons (components/jt-jump-buttons) ─
+.jt-jump {
+  display: flex;
+  gap: var(--space-2);
+
+  .btn {
+    min-height: 0;
+    padding: 0.4em 0.6em;
+    color: var(--jt-text-muted);
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--jt-text);
+      border-color: var(--jt-border-strong);
+    }
+  }
+
+  &.--timeline {
+    margin-top: var(--space-3);
+  }
+
+  &.--progress {
+    height: 100%;
+
+    .btn {
+      height: 100%;
+    }
+  }
+}
+
+#topic-progress-wrapper .before-topic-progress-outlet {
+  display: flex;
+}
+
+// ── Code line numbers (api-initializers/jt-code-blocks) ───
+// The gutter and the code share one grid row, so the numbers stay put while a
+// long line scrolls sideways.
+.cooked pre.jt-numbered,
+.d-editor-preview pre.jt-numbered {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+
+  > .jt-lines {
+    padding: 12px 0.6em 12px 0.85em;
+    font-family: var(--jt-font-mono);
+    font-size: var(--font-down-1);
+    line-height: inherit;
+    color: var(--jt-text-subtle);
+    text-align: right;
+    white-space: pre;
+    user-select: none;
+    border-right: 1px solid var(--jt-border);
+  }
+
+  > code {
+    overflow-x: auto;
+  }
+}
+
+// ── Padlocks on private categories (setting hide_lock_icons) ─
+@if $hide_lock_icons == "true" {
+  .badge-category__wrapper,
+  .category-drop .restricted,
+  .search-menu .results .restricted,
+  .category-title-name,
+  .category-box-heading,
+  .sidebar-section-link,
+  [href^="/c/"] {
+    .d-icon-lock,
+    [class*="d-icon-category.restricted"] {
+      display: none;
+    }
+  }
+}
+
+// ── Composer full-screen toggle on tablets ────────────────
+// Core hides it on every touch device; tablets have the room for it.
+@media (hover: none) and (width >= 40rem) {
+  #reply-control .toggle-fullscreen {
+    display: flex;
+  }
+}
+
+// ── ☰ on the left on phones (setting mobile_menu_left) ────
+@if $mobile_menu_left == "true" {
+  html.mobile-view .d-header > .wrap > .contents {
+    gap: 0.4rem;
+
+    > .panel,
+    > .panel > .d-header-icons {
+      display: contents;
+    }
+
+    .hamburger-dropdown {
+      order: -1;
+    }
+
+    .header-buttons,
+    .d-header-icons > li:not(.hamburger-dropdown),
+    > .after-header-panel-outlet {
+      order: 1;
+    }
+
+    // the logo (or the topic title once scrolled) takes the free space
+    > .home-logo-wrapper-outlet {
+      margin-inline-end: auto;
+    }
+
+    &:has(> .extra-info-wrapper) > .home-logo-wrapper-outlet {
+      margin-inline-end: 0;
+    }
+
+    > .extra-info-wrapper {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+}
