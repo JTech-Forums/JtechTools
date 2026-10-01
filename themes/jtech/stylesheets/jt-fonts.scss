@@ -1,0 +1,16 @@
+// Geist (SIL OFL 1.1, see GEIST-FONT-LICENSE.txt), self-hosted as theme assets
+@font-face {
+  font-family: Geist;
+  src: url($geist) format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url($geist-mono) format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}

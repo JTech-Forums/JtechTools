@@ -1,0 +1,32 @@
+.topic-list {
+
+  .main-link a.title {
+    color: var(--jt-text);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .visited .main-link a.title,
+  .main-link a.title.visited {
+    color: var(--jt-text-muted);
+  }
+
+  .num,
+  .activity,
+  .posts-map {
+    color: var(--jt-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.badge-notification.new-topic,
+.badge-notification.unread-posts,
+.badge-notification.new-posts {
+  background: var(--jt-accent);
+  color: var(--jt-on-accent);
+  font-weight: 600;
+}
+
+.nav-pills > li > a {
+  font-weight: 500;
+}

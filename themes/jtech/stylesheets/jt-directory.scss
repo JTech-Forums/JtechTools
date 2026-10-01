@@ -1,0 +1,394 @@
+@use "lib/viewport";
+
+// Users directory (/u): a page title with a toolbar, and the table as a
+// card in the shape of Vercel / Linear data tables: a quiet sunken header,
+// compact divided rows, right-aligned tabular numbers.
+
+// ── Header ────────────────────────────────────────────────
+// connectors/users-top/jt-people-head: "People" + count, period switch.
+// It shares the users-top outlet with the "Users Top Nav" component, whose
+// nav row stays first; its category / tag / status filters do nothing here.
+.users-directory > span:has(> .jt-people-head) {
+  display: flex;
+  flex-direction: column;
+
+  > .jt-people-head {
+    order: 1;
+  }
+}
+
+.users-top-outlet.add-nav {
+  .category-breadcrumb {
+    display: none;
+  }
+
+  // The row's gap stayed in front of the hidden filters, and the first
+  // tab's padding indented its text: line "Latest" up with the content edge
+  .list-controls {
+    gap: 0;
+    margin-bottom: 0;
+  }
+
+  // (core's #navigation-bar { margin: 0 } needs the id to beat). Desktop
+  // tab row only: on phones the nav is a dropdown with no inset.
+  html.desktop-view & #navigation-bar {
+    margin-left: calc(var(--jt-text-md) * -0.65);
+  }
+}
+
+// Every control in the header and toolbar is this tall, and the right-hand
+// column (period switch above, tools below) is this wide, so both rows
+// share their edges
+.users-directory,
+.jt-people-head {
+  --jt-dir-control: 2.2rem;
+  --jt-dir-column: 25rem;
+}
+
+.jt-people-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  margin: 1.6rem 0 0.8rem; // 24px under the nav, 12px to the toolbar
+
+  &__title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: var(--jt-text-3xl);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: var(--jt-tracking-display);
+    color: var(--jt-text);
+  }
+
+  &__count {
+    font-size: var(--jt-text-body);
+    font-weight: 500;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+    color: var(--jt-text-subtle);
+  }
+}
+
+// Segmented control: the chosen segment is cut out of a quiet track
+.jt-seg {
+  display: flex;
+  box-sizing: border-box;
+  gap: 2px;
+  width: var(--jt-dir-column);
+  max-width: 100%;
+  height: var(--jt-dir-control);
+  padding: 3px;
+  overflow-x: auto;
+  background: var(--jt-hover);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-lg);
+  scrollbar-width: none;
+
+  &__item {
+    flex: 1 0 auto;
+    height: 100%;
+    padding: 0 0.5rem;
+    font-size: var(--jt-text-sm);
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--jt-text-muted);
+    background: none;
+    border: 0;
+    border-radius: calc(var(--jt-radius-lg) - 3px);
+    cursor: pointer;
+    transition:
+      color 0.12s ease-out,
+      background-color 0.12s ease-out;
+
+    &:hover {
+      color: var(--jt-text);
+    }
+
+    &.--active {
+      color: var(--jt-text);
+      background: var(--jt-surface);
+      box-shadow:
+        0 0 0 1px var(--jt-border-strong),
+        0 1px 2px rgb(0 0 0 / 12%);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: inset 0 0 0 2px var(--jt-focus);
+    }
+  }
+}
+
+// ── Toolbar ───────────────────────────────────────────────
+// Core's period dropdown and "1301 users" are replaced by the header above;
+// what's left is "Last updated" at left and one row of equal controls.
+.users-directory .directory-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin: 0 0 calc(1.6rem - 1px); // 24px to the table, with the 1px sync bar
+
+  .period-chooser,
+  .total-rows {
+    display: none;
+  }
+
+  .directory-last-updated {
+    margin: 0; // core's bottom margin lifted it off the toolbar's centre line
+    font-size: var(--jt-text-xs);
+    color: var(--jt-text-subtle);
+  }
+
+  .inline-form {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--space-2);
+    width: var(--jt-dir-column);
+    max-width: 100%;
+    margin: 0;
+
+    // core gives the groups select its own margins (uneven gap, 4px high)
+    > * {
+      flex-shrink: 0;
+      margin: 0;
+    }
+
+    .filter-name,
+    .select-kit-header,
+    .btn {
+      box-sizing: border-box;
+      height: var(--jt-dir-control);
+      min-height: 0;
+      margin: 0;
+      background: var(--jt-fill);
+      border: 1px solid var(--jt-border-strong);
+      border-radius: var(--jt-radius-control);
+    }
+
+    .filter-name {
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
+      padding: 0 0.75rem;
+      font-size: var(--jt-text-md);
+
+      &:focus {
+        border-color: var(--jt-text-subtle);
+      }
+    }
+
+    .select-kit-header {
+      padding: 0 0.7rem;
+      font-size: var(--jt-text-md);
+    }
+
+    .btn.no-text {
+      width: var(--jt-dir-control);
+      padding: 0;
+    }
+
+    .btn:hover,
+    .select-kit-header:hover {
+      background: var(--jt-hover);
+    }
+  }
+}
+
+// Core's synced top scrollbar (a mirror for wide tables) left an empty
+// 22px strip above the table, and drew a scrollbar for a 0.4px rounding
+// "overflow". Collapse it; a wide table still scrolls in its own container.
+.users-directory {
+  .horizontal-scroll-sync__top-scroll {
+    overflow-x: hidden;
+  }
+
+  .horizontal-scroll-sync__fake-content {
+    max-width: 100%;
+    height: 1px !important; // core sets 12px inline
+  }
+}
+
+// ── Table card ────────────────────────────────────────────
+.users-directory {
+  .directory-table {
+    box-sizing: border-box; // the border inside its 100%: no phantom overflow
+    margin-top: 0;
+    overflow: hidden;
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-xl);
+  }
+
+  .directory-table__column-header,
+  .directory-table__cell,
+  .directory-table__cell--empty,
+  .directory-table__cell--user-field {
+    justify-content: flex-end;
+    padding: 0 var(--space-5);
+    border-bottom: 0;
+  }
+
+  // Header row: quiet, sunken, sentence case
+  .directory-table__header {
+    background: var(--jt-surface-sunken);
+    border-bottom: 1px solid var(--jt-border);
+  }
+
+  .directory-table__column-header {
+    height: 2.4rem;
+    font-size: var(--jt-text-xs);
+    font-weight: 500;
+    color: var(--jt-text-subtle);
+
+    .header-contents {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.3rem;
+      width: 100%;
+      text-align: right;
+      border-radius: var(--jt-radius-sm);
+      cursor: pointer;
+      transition: color 0.12s ease-out;
+
+      &:hover {
+        color: var(--jt-text);
+      }
+    }
+
+    .d-icon {
+      margin: 0;
+      font-size: 0.85em;
+      color: inherit;
+    }
+
+    // The column the list is sorted by
+    &[aria-sort="ascending"],
+    &[aria-sort="descending"] {
+      color: var(--jt-text);
+    }
+
+    &:first-child {
+      justify-content: flex-start;
+
+      .header-contents {
+        justify-content: flex-start;
+        text-align: left;
+      }
+    }
+  }
+
+  // Rows: compact, divided, hover
+  .directory-table__row:not(.directory-table__header) {
+    transition: background-color 0.12s ease-out;
+
+    + .directory-table__row {
+      border-top: 1px solid var(--jt-border);
+    }
+
+    &:hover {
+      background: var(--jt-hover);
+    }
+  }
+
+  .directory-table__cell {
+    min-height: 3.6rem;
+    font-size: var(--jt-text-md);
+    font-variant-numeric: tabular-nums;
+    color: var(--jt-text);
+
+    &:first-child {
+      justify-content: flex-start;
+    }
+  }
+
+  .directory-table__value {
+    font-variant-numeric: tabular-nums;
+  }
+
+  // The person: 32px avatar, username, then name / title muted
+  .directory-table .user-info.small {
+    align-items: center;
+    gap: var(--space-3);
+    margin: 0;
+
+    .user-image,
+    .user-image-inner {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    img.avatar {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .user-detail {
+      gap: 1px;
+    }
+
+    .name-line {
+      font-size: var(--jt-text-md);
+      line-height: 1.3;
+
+      a,
+      .username {
+        font-weight: 600;
+        color: var(--jt-text);
+      }
+
+      .name {
+        font-weight: 400;
+        color: var(--jt-text-muted);
+      }
+    }
+
+    .title {
+      font-size: var(--jt-text-xs);
+      line-height: 1.3;
+      color: var(--jt-text-subtle);
+    }
+  }
+
+  .d-icon-heart {
+    color: var(--jt-text-subtle);
+  }
+}
+
+// Narrow (core switches to stacked rows below 47em of table width): each
+// person becomes a block with label · value pairs
+@container (max-width: 47em) {
+  .users-directory .directory-table {
+    .directory-table__row {
+      padding: var(--space-3) var(--space-4) var(--space-4);
+      border-bottom: 0;
+
+      &:first-child {
+        border-top: 0;
+      }
+    }
+
+    .directory-table__cell {
+      justify-content: flex-start;
+      min-height: 0;
+      padding: 0;
+    }
+
+    .directory-table__label {
+      font-size: var(--jt-text-sm);
+      color: var(--jt-text-muted);
+
+      &::after {
+        color: var(--jt-border-strong);
+      }
+    }
+  }
+}

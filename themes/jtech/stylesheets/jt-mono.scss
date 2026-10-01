@@ -1,0 +1,76 @@
+// Black & white switches (theme settings). Each is independent so the look
+// can be dialled back without touching palettes.
+
+@if $monochrome_categories == "true" {
+  .badge-category__wrapper .badge-category,
+  .badge-category {
+    --category-badge-color: var(--jt-text-muted) !important;
+    --parent-category-badge-color: var(--jt-text-muted) !important;
+  }
+
+  .sidebar-section-link-prefix.icon .prefix-icon,
+  .sidebar-section-link-prefix .prefix-span,
+  .sidebar-section-link-prefix.icon svg {
+    color: var(--jt-text-subtle) !important;
+    fill: currentColor !important;
+  }
+
+  .sidebar-section-link-prefix .prefix-span,
+  .sidebar-section-link-prefix .prefix-square,
+  .jt-cat-icon__square {
+    background: var(--jt-text-subtle) !important;
+  }
+
+  // Emoji-style categories carry their colour in the emoji itself
+  .badge-category .emoji,
+  .sidebar-section-link-prefix.emoji img,
+  .sidebar-section-link-prefix .emoji,
+  .jt-cat-icon .emoji {
+    filter: grayscale(1);
+  }
+
+  .custom-category-boxes .category-logo.no-logo-present {
+    background: var(--jt-surface-sunken) !important;
+    border-right: 1px solid var(--jt-border);
+
+    .category-abbreviation {
+      color: var(--jt-text) !important;
+      font-family: var(--jt-font-mono);
+      font-weight: 500;
+    }
+  }
+
+  .category-list td.category,
+  .category-list .category-box {
+    border-color: var(--jt-border) !important;
+  }
+}
+
+@if $monochrome_letter_avatars == "true" {
+  img.avatar[src*="letter_avatar"],
+  img[src*="/letter_avatar_proxy/"] {
+    filter: grayscale(1) contrast(1.05);
+  }
+}
+
+@if $monochrome_heatmap == "true" {
+  // Core's heatmap classes are global: topic lists, the topic map and the
+  // categories page all use them.
+  .heatmap-high,
+  .heatmap-high a {
+    color: var(--jt-text) !important;
+    font-weight: 700;
+  }
+
+  .heatmap-med,
+  .heatmap-med a {
+    color: var(--jt-text) !important;
+    font-weight: 600;
+  }
+
+  .heatmap-low,
+  .heatmap-low a {
+    color: var(--jt-text-muted) !important;
+    font-weight: 500;
+  }
+}

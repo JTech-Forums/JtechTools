@@ -1,0 +1,38 @@
+// Compiled once per palette (JTech Light / JTech Dark), so anything that
+// differs by mode lives here as a custom property. Everything else in the
+// theme reads these tokens and never branches on mode itself.
+:root {
+  // Hairlines are translucent (JTech Market): they sit into any surface
+  // instead of drawing a hard grey line on it.
+  --jt-border: #{dark-light-choose(rgb(0 0 0 / 8%), rgb(255 255 255 / 10%))};
+  --jt-border-strong: #{dark-light-choose(rgb(0 0 0 / 14%), rgb(255 255 255 / 16%))};
+  --jt-fill: #{dark-light-choose(#fff, rgb(255 255 255 / 4.5%))};
+  --jt-glass: #{dark-light-choose(rgb(255 255 255 / 72%), rgb(10 10 10 / 62%))};
+  --jt-surface: #{dark-light-choose(#fff, #000)};
+  --jt-surface-raised: #{dark-light-choose(#fff, #0a0a0a)};
+  --jt-surface-sunken: #{dark-light-choose(#fafafa, #0a0a0a)};
+  --jt-hover: #{dark-light-choose(rgb(0 0 0 / 4%), rgb(255 255 255 / 6%))};
+  // Selected rows (sidebar, menus): one step above hover (Geist gray-alpha)
+  --jt-active: #{dark-light-choose(rgb(0 0 0 / 8%), rgb(255 255 255 / 9%))};
+  --jt-pressed: #{dark-light-choose(rgb(0 0 0 / 11%), rgb(255 255 255 / 13%))};
+  --jt-text: #{dark-light-choose(#000, #fff)};
+  --jt-text-muted: #{dark-light-choose(#666, #a1a1a1)};
+  --jt-text-subtle: #{dark-light-choose(#8f8f8f, #8f8f8f)};
+  --jt-focus: #{dark-light-choose(#000, #fff)};
+  --jt-accent: #{dark-light-choose(#000, #fff)};
+  --jt-on-accent: #{dark-light-choose(#fff, #000)};
+  // Scrollbar thumbs: translucent so they sit on any surface
+  --jt-scroll-thumb: #{dark-light-choose(rgb(0 0 0 / 22%), rgb(255 255 255 / 22%))};
+  --jt-scroll-thumb-active: #{dark-light-choose(rgb(0 0 0 / 42%), rgb(255 255 255 / 45%))};
+  --jt-grid: #{dark-light-choose(rgb(0 0 0 / 5%), rgb(255 255 255 / 5%))};
+  --jt-glow: #{dark-light-choose(rgb(0 0 0 / 4%), rgb(255 255 255 / 9%))};
+  --jt-header-blur-bg: #{dark-light-choose(rgb(255 255 255 / 80%), rgb(0 0 0 / 75%))};
+  --jt-shadow-menu: #{dark-light-choose(
+      "0 4px 12px rgb(0 0 0 / 8%), 0 0 0 1px rgb(0 0 0 / 8%)",
+      "0 0 0 1px rgb(255 255 255 / 10%)"
+    )};
+  --jt-shadow-modal: #{dark-light-choose(
+      "0 16px 48px rgb(0 0 0 / 12%), 0 0 0 1px rgb(0 0 0 / 8%)",
+      "0 0 0 1px rgb(255 255 255 / 12%), 0 16px 48px rgb(0 0 0 / 60%)"
+    )};
+}

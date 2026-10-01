@@ -1,0 +1,118 @@
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizelegibility;
+  font-feature-settings: "liga", "calt";
+}
+
+body {
+  background: var(--jt-surface);
+}
+
+// Native controls in monochrome: checkboxes, radios and range thumbs take
+// the text colour.
+html {
+  accent-color: var(--jt-text);
+}
+
+// ── Scrollbars ────────────────────────────────────────────
+// Panels (sidebar, menus, dialogs, code, composer): thin, and invisible
+// until the panel is hovered. Set on every element, not inherited, so it
+// also wins over core's per-component scrollbar colours.
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*:hover {
+  scrollbar-color: var(--jt-scroll-thumb) transparent;
+}
+
+// The page itself: components/jt-scrollbar draws an overlay pill instead and
+// adds this class while it is mounted (without it the native bar stays).
+html.jt-overlay-scroll {
+  scrollbar-width: none;
+}
+
+.jt-scrollbar {
+  position: fixed;
+  z-index: z("timeline") + 1;
+  top: calc(var(--header-offset, 4rem) + 4px);
+  right: 0;
+  bottom: calc(var(--composer-height, 0px) + 4px);
+  width: 14px;
+  touch-action: none;
+  user-select: none;
+
+  &.--off {
+    display: none;
+  }
+
+  &__thumb {
+    position: absolute;
+    top: 0;
+    right: 3px;
+    width: 6px;
+    background: var(--jt-scroll-thumb);
+    border-radius: 999px;
+    opacity: 0;
+    will-change: transform;
+    transition:
+      opacity 0.35s ease,
+      width 0.15s ease,
+      background-color 0.15s ease;
+  }
+
+  &.--active &__thumb {
+    opacity: 1;
+    transition-duration: 0.1s, 0.15s, 0.15s;
+  }
+
+  &:hover &__thumb,
+  &.--dragging &__thumb {
+    width: 9px;
+    opacity: 1;
+    background: var(--jt-scroll-thumb-active);
+  }
+}
+
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: -0.02em;
+}
+
+// Keyboard focus ring for controls. Text entry gets none: its own border
+// already shows focus, and a 2px white box around the composer reads as a bug.
+:focus-visible {
+  outline: 2px solid var(--jt-focus);
+  outline-offset: 2px;
+}
+
+:is(
+    input:not([type="checkbox"], [type="radio"], [type="button"], [type="submit"]),
+    textarea,
+    select,
+    [contenteditable],
+    .d-editor-input
+  ):focus-visible {
+  outline: none;
+}
+
+::selection {
+  background: var(--jt-text);
+  color: var(--jt-surface);
+}
+
+.btn {
+  font-weight: 500;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.btn-primary {
+  border: 1px solid var(--d-button-primary-bg-color);
+}

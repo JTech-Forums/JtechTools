@@ -1,0 +1,316 @@
+// Sidebar, after Vercel (Geist), Linear, shadcn and GitHub Primer:
+//  - the content outranks the sidebar: labels idle at text-muted, icons one
+//    step dimmer, full contrast only on hover / the current page
+//  - one signal per state: hover is a 6% fill, current is 9% + strong text,
+//    same shape, no weight change (it would move the ellipsis)
+//  - one row height (32px; 40px on touch), a fixed 16px icon column so every
+//    label starts on the same line, rows inset from the edges
+//  - space separates sections, not rules; headers are small, sentence case,
+//    with the chevron revealed on hover (always when collapsed / on touch)
+//  - the list shows it scrolls (fade masks), counts stay quiet
+
+:root,
+body {
+  --d-sidebar-row-height: 2.1333rem; // 32px
+  --d-sidebar-row-horizontal-padding: 0.5333rem; // 8px
+  --d-sidebar-vertical-gap: 1px;
+  --d-sidebar-section-link-prefix-width: 1.0667rem; // 16px
+  --d-sidebar-section-link-prefix-margin-right: 0.6rem; // 9px
+  --d-sidebar-section-link-icon-size: 0.9333rem; // 14px glyph in a 16px box
+  --d-sidebar-section-link-emoji-size: 1rem;
+  --d-sidebar-animation-time: 0.2s;
+
+  --d-sidebar-background: var(--jt-surface);
+  --d-sidebar-border-color: var(--jt-border);
+  --d-sidebar-section-border-color: transparent;
+  --d-sidebar-link-color: var(--jt-text-muted);
+  --d-sidebar-link-icon-color: var(--jt-text-subtle);
+  --d-sidebar-link-badge-color: var(--jt-text-subtle);
+  --d-sidebar-prefix-color: var(--jt-text-subtle);
+  --d-sidebar-header-color: var(--jt-text-subtle);
+  --d-sidebar-header-icon-color: var(--jt-text-subtle);
+  --d-sidebar-header-font-weight: 500;
+  --d-sidebar-highlight-background: var(--jt-hover);
+  --d-sidebar-highlight-color: var(--jt-text);
+  --d-sidebar-highlight-hover-icon: var(--jt-text);
+  --d-sidebar-highlight-prefix-color: var(--jt-text);
+  --d-sidebar-active-background: var(--jt-active);
+  --d-sidebar-active-color: var(--jt-text);
+  --d-sidebar-active-icon-color: var(--jt-text);
+  --d-sidebar-active-font-weight: 400;
+  --d-sidebar-footer-fade: transparent;
+
+  @media (pointer: coarse) {
+    --d-sidebar-row-height: 2.6667rem; // 40px
+  }
+}
+
+// The hamburger panel (phones, and desktop with the sidebar off) is a raised
+// surface; the sidebar inside it, footer included, takes the same colour.
+.sidebar-hamburger-dropdown {
+  --d-sidebar-background: var(--jt-surface-raised);
+}
+
+// ── Container ─────────────────────────────────────────────
+// Same surface as the page; a hairline edge that fades out at both ends.
+.sidebar-wrapper {
+  border-right: 1px solid;
+  border-image: linear-gradient(
+      to bottom,
+      transparent,
+      var(--jt-border) 6rem,
+      var(--jt-border) calc(100% - 6rem),
+      transparent
+    )
+    1;
+}
+
+// Sections are a flex column that core reorders with `order` (the custom
+// "community" section renders last but shows first), so spacing comes from
+// the gap, never from sibling margins.
+.sidebar-sections {
+  row-gap: 1rem;
+  padding: 0.5rem 0.5333rem 1rem;
+  overscroll-behavior: contain;
+
+  --scrollbarWidth: 6px;
+  --scrollbarThumbBg: var(--jt-border-strong);
+}
+
+// Fade the edges only while there is more to scroll that way
+@property --jt-fade-top {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --jt-fade-bottom {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes jt-sidebar-fade {
+  0% {
+    --jt-fade-top: 0px;
+    --jt-fade-bottom: 2.5rem;
+  }
+
+  6% {
+    --jt-fade-top: 1rem;
+  }
+
+  94% {
+    --jt-fade-bottom: 2.5rem;
+  }
+
+  100% {
+    --jt-fade-top: 1rem;
+    --jt-fade-bottom: 0px;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .sidebar-wrapper .sidebar-sections {
+    mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      #000 var(--jt-fade-top),
+      #000 calc(100% - var(--jt-fade-bottom)),
+      transparent
+    );
+    animation: jt-sidebar-fade linear both;
+    animation-timeline: scroll(self);
+  }
+}
+
+// ── Sections ──────────────────────────────────────────────
+.sidebar-section-wrapper {
+  padding-block: 0;
+  border-bottom: 0;
+
+  .sidebar-section-header-wrapper {
+    height: 1.8667rem; // 28px
+    padding-left: var(--d-sidebar-row-horizontal-padding);
+    border-radius: var(--jt-radius-control);
+  }
+
+  // Text first, chevron after it: header text lines up with the icon column
+  .sidebar-section-header {
+    gap: 0.35rem;
+    font-size: var(--jt-text-xs);
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--d-sidebar-header-color);
+
+    &.sidebar-section-header-collapsable:hover {
+      color: var(--jt-text-muted);
+    }
+  }
+
+  .sidebar-section-header-text {
+    order: 1;
+    margin-right: 0;
+  }
+
+  .sidebar-section-header-caret {
+    order: 2;
+    width: auto;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+
+    .d-icon {
+      font-size: 0.6667rem; // 10px
+    }
+  }
+
+  &:hover,
+  &:focus-within {
+    .sidebar-section-header-caret {
+      opacity: 1;
+    }
+  }
+
+  .sidebar-section-header[aria-expanded="false"] .sidebar-section-header-caret {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    .sidebar-section-header-caret {
+      opacity: 1;
+    }
+  }
+
+  .sidebar-section-header-wrapper .sidebar-section-header-button,
+  .sidebar-section-header-wrapper .btn.sidebar-section-header-dropdown {
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    border-radius: var(--jt-radius-sm);
+
+    &:hover {
+      background: var(--jt-hover);
+    }
+  }
+}
+
+// ── Rows ──────────────────────────────────────────────────
+.sidebar-section-link,
+.sidebar-row {
+  border-radius: var(--jt-radius-control);
+}
+
+.sidebar-section-link {
+  font-size: var(--jt-text-md);
+  letter-spacing: var(--jt-tracking-ui);
+  transition:
+    background-color 0.12s ease-out,
+    color 0.12s ease-out;
+
+  .sidebar-section-link-prefix {
+    color: var(--d-sidebar-link-icon-color);
+    transition: color 0.12s ease-out;
+  }
+
+  &:hover .sidebar-section-link-prefix,
+  &:focus-visible .sidebar-section-link-prefix {
+    color: var(--jt-text);
+  }
+
+  &:active:not(.active) {
+    background: var(--jt-pressed);
+  }
+
+  // Inset ring: an outer outline would be clipped by the scroller
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--jt-focus);
+  }
+
+  // Counts: quiet, tabular, never a filled pill
+  .sidebar-section-link-content-badge {
+    font-size: var(--jt-text-xs);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--jt-text-subtle);
+  }
+
+  // Unread: a small dot in full contrast
+  .sidebar-section-link-suffix.icon.unread svg {
+    width: 0.4rem;
+    height: 0.4rem;
+    color: var(--jt-text);
+  }
+}
+
+// Category colour squares: small, so colour stays an accent
+.sidebar-section-link-prefix .prefix-square {
+  width: 0.6667rem;
+  height: 0.6667rem;
+  border-radius: 3px;
+}
+
+// Tags read as #tag instead of a column of identical tag icons
+.sidebar-section[data-section-name="tags"]
+  .sidebar-section-link[href^="/tag/"]
+  .sidebar-section-link-prefix {
+  svg {
+    display: none;
+  }
+
+  &::before {
+    content: "#";
+    font-family: var(--jt-font-mono);
+    font-size: var(--jt-text-md);
+    line-height: 1;
+  }
+}
+
+// Admin shortcuts inside navigation sections sit back a step
+.sidebar-section-link[data-link-name^="configure-default"] {
+  --d-sidebar-link-color: var(--jt-text-subtle);
+  font-size: var(--jt-text-sm);
+}
+
+// ── Footer ────────────────────────────────────────────────
+.sidebar-footer-wrapper {
+  .sidebar-footer-container {
+    padding-block: 0.5rem;
+
+    &::before {
+      display: none; // the scroller fades itself
+    }
+  }
+
+  .sidebar-footer-actions {
+    gap: 2px;
+  }
+
+  // Interface-theme picker takes the free space so its name never clips
+  .sidebar-theme-toggle__wrapper {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-right: 0;
+  }
+
+  .btn.sidebar-footer-actions-button,
+  .sidebar-footer-actions .btn-flat {
+    width: 2.1333rem;
+    height: 2.1333rem;
+    padding: 0;
+    border-radius: var(--jt-radius-control);
+
+    .d-icon {
+      color: var(--jt-text-subtle);
+    }
+
+    &:hover {
+      background: var(--jt-hover);
+
+      .d-icon {
+        color: var(--jt-text);
+      }
+    }
+  }
+}

@@ -1,0 +1,113 @@
+// discourse-gamification leaderboard: monochrome podium. Rank is carried by
+// fill (1st inverted) and border weight, not gold/silver/bronze.
+html .leaderboard {
+  .podium__wrapper {
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border);
+    border-top: 0;
+    border-radius: 0 0 var(--jt-radius-xl) var(--jt-radius-xl);
+  }
+
+  .winner {
+    &__crown .d-icon {
+      color: var(--jt-text);
+    }
+
+    &__avatar img {
+      corner-shape: round;
+      border-width: 3px;
+      background-color: var(--jt-surface-sunken);
+    }
+
+    &__rank {
+      width: 2.5rem;
+      height: 2.5rem;
+      font-family: var(--jt-font-mono);
+      font-size: var(--jt-text-xl);
+      font-weight: 600;
+      color: var(--jt-text);
+      background: var(--jt-surface-raised);
+      border: 1px solid var(--jt-border-strong);
+      border-radius: var(--jt-radius-md);
+    }
+
+    &__name {
+      color: var(--jt-text-muted);
+    }
+
+    &__score {
+      color: var(--jt-text);
+      letter-spacing: var(--jt-tracking-display);
+      font-variant-numeric: tabular-nums;
+    }
+
+    &.-position1 {
+      .winner__avatar img {
+        border-color: var(--jt-text);
+      }
+
+      .winner__rank {
+        color: var(--jt-surface);
+        background: var(--jt-text);
+        border-color: var(--jt-text);
+      }
+
+      .winner__name {
+        color: var(--jt-text);
+      }
+    }
+
+    // Per-position selectors match the plugin's own specificity
+    &.-position2,
+    &.-position3 {
+      .winner__rank {
+        background: var(--jt-surface-raised);
+      }
+
+      .winner__avatar img {
+        background-color: var(--jt-surface-sunken);
+      }
+    }
+
+    &.-position2 .winner__avatar img {
+      border-color: var(--jt-text-muted);
+    }
+
+    &.-position3 .winner__avatar img {
+      border-color: var(--jt-border-strong);
+    }
+  }
+
+  // .ranking is the list; each .user is a row
+  .ranking {
+    background: none;
+    border: 0;
+
+    .user {
+      background: var(--jt-surface-raised);
+      border: 1px solid var(--jt-border);
+      border-radius: var(--jt-radius-lg);
+      transition: border-color var(--jt-motion);
+
+      &:hover {
+        border-color: var(--jt-border-strong);
+      }
+
+      &.-self,
+      &.user-highlight {
+        color: var(--jt-surface);
+        background: var(--jt-text);
+        border-color: var(--jt-text);
+      }
+    }
+
+    .user__rank {
+      font-family: var(--jt-font-mono);
+      font-weight: 500;
+    }
+
+    .user__score {
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}

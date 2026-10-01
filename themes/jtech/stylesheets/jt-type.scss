@@ -1,0 +1,208 @@
+// Typography. Geist throughout; the scale mirrors JTech Market (15px body,
+// 1.55 leading, -0.006em tracking) so the forum and the marketplace read as one.
+// Sizes are rem so they follow the user's text-size preference.
+
+:root {
+  // Root: 15px (core's "normal" is 16px). Other text-size prefs keep the same
+  // relative steps.
+  --base-font-size-smallest: 0.8125em; // 13px
+  --base-font-size-smaller: 0.875em; // 14px
+  --base-font-size: 0.9375em; // 15px
+  --base-font-size-larger: 1.0625em; // 17px
+  --base-font-size-largest: 1.1875em; // 19px
+
+  // Named steps at the 15px root
+  --jt-text-2xs: 0.7333rem; // 11
+  --jt-text-xs: 0.8rem; // 12
+  --jt-text-sm: 0.8667rem; // 13
+  --jt-text-md: 0.9333rem; // 14
+  --jt-text-body: 1rem; // 15
+  --jt-text-reading: 1.0667rem; // 16 — long-form post body
+  --jt-text-lg: 1.2rem; // 18
+  --jt-text-xl: 1.3333rem; // 20
+  --jt-text-2xl: 1.6rem; // 24
+  --jt-text-3xl: 2rem; // 30
+  --jt-text-4xl: 2.4rem; // 36
+
+  // Tracking tightens as size grows (Geist is drawn for this)
+  --jt-tracking-body: -0.006em;
+  --jt-tracking-ui: -0.011em;
+  --jt-tracking-heading: -0.02em;
+  --jt-tracking-display: -0.032em;
+
+  --line-height-large: 1.55;
+  --cooked-line-height: 1.7;
+}
+
+body {
+  letter-spacing: var(--jt-tracking-body);
+  line-height: 1.55;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--heading-font-family);
+  letter-spacing: var(--jt-tracking-heading);
+}
+
+h1 {
+  font-weight: 700;
+  letter-spacing: var(--jt-tracking-display);
+}
+
+// Numbers that sit in columns or tick over
+.topic-list .num,
+.topic-list .activity,
+.topic-list .posts-map,
+.topic-map,
+.badge-notification,
+.relative-date,
+.post-date,
+.timeline-container,
+.sidebar-section-link-content-badge,
+.user-stat .value,
+.admin-report,
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+// ── UI chrome ─────────────────────────────────────────────
+.nav-pills > li > a {
+  font-size: var(--jt-text-md);
+  letter-spacing: var(--jt-tracking-ui);
+}
+
+.btn {
+  font-size: var(--jt-text-md);
+  letter-spacing: var(--jt-tracking-ui);
+}
+
+.btn-small,
+.btn.btn-small {
+  font-size: var(--jt-text-xs);
+}
+
+// ── Topic list ────────────────────────────────────────────
+.topic-list {
+  th,
+  .topic-list-header th {
+    font-size: var(--jt-text-xs);
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  .main-link a.title {
+    font-size: var(--jt-text-reading);
+    font-weight: 500;
+    letter-spacing: var(--jt-tracking-ui);
+    line-height: 1.35;
+  }
+
+  .link-bottom-line,
+  .badge-category__name,
+  .discourse-tag {
+    font-size: var(--jt-text-xs);
+  }
+
+  .topic-excerpt {
+    font-size: var(--jt-text-md);
+    line-height: 1.55;
+    color: var(--jt-text-muted);
+  }
+
+  td.num,
+  td.activity,
+  .num a,
+  .activity a {
+    font-size: var(--jt-text-sm);
+  }
+}
+
+// ── Topic page ────────────────────────────────────────────
+#topic-title h1,
+#topic-title .fancy-title {
+  font-size: var(--jt-text-3xl);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: var(--jt-tracking-display);
+}
+
+.topic-meta-data {
+  font-size: var(--jt-text-md);
+
+  .names {
+    .first,
+    .first a {
+      font-weight: 600;
+    }
+
+    .second,
+    .user-title {
+      color: var(--jt-text-muted);
+      font-weight: 400;
+    }
+  }
+
+  .post-info,
+  .post-info a,
+  .relative-date {
+    font-size: var(--jt-text-sm);
+    color: var(--jt-text-subtle);
+  }
+}
+
+.topic-map {
+  .number {
+    font-size: var(--jt-text-lg);
+    font-weight: 600;
+    letter-spacing: var(--jt-tracking-heading);
+  }
+
+  .topic-map__stat-label,
+  h4,
+  span:not(.number) {
+    font-size: var(--jt-text-xs);
+  }
+}
+
+// ── Post body ─────────────────────────────────────────────
+.cooked,
+.d-editor-preview {
+  font-size: var(--jt-text-reading);
+  line-height: var(--cooked-line-height);
+
+  h1 {
+    font-size: var(--jt-text-2xl);
+    letter-spacing: var(--jt-tracking-display);
+  }
+
+  h2 {
+    font-size: var(--jt-text-xl);
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: var(--jt-text-lg);
+    font-weight: 600;
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-size: var(--jt-text-body);
+    font-weight: 600;
+  }
+
+  pre code {
+    font-size: var(--jt-text-sm);
+    line-height: 1.6;
+  }
+
+  :not(pre) > code {
+    font-size: 0.875em;
+  }
+}

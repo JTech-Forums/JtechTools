@@ -1,0 +1,301 @@
+// Layout follows the hero's own width, not the window's: with the sidebar
+// open, a 1000px window leaves the hero only ~750px.
+.jt-hero {
+  container: jt-hero / inline-size;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin: 0 0 var(--space-5);
+  padding: clamp(1.5rem, 3.5vw, 3rem);
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-xl);
+
+  // Grid + glow, dissolving toward the edges
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        ellipse 55% 70% at 18% 0%,
+        var(--jt-glow),
+        transparent 70%
+      ),
+      linear-gradient(var(--jt-grid) 1px, transparent 1px) 0 0 / 40px 40px,
+      linear-gradient(90deg, var(--jt-grid) 1px, transparent 1px) 0 0 / 40px
+        40px;
+    mask-image: radial-gradient(
+      ellipse 90% 100% at 30% 0%,
+      #000 20%,
+      transparent 85%
+    );
+  }
+
+  &__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-6) var(--space-8);
+  }
+
+  &__close {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    color: var(--jt-text-subtle);
+    border-radius: var(--jt-radius-control);
+
+    &:hover {
+      color: var(--jt-text);
+      background: var(--jt-hover);
+    }
+  }
+
+  &__copy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: clamp(2rem, 4.2vw, 3.25rem);
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+    color: var(--jt-text);
+  }
+
+  &__subtitle {
+    margin: 0;
+    max-width: 46ch;
+    font-size: var(--jt-text-body);
+    line-height: 1.6;
+    color: var(--jt-text-muted);
+    text-wrap: pretty;
+  }
+
+  &__search {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    max-width: 34rem;
+    height: 2.9rem;
+    padding: 0 0.3rem 0 1rem;
+    margin-top: var(--space-2);
+    background: var(--jt-fill);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-control);
+    transition: border-color var(--jt-motion);
+
+    > .d-icon {
+      color: var(--jt-text-subtle);
+      flex-shrink: 0;
+    }
+
+    &:focus-within {
+      border-color: var(--jt-text-subtle);
+    }
+  }
+
+  &__input[type="search"] {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-size: var(--jt-text-body);
+    color: var(--jt-text);
+    background: none;
+    border: 0;
+    box-shadow: none;
+    outline: none;
+
+    &:focus {
+      border: 0;
+      box-shadow: none;
+      outline: none;
+    }
+
+    &::placeholder {
+      color: var(--jt-text-subtle);
+    }
+  }
+
+  &__go {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 2.2rem;
+    height: 2.2rem;
+    color: var(--jt-surface);
+    background: var(--jt-text);
+    border: 0;
+    border-radius: var(--jt-radius-control);
+    cursor: pointer;
+    transition:
+      background-color var(--jt-motion),
+      transform var(--jt-motion);
+
+    &:hover {
+      background: var(--tertiary-hover);
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+  }
+
+  &__links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  &__link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-3);
+    color: var(--jt-text);
+    background: var(--jt-surface);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-lg);
+    transition:
+      border-color var(--jt-motion),
+      background-color var(--jt-motion),
+      transform var(--jt-motion);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--jt-text);
+      background: var(--jt-hover);
+      border-color: var(--jt-border-strong);
+
+      .jt-hero__link-arrow {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+  }
+
+  &__link-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    color: var(--jt-text);
+    background: var(--jt-surface-sunken);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-md);
+  }
+
+  &__link-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__link-title {
+    font-size: var(--jt-text-md);
+    font-weight: 600;
+    letter-spacing: var(--jt-tracking-ui);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__link-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: var(--jt-text-xs);
+    line-height: 1.4;
+    color: var(--jt-text-muted);
+  }
+
+  &__link-arrow {
+    flex-shrink: 0;
+    color: var(--jt-text-subtle);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition:
+      opacity var(--jt-motion),
+      transform var(--jt-motion);
+  }
+}
+
+// Too narrow to sit beside the copy without clipping the link titles:
+// stack, with the links as one row of four.
+@container jt-hero (width < 940px) {
+  .jt-hero__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .jt-hero__links {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  // Four across: tiles, icon above the text
+  .jt-hero__link {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .jt-hero__link-text {
+    width: 100%;
+  }
+
+  .jt-hero__link-arrow {
+    display: none;
+  }
+}
+
+@container jt-hero (width < 720px) {
+  .jt-hero__links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .jt-hero__link {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3);
+  }
+}
+
+// Phones: compact 2×2 tiles, titles only
+@container jt-hero (width < 460px) {
+  .jt-hero__link {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .jt-hero__link-text {
+    width: 100%;
+  }
+
+  .jt-hero__link-icon {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+
+  .jt-hero__link-desc {
+    display: none;
+  }
+}
