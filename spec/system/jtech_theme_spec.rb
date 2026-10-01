@@ -164,6 +164,20 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  it "centres the search field on the header bar on wide screens" do
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-header-search--centered .jt-header-search__button")
+    expect(page).to have_no_css(".d-header-icons .jt-header-search__button")
+    bar_centre, field_centre = page.evaluate_script(<<~JS)
+      [".d-header > .wrap > .contents", ".jt-header-search--centered .jt-header-search__button"]
+        .map((selector) => document.querySelector(selector).getBoundingClientRect())
+        .map((r) => r.left + r.width / 2)
+    JS
+    expect(field_centre).to be_within(1).of(bar_centre)
+    expect_no_theme_errors
+  end
+
   it "previews a topic's first post in Quick look" do
     sign_in(member)
     visit("/latest")

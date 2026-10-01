@@ -9,6 +9,13 @@ import { colorToggleAvailable } from "../lib/jt-color-mode";
 // messages · notifications · light/dark · new topic · avatar. Core's
 // magnifier stays in the DOM, hidden while the search field shows
 // (jt-header.scss), so "/" still opens core's search.
+// The same field for the middle of the header on wide screens. It goes in
+// before-header-panel, outside core's icon panel, which core's menus are
+// positioned against, so it can be centred on the whole bar.
+const JtCenteredSearch = <template>
+  <JtHeaderSearch @centered={{true}} />
+</template>;
+
 const icon = (kind, extra = {}) => <template>
   <JtHeaderIcon @href={{extra.href}} @kind={{kind}} />
 </template>;
@@ -31,6 +38,7 @@ export default apiInitializer((api) => {
   if (settings.command_menu && site.can_search) {
     document.documentElement.classList.add("jt-has-header-search");
     api.headerIcons.add("jt-search", JtHeaderSearch, { before: "search" });
+    api.renderInOutlet("before-header-panel", JtCenteredSearch);
   }
   if (settings.header_home_url) {
     add("jt-home", icon("home", { href: settings.header_home_url }));
