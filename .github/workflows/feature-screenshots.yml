@@ -136,7 +136,8 @@ jobs:
             plugins/${{ env.PLUGIN_NAME }}/spec/system/notifications_type_filter_spec.rb \
             plugins/${{ env.PLUGIN_NAME }}/spec/system/popup_notifications_screenshots_spec.rb \
             plugins/${{ env.PLUGIN_NAME }}/spec/system/popup_notifications_stacking_screenshots_spec.rb \
-            plugins/${{ env.PLUGIN_NAME }}/spec/system/popup_notifications_click_through_spec.rb
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/popup_notifications_click_through_spec.rb \
+            plugins/${{ env.PLUGIN_NAME }}/spec/system/jtech_theme_spec.rb
         continue-on-error: true
 
       - name: Upload feature screenshots (always)
@@ -146,5 +147,6 @@ jobs:
           name: feature-screenshots
           path: |
             tmp/capybara/feature_screenshots/*.png
+            tmp/capybara/jtech_theme/*.png
             tmp/capybara/*.png
           if-no-files-found: warn
