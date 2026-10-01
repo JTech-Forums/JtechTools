@@ -1,7 +1,11 @@
 import Component from "@glimmer/component";
 import type RouterService from "@ember/routing/router-service";
 import { service } from "@ember/service";
-import { settings, themePrefix } from "virtual:theme";
+import {
+  type JtechThemeFooterLink,
+  settings,
+  themePrefix,
+} from "virtual:theme";
 import { i18n } from "discourse-i18n";
 import { needsFullPageLoad } from "../lib/jt-links";
 import JtechMark from "./jtech-mark";

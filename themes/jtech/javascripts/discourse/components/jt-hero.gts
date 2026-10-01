@@ -4,7 +4,7 @@ import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import type RouterService from "@ember/routing/router-service";
 import { service } from "@ember/service";
-import { settings, themePrefix } from "virtual:theme";
+import { type JtechThemeLink, settings, themePrefix } from "virtual:theme";
 import { defaultHomepage } from "discourse/lib/utilities";
 import type Category from "discourse/models/category";
 import type Site from "discourse/models/site";
