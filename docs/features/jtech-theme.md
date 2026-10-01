@@ -25,7 +25,7 @@ The plugin **never** makes it the default theme and never offers it to users. To
 
 Your choices there stay put: the default and user-selectable choice, attached components, the theme's settings and any colour-palette or theme site-setting changes all survive updates. What doesn't survive is editing the theme's files in the admin theme editor (CSS, JS): the next update replaces them with the plugin's copy. Put local tweaks in a small component instead, or change `themes/jtech` in the plugin.
 
-- **Already had JTech installed by hand** (from its old Git repo)? The first install takes that theme over and updates it in place, so its default status, components and settings carry on and you don't get a second "JTech". It stops following the Git repo from then on.
+- **Already had JTech installed by hand** (from its old Git repo, as an uploaded zip, or synced with the theme CLI)? The first install takes that theme over and updates it in place, so its default status, components and settings carry on and you don't get a second "JTech". It stops following the Git repo from then on.
 - **Deleting the theme** keeps it deleted. To bring it back, turn `jtech_theme_install` off and on again, or run `rake jtech:theme:install`.
 - **Turning off `jtech_theme_install`** stops installs and updates. The installed theme stays as it is. Turning it back on installs straight away (it doesn't wait for a rebuild).
 
