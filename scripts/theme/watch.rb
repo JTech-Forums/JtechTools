@@ -22,5 +22,11 @@ key_file = ENV["JTECH_THEME_API_KEY_FILE"].to_s
 key = File.read(File.expand_path(key_file)).strip if key.empty? && !key_file.empty?
 abort "set JTECH_THEME_API_KEY or JTECH_THEME_API_KEY_FILE" if key.empty?
 
-Dir.chdir(File.expand_path("../../themes/jtech", __dir__))
-exec({ "DISCOURSE_URL" => url, "DISCOURSE_API_KEY" => key }, "discourse_theme", "watch", ".", *ARGV)
+exec(
+  { "DISCOURSE_URL" => url, "DISCOURSE_API_KEY" => key },
+  "discourse_theme",
+  "watch",
+  ".",
+  *ARGV,
+  chdir: File.expand_path("../../themes/jtech", __dir__),
+)
