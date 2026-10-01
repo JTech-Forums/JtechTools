@@ -5,14 +5,15 @@ import { test } from "node:test";
 
 import { createLayerHistory } from "../src/ui/layer-history.ts";
 
-// A fake browser history: a list of entries and a pointer, where go() is
-// asynchronous like the real one (it lands when flush() runs).
+// A fake browser history: a list of entries and a pointer. Like the real one,
+// deferred syncs are microtasks that run before a go() lands (a task).
 function setup() {
   let depth = 0;
   const entries = ["screen"];
   let index = 0;
   const log: string[] = [];
-  let tasks: Array<() => void> = [];
+  let micro: Array<() => void> = [];
+  const tasks: Array<() => void> = [];
   let canPush = true;
   const h = createLayerHistory({
     depth: () => depth,
@@ -32,20 +33,28 @@ function setup() {
       });
     },
     defer: (fn) => {
-      tasks.push(fn);
+      micro.push(fn);
     },
   });
-  const flush = () => {
-    while (tasks.length) {
-      const run = tasks;
-      tasks = [];
+  const microtasks = () => {
+    while (micro.length) {
+      const run = micro;
+      micro = [];
       run.forEach((fn) => fn());
+    }
+  };
+  const flush = () => {
+    microtasks();
+    while (tasks.length) {
+      (tasks.shift() as () => void)();
+      microtasks();
     }
   };
   return {
     h,
     log,
     flush,
+    microtasks,
     setDepth: (n: number) => {
       depth = n;
       h.changed();
@@ -148,6 +157,32 @@ test("a replacing move from a layer goes back to the screen entry first", () => 
   });
   t.flush();
   assert.equal(ranOn, "screen", "the jump replaces the topic, not the prompt");
+  assert.deepEqual(t.log, ["push", "go(-1)"]);
+});
+
+test("a layer opened while our back() is still in flight waits for it to land", () => {
+  const t = setup();
+  t.setDepth(1); // a sheet
+  t.flush();
+  t.setDepth(0); // an item closes it…
+  t.microtasks(); // …the sync sends go(-1), which hasn't landed yet
+  t.setDepth(1); // the item's next layer opens from a cached promise
+  t.microtasks();
+  // Pushing now would make the entry that go(-1) lands on and takes away.
+  assert.deepEqual(t.log, ["push", "go(-1)"]);
+  t.flush();
+  assert.deepEqual(t.log, ["push", "go(-1)", "push"]);
+  assert.equal(t.index(), 1);
+  assert.equal(t.current(), "layer");
+});
+
+test("the sync happens before anything the user does next", () => {
+  const t = setup();
+  t.setDepth(1);
+  t.flush();
+  t.setDepth(0); // a preference sheet closes
+  t.microtasks(); // still inside the click's task
+  // The back() is already on its way when the next task (a navigation) starts.
   assert.deepEqual(t.log, ["push", "go(-1)"]);
 });
 

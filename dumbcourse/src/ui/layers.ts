@@ -41,7 +41,7 @@ const layerHistory = createLayerHistory({
   push: pushLayerState,
   go: (delta) => history.go(delta),
   defer: (fn) => {
-    setTimeout(fn, 0);
+    void Promise.resolve().then(fn);
   },
 });
 

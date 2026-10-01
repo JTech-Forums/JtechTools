@@ -6,8 +6,10 @@
 // same click (a menu item that opens the composer, a confirm dialog closing
 // together with the composer it belongs to) used to let a late back() pop the
 // new layer's entry, or a screen entry under it, and Back then left the app.
-// So layers only report that the stack changed; once the click is over the
-// entries are brought to the stack depth in one go.
+// So layers only report that the stack changed; at the end of the click the
+// entries are brought to the stack depth in one go. While one of our go()
+// calls is still in flight, nothing is pushed: a push now would be the entry
+// that go() lands on and takes away. The sync runs again once it lands.
 //
 // No DOM here, so it can be unit tested.
 
@@ -17,7 +19,8 @@ export interface LayerHistoryOps {
   // Adds a layer entry; false where the engine has no pushState.
   push: () => boolean;
   go: (delta: number) => void;
-  // Runs fn after the current task.
+  // Runs fn once the current click's own code is done (a microtask: later
+  // than that, a navigation the user starts next could be cut off by our go()).
   defer: (fn: () => void) => void;
 }
 
@@ -43,9 +46,18 @@ export function createLayerHistory(ops: LayerHistoryOps): LayerHistory {
   // Bumped by reset() so a sync queued before it does nothing.
   let generation = 0;
 
+  const schedule = (): void => {
+    if (queued) return;
+    queued = true;
+    const gen = generation;
+    ops.defer(() => sync(gen));
+  };
+
   const sync = (gen: number): void => {
     if (gen !== generation) return;
     queued = false;
+    // A go() of ours hasn't landed yet: popped() syncs again when it does.
+    if (pending.length) return;
     const want = ops.depth();
     while (entries < want) {
       if (!ops.push()) break;
@@ -60,16 +72,13 @@ export function createLayerHistory(ops: LayerHistoryOps): LayerHistory {
   };
 
   return {
-    changed: () => {
-      if (queued) return;
-      queued = true;
-      const gen = generation;
-      ops.defer(() => sync(gen));
-    },
+    changed: schedule,
     popped: () => {
       if (pending.length) {
         const then = pending.shift();
         if (then) then();
+        // Layers may have opened or closed while it was in flight.
+        if (!pending.length) schedule();
         return true;
       }
       if (entries > 0) entries--;
