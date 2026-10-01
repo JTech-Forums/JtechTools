@@ -2,7 +2,12 @@
 // They stay on the device (not the account), so a big-text setting on a
 // flip phone does not follow you to your computer.
 
-import { onMediaChange, prefersLight, prefersReducedMotion } from "./compat.ts";
+import {
+  hasTouch,
+  onMediaChange,
+  prefersLight,
+  prefersReducedMotion,
+} from "./compat.ts";
 import { settings } from "./config.ts";
 import type { Key } from "./keys.ts";
 import { getJson, getRaw, removeRaw, setJson } from "./storage.ts";
@@ -96,8 +101,11 @@ export function isLight(): boolean {
 export function softkeysVisible(): boolean {
   if (prefs.softkeys === "on") return true;
   if (prefs.softkeys === "off") return false;
-  // Feature phones are small; big screens are usually touch or desktop.
-  return (window.innerWidth || document.documentElement.clientWidth) <= 480;
+  // Feature phones are small and mostly keypad-only. Modern touch phones
+  // are also under 480 px wide, so touch only counts as a feature phone at
+  // keypad-phone widths (240/320 px).
+  const w = window.innerWidth || document.documentElement.clientWidth;
+  return w <= 480 && (w <= 320 || !hasTouch());
 }
 
 export function applyPrefs(): void {

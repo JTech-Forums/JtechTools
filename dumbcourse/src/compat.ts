@@ -248,6 +248,15 @@ export function prefersReducedMotion(): boolean {
   }
 }
 
+export function hasTouch(): boolean {
+  const n = navigator as Navigator & { msMaxTouchPoints?: number };
+  return (
+    "ontouchstart" in window ||
+    (n.maxTouchPoints || 0) > 0 ||
+    (n.msMaxTouchPoints || 0) > 0
+  );
+}
+
 export function onMediaChange(query: string, cb: () => void): void {
   try {
     const mq = window.matchMedia && window.matchMedia(query);

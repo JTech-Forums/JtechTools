@@ -34,7 +34,14 @@
   const classes = [light ? "light" : "dark"];
   if (prefs.density === "compact") classes.push("compact");
   if (prefs.avatars === false) classes.push("no-avatars");
-  const small = (window.innerWidth || root.clientWidth) <= 480;
+  // Same rule as softkeysVisible() in prefs.ts.
+  const w = window.innerWidth || root.clientWidth;
+  const nav = navigator as Navigator & { msMaxTouchPoints?: number };
+  const touch =
+    "ontouchstart" in window ||
+    (nav.maxTouchPoints || 0) > 0 ||
+    (nav.msMaxTouchPoints || 0) > 0;
+  const small = w <= 480 && (w <= 320 || !touch);
   if (prefs.softkeys === "on" || (prefs.softkeys !== "off" && small))
     classes.push("with-softkeys");
   root.className = classes.join(" ");
