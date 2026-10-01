@@ -1,0 +1,63 @@
+// The module core's theme compiler gives every file of a theme
+// (themes/jtech): that theme's settings and its translation-key prefix.
+// @discourse/types doesn't describe it. Keep JtechThemeSettings in step with
+// themes/jtech/settings.yml; files take the setting types from here too
+// (`import type { JtechThemeLink } from "virtual:theme"`).
+
+declare module "virtual:theme" {
+  export interface JtechThemeLink {
+    title: string;
+    description?: string;
+    url: string;
+    icon?: string;
+  }
+
+  export interface JtechThemeFooterLink {
+    section: string;
+    title: string;
+    url: string;
+  }
+
+  export interface JtechThemeSettings {
+    monochrome_categories: boolean;
+    monochrome_letter_avatars: boolean;
+    monochrome_heatmap: boolean;
+    corner_style: "squircle" | "sharp" | "soft" | "round";
+    topic_cards: boolean;
+    hero_enabled: boolean;
+    hero_title: string;
+    hero_subtitle: string;
+    hero_search_placeholder: string;
+    hero_dismissible: boolean;
+    hero_links: JtechThemeLink[];
+    footer_enabled: boolean;
+    footer_tagline: string;
+    footer_links: JtechThemeFooterLink[];
+    category_banners: boolean;
+    tag_banners: boolean;
+    external_link_icon: boolean;
+    header_home_url: string;
+    color_mode_toggle: boolean;
+    overlay_scrollbar: boolean;
+    back_to_top: boolean;
+    command_menu: boolean;
+    card_thumbnails: boolean;
+    code_language_labels: boolean;
+    code_line_numbers: boolean;
+    // List settings arrive as one "|"-separated string.
+    internal_hosts: string;
+    reading_progress: boolean;
+    quick_look: boolean;
+    first_reply_prompt: boolean;
+    first_reply_prompt_hidden_categories: string;
+    user_card_last_seen: boolean;
+    topic_jump_buttons: boolean;
+    hide_lock_icons: boolean;
+    mobile_small_logo: boolean;
+    gated_categories: string;
+    gated_tags: string;
+  }
+
+  export const settings: JtechThemeSettings;
+  export function themePrefix(key: string): string;
+}

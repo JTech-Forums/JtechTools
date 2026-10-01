@@ -1,6 +1,6 @@
 # How the JTech theme is built
 
-The theme is an ordinary Discourse theme in [`themes/jtech/`](../../themes/jtech/). Core's theme pipeline compiles it, the same as a theme installed from Git, so its frontend is `.gjs` and plain `.js` like other themes rather than the plugin's TypeScript, and it isn't part of `lint:types`. `pnpm lint:theme` (part of `pnpm lint`, and its own CI job) runs ESLint, Prettier and stylelint over it with the plugin's configs. Admin-facing notes: [features/jtech-theme.md](../features/jtech-theme.md).
+The theme is an ordinary Discourse theme in [`themes/jtech/`](../../themes/jtech/). Core's theme pipeline compiles it, the same as a theme installed from Git. Its frontend is TypeScript (`.ts`, `.gts`) like the plugin's, which core's pipeline compiles from Discourse 2026.7 on (older forums get a pinned plugin version, see `.discourse-compatibility`). `pnpm lint:types` type-checks it with the plugin, with `virtual:theme` (`settings`, `themePrefix`) typed in `types/jtech-theme.d.ts`; add a setting there when you add one to `settings.yml`. `pnpm lint:theme` (part of `pnpm lint`, and its own CI job) runs ESLint, Prettier and stylelint over it with the plugin's configs. Admin-facing notes: [features/jtech-theme.md](../features/jtech-theme.md).
 
 ## Tests
 
@@ -46,14 +46,14 @@ It must print `all checks passed`. `CHROME` points it at the Chromium to drive i
 
 ## Rules of thumb
 
-- **Same-site links that aren't forum pages** need `data-auto-route="true"`, or core's click handler routes them inside the forum and shows its 404 page. `lib/jt-links.js` (`needsFullPageLoad`) works that out from the router; use it for any link built from a setting.
+- **Same-site links that aren't forum pages** need `data-auto-route="true"`, or core's click handler routes them inside the forum and shows its 404 page. `lib/jt-links.ts` (`needsFullPageLoad`) works that out from the router; use it for any link built from a setting.
 - **Don't set tracked state from a modifier** during render (Ember asserts in development, and it costs a second render). Defer it (`schedule("afterRender")`), as `jt-category-icon` does.
 - **No `backdrop-filter`, `transform` or `filter` on `.d-header`** itself: it makes the header the containing block for core's fixed menu panels and backdrop. Put effects on a pseudo-element.
 - **Gate on core's own flags** (`site.can_search`, `can_send_private_messages`, `can_create_topic`, `site.isReadOnly`, `tagging_enabled`) before showing an entry point, so nothing offers what the visitor can't do.
 
 ## Where things are
 
-Paths are inside `themes/jtech/`; JavaScript is under `javascripts/discourse/`.
+Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse/`.
 
 | | |
 |---|---|
@@ -62,31 +62,31 @@ Paths are inside `themes/jtech/`; JavaScript is under `javascripts/discourse/`.
 | `stylesheets/jt-tokens.scss` | maps tokens onto core's `--d-*` / `--token-*` hooks |
 | `stylesheets/jt-*.scss` | header, logo, topic list, posts, panels, component restyles, monochrome switches |
 | `stylesheets/jt-legacy-content.scss` | post wrappers (`ghbtn`, `logos`) ported from prod's Default theme |
-| `components/jt-topic-card.gjs` + `api-initializers/jt-topic-cards.gjs` | discovery lists as cards (`stylesheets/jt-cards.scss`) |
-| `components/jt-hero.gjs` (outlet `discovery-list-controls-above`) | front-page hero: headline, search, quick links (`jt-hero.scss`) |
+| `components/jt-topic-card.gts` + `api-initializers/jt-topic-cards.gts` | discovery lists as cards (`stylesheets/jt-cards.scss`) |
+| `components/jt-hero.gts` (outlet `discovery-list-controls-above`) | front-page hero: headline, search, quick links (`jt-hero.scss`) |
 | `stylesheets/jt-post-chrome.scss` | author block, post menu, reactions, solved answer, topic events |
-| `components/jt-quick-look.gjs` | Quick look dialog from topic cards (first post via `/posts/by_number`, decorated) |
-| `components/jt-context-banner.gjs` (outlet `discovery-list-controls-above`) | category / tag banner (`jt-banner.scss`) |
-| `components/jt-footer.gjs` (outlet `below-footer`) | footer columns from `footer_links` (`jt-footer.scss`) |
-| `components/jt-reading-progress.gjs` (outlet `topic-above-post-stream`) | reading progress hairline (core `topic:current-post-scrolled`) |
-| `components/jt-command-menu.gjs` + `api-initializers/jt-command-menu.js` | ⌘K / Ctrl+K command menu (`jt-cmdk.scss`); opened from the header's search field too |
+| `components/jt-quick-look.gts` | Quick look dialog from topic cards (first post via `/posts/by_number`, decorated) |
+| `components/jt-context-banner.gts` (outlet `discovery-list-controls-above`) | category / tag banner (`jt-banner.scss`) |
+| `components/jt-footer.gts` (outlet `below-footer`) | footer columns from `footer_links` (`jt-footer.scss`) |
+| `components/jt-reading-progress.gts` (outlet `topic-above-post-stream`) | reading progress hairline (core `topic:current-post-scrolled`) |
+| `components/jt-command-menu.gts` + `api-initializers/jt-command-menu.ts` | ⌘K / Ctrl+K command menu (`jt-cmdk.scss`); opened from the header's search field too |
 | `stylesheets/jt-sidebar.scss` | sidebar: tokens, rows, headers, scroll fades, footer |
-| `api-initializers/jt-header-actions.gjs` + `components/jt-header-search.gjs`, `jt-header-icon.gjs`, `jt-header-new-topic.gjs` | header: search field (opens ⌘K) centred on the bar on wide screens with a mouse (outlet `before-header-panel`), otherwise in the icon row · home · messages · notifications · light/dark · new topic · avatar |
-| `components/jt-back-to-top.gjs` (outlet `above-site-header`) | back-to-top button on long non-topic pages |
-| `api-initializers/jt-code-blocks.js` | language header on code blocks whose author named one |
-| `connectors/category-title-before/jt-category-icon.gjs` | category icon / emoji / square in the Category Boxes tiles (in-element into the tile) |
-| `api-initializers/jt-sidebar-docked.js` | no ☰ where the sidebar docks (`jt-header.scss`); clears a remembered "sidebar hidden" |
-| `api-initializers/jt-mobile-logo.js` | phones: `logo_small` in the header through core's `home-logo-image-url` transformer, unless a `mobile_logo` is uploaded |
-| `components/jt-scrollbar.gjs` (outlet `above-site-header`) + `jt-base.scss` | overlay page scrollbar on mouse/trackpad devices; thin hover-only scrollbars in panels |
+| `api-initializers/jt-header-actions.gts` + `components/jt-header-search.gts`, `jt-header-icon.gts`, `jt-header-new-topic.gts` | header: search field (opens ⌘K) centred on the bar on wide screens with a mouse (outlet `before-header-panel`), otherwise in the icon row · home · messages · notifications · light/dark · new topic · avatar |
+| `components/jt-back-to-top.gts` (outlet `above-site-header`) | back-to-top button on long non-topic pages |
+| `api-initializers/jt-code-blocks.ts` | language header on code blocks whose author named one |
+| `connectors/category-title-before/jt-category-icon.gts` | category icon / emoji / square in the Category Boxes tiles (in-element into the tile) |
+| `api-initializers/jt-sidebar-docked.ts` | no ☰ where the sidebar docks (`jt-header.scss`); clears a remembered "sidebar hidden" |
+| `api-initializers/jt-mobile-logo.ts` | phones: `logo_small` in the header through core's `home-logo-image-url` transformer, unless a `mobile_logo` is uploaded |
+| `components/jt-scrollbar.gts` (outlet `above-site-header`) + `jt-base.scss` | overlay page scrollbar on mouse/trackpad devices; thin hover-only scrollbars in panels |
 | `stylesheets/jt-profile.scss` | user profiles: header card (every /u/* tab), meta strip, summary stat tiles and section cards |
 | `stylesheets/jt-directory.scss` | users directory (/u): period title, toolbar, table card |
-| `api-initializers/jt-notice-dismiss.js` | × on core's site notices (7 days / until the text changes; critical notices excluded) |
-| `components/jt-first-reply.gjs`, `jt-jump-buttons.gjs`, `connectors/user-card-metadata/jt-last-seen.gjs`, `api-initializers/jt-post-links.js`, `stylesheets/jt-extras.scss` | what used to be separate components: first-reply prompt, first/last post buttons, last seen on user cards, full-page links in posts, code line numbers, padlocks, tablet composer, core category boxes |
-| `components/jt-gate.gjs` (outlet `topic-area-bottom`) | login gate for logged-out visitors on `gated_categories` / `gated_tags`: the post stream is clipped and fades into the card (`jt-gate.scss`) |
-| `stylesheets/jt-topic-list.scss` + `api-initializers/jt-active-tab.js` | desktop list controls on one line: New Topic icon-only below 66rem, tabs scroll sideways with edge fades, current tab scrolled into view |
-| `api-initializers/jt-external-links.js` | ↗ on outbound links in posts (`decorateCookedElement`) |
+| `api-initializers/jt-notice-dismiss.ts` | × on core's site notices (7 days / until the text changes; critical notices excluded) |
+| `components/jt-first-reply.gts`, `jt-jump-buttons.gts`, `connectors/user-card-metadata/jt-last-seen.gts`, `api-initializers/jt-post-links.ts`, `stylesheets/jt-extras.scss` | what used to be separate components: first-reply prompt, first/last post buttons, last seen on user cards, full-page links in posts, code line numbers, padlocks, tablet composer, core category boxes |
+| `components/jt-gate.gts` (outlet `topic-area-bottom`) | login gate for logged-out visitors on `gated_categories` / `gated_tags`: the post stream is clipped and fades into the card (`jt-gate.scss`) |
+| `stylesheets/jt-topic-list.scss` + `api-initializers/jt-active-tab.ts` | desktop list controls on one line: New Topic icon-only below 66rem, tabs scroll sideways with edge fades, current tab scrolled into view |
+| `api-initializers/jt-external-links.ts` | ↗ on outbound links in posts (`decorateCookedElement`) |
 | `stylesheets/jt-leaderboard.scss`, `jt-components.scss` | restyles for gamification, Gated Topics, Category Boxes, admin |
 | `stylesheets/jt-type.scss` | type scale (15px root, Geist steps, tracking by size, tabular numerals) |
 | `stylesheets/jt-shape.scss` | `corner_style` radii (squircles via `corner-shape`), fading dividers, glass header, press motion |
 | `settings.yml` | `corner_style` (squircle/sharp/soft/round), `topic_cards`, `hero_*` (incl. `hero_links` list), `quick_look`, `category_banners`, `tag_banners`, `footer_*`, `reading_progress`, `external_link_icon`, `internal_hosts`, `command_menu`, `card_thumbnails`, `code_language_labels`, `back_to_top`, `overlay_scrollbar`, `header_home_url`, `color_mode_toggle`, `code_line_numbers`, `first_reply_prompt*`, `user_card_last_seen`, `topic_jump_buttons`, `hide_lock_icons`, `mobile_small_logo`, `gated_categories`, `gated_tags`, `monochrome_categories`, `monochrome_letter_avatars`, `monochrome_heatmap` |
-| `lib/jt-links.js`, `lib/jt-color-mode.js`, `lib/jt-command-menu-shortcut.js` | full-page links for non-forum paths; the light/dark switch (returns to "follow the device"); whether ⌘K is the menu's or chat's |
+| `lib/jt-links.ts`, `lib/jt-color-mode.ts`, `lib/jt-command-menu-shortcut.ts` | full-page links for non-forum paths; the light/dark switch (returns to "follow the device"); whether ⌘K is the menu's or chat's |
