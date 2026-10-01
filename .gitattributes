@@ -1,0 +1,6 @@
+# Build output of dumbcourse/build.ts, committed because the plugin serves it
+# as is. Marked generated so GitHub leaves it out of the language stats and
+# folds it in diffs; the sources are under dumbcourse/.
+public/dumbcourse.js linguist-generated
+public/dumbcourse-early.js linguist-generated
+public/dumbcourse.css linguist-generated

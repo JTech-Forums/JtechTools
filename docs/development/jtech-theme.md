@@ -28,7 +28,7 @@ Sync your edits to a local development forum without a rebuild. Both scripts ref
 ```bash
 export JTECH_THEME_URL=http://localhost:3000        # your local forum
 export JTECH_THEME_API_KEY_FILE=~/path/to/admin-api-key
-scripts/theme/watch.sh       # live sync on save (discourse_theme CLI)
+ruby scripts/theme/watch.rb  # live sync on save (discourse_theme CLI)
 ruby scripts/theme/upload.rb # one-shot sync
 ```
 
@@ -39,10 +39,10 @@ The first run asks which theme to update: pick the JTech the plugin installed, o
 Move a local forum to the new Discourse version, then:
 
 ```bash
-JT_PW=<admin password> node scripts/theme/check.mjs
+JT_PW=<admin password> pnpm theme:check
 ```
 
-It must print `all checks passed`. It checks that every core module the theme imports still exists, sweeps the main pages for errors and deprecations caused by the theme, and checks that the hero, cards, footer and reading progress render. The system spec above covers the same ground in CI; this script is for checking against a forum with your real data and components.
+It must print `all checks passed`. `CHROME` points it at the Chromium to drive if Playwright's own isn't in `~/.cache/ms-playwright`. It checks that every core module the theme imports still exists, sweeps the main pages for errors and deprecations caused by the theme, and checks that the hero, cards, footer and reading progress render. The system spec above covers the same ground in CI; this script is for checking against a forum with your real data and components.
 
 ## Rules of thumb
 
