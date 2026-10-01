@@ -32,7 +32,7 @@
     "dumbcourse:check": "tsc -p dumbcourse/tsconfig.json && tsc -p dumbcourse/tsconfig.node.json && node --experimental-strip-types --no-warnings dumbcourse/build.ts --check",
     "dumbcourse:test": "node --experimental-strip-types --no-warnings --test \"dumbcourse/test/*.test.ts\"",
     "lint:dumbcourse": "pnpm dumbcourse:check && pnpm dumbcourse:test",
-    "lint:theme": "eslint themes/jtech/javascripts --cache && prettier \"themes/jtech/javascripts/**/*.{js,gjs}\" \"themes/jtech/{common,stylesheets}/*.scss\" --check && stylelint \"themes/jtech/**/*.scss\"",
+    "lint:theme": "eslint themes/jtech/javascripts --cache && prettier \"themes/jtech/javascripts/**/*.{ts,gts}\" \"themes/jtech/{common,stylesheets}/*.scss\" --check && stylelint \"themes/jtech/**/*.scss\"",
     "lint:scripts": "tsc -p scripts/tsconfig.json && prettier \"scripts/**/*.mts\" --check",
     "lint:scripts:fix": "prettier \"scripts/**/*.mts\" -w",
     "theme:check": "node --experimental-strip-types --no-warnings scripts/theme/check.mts",

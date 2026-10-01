@@ -3,6 +3,7 @@
   "include": [
     "admin/assets/javascripts/**/*",
     "assets/javascripts/**/*",
+    "themes/jtech/javascripts/**/*",
     "types/**/*",
     "node_modules/discourse/declarations/**/*"
   ],
