@@ -79,8 +79,8 @@
   display: flex;
   gap: var(--space-2);
 
-  // Under the timeline they join core's reply and notification buttons: same
-  // row, same gap, core's own button size and look
+  // Under the timeline they join core's reply and notification buttons, with
+  // core's own button size and look
   &.--timeline {
     display: contents;
   }
@@ -102,6 +102,27 @@
         border-color: var(--jt-border-strong);
       }
     }
+  }
+}
+
+// A 2×2 block under the timeline: reply and notifications on top, first and
+// last post under them. The arrows keep the second row even when a button
+// above is missing (visitors, closed topics). Core's own selector, so this
+// outranks its flex row.
+.timeline-container .topic-timeline .timeline-footer-controls:has(.jt-jump) {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+
+  // equal rows, so the arrows get the same height as reply and notifications
+  grid-auto-rows: 1fr;
+  gap: var(--space-2);
+
+  .jt-jump__top {
+    grid-area: 2 / 1;
+  }
+
+  .jt-jump__bottom {
+    grid-area: 2 / 2;
   }
 }
 
