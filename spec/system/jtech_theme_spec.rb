@@ -351,19 +351,21 @@ RSpec.describe "JTech theme" do
       expect(page).to have_css(".cooked a[href='/latest']:not([data-auto-route])")
     end
 
-    it "shows jump buttons under the timeline, in line with core's buttons there" do
+    it "shows jump buttons under the timeline, a 2×2 block with core's buttons" do
       sign_in(member)
       visit(topic.relative_url)
       expect(page).to have_css(".timeline-container .jt-jump .jt-jump__bottom")
-      # reply, notifications, first post, last post: one size, one row
-      boxes = page.evaluate_script(<<~JS)
-        [...document.querySelectorAll(".timeline-footer-controls .btn")]
+      # reply · notifications over first post · last post, all one size
+      reply, bell, top, bottom = page.evaluate_script(<<~JS)
+        [".reply-to-post", ".notifications-tracking-trigger", ".jt-jump__top", ".jt-jump__bottom"]
+          .map((selector) => document.querySelector(`.timeline-footer-controls ${selector}`))
           .map((b) => b.getBoundingClientRect())
-          .filter((r) => r.width > 0)
-          .map((r) => [Math.round(r.width), Math.round(r.height), Math.round(r.top)])
+          .map((r) => [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)])
       JS
-      expect(boxes.size).to be >= 3
-      expect(boxes.uniq.size).to eq(1)
+      expect([reply, bell, top, bottom].map { |b| b[2..] }.uniq.size).to eq(1)
+      expect(bell[1]).to eq(reply[1])
+      expect([top[0], top[1] > reply[1]]).to eq([reply[0], true])
+      expect([bottom[0], bottom[1]]).to eq([bell[0], top[1]])
       expect_no_theme_errors
     end
 
