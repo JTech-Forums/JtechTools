@@ -46,11 +46,10 @@ Several components on the forum's Default theme are built into JTech, and some c
 | Last Seen User Card | `user_card_last_seen` | People who turn on "hide my public profile and presence" are left out. That preference also replaces the CSS that hides it for one user. |
 | Discourse Jump Buttons | `topic_jump_buttons` | Under the timeline, and beside the progress button on phones. |
 | Unhide composer fullscreen toggle for tablets | — | Always on. |
-| discourse-left-side-burger | `mobile_menu_left` | |
 | Sidebar Theme Toggle | `color_mode_toggle` | Keep the component only if people should also be able to switch to another theme. |
 | Modern Category + Group Boxes | — | Set the site setting `desktop_category_page_style` to **Boxes**: JTech styles core's category boxes, which already show each category's icon. |
 
-**Clash with JTech (detach):** Discourse Avatar Component (JTech sets avatar shape), Full width (JTech sets the page width), Density Toggle (JTech's type scale), Topic List Item Click Animation (JTech's cards have their own press feedback), User Card Directory and Users Top Nav (JTech's People page).
+**Clash with JTech (detach):** discourse-left-side-burger (JTech keeps the ☰ at the right), Discourse Avatar Component (JTech sets avatar shape), Full width (JTech sets the page width), Density Toggle (JTech's type scale), Topic List Item Click Animation (JTech's cards have their own press feedback), User Card Directory and Users Top Nav (JTech's People page).
 
 **Keep as they are:** Admin Warnings, Auto linkify words, Copy post button, DiscoTOC, Highlight to Search, Sidebar Menu Reorder, Wikipedia Lookup, Messages section for sidebar, Post Badges, Post Image Carousel, QR Code Shareables, Quick Profile Links Menu, Reader Mode, Reply Templates, Shared Draft Button, Topic PDF Download Button, Unanswered Filter, Voice Recorder. JTech's styles cover the ones that draw in the page.
 

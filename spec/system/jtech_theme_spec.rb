@@ -255,21 +255,6 @@ RSpec.describe "JTech theme" do
       shot("category-boxes")
       expect_no_theme_errors
     end
-
-    it "puts the menu button on the left on phones", mobile: true do
-      visit("/latest")
-      expect(page).to have_css(".hamburger-dropdown")
-      menu_x =
-        page.evaluate_script(
-          "document.querySelector('.hamburger-dropdown').getBoundingClientRect().left",
-        )
-      logo_x =
-        page.evaluate_script(
-          "document.querySelector('.home-logo-wrapper-outlet').getBoundingClientRect().left",
-        )
-      expect(menu_x).to be < logo_x
-      shot("menu-left")
-    end
   end
 
   it "shows the dark palette when the browser prefers dark" do

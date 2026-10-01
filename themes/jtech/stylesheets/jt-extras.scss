@@ -158,39 +158,3 @@
     display: flex;
   }
 }
-
-// ── ☰ on the left on phones (setting mobile_menu_left) ────
-@if $mobile_menu_left == "true" {
-  html.mobile-view .d-header > .wrap > .contents {
-    gap: 0.4rem;
-
-    > .panel,
-    > .panel > .d-header-icons {
-      display: contents;
-    }
-
-    .hamburger-dropdown {
-      order: -1;
-    }
-
-    .header-buttons,
-    .d-header-icons > li:not(.hamburger-dropdown),
-    > .after-header-panel-outlet {
-      order: 1;
-    }
-
-    // the logo (or the topic title once scrolled) takes the free space
-    > .home-logo-wrapper-outlet {
-      margin-inline-end: auto;
-    }
-
-    &:has(> .extra-info-wrapper) > .home-logo-wrapper-outlet {
-      margin-inline-end: 0;
-    }
-
-    > .extra-info-wrapper {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-  }
-}
