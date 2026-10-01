@@ -129,7 +129,12 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
   }
 }
 
-.d-header .jt-header-search__button .d-icon {
+// The icon row's selectors to beat core's header icon size; the centred copy
+// lives outside .d-header-icons, so it names its own wrapper
+.d-header
+  :is(.d-header-icons, .jt-header-search--centered)
+  .jt-header-search__button
+  .d-icon {
   width: 1em;
   height: 1em;
   font-size: var(--jt-search-glyph, 0.9rem);
