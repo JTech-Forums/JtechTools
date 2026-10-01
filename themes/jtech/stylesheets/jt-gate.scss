@@ -1,0 +1,209 @@
+// ── Login gate (components/jt-gate, settings gated_*) ─────
+// The opening lines of the topic fade out, and the card sits in that fade.
+// It replaces the "Gated Topics in Category" component.
+body.jt-gated {
+  .posts-wrapper .post-stream {
+    max-height: 22rem;
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+    mask-image: linear-gradient(to bottom, #000 25%, transparent 92%);
+  }
+
+  // Nothing to move through or reply to past the gate, and no second
+  // sign-up prompt (core's "enjoying the discussion?" box)
+  .jt-reading-progress,
+  .topic-map.--bottom,
+  #topic-footer-buttons,
+  .topic-footer-main-buttons,
+  .more-topics__container,
+  .signup-cta {
+    display: none;
+  }
+
+  // visibility, not display: components set the timeline's display with
+  // !important (Topic PDF Download Button does)
+  .topic-navigation {
+    visibility: hidden;
+  }
+}
+
+.jt-gate {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  max-width: calc(
+    var(--topic-avatar-width) + var(--topic-body-width) +
+      (var(--topic-body-width-padding) * 2)
+  );
+  margin: -8rem 0 var(--space-8);
+
+  &__card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    width: min(100%, 27rem);
+    padding: var(--space-8) var(--space-6) var(--space-4);
+    text-align: center;
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-xl);
+    box-shadow: var(--jt-shadow-modal);
+    animation: jt-gate-in 0.4s cubic-bezier(0.2, 0, 0, 1) both;
+
+    // The hero's grid and glow, rising from behind the badge
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(
+          ellipse 60% 55% at 50% 0%,
+          var(--jt-glow),
+          transparent 70%
+        ),
+        linear-gradient(var(--jt-grid) 1px, transparent 1px) 50% 0 / 32px 32px,
+        linear-gradient(90deg, var(--jt-grid) 1px, transparent 1px) 50% 0 / 32px
+          32px;
+      mask-image: radial-gradient(
+        ellipse 70% 60% at 50% 0%,
+        #000 15%,
+        transparent 80%
+      );
+    }
+  }
+
+  &__badge {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-bottom: var(--space-4);
+    color: var(--jt-text);
+    background: var(--jt-fill);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-lg);
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 6%),
+      0 0 0 4px var(--jt-glow);
+
+    .jt-mark {
+      width: 1.9rem;
+      height: auto;
+    }
+  }
+
+  &__lock {
+    position: absolute;
+    right: -0.45rem;
+    bottom: -0.45rem;
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--jt-on-accent);
+    background: var(--jt-accent);
+    border: 2px solid var(--jt-surface-raised);
+    border-radius: 50%;
+
+    .d-icon {
+      width: 0.65rem;
+      height: 0.65rem;
+    }
+  }
+
+  &__category {
+    display: flex;
+    justify-content: center;
+    margin-bottom: var(--space-2);
+    font-size: var(--jt-text-sm);
+  }
+
+  &__title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--jt-text-2xl);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: var(--jt-tracking-display);
+    color: var(--jt-text);
+    text-wrap: balance;
+  }
+
+  &__text {
+    max-width: 22rem;
+    margin: 0 auto;
+    font-size: var(--jt-text-md);
+    color: var(--jt-text-muted);
+    text-wrap: pretty;
+  }
+
+  &__actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    gap: var(--space-2);
+    margin-top: var(--space-6);
+
+    .btn {
+      justify-content: center;
+      min-height: 2.5rem;
+      font-weight: 600;
+    }
+  }
+
+  &__browse {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    margin-top: var(--space-5);
+    padding-top: var(--space-4);
+    font-size: var(--jt-text-sm);
+    color: var(--jt-text-muted);
+    border-top: 1px solid var(--jt-border);
+
+    .d-icon {
+      width: 0.7rem;
+      height: 0.7rem;
+      transition: translate var(--jt-motion);
+    }
+
+    &:hover,
+    &:focus-visible {
+      color: var(--jt-text);
+
+      .d-icon {
+        translate: 2px 0;
+      }
+    }
+  }
+}
+
+// Phones: full width, buttons stacked for big tap targets
+.mobile-view .jt-gate {
+  margin-top: -6rem;
+
+  &__card {
+    padding: var(--space-6) var(--space-4) var(--space-3);
+  }
+
+  &__actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes jt-gate-in {
+  from {
+    opacity: 0;
+    translate: 0 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jt-gate__card {
+    animation: none;
+  }
+}

@@ -199,3 +199,11 @@ hide_lock_icons:
 mobile_small_logo:
   type: bool
   default: true
+gated_categories:
+  type: list
+  list_type: category
+  default: ""
+gated_tags:
+  type: list
+  list_type: tag
+  default: ""
