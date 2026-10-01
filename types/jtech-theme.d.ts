@@ -22,6 +22,7 @@ declare module "virtual:theme" {
     monochrome_categories: boolean;
     monochrome_letter_avatars: boolean;
     monochrome_heatmap: boolean;
+    monochrome_flair: boolean;
     corner_style: "squircle" | "sharp" | "soft" | "round";
     topic_cards: boolean;
     hero_enabled: boolean;

@@ -340,6 +340,47 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  it "draws trust-level and staff flair in black and white, with its own marks" do
+    Group.refresh_automatic_groups!
+    Group.find(Group::AUTO_GROUPS[:trust_level_2]).update!(
+      flair_icon: "thumbs-up",
+      flair_bg_color: "9CA3AF",
+      flair_color: "FFFFFF",
+    )
+    Group.find(Group::AUTO_GROUPS[:admins]).update!(
+      flair_icon: "shield-halved",
+      flair_bg_color: "5A29E4",
+      flair_color: "FFFFFF",
+    )
+    member.update!(flair_group_id: Group::AUTO_GROUPS[:trust_level_2])
+    admin.update!(flair_group_id: Group::AUTO_GROUPS[:admins])
+
+    visit(topic.relative_url)
+    expect(page).to have_css("#post_1 .avatar-flair-trust_level_2")
+    expect(page).to have_css("#post_2 .avatar-flair-admins")
+    backgrounds, icons, glyphs = page.evaluate_script(<<~JS)
+      (() => {
+        const flairs = ["#post_1", "#post_2"].map((post) =>
+          document.querySelector(`${post} .topic-avatar .avatar-flair`)
+        );
+        return [
+          flairs.map((flair) => getComputedStyle(flair).backgroundColor),
+          flairs.map((flair) => getComputedStyle(flair.querySelector("svg")).display),
+          flairs.map((flair) => {
+            const glyph = getComputedStyle(flair, "::before");
+            return (glyph.maskImage || glyph.webkitMaskImage).startsWith('url("data:image/svg+xml');
+          }),
+        ];
+      })()
+    JS
+    expect(backgrounds).not_to include("rgb(156, 163, 175)", "rgb(90, 41, 228)")
+    expect(backgrounds.uniq.size).to eq(2) # staff are inverted
+    expect(icons).to eq(%w[none none])
+    expect(glyphs).to eq([true, true])
+    shot("flair")
+    expect_no_theme_errors
+  end
+
   describe "what used to be separate components" do
     fab!(:lonely_topic) do
       Fabricate(:topic, category: category, user: admin, title: "A topic nobody answered yet")
