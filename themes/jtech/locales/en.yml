@@ -95,6 +95,7 @@ en:
       user_card_last_seen: "Show when someone was last seen on their user card. People who hide their profile and presence are left out."
       topic_jump_buttons: "First-post and last-post buttons under the topic timeline, and beside the progress button on phones."
       hide_lock_icons: "Hide the padlock on private categories' badges and links (everyone who sees the category already has access)."
+      mobile_small_logo: "On phones, show the small (square) logo in the header instead of the wide one. A mobile logo uploaded in the site settings still takes priority."
       quick_look: "Add a Quick look button to topic cards that previews the first post in a dialog. Signed-in members only, so it can't get round a login gate."
       reading_progress: "Thin bar under the header showing how far through a topic you are."
       external_link_icon: "Mark links in posts that go to other sites with a small arrow."

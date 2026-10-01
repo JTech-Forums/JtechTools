@@ -196,3 +196,6 @@ topic_jump_buttons:
 hide_lock_icons:
   type: bool
   default: true
+mobile_small_logo:
+  type: bool
+  default: true
