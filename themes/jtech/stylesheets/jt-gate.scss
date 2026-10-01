@@ -10,12 +10,14 @@ body.jt-gated {
     mask-image: linear-gradient(to bottom, #000 25%, transparent 92%);
   }
 
-  // Nothing to move through or reply to past the gate
+  // Nothing to move through or reply to past the gate, and no second
+  // sign-up prompt (core's "enjoying the discussion?" box)
   .jt-reading-progress,
   .topic-map.--bottom,
   #topic-footer-buttons,
   .topic-footer-main-buttons,
-  .more-topics__container {
+  .more-topics__container,
+  .signup-cta {
     display: none;
   }
 
