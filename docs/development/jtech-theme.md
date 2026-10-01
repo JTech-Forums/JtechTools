@@ -71,7 +71,7 @@ Paths are inside `themes/jtech/`; JavaScript is under `javascripts/discourse/`.
 | `components/jt-reading-progress.gjs` (outlet `topic-above-post-stream`) | reading progress hairline (core `topic:current-post-scrolled`) |
 | `components/jt-command-menu.gjs` + `api-initializers/jt-command-menu.js` | ⌘K / Ctrl+K command menu (`jt-cmdk.scss`); opened from the header's search field too |
 | `stylesheets/jt-sidebar.scss` | sidebar: tokens, rows, headers, scroll fades, footer |
-| `api-initializers/jt-header-actions.gjs` + `components/jt-header-search.gjs`, `jt-header-icon.gjs`, `jt-header-new-topic.gjs` | header right: search field (opens ⌘K) · home · messages · notifications · light/dark · new topic · avatar |
+| `api-initializers/jt-header-actions.gjs` + `components/jt-header-search.gjs`, `jt-header-icon.gjs`, `jt-header-new-topic.gjs` | header: search field (opens ⌘K) centred on the bar on wide screens with a mouse (outlet `before-header-panel`), otherwise in the icon row · home · messages · notifications · light/dark · new topic · avatar |
 | `components/jt-back-to-top.gjs` (outlet `above-site-header`) | back-to-top button on long non-topic pages |
 | `api-initializers/jt-code-blocks.js` | language header on code blocks whose author named one |
 | `connectors/category-title-before/jt-category-icon.gjs` | category icon / emoji / square in the Category Boxes tiles (in-element into the tile) |

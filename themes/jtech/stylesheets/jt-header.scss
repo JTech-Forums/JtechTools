@@ -123,16 +123,44 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
     }
   }
 
-  .jt-header-search__button .d-icon {
-    width: 1em;
-    height: 1em;
-    font-size: var(--jt-search-glyph, 0.9rem);
-    line-height: 1;
-  }
-
   #toggle-current-user img.avatar {
     width: 1.75rem;
     height: 1.75rem;
+  }
+}
+
+.d-header .jt-header-search__button .d-icon {
+  width: 1em;
+  height: 1em;
+  font-size: var(--jt-search-glyph, 0.9rem);
+  line-height: 1;
+}
+
+// ── Middle: the search field, centred on the whole bar ────
+// Wide screens with a mouse, unless a topic's title has the header: the
+// field leaves the icon row for the bar's centre line. It's absolute in
+// core's .contents, so a wide icon row or logo can't push it off centre.
+.jt-header-search--centered {
+  display: none;
+}
+
+@media (width >= 64rem) and (hover: hover) {
+  .d-header:not(:has(.extra-info-wrapper)) {
+    .jt-header-search--centered {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      display: block;
+      translate: -50% -50%;
+
+      .jt-header-search__button {
+        width: clamp(16rem, 30vw, 28rem);
+      }
+    }
+
+    .d-header-icons > .jt-header-search {
+      display: none;
+    }
   }
 }
 
