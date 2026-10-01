@@ -196,6 +196,42 @@ RSpec.describe "JTech theme" do
     expect(page).to have_css(".jt-footer a[href='/latest']:not([data-auto-route])")
   end
 
+  describe "header icons" do
+    # Every visible icon in the header row, the theme's and core's and chat's:
+    # one glyph size, one vertical centre. The desktop search field has its
+    # own, smaller magnifier.
+    def header_glyphs(skip: ".current-user")
+      page.evaluate_script(<<~JS)
+        [...document.querySelectorAll(".d-header-icons > li:not(#{skip}) svg.d-icon")]
+          .map((svg) => svg.getBoundingClientRect())
+          .filter((r) => r.width > 0)
+          .map((r) => [Math.round(r.width), Math.round(r.top + r.height / 2)])
+      JS
+    end
+
+    before do
+      SiteSetting.chat_enabled = true
+      SiteSetting.chat_allowed_groups = Group::AUTO_GROUPS[:everyone]
+      sign_in(member)
+    end
+
+    it "are all one size" do
+      visit("/latest")
+      expect(page).to have_css(".chat-header-icon .d-icon")
+      glyphs = header_glyphs(skip: ".current-user, .jt-header-search")
+      expect(glyphs.size).to be >= 5
+      expect(glyphs.uniq.size).to eq(1)
+    end
+
+    it "are all one size on phones", mobile: true do
+      visit("/latest")
+      expect(page).to have_css(".hamburger-dropdown .d-icon")
+      glyphs = header_glyphs
+      expect(glyphs.size).to be >= 4
+      expect(glyphs.uniq.size).to eq(1)
+    end
+  end
+
   describe "what used to be separate components" do
     fab!(:lonely_topic) do
       Fabricate(:topic, category: category, user: admin, title: "A topic nobody answered yet")
