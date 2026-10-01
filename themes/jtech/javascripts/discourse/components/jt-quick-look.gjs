@@ -30,6 +30,11 @@ export default class JtQuickLook extends Component {
     return this.args.model.topic;
   }
 
+  // fancy_title is the server-escaped title with emoji, as TopicLink shows it
+  get title() {
+    return trustHTML(this.topic.fancyTitle || "");
+  }
+
   get cooked() {
     return trustHTML(this.post?.cooked || "");
   }
@@ -45,8 +50,8 @@ export default class JtQuickLook extends Component {
   <template>
     <DModal
       class="jt-quick-look"
-      @title={{this.topic.title}}
       @closeModal={{@closeModal}}
+      @title={{this.title}}
     >
       <:belowModalTitle>
         <div class="jt-quick-look__category">{{categoryLinkHTML
@@ -69,8 +74,8 @@ export default class JtQuickLook extends Component {
                 }}</span>
             </div>
             <DDecoratedHtml
-              @html={{this.cooked}}
               @className="cooked jt-quick-look__cooked"
+              @html={{this.cooked}}
             />
           </DConditionalLoadingSpinner>
         {{/if}}

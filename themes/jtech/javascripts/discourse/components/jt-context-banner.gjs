@@ -21,25 +21,34 @@ export default class JtContextBanner extends Component {
   }
 
   get initials() {
-    const words = (this.category?.displayName || "").split(/\s+/).filter(Boolean);
+    const words = (this.category?.displayName || "")
+      .split(/\s+/)
+      .filter(Boolean);
     const s =
-      words.length > 1 ? words[0][0] + words[1][0] : (words[0] || "").slice(0, 2);
+      words.length > 1
+        ? words[0][0] + words[1][0]
+        : (words[0] || "").slice(0, 2);
     return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
   }
 
   get subcategoryCount() {
-    return this.category?.subcategories?.length || 0;
+    // subcategory_count includes children not loaded yet (lazy categories)
+    return (
+      this.category?.subcategory_count ??
+      this.category?.subcategories?.length ??
+      0
+    );
   }
 
   <template>
     {{#if this.category}}
       <section
-        class="jt-banner {{if this.logoUrl '--has-logo'}}"
         aria-labelledby="jt-banner-title"
+        class="jt-banner {{if this.logoUrl '--has-logo'}}"
       >
-        <span class="jt-banner__tile" aria-hidden="true">
+        <span aria-hidden="true" class="jt-banner__tile">
           {{#if this.logoUrl}}
-            <img src={{this.logoUrl}} alt="" />
+            <img alt="" src={{this.logoUrl}} />
           {{else if this.category.icon}}
             {{dIcon this.category.icon}}
           {{else if this.category.emoji}}
@@ -55,11 +64,11 @@ export default class JtContextBanner extends Component {
               href={{this.category.parentCategory.url}}
             >{{this.category.parentCategory.displayName}}</a>
           {{/if}}
-          <h2 id="jt-banner-title" class="jt-banner__title">
+          <h2 class="jt-banner__title" id="jt-banner-title">
             {{this.category.displayName}}
           </h2>
-          {{#if this.category.description_text}}
-            <p class="jt-banner__desc">{{this.category.description_text}}</p>
+          {{#if this.category.descriptionText}}
+            <p class="jt-banner__desc">{{this.category.descriptionText}}</p>
           {{/if}}
           <div class="jt-banner__stats">
             <span>{{dNumber this.category.totalTopicCount}}
@@ -78,11 +87,11 @@ export default class JtContextBanner extends Component {
         </div>
       </section>
     {{else if this.tag}}
-      <section class="jt-banner --tag" aria-labelledby="jt-banner-title">
-        <span class="jt-banner__tile" aria-hidden="true">#</span>
+      <section aria-labelledby="jt-banner-title" class="jt-banner --tag">
+        <span aria-hidden="true" class="jt-banner__tile">#</span>
         <div class="jt-banner__body">
           <span class="jt-banner__parent">{{i18n (themePrefix "jt.tag")}}</span>
-          <h2 id="jt-banner-title" class="jt-banner__title">
+          <h2 class="jt-banner__title" id="jt-banner-title">
             {{this.tag.name}}
           </h2>
           {{#if this.tag.description}}

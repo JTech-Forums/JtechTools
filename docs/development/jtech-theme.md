@@ -1,6 +1,10 @@
 # How the JTech theme is built
 
-The theme is an ordinary Discourse theme in [`themes/jtech/`](../../themes/jtech/). Core's theme pipeline compiles it, the same as a theme installed from Git, so its frontend is `.gjs` and plain `.js` like other themes rather than the plugin's TypeScript, and it isn't part of `pnpm lint` or `lint:types`. Admin-facing notes: [features/jtech-theme.md](../features/jtech-theme.md).
+The theme is an ordinary Discourse theme in [`themes/jtech/`](../../themes/jtech/). Core's theme pipeline compiles it, the same as a theme installed from Git, so its frontend is `.gjs` and plain `.js` like other themes rather than the plugin's TypeScript, and it isn't part of `lint:types`. `pnpm lint:theme` (part of `pnpm lint`, and its own CI job) runs ESLint, Prettier and stylelint over it with the plugin's configs. Admin-facing notes: [features/jtech-theme.md](../features/jtech-theme.md).
+
+## Tests
+
+[`spec/system/jtech_theme_spec.rb`](../../spec/system/jtech_theme_spec.rb) installs the theme, makes it the default and walks the main pages (latest, categories, a category, a tag, a topic, users, a profile, search) as a visitor, a member and an admin, on desktop and on a phone. It fails on a theme error, on a page error, on a deprecation (system specs raise on those) and when a JTech surface doesn't render. It also covers the command menu, Quick look, the header's + on a tag page, full-page links and dark mode. CI runs it against Discourse `latest`, so it is the first warning that a core update broke the theme. Screenshots land in `tmp/capybara/jtech_theme/`.
 
 ## How it gets installed
 
@@ -38,7 +42,14 @@ Move a local forum to the new Discourse version, then:
 JT_PW=<admin password> node scripts/theme/check.mjs
 ```
 
-It must print `all checks passed`. It checks that every core module the theme imports still exists, sweeps the main pages for errors and deprecations caused by the theme, and checks that the hero, cards, footer and reading progress render.
+It must print `all checks passed`. It checks that every core module the theme imports still exists, sweeps the main pages for errors and deprecations caused by the theme, and checks that the hero, cards, footer and reading progress render. The system spec above covers the same ground in CI; this script is for checking against a forum with your real data and components.
+
+## Rules of thumb
+
+- **Same-site links that aren't forum pages** need `data-auto-route="true"`, or core's click handler routes them inside the forum and shows its 404 page. `lib/jt-links.js` (`needsFullPageLoad`) works that out from the router; use it for any link built from a setting.
+- **Don't set tracked state from a modifier** during render (Ember asserts in development, and it costs a second render). Defer it (`schedule("afterRender")`), as `jt-category-icon` does.
+- **No `backdrop-filter`, `transform` or `filter` on `.d-header`** itself: it makes the header the containing block for core's fixed menu panels and backdrop. Put effects on a pseudo-element.
+- **Gate on core's own flags** (`site.can_search`, `can_send_private_messages`, `can_create_topic`, `site.isReadOnly`, `tagging_enabled`) before showing an entry point, so nothing offers what the visitor can't do.
 
 ## Where things are
 
@@ -73,4 +84,5 @@ Paths are inside `themes/jtech/`; JavaScript is under `javascripts/discourse/`.
 | `stylesheets/jt-leaderboard.scss`, `jt-components.scss` | restyles for gamification, Gated Topics, Category Boxes, admin |
 | `stylesheets/jt-type.scss` | type scale (15px root, Geist steps, tracking by size, tabular numerals) |
 | `stylesheets/jt-shape.scss` | `corner_style` radii (squircles via `corner-shape`), fading dividers, glass header, press motion |
-| `settings.yml` | `corner_style` (squircle/sharp/soft/round), `topic_cards`, `hero_*` (incl. `hero_links` list), `quick_look`, `category_banners`, `tag_banners`, `footer_*`, `reading_progress`, `external_link_icon`, `internal_hosts`, `command_menu`, `card_thumbnails`, `code_language_labels`, `back_to_top`, `overlay_scrollbar`, `header_home_url`, `monochrome_categories`, `monochrome_letter_avatars`, `monochrome_heatmap` |
+| `settings.yml` | `corner_style` (squircle/sharp/soft/round), `topic_cards`, `hero_*` (incl. `hero_links` list), `quick_look`, `category_banners`, `tag_banners`, `footer_*`, `reading_progress`, `external_link_icon`, `internal_hosts`, `command_menu`, `card_thumbnails`, `code_language_labels`, `back_to_top`, `overlay_scrollbar`, `header_home_url`, `color_mode_toggle`, `monochrome_categories`, `monochrome_letter_avatars`, `monochrome_heatmap` |
+| `lib/jt-links.js`, `lib/jt-color-mode.js`, `lib/jt-command-menu-shortcut.js` | full-page links for non-forum paths; the light/dark switch (returns to "follow the device"); whether ⌘K is the menu's or chat's |

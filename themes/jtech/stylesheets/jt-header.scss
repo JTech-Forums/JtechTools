@@ -1,11 +1,23 @@
+// The glass sits on a pseudo-element. backdrop-filter on .d-header itself
+// would make the header the containing block for everything fixed inside it:
+// the phone menu's backdrop (.header-cloak) would only dim the header strip,
+// swipe-to-close would stop working and slide-in panels would be cut off.
 .d-header {
-  @include jt-glass(var(--jt-header-blur-bg));
+  position: relative;
+  isolation: isolate;
+  background-color: transparent;
   box-shadow: none;
   border-bottom: 1px solid var(--jt-border);
-}
 
-.d-header .d-header-icons .icon {
-  border-radius: var(--jt-radius-sm);
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+
+    @include jt-glass(var(--jt-header-blur-bg));
+  }
 }
 
 // Reading progress (components/jt-reading-progress): fixed just under the
@@ -14,7 +26,9 @@
   position: fixed;
   top: var(--header-offset, 4rem);
   left: 0;
-  z-index: 999;
+
+  // over the page, under menus, cards and dropdowns that open near the top
+  z-index: calc(z("timeline") + 1);
   width: 100%;
   height: 2px;
   pointer-events: none;
@@ -33,7 +47,7 @@
 // the sidebar stays put and the logo sits at the left wall, on the same
 // line as the sidebar's search row. Narrower windows keep the ☰, which is
 // the only way to open the slide-out sidebar there.
-@media (min-width: 48rem) {
+@media (width >= 48rem) {
   html.desktop-view {
     .d-header .header-sidebar-toggle {
       display: none;
@@ -47,16 +61,18 @@
     .d-header .home-logo-wrapper-outlet {
       margin-left: 0;
     }
-
-    &.rtl .d-header .title {
-      margin-right: 0;
-    }
   }
 }
 
 // ── Right side: search field · new topic · avatar ─────────
-// One height (2.2rem) and one gap for everything; core's magnifier stays in
-// the DOM, hidden, so its "/" shortcut still has an anchor.
+// One height (2.2rem) and one gap for everything. While the search field
+// shows, core's magnifier stays in the DOM, hidden, so its "/" shortcut still
+// has an anchor; core's colour selector gives way to the theme's switch.
+html.jt-has-header-search .d-header-icons .search-dropdown,
+html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
+  display: none;
+}
+
 .d-header .d-header-icons {
   display: flex;
   align-items: center;
@@ -64,10 +80,6 @@
 
   > li {
     margin: 0;
-  }
-
-  .search-dropdown {
-    display: none;
   }
 
   .jt-header-icon.btn,
@@ -99,7 +111,7 @@
 
     .d-icon {
       font-size: 1rem;
-      color: currentColor;
+      color: currentcolor;
     }
 
     &:hover,
@@ -135,7 +147,7 @@
     color 0.12s ease-out;
 
   .d-icon {
-    color: currentColor;
+    color: currentcolor;
   }
 
   .jt-header-search__label {
@@ -174,8 +186,22 @@
     box-shadow: 0 0 0 1px var(--jt-focus);
   }
 
-  // Narrow screens and touch: icon only
+  // Narrow screens and touch: icon only. Below 64rem too while a topic's
+  // title is in the header, which needs the room.
   @media (width < 48rem), (hover: none) {
+    justify-content: center;
+    width: 2.2rem;
+    padding: 0;
+
+    .jt-header-search__label,
+    .jt-header-search__keys {
+      display: none;
+    }
+  }
+}
+
+@media (width < 64rem) {
+  .d-header:has(.extra-info-wrapper) .jt-header-search__button {
     justify-content: center;
     width: 2.2rem;
     padding: 0;
@@ -213,8 +239,15 @@
   pointer-events: none;
 }
 
-// The bell carries the count now; the avatar's own badge would repeat it
-.d-header-icons:has(.jt-header-notifications) .current-user .badge-notification {
+// The bell (and the envelope) carry these counts now; the avatar's own badge
+// would repeat them. Core's review-queue badge for staff stays: the bell
+// doesn't count reviewables.
+.d-header-icons:has(.jt-header-notifications)
+  .current-user
+  .badge-notification.unread-notifications,
+.d-header-icons:has(.jt-header-messages)
+  .current-user
+  .badge-notification.new-pms {
   display: none;
 }
 
@@ -234,11 +267,5 @@ html.mobile-view {
   .jt-header-theme,
   .jt-header-new-topic {
     display: none;
-  }
-
-  // Core's phone header isn't a flex row, so the gap needs spelling out
-  .d-header-icons .jt-header-notifications,
-  .d-header-icons .current-user {
-    margin-left: 0.4rem;
   }
 }

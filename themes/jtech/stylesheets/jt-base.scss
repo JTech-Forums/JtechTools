@@ -28,6 +28,14 @@ html {
   scrollbar-color: var(--jt-scroll-thumb) transparent;
 }
 
+// Touch screens have no hover to reveal them, and code blocks, tables and the
+// command menu would scroll with no sign that they can.
+@media (hover: none) {
+  * {
+    scrollbar-color: var(--jt-scroll-thumb) transparent;
+  }
+}
+
 // The page itself: components/jt-scrollbar draws an overlay pill instead and
 // adds this class while it is mounted (without it the native bar stays).
 html.jt-overlay-scroll {
@@ -91,12 +99,17 @@ h4 {
 }
 
 :is(
-    input:not([type="checkbox"], [type="radio"], [type="button"], [type="submit"]),
-    textarea,
-    select,
-    [contenteditable],
-    .d-editor-input
-  ):focus-visible {
+  input:not(
+    [type="checkbox"],
+    [type="radio"],
+    [type="button"],
+    [type="submit"]
+  ),
+  textarea,
+  select,
+  [contenteditable],
+  .d-editor-input
+):focus-visible {
   outline: none;
 }
 
@@ -115,4 +128,26 @@ h4 {
 
 .btn-primary {
   border: 1px solid var(--d-button-primary-bg-color);
+}
+
+// ── Print ─────────────────────────────────────────────────
+// Page chrome stays off paper, and dark mode prints dark text on white
+// (browsers drop the black background, which would leave white text).
+@media print {
+  .jt-progress,
+  .jt-scrollbar,
+  .jt-to-top,
+  .jt-footer,
+  .jt-hero {
+    display: none !important;
+  }
+
+  :root,
+  body {
+    --jt-text: #000;
+    --jt-text-muted: #444;
+    --jt-text-subtle: #555;
+    --jt-surface: #fff;
+    --jt-surface-raised: #fff;
+  }
 }

@@ -149,6 +149,9 @@ external_link_icon:
 header_home_url:
   type: string
   default: "/home"
+color_mode_toggle:
+  type: bool
+  default: true
 overlay_scrollbar:
   type: bool
   default: true

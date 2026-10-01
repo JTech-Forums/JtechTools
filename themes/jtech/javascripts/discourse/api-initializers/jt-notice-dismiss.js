@@ -40,7 +40,7 @@ const write = (value) => {
 const hash = (text) => {
   let h = 0;
   for (const ch of text) {
-    h = (h * 31 + ch.charCodeAt(0)) | 0;
+    h = (h * 31 + ch.charCodeAt(0)) % 2147483647;
   }
   return String(h);
 };

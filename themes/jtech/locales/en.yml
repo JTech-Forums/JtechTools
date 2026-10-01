@@ -25,6 +25,11 @@ en:
     likes:
       one: "%{count} like"
       other: "%{count} likes"
+    hero:
+      search: "Search"
+      quick_links: "Quick links"
+    footer:
+      label: "Footer"
     header:
       search: "Search…"
       home: "JTech homepage"
@@ -41,7 +46,6 @@ en:
       period_yearly: "Year"
       period_all: "All time"
     cmdk:
-      shortcut_help: "Open the command menu"
       sidebar_label: "Search or jump to…"
       placeholder: "Search topics, categories, people, or type a command…"
       searching: "Searching…"
@@ -73,12 +77,13 @@ en:
     description: "JTech: Vercel-style AMOLED black and pure white, hairline borders, Geist type."
     settings:
       header_home_url: "Where the header's house icon goes (the JTech homepage). Leave blank to hide it."
+      color_mode_toggle: "Light / dark switch in the header and the command menu. It replaces core's header colour selector; clicking back to the mode your device uses returns to following the device."
       overlay_scrollbar: "Thin overlay scrollbar for the page (macOS style) on mouse/trackpad devices, instead of the browser's wide classic one."
       back_to_top: "Floating back-to-top button on long pages (not on topics, which have their own)."
       command_menu: "⌘K / Ctrl+K command menu: jump to pages, categories, topics and people, or run an action."
       card_thumbnails: "Show the topic's first image beside its title on topic cards."
       code_language_labels: "Header showing the language on code blocks whose author named one (```bash)."
-      quick_look: "Add a Quick look button to topic cards that previews the first post in a dialog."
+      quick_look: "Add a Quick look button to topic cards that previews the first post in a dialog. Signed-in members only, so it can't get round a login gate."
       reading_progress: "Thin bar under the header showing how far through a topic you are."
       external_link_icon: "Mark links in posts that go to other sites with a small arrow."
       internal_hosts: "Hosts that count as this forum (no arrow). Matched exactly; the current host always counts."

@@ -57,41 +57,50 @@ export default apiInitializer((api) => {
 
   // Click anywhere on the card opens the topic; real links/buttons inside keep
   // their own behaviour. Modifier keys and middle-click open a new tab.
-  api.registerBehaviorTransformer("topic-list-item-click", ({ context, next }) => {
-    const { event, topic, listContext } = context;
-    if (!isCardContext({ listContext, category: topic?.category })) {
-      return next();
-    }
-    if (
-      (event.target.closest("a, button, input, label") &&
-        !event.target.closest(".topic-excerpt")) ||
-      event.target.closest(".topic-excerpt-more")
-    ) {
-      return next();
-    }
+  api.registerBehaviorTransformer(
+    "topic-list-item-click",
+    ({ context, next }) => {
+      const { event } = context;
+      // The list decided whether it's cards (topic-list-class above), so ask it
+      // rather than re-deriving that from the topic.
+      if (!event.target.closest(".jt-cards")) {
+        return next();
+      }
+      // Selecting text on a card (drag, then release) isn't a click to open it.
+      if (window.getSelection()?.toString()) {
+        return;
+      }
+      if (
+        (event.target.closest("a, button, input, label") &&
+          !event.target.closest(".topic-excerpt")) ||
+        event.target.closest(".topic-excerpt-more")
+      ) {
+        return next();
+      }
 
-    const link = event.target
-      .closest(".topic-list-item")
-      ?.querySelector("a.raw-topic-link");
-    if (!link) {
-      return next();
-    }
-    event.preventDefault();
-    event.stopPropagation();
+      const link = event.target
+        .closest(".topic-list-item")
+        ?.querySelector("a.raw-topic-link");
+      if (!link) {
+        return next();
+      }
+      event.preventDefault();
+      event.stopPropagation();
 
-    if (event.button === 1) {
-      window.open(link.href, "_blank", "noopener,noreferrer");
-      return;
+      if (event.button === 1) {
+        window.open(link.href, "_blank", "noopener,noreferrer");
+        return;
+      }
+      link.dispatchEvent(
+        new MouseEvent("click", {
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          shiftKey: event.shiftKey,
+          button: event.button,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
     }
-    link.dispatchEvent(
-      new MouseEvent("click", {
-        ctrlKey: event.ctrlKey,
-        metaKey: event.metaKey,
-        shiftKey: event.shiftKey,
-        button: event.button,
-        bubbles: true,
-        cancelable: true,
-      })
-    );
-  });
+  );
 });

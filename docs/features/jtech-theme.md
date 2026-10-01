@@ -6,8 +6,8 @@ What it adds on top of a restyle:
 
 - **Topic cards** instead of table rows, with the first image beside the title and a Quick look preview.
 - **A front-page hero** with search and quick links, **category and tag banners**, and a **footer** with link columns.
-- **⌘K / Ctrl+K command menu** to jump to pages, categories, topics and people. The header's search field opens it.
-- **Header**: search, JTech homepage, messages and notifications (with unread counts), light/dark, new topic.
+- **⌘K / Ctrl+K command menu** to jump to pages, categories, topics and people. The header's search field opens it. For people who can use chat, ⌘K stays chat's channel switcher (core binds it) and the menu opens from the search field only; "/" still opens Discourse's own search.
+- **Header**: search, JTech homepage, messages and notifications (with unread counts), light/dark, new topic. Staff keep core's review-queue badge on their avatar.
 - **Sidebar**, **profiles**, **users directory** and **empty pages** redesigned; site notices get a dismiss button.
 - An overlay page scrollbar, a back-to-top button, reading progress, language labels on code blocks, category icons on the categories page.
 
@@ -41,7 +41,7 @@ The look itself is configured in the theme's own settings (corner style, cards, 
 
 - **Brand assets.** The JTech mark, app icon and favicon are in [`docs/theme/brand/`](../theme/brand/). They're site settings (`logo_small`, `favicon`, `apple_touch_icon`…), so they apply to every theme; upload them yourself if you want them. Setting `base_font` and `heading_font` to `system` stops browsers downloading Roboto, which JTech doesn't use.
 - **Card thumbnails.** The theme asks Discourse for 320 px topic thumbnails, so after it's installed Sidekiq makes them for listed topics once, a few at a time.
-- **Links to the landing site** (`/home`, `/egate`, `/contact`…) need the "Landing page links (leave the forum)" component attached, so the browser opens them instead of the forum.
+- **Links to the landing site** (`/home`, `/dumb`, `/terms`…): the header, hero and footer open any same-site link that isn't a forum page as a normal page load, so they reach the landing site instead of the forum's 404 page. Links inside posts still need the "Landing page links (leave the forum)" component.
 
 ## Before updating Discourse
 

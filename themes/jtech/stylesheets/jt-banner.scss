@@ -103,9 +103,6 @@
 }
 
 // The banner shows the category logo itself; don't stack core's heading.
-.discovery-list-controls-above-outlet:has(.jt-banner.--has-logo)
-  ~ .list-controls
-  .category-heading.--has-logo,
 #main-outlet:has(.jt-banner.--has-logo) .category-heading.--has-logo {
   display: none;
 }

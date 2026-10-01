@@ -35,7 +35,10 @@ export default apiInitializer((api) => {
         } catch {
           continue;
         }
-        if (/^https?:$/.test(url.protocol) && !internal.has(url.hostname.toLowerCase())) {
+        if (
+          /^https?:$/.test(url.protocol) &&
+          !internal.has(url.hostname.toLowerCase())
+        ) {
           a.classList.add("jt-external");
         }
       }

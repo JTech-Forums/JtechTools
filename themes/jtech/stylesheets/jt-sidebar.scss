@@ -8,7 +8,6 @@
 //  - space separates sections, not rules; headers are small, sentence case,
 //    with the chevron revealed on hover (always when collapsed / on touch)
 //  - the list shows it scrolls (fade masks), counts stay quiet
-
 :root,
 body {
   --d-sidebar-row-height: 2.1333rem; // 32px
@@ -19,7 +18,6 @@ body {
   --d-sidebar-section-link-icon-size: 0.9333rem; // 14px glyph in a 16px box
   --d-sidebar-section-link-emoji-size: 1rem;
   --d-sidebar-animation-time: 0.2s;
-
   --d-sidebar-background: var(--jt-surface);
   --d-sidebar-border-color: var(--jt-border);
   --d-sidebar-section-border-color: transparent;
@@ -81,13 +79,13 @@ body {
 @property --jt-fade-top {
   syntax: "<length>";
   inherits: false;
-  initial-value: 0px;
+  initial-value: 0;
 }
 
 @property --jt-fade-bottom {
   syntax: "<length>";
   inherits: false;
-  initial-value: 0px;
+  initial-value: 0;
 }
 
 @keyframes jt-sidebar-fade {
@@ -253,7 +251,7 @@ body {
 
 // Tags read as #tag instead of a column of identical tag icons
 .sidebar-section[data-section-name="tags"]
-  .sidebar-section-link[href^="/tag/"]
+  .sidebar-section-link[href*="/tag/"]
   .sidebar-section-link-prefix {
   svg {
     display: none;

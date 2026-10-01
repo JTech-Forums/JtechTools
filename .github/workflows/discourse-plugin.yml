@@ -41,3 +41,19 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint:dumbcourse
+
+  # The bundled JTech theme (themes/jtech) is compiled by core's theme
+  # pipeline, not the plugin build, so the reusable workflow's lint doesn't see
+  # it. Lint it on its own (ESLint, Prettier, stylelint).
+  theme:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint:theme

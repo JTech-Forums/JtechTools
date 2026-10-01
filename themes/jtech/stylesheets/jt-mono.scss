@@ -9,13 +9,11 @@
   }
 
   .sidebar-section-link-prefix.icon .prefix-icon,
-  .sidebar-section-link-prefix .prefix-span,
   .sidebar-section-link-prefix.icon svg {
     color: var(--jt-text-subtle) !important;
-    fill: currentColor !important;
+    fill: currentcolor !important;
   }
 
-  .sidebar-section-link-prefix .prefix-span,
   .sidebar-section-link-prefix .prefix-square,
   .jt-cat-icon__square {
     background: var(--jt-text-subtle) !important;
