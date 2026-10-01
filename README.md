@@ -1,5 +1,4 @@
 <p align="center">
-  <img src="docs/images/logo.svg" width="112" alt="">
 </p>
 
 <h1 align="center">Jtech Tools</h1>
