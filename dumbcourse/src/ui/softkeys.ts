@@ -1,6 +1,15 @@
 // The soft-key bar along the bottom, like a feature phone's own apps:
 // the label over each soft key (left, centre/OK, right) says what it does
 // right now. The labels are tappable too, for touch screens.
+//
+// The Android app (JTech-Forums/jtech-dpad-apk, assets/softkeys.js) draws
+// its own native bar on keypad phones by reading this one, so its users get
+// soft-key changes without an app update. It relies on: #softkeys being a
+// child of <body>; one button per slot with data-sk="left|center|right" and
+// its label as plain text; a click on a button running its handler (the app
+// presses the soft keys that way); the "softkeys" value in dc:prefs; the
+// light/dark class on <html>; and --sk-h for every offset the bar needs.
+// Changing any of those needs a matching app release.
 
 import { byId, setHtml } from "../dom.ts";
 import { html } from "../html.ts";
