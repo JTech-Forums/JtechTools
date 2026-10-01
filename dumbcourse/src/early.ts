@@ -37,12 +37,12 @@
   if (prefs.avatars === false) classes.push("no-avatars");
   // Same rule as softkeysVisible() in prefs.ts.
   const w = window.innerWidth || root.clientWidth;
-  const nav = navigator as Navigator & { msMaxTouchPoints?: number };
-  const touch =
-    "ontouchstart" in window ||
-    (nav.maxTouchPoints || 0) > 0 ||
-    (nav.msMaxTouchPoints || 0) > 0;
-  const small = w <= 480 && (prefs.keypad === true || !touch);
+  const s = window.screen;
+  const shape =
+    s && s.width && s.height
+      ? Math.min(s.width, s.height) / Math.max(s.width, s.height)
+      : 0;
+  const small = w <= 480 && (prefs.keypad === true || !shape || shape >= 0.65);
   if (prefs.softkeys === "on" || (prefs.softkeys !== "off" && small))
     classes.push("with-softkeys");
   root.className = classes.join(" ");

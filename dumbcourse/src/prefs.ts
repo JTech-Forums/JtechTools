@@ -3,10 +3,10 @@
 // flip phone does not follow you to your computer.
 
 import {
-  hasTouch,
   onMediaChange,
   prefersLight,
   prefersReducedMotion,
+  screenShape,
 } from "./compat.ts";
 import { settings } from "./config.ts";
 import type { Key } from "./keys.ts";
@@ -101,13 +101,19 @@ export function isLight(): boolean {
   return prefersLight();
 }
 
+// 240x320, 480x640 (0.75) and 320x480 (0.67) are in; 480x800 (0.6) and
+// every modern phone are out.
+const KEYPAD_SHAPE = 0.65;
+
 export function softkeysVisible(): boolean {
   if (prefs.softkeys === "on") return true;
   if (prefs.softkeys === "off") return false;
-  // Touch phones are as narrow as feature phones, so on a touch screen
-  // wait until the phone shows it has a keypad.
+  // Touch phones are as narrow as keypad phones in CSS pixels, but their
+  // screens are tall (about 9:20) where keypad phones are 3:4.
   const w = window.innerWidth || document.documentElement.clientWidth;
-  return w <= 480 && (prefs.keypad || !hasTouch());
+  if (w > 480) return false;
+  const shape = screenShape();
+  return prefs.keypad || !shape || shape >= KEYPAD_SHAPE;
 }
 
 const NAV_KEYS: Key[] = [

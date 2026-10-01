@@ -248,13 +248,11 @@ export function prefersReducedMotion(): boolean {
   }
 }
 
-export function hasTouch(): boolean {
-  const n = navigator as Navigator & { msMaxTouchPoints?: number };
-  return (
-    "ontouchstart" in window ||
-    (n.maxTouchPoints || 0) > 0 ||
-    (n.msMaxTouchPoints || 0) > 0
-  );
+// Short side over long side of the physical screen, 0 if unknown.
+export function screenShape(): number {
+  const s = window.screen;
+  if (!s || !s.width || !s.height) return 0;
+  return Math.min(s.width, s.height) / Math.max(s.width, s.height);
 }
 
 export function onMediaChange(query: string, cb: () => void): void {
