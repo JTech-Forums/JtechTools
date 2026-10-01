@@ -217,6 +217,24 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  it "keeps a user title's pill to the size of its text on phones", mobile: true do
+    admin.update!(title: "Forum Administrator")
+    visit(topic.relative_url)
+    expect(page).to have_css("#post_2 .names .user-title", text: "Forum Administrator")
+    pill, text, names = page.evaluate_script(<<~JS)
+      (() => {
+        const title = document.querySelector("#post_2 .names .user-title");
+        const text = document.createRange();
+        text.selectNodeContents(title);
+        return [title, text, title.closest(".names")]
+          .map((e) => Math.round(e.getBoundingClientRect().width));
+      })()
+    JS
+    expect(pill).to be < text + 30
+    expect(pill).to be < names
+    expect_no_theme_errors
+  end
+
   it "puts the tracking menu in the topic's row of buttons, without the explanation" do
     sign_in(member)
     visit(topic.relative_url)

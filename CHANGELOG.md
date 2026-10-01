@@ -11,6 +11,7 @@ What changed for forums running Jtech Tools. Newest first.
 - JTech theme: every icon in the header is the same size, including chat's and core's ☰, and on phones the search icon no longer has a box around it.
 - JTech theme: phones show the small (square) logo in the header, leaving room for the icons. A mobile logo uploaded in the site settings still wins. Setting: `mobile_small_logo`.
 - JTech theme: the header, page content and footer share one right edge. Suggested topics under a topic and the whole search page now reach it (core stopped them short), and the footer's divider runs between the page's edges instead of fading across the window.
+- JTech theme: on phones, a poster's title next to their name is a pill the size of the title, instead of a bar across the post.
 - JTech theme: under a topic, the tracking menu sits in the row of buttons before Reply, without the sentence explaining the level. The footer lines up with the page above it (sidebar and content) instead of a narrower centred column.
 - JTech theme: on desktop the list's filters, tabs and New Topic button stay on one line. On narrower windows New Topic shows just its icon, and if the tabs still don't fit they scroll sideways, keeping the current tab in view.
 - JTech theme: on wide screens the header's search field sits in the middle of the bar. On narrower screens, touch screens and while a topic's title is in the header it stays in the icon row.
