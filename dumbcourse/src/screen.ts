@@ -4,9 +4,11 @@
 // the next screen takes over. Async views check `alive` after each await
 // so a slow response never paints over the screen you moved on to.
 
+import { closest } from "./compat.ts";
 import { byId, setHtml } from "./dom.ts";
 import { html, type SafeHtml } from "./html.ts";
 import type { Key } from "./keys.ts";
+import { focusByKey } from "./nav.ts";
 import { icon } from "./ui/icons.ts";
 import { setPageSoftkeys } from "./ui/softkeys.ts";
 
@@ -80,7 +82,18 @@ class ScreenImpl implements Screen {
   }
   render(markup: SafeHtml): void {
     if (!this.alive()) return;
-    setHtml(this.content(), markup);
+    const app = this.content();
+    // A repaint of the same screen (fresh data after the cached paint)
+    // replaces the focused element; put focus back on the same item, or the
+    // D-pad is left on nothing and OK does nothing.
+    const had = document.activeElement as HTMLElement | null;
+    const keyed =
+      had && had !== app && app.contains(had)
+        ? closest(had, "[data-key]")
+        : null;
+    const key = keyed ? keyed.getAttribute("data-key") : null;
+    setHtml(app, markup);
+    if (key && !app.contains(document.activeElement)) focusByKey(key);
   }
   onLeave(fn: () => void): void {
     if (this.alive()) this.leaves.push(fn);

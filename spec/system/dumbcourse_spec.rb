@@ -229,19 +229,54 @@ RSpec.describe "Dumbcourse" do
       expect(topic.posts.last.reply_to_post_number).to eq(2)
     end
 
-    it "keeps a draft when the composer is closed, and discards it on request" do
+    it "asks before closing a composer with writing, and keeps the draft" do
       phone do
         visit "/dumb/t/#{topic.slug}/#{topic.id}"
         find("[data-act=reply-topic]").click
         find("#cText").send_keys("Half a thought")
         sleep 0.8
         press(:escape)
+        expect(page).to have_css(".dialog-text", text: "Your draft stays on this phone")
+        find(".layer [data-cancel]").click
+        expect(page).to have_no_css(".dialog-text")
+        expect(page).to have_field("cText", with: "Half a thought")
+        press(:escape)
+        find(".layer [data-ok]", text: "Close").click
         expect(page).to have_no_css("#cText")
         visit "/dumb/drafts"
         expect(page).to have_css(".row", text: "Reply: Looking for a good kosher flip phone")
         find(".row", text: "Reply:").click
         find(".sheet-item", text: "Continue writing").click
         expect(page).to have_field("cText", with: "Half a thought")
+      end
+    end
+
+    it "closes an empty composer without asking" do
+      phone do
+        visit "/dumb/t/#{topic.slug}/#{topic.id}"
+        find("[data-act=reply-topic]").click
+        expect(page).to have_css("#cText")
+        press(:escape)
+        expect(page).to have_no_css("#cText")
+        expect(page).to have_no_css(".dialog-text")
+      end
+    end
+
+    it "stays in the forum on Back after discarding a draft" do
+      phone do
+        visit "/dumb/"
+        find(".row.topic", text: "Looking for a good kosher flip phone").click
+        expect(page).to have_css(".post[data-n='1']")
+        press(:f2)
+        find(".sheet-item", text: "Reply to topic").click
+        find("#cText").send_keys("Never mind")
+        find("[data-c=discard]").click
+        find(".layer [data-ok]", text: "Discard").click
+        expect(page).to have_no_css("#cText")
+        expect(page).to have_css(".post[data-n='1']")
+        page.go_back
+        expect(page).to have_css(".row.topic", text: "Looking for a good kosher flip phone")
+        expect(page).to have_current_path("/dumb/")
       end
     end
 
@@ -358,6 +393,28 @@ RSpec.describe "Dumbcourse" do
         visit "/dumb/"
         expect(page).to have_css("html.light")
         expect(page.evaluate_script("document.documentElement.style.fontSize")).to eq("18.75px")
+      end
+    end
+
+    it "keeps focus when fresh data repaints a screen shown from cache" do
+      phone do
+        visit "/dumb/u/#{bob.username}"
+        expect(page).to have_css(".profile-actions .btn:focus", text: "Preferences")
+        # The next visit paints the cached profile, then the changed one.
+        bob.update!(name: "Bob Renamed")
+        visit "/dumb/u/#{bob.username}"
+        expect(page).to have_css(".profile h1", text: "Bob Renamed")
+        expect(page).to have_css(".profile-actions .btn:focus", text: "Preferences")
+      end
+    end
+
+    it "keeps focus on the setting just changed" do
+      phone do
+        visit "/dumb/preferences"
+        find(".row[data-pref=softkeys]").click
+        find(".sheet-item", text: "Always").click
+        # Before: the screen re-ran from scratch and focus went back to Theme.
+        expect(page).to have_css(".row[data-pref=softkeys]:focus", text: "Always")
       end
     end
   end
