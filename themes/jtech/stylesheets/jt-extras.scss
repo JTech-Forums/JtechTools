@@ -79,22 +79,10 @@
   display: flex;
   gap: var(--space-2);
 
-  .btn {
-    min-height: 0;
-    padding: 0.4em 0.6em;
-    color: var(--jt-text-muted);
-    background: var(--jt-surface-raised);
-    border: 1px solid var(--jt-border);
-
-    &:hover,
-    &:focus-visible {
-      color: var(--jt-text);
-      border-color: var(--jt-border-strong);
-    }
-  }
-
+  // Under the timeline they join core's reply and notification buttons: same
+  // row, same gap, core's own button size and look
   &.--timeline {
-    margin-top: var(--space-3);
+    display: contents;
   }
 
   &.--progress {
@@ -102,6 +90,17 @@
 
     .btn {
       height: 100%;
+      min-height: 0;
+      padding: 0.4em 0.6em;
+      color: var(--jt-text-muted);
+      background: var(--jt-surface-raised);
+      border: 1px solid var(--jt-border);
+
+      &:hover,
+      &:focus-visible {
+        color: var(--jt-text);
+        border-color: var(--jt-border-strong);
+      }
     }
   }
 }

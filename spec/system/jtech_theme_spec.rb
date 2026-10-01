@@ -268,10 +268,19 @@ RSpec.describe "JTech theme" do
       expect(page).to have_css(".cooked a[href='/latest']:not([data-auto-route])")
     end
 
-    it "shows jump buttons under the timeline" do
+    it "shows jump buttons under the timeline, in line with core's buttons there" do
       sign_in(member)
       visit(topic.relative_url)
       expect(page).to have_css(".timeline-container .jt-jump .jt-jump__bottom")
+      # reply, notifications, first post, last post: one size, one row
+      boxes = page.evaluate_script(<<~JS)
+        [...document.querySelectorAll(".timeline-footer-controls .btn")]
+          .map((b) => b.getBoundingClientRect())
+          .filter((r) => r.width > 0)
+          .map((r) => [Math.round(r.width), Math.round(r.height), Math.round(r.top)])
+      JS
+      expect(boxes.size).to be >= 3
+      expect(boxes.uniq.size).to eq(1)
       expect_no_theme_errors
     end
 
