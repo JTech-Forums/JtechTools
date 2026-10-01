@@ -18,6 +18,7 @@
 - [ ] Pop-ups
 - [ ] Another SMTP
 - [ ] Translator tweaks
+- [ ] JTech theme
 - [ ] Shared (plugin.rb, settings, locales, docs, lint/CI)
 
 ## Test plan

@@ -72,6 +72,12 @@ en:
       sub-plugin also has its own enable switch on its tab for fine-grained
       control.
 
+    jtech_theme_install: Install the JTech theme that ships with this plugin,
+      and update it when the plugin updates (on rebuild). It is never made the
+      default or offered to users; do that under Customize → Themes. Turn this
+      off to stop installs and updates. An admin who deletes the theme keeps it
+      deleted; `rake jtech:theme:install` brings it back.
+
     # ── Jtech — Dislike ────────────────────────────────────────────────────
     discourse_no_likes_enabled: Turn on phantom reactions. When off, likes and
       reactions behave exactly as Discourse ships them in every category and

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # name: jtech-tools
-# about: Jtech Tools — the JTech Forums all-in-one plugin: moderator tools, Mini-mod, Dislike, the Disteleplus Telegram bridge, REQ-PM, Dumbcourse, smart search, desktop pop-ups, Another SMTP and translator tweaks.
+# about: Jtech Tools — the JTech Forums all-in-one plugin: moderator tools, Mini-mod, Dislike, the Disteleplus Telegram bridge, REQ-PM, Dumbcourse, smart search, desktop pop-ups, Another SMTP, translator tweaks and the JTech theme.
 # version: 0.5.0
 # authors: TripleU, Shalom_Karr, Ars18
 # url: https://github.com/JTech-Forums/JtechTools
@@ -39,6 +39,7 @@ enabled_site_setting :jtech_enabled
   popup_notifications
   disteleplus
   reqpm
+  jtech_theme
 ].each do |sub|
   path = File.expand_path("sub_plugins/#{sub}.rb", __dir__)
   instance_eval(File.read(path), path, 1)

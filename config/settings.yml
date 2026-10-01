@@ -17,6 +17,11 @@ jtech:
   jtech_enabled:
     default: true
     client: true
+  # The bundled JTech theme (themes/jtech): installed and kept up to date on
+  # rebuilds, never made the default.
+  jtech_theme_install:
+    default: true
+    client: false
 
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech — Dislike (phantom reactions in restricted categories)
