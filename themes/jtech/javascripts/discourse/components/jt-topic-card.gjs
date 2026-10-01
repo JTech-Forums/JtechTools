@@ -66,7 +66,7 @@ export default class JtTopicCard extends Component {
     return pick?.url || this.topic.image_url || null;
   }
 
-  // Signed-in only: the forum's "Gated Topics" component blurs topics for
+  // Signed-in only: the login gate (gated_categories) covers topics for
   // visitors, and Quick look would hand them the whole first post.
   get showQuickLook() {
     return settings.quick_look && this.currentUser;

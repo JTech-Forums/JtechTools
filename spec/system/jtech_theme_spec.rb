@@ -306,6 +306,67 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  describe "login gate" do
+    def gate(categories: "", tags: "")
+      jtech_theme.update_setting(:gated_categories, categories)
+      jtech_theme.update_setting(:gated_tags, tags)
+      jtech_theme.save!
+    end
+
+    it "fades a gated category's topic into a prompt to log in or sign up" do
+      gate(categories: category.id.to_s)
+      visit(topic.relative_url)
+      expect(page).to have_css("body.jt-gated")
+      expect(page).to have_css(".jt-gate__title", text: "Log in to keep reading")
+      expect(page).to have_css(
+        ".jt-gate__text",
+        text: "Topics in #{category.name} are for members.",
+      )
+      expect(page).to have_css(".jt-gate__sign-up")
+      shot("gate")
+      expect_no_theme_errors
+
+      find(".jt-gate__log-in").click
+      expect(page).to have_current_path("/login")
+    end
+
+    it "fits a phone", mobile: true do
+      gate(categories: category.id.to_s)
+      visit(topic.relative_url)
+      expect(page).to have_css(".jt-gate .jt-gate__sign-up")
+      shot("gate")
+      expect_no_theme_errors
+    end
+
+    it "gates topics with a gated tag" do
+      gate(tags: tag.name)
+      visit(topic.relative_url)
+      expect(page).to have_css(".jt-gate")
+    end
+
+    it "only offers Log in when sign-ups are closed" do
+      SiteSetting.invite_only = true
+      gate(categories: category.id.to_s)
+      visit(topic.relative_url)
+      expect(page).to have_css(".jt-gate__log-in.btn-primary")
+      expect(page).to have_no_css(".jt-gate__sign-up")
+    end
+
+    it "leaves members and other categories alone" do
+      gate(categories: Fabricate(:category).id.to_s)
+      visit(topic.relative_url)
+      expect(page).to have_css(".topic-post")
+      expect(page).to have_no_css(".jt-gate")
+
+      gate(categories: category.id.to_s)
+      sign_in(member)
+      visit(topic.relative_url)
+      expect(page).to have_css(".topic-post")
+      expect(page).to have_no_css(".jt-gate")
+      expect(page).to have_no_css("body.jt-gated")
+    end
+  end
+
   it "shows the dark palette when the browser prefers dark" do
     page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
     sign_in(member)
