@@ -12,6 +12,14 @@ RSpec.describe ::DiscourseJtechTheme::Installer do
     described_class.theme
   end
 
+  it "runs from the seeds every db:migrate runs" do
+    fixtures = File.realpath(File.expand_path("../../../db/fixtures", __dir__))
+    registered =
+      DiscoursePluginRegistry.seed_paths.filter_map { |p| File.realpath(p) if File.exist?(p) }
+
+    expect(registered).to include(fixtures)
+  end
+
   describe ".sync_now" do
     it "installs the bundled theme without making it the default or user-selectable" do
       result = nil
