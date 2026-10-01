@@ -396,6 +396,18 @@ RSpec.describe "Dumbcourse" do
       end
     end
 
+    it "keeps focus when fresh data repaints a screen shown from cache" do
+      phone do
+        visit "/dumb/u/#{bob.username}"
+        expect(page).to have_css(".profile-actions .btn:focus", text: "Preferences")
+        # The next visit paints the cached profile, then the changed one.
+        bob.update!(name: "Bob Renamed")
+        visit "/dumb/u/#{bob.username}"
+        expect(page).to have_css(".profile h1", text: "Bob Renamed")
+        expect(page).to have_css(".profile-actions .btn:focus", text: "Preferences")
+      end
+    end
+
     it "keeps focus on the setting just changed" do
       phone do
         visit "/dumb/preferences"
