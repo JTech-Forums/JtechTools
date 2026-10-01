@@ -83,6 +83,7 @@ Paths are inside `themes/jtech/`; JavaScript is under `javascripts/discourse/`.
 | `api-initializers/jt-notice-dismiss.js` | × on core's site notices (7 days / until the text changes; critical notices excluded) |
 | `components/jt-first-reply.gjs`, `jt-jump-buttons.gjs`, `connectors/user-card-metadata/jt-last-seen.gjs`, `api-initializers/jt-post-links.js`, `stylesheets/jt-extras.scss` | what used to be separate components: first-reply prompt, first/last post buttons, last seen on user cards, full-page links in posts, code line numbers, padlocks, tablet composer, core category boxes |
 | `components/jt-gate.gjs` (outlet `topic-area-bottom`) | login gate for logged-out visitors on `gated_categories` / `gated_tags`: the post stream is clipped and fades into the card (`jt-gate.scss`) |
+| `stylesheets/jt-topic-list.scss` + `api-initializers/jt-active-tab.js` | desktop list controls on one line: New Topic icon-only below 66rem, tabs scroll sideways with edge fades, current tab scrolled into view |
 | `api-initializers/jt-external-links.js` | ↗ on outbound links in posts (`decorateCookedElement`) |
 | `stylesheets/jt-leaderboard.scss`, `jt-components.scss` | restyles for gamification, Gated Topics, Category Boxes, admin |
 | `stylesheets/jt-type.scss` | type scale (15px root, Geist steps, tracking by size, tabular numerals) |
