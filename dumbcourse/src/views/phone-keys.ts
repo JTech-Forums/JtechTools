@@ -12,6 +12,7 @@ import {
   keySignature,
   type Key,
 } from "../keys.ts";
+import { detectNativeSoftkeys, nativeSoftkeys } from "../native-softkeys.ts";
 import { focusContent } from "../nav.ts";
 import { prefs, setPref } from "../prefs.ts";
 import type { RouteContext } from "../router.ts";
@@ -170,6 +171,21 @@ export function phoneKeysRoute(ctx: RouteContext): void {
 
   s.render(
     html`<ul class="rows">
+        ${nativeSoftkeys()
+          ? html`<li>
+              <button
+                type="button"
+                class="row setting"
+                data-act="pk-native"
+                data-key="pk-native"
+              >
+                <span class="row-icon">${icon("keypad")}</span>
+                <div class="row-main">
+                  <div class="row-title">Detect soft keys</div>
+                </div>
+              </button>
+            </li>`
+          : ""}
         ${TEACHABLE.map(
           ([which, label]) =>
             html`<li>
@@ -223,6 +239,11 @@ export function phoneKeysRoute(ctx: RouteContext): void {
       );
     }, 10000);
     paintRows();
+  });
+  s.act("pk-native", () => {
+    stop();
+    if (!detectNativeSoftkeys())
+      toast("Couldn't start soft-key detection. Update the app.", "error");
   });
   s.act("pk-reset", () => {
     stop();
