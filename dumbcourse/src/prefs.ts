@@ -2,7 +2,12 @@
 // They stay on the device (not the account), so a big-text setting on a
 // flip phone does not follow you to your computer.
 
-import { onMediaChange, prefersLight, prefersReducedMotion } from "./compat.ts";
+import {
+  onMediaChange,
+  prefersLight,
+  prefersReducedMotion,
+  screenShape,
+} from "./compat.ts";
 import { settings } from "./config.ts";
 import type { Key } from "./keys.ts";
 import { getJson, getRaw, removeRaw, setJson } from "./storage.ts";
@@ -19,6 +24,8 @@ export interface Prefs {
   images: ImageMode;
   excerpts: boolean;
   softkeys: Toggle3;
+  // Set once this device presses a D-pad or soft key.
+  keypad: boolean;
   live: boolean;
   defaultView: string;
   hints: boolean;
@@ -42,6 +49,7 @@ function defaults(): Prefs {
     images: "show",
     excerpts: true,
     softkeys: "auto",
+    keypad: false,
     live: true,
     defaultView: "",
     hints: true,
@@ -93,11 +101,33 @@ export function isLight(): boolean {
   return prefersLight();
 }
 
+// 240x320, 480x640 (0.75) and 320x480 (0.67) are in; 480x800 (0.6) and
+// every modern phone are out.
+const KEYPAD_SHAPE = 0.65;
+
 export function softkeysVisible(): boolean {
   if (prefs.softkeys === "on") return true;
   if (prefs.softkeys === "off") return false;
-  // Feature phones are small; big screens are usually touch or desktop.
-  return (window.innerWidth || document.documentElement.clientWidth) <= 480;
+  // Touch phones are as narrow as keypad phones in CSS pixels, but their
+  // screens are tall (about 9:20) where keypad phones are 3:4.
+  const w = window.innerWidth || document.documentElement.clientWidth;
+  if (w > 480) return false;
+  const shape = screenShape();
+  return prefs.keypad || !shape || shape >= KEYPAD_SHAPE;
+}
+
+const NAV_KEYS: Key[] = [
+  "up",
+  "down",
+  "left",
+  "right",
+  "softleft",
+  "softright",
+];
+
+export function noteKey(key: Key, typing: boolean): void {
+  if (prefs.keypad || typing || NAV_KEYS.indexOf(key) < 0) return;
+  setPref("keypad", true);
 }
 
 export function applyPrefs(): void {

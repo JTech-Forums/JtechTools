@@ -10,6 +10,7 @@
     density?: string;
     avatars?: boolean;
     softkeys?: string;
+    keypad?: boolean;
   } = {};
   try {
     prefs = JSON.parse(window.localStorage.getItem("dc:prefs") || "{}") || {};
@@ -34,7 +35,14 @@
   const classes = [light ? "light" : "dark"];
   if (prefs.density === "compact") classes.push("compact");
   if (prefs.avatars === false) classes.push("no-avatars");
-  const small = (window.innerWidth || root.clientWidth) <= 480;
+  // Same rule as softkeysVisible() in prefs.ts.
+  const w = window.innerWidth || root.clientWidth;
+  const s = window.screen;
+  const shape =
+    s && s.width && s.height
+      ? Math.min(s.width, s.height) / Math.max(s.width, s.height)
+      : 0;
+  const small = w <= 480 && (prefs.keypad === true || !shape || shape >= 0.65);
   if (prefs.softkeys === "on" || (prefs.softkeys !== "off" && small))
     classes.push("with-softkeys");
   root.className = classes.join(" ");

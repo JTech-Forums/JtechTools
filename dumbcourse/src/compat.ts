@@ -248,6 +248,13 @@ export function prefersReducedMotion(): boolean {
   }
 }
 
+// Short side over long side of the physical screen, 0 if unknown.
+export function screenShape(): number {
+  const s = window.screen;
+  if (!s || !s.width || !s.height) return 0;
+  return Math.min(s.width, s.height) / Math.max(s.width, s.height);
+}
+
 export function onMediaChange(query: string, cb: () => void): void {
   try {
     const mq = window.matchMedia && window.matchMedia(query);
