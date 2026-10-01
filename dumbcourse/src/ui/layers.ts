@@ -9,15 +9,21 @@ import { html, raw, type HtmlValue, type SafeHtml } from "../html.ts";
 import { focus, focusFirst } from "../nav.ts";
 import { isLayerState, pushLayerState } from "../router.ts";
 import { icon } from "./icons.ts";
+import { createLayerHistory } from "./layer-history.ts";
 import { setLayerSoftkeys, type Softkeys } from "./softkeys.ts";
 
 export interface Layer {
   el: HTMLElement;
+  // Closes it, no questions asked.
   close: () => void;
+  // What Close, Back and the backdrop do: asks the layer first (beforeClose).
+  requestClose: () => void;
 }
 
 interface OpenLayer extends Layer {
   onClose?: () => void;
+  // True if the layer took over (e.g. asks to confirm) and stays open.
+  beforeClose?: () => boolean;
   returnFocus: HTMLElement | null;
   softkeys?: Softkeys;
 }
@@ -29,7 +35,15 @@ let goTo: ((path: string) => void) | null = null;
 export function setNavigator(fn: (path: string) => void): void {
   goTo = fn;
 }
-let pendingPops = 0;
+
+const layerHistory = createLayerHistory({
+  depth: () => stack.length,
+  push: pushLayerState,
+  go: (delta) => history.go(delta),
+  defer: (fn) => {
+    setTimeout(fn, 0);
+  },
+});
 
 function host(): HTMLElement {
   let el = byId("layers");
@@ -71,6 +85,7 @@ export function openLayer(opts: {
   softkeys?: Softkeys;
   focusSelector?: string;
   className?: string;
+  beforeClose?: () => boolean;
 }): Layer {
   const el = document.createElement("div");
   el.className = `layer layer-${opts.kind}${opts.className ? " " + opts.className : ""}`;
@@ -88,18 +103,20 @@ export function openLayer(opts: {
     el,
     returnFocus: document.activeElement as HTMLElement | null,
     onClose: opts.onClose,
+    beforeClose: opts.beforeClose,
     softkeys: opts.softkeys,
     close: () => {
       if (stack.indexOf(layer) < 0) return;
       removeLayer(layer);
-      if (isLayerState()) {
-        pendingPops++;
-        history.back();
-      }
+      layerHistory.changed();
+    },
+    requestClose: () => {
+      if (layer.beforeClose && layer.beforeClose()) return;
+      layer.close();
     },
   };
   stack.push(layer);
-  pushLayerState();
+  layerHistory.changed();
   // Force a style pass so the open transition runs.
   void el.offsetHeight;
   el.classList.add("open");
@@ -108,7 +125,7 @@ export function openLayer(opts: {
   el.addEventListener("click", (e) => {
     const t = e.target as HTMLElement;
     if (t && t.hasAttribute && t.hasAttribute("data-layer-close"))
-      layer.close();
+      layer.requestClose();
   });
 
   requestAnimationFrame(() => {
@@ -130,33 +147,57 @@ export function topLayer(): Layer | null {
 export function closeTop(): boolean {
   const top = stack[stack.length - 1];
   if (!top) return false;
-  top.close();
+  top.requestClose();
   return true;
 }
 
 // Router hook: a Back press while a layer is open closes that layer.
 export function handlePop(): boolean {
-  if (pendingPops > 0) {
-    pendingPops--;
-    return true;
-  }
+  if (layerHistory.popped()) return true;
   const top = stack[stack.length - 1];
   if (!top) return false;
-  removeLayer(top);
+  // The layer stays open (it asks first): put its entry back.
+  if (top.beforeClose && top.beforeClose()) layerHistory.changed();
+  else removeLayer(top);
   return true;
 }
 
-// Before moving to another screen: drop every layer without touching
-// history. Returns true if the current history entry belongs to a layer
-// (so the navigation should replace it).
-export function discardAll(): boolean {
-  const hadLayers = stack.length > 0;
+// Moving to another screen: drop every layer, then navigate(replace) once
+// history is where the navigation belongs. Focus first goes back to what
+// opened the layers, so the screen being left remembers that item for Back.
+//
+// A plain move from one layer (a drawer link) reuses that layer's entry for
+// the new screen. A replacing move (jump to a post) or one from stacked layers
+// first goes back over the layer entries, so it replaces the screen's own
+// entry and no stale layer entry is left under the new screen.
+export function leaveScreen(
+  replace: boolean,
+  navigate: (replace: boolean) => void
+): void {
+  const opener = stack.length ? stack[0].returnFocus : null;
+  const entries = layerHistory.reset();
   while (stack.length) {
     const top = stack[stack.length - 1];
     top.returnFocus = null;
     removeLayer(top);
   }
-  return hadLayers && isLayerState();
+  if (opener && document.body.contains(opener)) focus(opener);
+  if (!entries || !isLayerState()) navigate(replace);
+  else if (entries === 1 && !replace) navigate(true);
+  else layerHistory.popThen(entries, () => navigate(replace));
+}
+
+// A screen is (re)rendering in place: drop any layers still open, but let
+// their history entries go the normal way, so a re-render right after a
+// sheet closed (a preference changed) doesn't strand that sheet's entry.
+export function dropLayers(): void {
+  if (!stack.length) return;
+  while (stack.length) {
+    const top = stack[stack.length - 1];
+    top.returnFocus = null;
+    removeLayer(top);
+  }
+  layerHistory.changed();
 }
 
 // ── Ready-made dialogs ────────────────────────────────────────────────

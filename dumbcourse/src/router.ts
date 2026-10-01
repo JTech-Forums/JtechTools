@@ -187,16 +187,18 @@ export function reload(): void {
 }
 
 // Adds a history entry for an open layer, so the phone's Back key closes
-// the layer instead of leaving the screen.
-export function pushLayerState(): void {
+// the layer instead of leaving the screen. False if the engine can't.
+export function pushLayerState(): boolean {
   try {
     history.pushState(
       { dc: currentId, layer: true } as HistoryState,
       "",
       location.href
     );
+    return true;
   } catch {
     // Old engines without pushState: layers still close with Back/Escape keys.
+    return false;
   }
 }
 

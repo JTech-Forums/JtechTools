@@ -1,6 +1,6 @@
 // The composer: a full-screen panel for replies, new topics, messages and
-// edits. Drafts save as you type; Back closes it and keeps the draft.
-// Soft keys: left closes, right sends.
+// edits. Drafts save as you type; Back or Close keeps the draft, and asks
+// first when there's writing in it. Soft keys: left closes, right sends.
 
 import { errorMessage, get, post, put, request } from "../api.ts";
 import { go } from "../app.ts";
@@ -179,6 +179,7 @@ export function openComposer(o: ComposerOptions): void {
         </div>`
       : html``;
 
+  let askingToClose = false;
   const layer = openLayer({
     kind: "full",
     label: heading,
@@ -271,6 +272,21 @@ ${text}</textarea
       open = null;
       stopPresence();
     },
+    // Close, Back and the backdrop ask first when there's writing to lose
+    // track of; the draft stays saved either way.
+    beforeClose: () => {
+      if (askingToClose) return true;
+      if (!hasWriting()) return false;
+      askingToClose = true;
+      // Short labels: they also go on a 240px phone's soft-key bar.
+      void confirmDialog("Close? Your draft stays on this phone.", {
+        ok: "Close",
+      }).then((ok) => {
+        askingToClose = false;
+        if (ok) layer.close();
+      });
+      return true;
+    },
   });
   open = layer;
   layer.el.setAttribute("data-softright", "[data-c=send]");
@@ -291,6 +307,16 @@ ${text}</textarea
       ta.selectionStart = ta.selectionEnd = ta.value.length;
     });
   }
+
+  const hasWriting = (): boolean => {
+    const blank = (v: string) => !v.replace(/\s+/g, "");
+    if (o.kind === "edit")
+      return (
+        ta.value !== o.raw ||
+        (!!titleEl && titleEl.value !== (o.editTitle || ""))
+      );
+    return !blank(ta.value) || (!!titleEl && !blank(titleEl.value));
+  };
 
   const currentDraft = (): Draft => ({
     key,
@@ -745,7 +771,7 @@ ${text}</textarea
     if (!which) return;
     if (which === "send") return; // handled by submit
     e.preventDefault();
-    if (which === "close") layer.close();
+    if (which === "close") layer.requestClose();
     else if (which === "emoji") emojiPicker((name) => insert(`:${name}: `));
     else if (which === "format") format();
     else if (which === "upload") upload();
