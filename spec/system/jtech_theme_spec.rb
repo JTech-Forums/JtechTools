@@ -193,6 +193,30 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  it "puts Me too on the post menu's line, next to the like count" do
+    skip("needs discourse-solved") unless defined?(::DiscourseSolved)
+    SiteSetting.solved_enabled = true
+    SiteSetting.enable_solved_shared_issues = true
+    category.upsert_custom_fields(DiscourseSolved::ENABLE_ACCEPTED_ANSWERS_CUSTOM_FIELD => "true")
+    DiscourseSolved::AcceptedAnswerCache.reset_accepted_answer_cache
+    sign_in(admin)
+    visit(topic.relative_url)
+    expect(page).to have_css("#post_1 .post-action-menu__solved-shared-issue")
+    me_too, menu, post = page.evaluate_script(<<~JS)
+      [
+        "#post_1 .post-action-menu__solved-shared-issue",
+        "#post_1 nav.post-controls .actions",
+        "#post_1 .post__contents",
+      ]
+        .map((selector) => document.querySelector(selector).getBoundingClientRect())
+        .map((r) => [Math.round(r.top + r.height / 2), Math.round(r.right)])
+    JS
+    expect(me_too[0]).to be_within(1).of(menu[0])
+    expect(menu[1]).to be <= post[1]
+    shot("me-too")
+    expect_no_theme_errors
+  end
+
   it "previews a topic's first post in Quick look" do
     sign_in(member)
     visit("/latest")
