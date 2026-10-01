@@ -9,7 +9,9 @@ The theme is an ordinary Discourse theme in [`themes/jtech/`](../../themes/jtech
 - It imports `themes/jtech` with `RemoteTheme.import_theme_from_directory`, as core does for its own themes in `db/fixtures/600_themes.rb`. The import works on a copy, so the plugin's files are never touched.
 - The theme id and a SHA-256 of the theme's files are kept in `PluginStore` (`jtech-theme` / `bundled_theme`). Nothing is re-imported unless the files changed.
 - Updates go into the same theme, so the admin's default/user-selectable choice, components and theme settings survive.
-- If the theme was deleted it isn't recreated; `rake jtech:theme:install` (`reinstall!`) brings it back.
+- On the first install it takes over a "JTech" theme someone installed by hand (same name, `about_url` `https://jtechforums.org`, and only one of them) instead of adding a second one.
+- If the theme was deleted it isn't recreated. Turning `jtech_theme_install` on queues `Jobs::JtechThemeSync` (`restore!`), which brings it back; `rake jtech:theme:install` (`reinstall!`) does too, and re-imports even when nothing changed.
+- Anything an admin changes in the theme's files from the admin editor is replaced on the next update; settings, palettes, components and theme site settings are kept (core only creates theme site settings that don't exist yet).
 - It never raises: a failed import is logged and the migration carries on.
 - It skips test databases unless `JTECH_THEME_SEED` is set, so CI's `db:migrate` doesn't compile the theme. The spec calls it directly.
 - `JTECH_THEME_DIR` points it at another copy of the theme (used to try it against a running forum).

@@ -75,6 +75,58 @@ RSpec.describe ::DiscourseJtechTheme::Installer do
     end
   end
 
+  describe "a JTech theme installed by hand before the plugin shipped it" do
+    fab!(:hand_installed) do
+      theme = Fabricate(:theme, name: "JTech")
+      theme.update!(
+        remote_theme: RemoteTheme.create!(remote_url: "", about_url: "https://jtechforums.org"),
+      )
+      theme
+    end
+
+    it "is updated in place instead of getting a second JTech next to it" do
+      hand_installed.set_default!
+
+      result = nil
+      expect { result = described_class.sync_now }.not_to change { Theme.count }
+      expect(result).to eq(:adopted)
+      expect(installed.id).to eq(hand_installed.id)
+      expect(SiteSetting.default_theme_id).to eq(hand_installed.id)
+      expect(installed.color_schemes.pluck(:name)).to contain_exactly("JTech Light", "JTech Dark")
+    end
+
+    it "leaves an unrelated theme that happens to be called JTech alone" do
+      hand_installed.remote_theme.update!(about_url: "https://example.com")
+
+      expect { described_class.sync_now }.to change { Theme.count }.by(1)
+      expect(installed.id).not_to eq(hand_installed.id)
+    end
+  end
+
+  describe ".restore!" do
+    it "brings back a deleted theme and otherwise just syncs" do
+      described_class.sync_now
+      installed.destroy!
+      described_class.sync_now
+
+      expect(described_class.restore!).to eq(:installed)
+      expect(installed).to be_present
+      expect(described_class.restore!).to eq(:unchanged)
+    end
+  end
+
+  describe "turning jtech_theme_install on" do
+    it "queues a sync so the theme arrives without a rebuild" do
+      SiteSetting.jtech_theme_install = false
+      expect_enqueued_with(job: :jtech_theme_sync) { SiteSetting.jtech_theme_install = true }
+    end
+
+    it "installs the theme from the job" do
+      Jobs::JtechThemeSync.new.execute({})
+      expect(installed).to be_present
+    end
+  end
+
   describe ".reinstall!" do
     it "brings back a theme an admin deleted" do
       described_class.sync_now
