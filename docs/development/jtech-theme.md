@@ -76,6 +76,7 @@ Paths are inside `themes/jtech/`; JavaScript is under `javascripts/discourse/`.
 | `api-initializers/jt-code-blocks.js` | language header on code blocks whose author named one |
 | `connectors/category-title-before/jt-category-icon.gjs` | category icon / emoji / square in the Category Boxes tiles (in-element into the tile) |
 | `api-initializers/jt-sidebar-docked.js` | no ☰ where the sidebar docks (`jt-header.scss`); clears a remembered "sidebar hidden" |
+| `api-initializers/jt-mobile-logo.js` | phones: `logo_small` in the header through core's `home-logo-image-url` transformer, unless a `mobile_logo` is uploaded |
 | `components/jt-scrollbar.gjs` (outlet `above-site-header`) + `jt-base.scss` | overlay page scrollbar on mouse/trackpad devices; thin hover-only scrollbars in panels |
 | `stylesheets/jt-profile.scss` | user profiles: header card (every /u/* tab), meta strip, summary stat tiles and section cards |
 | `stylesheets/jt-directory.scss` | users directory (/u): period title, toolbar, table card |
@@ -85,5 +86,5 @@ Paths are inside `themes/jtech/`; JavaScript is under `javascripts/discourse/`.
 | `stylesheets/jt-leaderboard.scss`, `jt-components.scss` | restyles for gamification, Gated Topics, Category Boxes, admin |
 | `stylesheets/jt-type.scss` | type scale (15px root, Geist steps, tracking by size, tabular numerals) |
 | `stylesheets/jt-shape.scss` | `corner_style` radii (squircles via `corner-shape`), fading dividers, glass header, press motion |
-| `settings.yml` | `corner_style` (squircle/sharp/soft/round), `topic_cards`, `hero_*` (incl. `hero_links` list), `quick_look`, `category_banners`, `tag_banners`, `footer_*`, `reading_progress`, `external_link_icon`, `internal_hosts`, `command_menu`, `card_thumbnails`, `code_language_labels`, `back_to_top`, `overlay_scrollbar`, `header_home_url`, `color_mode_toggle`, `code_line_numbers`, `first_reply_prompt*`, `user_card_last_seen`, `topic_jump_buttons`, `hide_lock_icons`, `monochrome_categories`, `monochrome_letter_avatars`, `monochrome_heatmap` |
+| `settings.yml` | `corner_style` (squircle/sharp/soft/round), `topic_cards`, `hero_*` (incl. `hero_links` list), `quick_look`, `category_banners`, `tag_banners`, `footer_*`, `reading_progress`, `external_link_icon`, `internal_hosts`, `command_menu`, `card_thumbnails`, `code_language_labels`, `back_to_top`, `overlay_scrollbar`, `header_home_url`, `color_mode_toggle`, `code_line_numbers`, `first_reply_prompt*`, `user_card_last_seen`, `topic_jump_buttons`, `hide_lock_icons`, `mobile_small_logo`, `monochrome_categories`, `monochrome_letter_avatars`, `monochrome_heatmap` |
 | `lib/jt-links.js`, `lib/jt-color-mode.js`, `lib/jt-command-menu-shortcut.js` | full-page links for non-forum paths; the light/dark switch (returns to "follow the device"); whether ⌘K is the menu's or chat's |

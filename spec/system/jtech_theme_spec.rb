@@ -284,6 +284,19 @@ RSpec.describe "JTech theme" do
       expect_no_theme_errors
     end
 
+    it "shows the small logo on phones", mobile: true do
+      SiteSetting.logo_small = Fabricate(:image_upload)
+      visit("/latest")
+      expect(page).to have_css("#site-logo.logo-mobile[src*='#{SiteSetting.logo_small.url}']")
+    end
+
+    it "keeps a mobile logo the admin uploaded", mobile: true do
+      SiteSetting.logo_small = Fabricate(:image_upload)
+      SiteSetting.mobile_logo = Fabricate(:image_upload)
+      visit("/latest")
+      expect(page).to have_css("#site-logo.logo-mobile[src*='#{SiteSetting.mobile_logo.url}']")
+    end
+
     it "styles core's category boxes" do
       SiteSetting.desktop_category_page_style = "categories_boxes"
       visit("/categories")
