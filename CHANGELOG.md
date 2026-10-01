@@ -2,6 +2,12 @@
 
 What changed for forums running Jtech Tools. Newest first.
 
+## Unreleased
+
+**New**
+
+- JTech theme: the forum's own theme now ships with the plugin and is installed and kept up to date on every rebuild. It is never made the default; turn it on under Customize → Themes. Switch: `jtech_theme_install`. See [docs/features/jtech-theme.md](docs/features/jtech-theme.md).
+
 ## 0.5.0 — September 2026
 
 A pass over every module to fix bugs, close permission holes and hand work back to core where core already does it.

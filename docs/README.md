@@ -14,6 +14,7 @@
 | [Desktop pop-ups](features/popups.md) | Notification cards in the corner of the screen |
 | [Another SMTP](features/another-smtp.md) | Send forum mail through a different server |
 | [Translator tweaks](features/translator-tweaks.md) | A proxy for the Translator plugin's Google requests |
+| [JTech theme](features/jtech-theme.md) | The forum's own theme, installed with the plugin |
 
 ## Working on the plugin
 
@@ -21,4 +22,5 @@
 - [Setting up, testing and CI](development/testing.md)
 - [How Dumbcourse is built](development/dumbcourse.md)
 - [How smart search works](development/smart-search.md)
+- [How the JTech theme is built](development/jtech-theme.md)
 - [Contributing](../CONTRIBUTING.md) and the [repository rules](../AGENTS.md)

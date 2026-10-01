@@ -29,6 +29,7 @@ We built these tools for our own forum as the need came up. Some help moderators
 - **[Dumbcourse](docs/features/dumbcourse.md).** The whole forum at `/dumb`, built for flip phones and old browsers, driven by the D-pad and keypad.
 - **[Smart search](docs/features/smart-search.md).** When a search finds too little, it tries again with synonyms, so "k8s" finds "kubernetes".
 - **[Desktop pop-ups](docs/features/popups.md).** A small card in the corner when a notification arrives.
+- **[JTech theme](docs/features/jtech-theme.md).** The forum's own look: black and white, hairlines, rounded corners and Geist, with topic cards, a ⌘K menu and a redesigned header, sidebar and profiles. Installed with the plugin; you choose when to use it.
 
 **Behind the scenes**
 
