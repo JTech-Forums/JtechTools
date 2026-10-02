@@ -244,7 +244,7 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
       font-family: var(--jt-font-sans);
       font-size: var(--jt-text-2xs);
       line-height: 1;
-      color: var(--jt-text-subtle);
+      color: var(--jt-text-muted); // subtle grey on the sunken chip is 4.3:1
       background: var(--jt-surface-sunken);
       border: 1px solid var(--jt-border);
       border-radius: 5px;

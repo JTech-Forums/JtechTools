@@ -59,7 +59,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 |---|---|
 | `about.json` | palettes **JTech Light** / **JTech Dark** / **JTech Dim** (incl. full gray ramps; `common/color_definitions.scss` derives the theme's surfaces and greys from them), `only_theme_color_schemes`, theme site settings |
 | `api-initializers/jt-palette-picker.ts` | interface preferences: the dark-palette picker names the theme's default ("JTech Dark") instead of core's "-1" when the theme limits palettes to its own |
-| `common/color_definitions.scss` | per-mode tokens (`--jt-*`): borders, surfaces, text, shadows |
+| `common/color_definitions.scss` | per-mode tokens (`--jt-*`): borders, surfaces, text, shadows; core's `--primary-med-or-secondary-high` and `--header_primary-high` pointed at greys that reach 4.5:1 (JTech Light's `primary-medium` is `#737373`, the lightest grey that does on white and on the sunken surface). After editing this file, clear core's stylesheet cache on a local forum (`Stylesheet::Manager.clear_theme_cache!`): a quick sync doesn't rebuild the palette stylesheets |
 | `stylesheets/jt-tokens.scss` | maps tokens onto core's `--d-*` / `--token-*` hooks |
 | `stylesheets/jt-notifications.scss` | notifications page (/my/notifications): filters as a toolbar, the list a divided card; the bell's panel: tabs, rows, bottom bar; on both, unread rows tinted with a bold name and the type badge black / white instead of the accent |
 | `stylesheets/jt-*.scss` | header, logo, topic list, posts, panels, component restyles, monochrome switches |

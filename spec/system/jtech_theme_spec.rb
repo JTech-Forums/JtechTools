@@ -1052,6 +1052,59 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's secondary text (timeline dates, "1 Reply", "view 1 hidden reply",
+  # the topic's category in the header) used greys that read at 2.5:1 to
+  # 3.4:1. Every grey core and the theme put text in reaches WCAG AA, on the
+  # page and on the sunken surface, in light and dark.
+  it "keeps secondary text at 4.5:1 or better in light and dark" do
+    contrast = <<~JS
+      (() => {
+        const rgb = (c) => c.match(/[\d.]+/g).slice(0, 3).map(Number);
+        const lum = ([r, g, b]) => {
+          const f = (v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+          return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+        };
+        const probe = document.createElement("div");
+        document.body.appendChild(probe);
+        const resolve = (prop, value) => {
+          probe.style[prop] = value;
+          return rgb(getComputedStyle(probe)[prop]);
+        };
+        const surfaces = ["var(--secondary)", "var(--jt-surface-sunken)"].map((v) =>
+          resolve("backgroundColor", v)
+        );
+        const worst = {};
+        for (const grey of [
+          "--primary-medium",
+          "--primary-med-or-secondary-high",
+          "--header_primary-high",
+          "--jt-text-subtle",
+        ]) {
+          const fg = lum(resolve("color", `var(${grey})`));
+          worst[grey] = Math.min(
+            ...surfaces.map((bg) => {
+              const b = lum(bg);
+              return (Math.max(fg, b) + 0.05) / (Math.min(fg, b) + 0.05);
+            })
+          );
+        }
+        probe.remove();
+        return Object.fromEntries(Object.entries(worst).filter(([, ratio]) => ratio < 4.5));
+      })()
+    JS
+
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-card")
+    expect(page.evaluate_script(contrast)).to eq({})
+
+    page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
+    visit("/latest")
+    expect(page).to have_css(".jt-card")
+    expect(page.evaluate_script(contrast)).to eq({})
+    expect_no_theme_errors
+  end
+
   it "lets people pick JTech Dim instead of OLED black" do
     page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
     sign_in(member)
