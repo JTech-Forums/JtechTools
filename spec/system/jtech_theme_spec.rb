@@ -489,6 +489,25 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's preferences: bold labels over small pills in a loose stack. The
+  # theme: each group a card, the controls 2.4rem, Save on a ruled bar.
+  it "shows each preferences group as a card with the theme's controls" do
+    sign_in(member)
+    visit("/u/#{member.username}/preferences/emails")
+    expect(page).to have_css(".user-preferences .control-group .select-kit-header")
+    card_border, control_height, save_height = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".user-preferences .form-vertical > .control-group")).borderTopWidth,
+        Math.round(document.querySelector(".user-preferences .control-group .select-kit-header").getBoundingClientRect().height),
+        Math.round(document.querySelector(".user-preferences .save-button .btn").getBoundingClientRect().height),
+      ]
+    JS
+    expect(card_border).to eq("1px")
+    expect(control_height).to eq(38) # 2.4rem
+    expect(save_height).to eq(38)
+    expect_no_theme_errors
+  end
+
   it "keeps a user title's pill to the size of its text on phones", mobile: true do
     admin.update!(title: "Forum Administrator")
     visit(topic.relative_url)
