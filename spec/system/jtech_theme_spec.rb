@@ -1055,6 +1055,32 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # "Back" floats above the phone's progress capsule; matched with the
+  # capsule's own buttons it lost its fill and showed as bare grey text over
+  # the post below. Core only shows it after some jumps, so the spec adds the
+  # same markup core renders and checks its look.
+  it "draws the phone's Back button as a pill of its own", mobile: true do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css("#topic-progress-wrapper")
+    back = page.evaluate_script(<<~JS)
+      (() => {
+        const container = document.createElement("div");
+        container.className = "progress-back-container";
+        container.innerHTML = '<button class="btn btn-icon-text btn-primary btn-small progress-back" type="button"><span class="d-button-label">Back</span></button>';
+        document.querySelector("#topic-progress-wrapper").appendChild(container);
+        const style = getComputedStyle(container.querySelector(".btn"));
+        const look = { fill: style.backgroundColor, height: parseFloat(style.height), border: style.borderTopWidth };
+        container.remove();
+        return look;
+      })()
+    JS
+    expect(back["fill"]).not_to eq("rgba(0, 0, 0, 0)")
+    expect(back["height"]).to be >= 30
+    expect(back["border"]).to eq("1px")
+    expect_no_theme_errors
+  end
+
   it "sends links that aren't forum pages to the browser" do
     visit("/latest")
     expect(page).to have_css(".jt-header-home a[href='/home'][data-auto-route='true']")

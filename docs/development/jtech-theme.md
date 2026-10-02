@@ -82,7 +82,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `components/jt-footer.gts` (outlet `below-footer`) | footer columns from `footer_links` (`jt-footer.scss`) |
 | `stylesheets/jt-login.scss` | log in / sign up pages (/login, /signup): the form and the other ways in on one card, fields as the theme's controls with core's floating labels placed for them, the footer off these pages |
 | `components/jt-reading-progress.gts` (outlet `topic-above-post-stream`) | reading progress hairline (core `topic:current-post-scrolled`) |
-| `stylesheets/jt-topic-progress.scss` | the topic progress widget (phones, narrow desktop windows): the jump arrows, admin wrench and "1 / 4" counter as one glass capsule, the counter's fill a quiet tint, tabular numbers in the text colour |
+| `stylesheets/jt-topic-progress.scss` | the topic progress widget (phones, narrow desktop windows): the jump arrows, admin wrench and "1 / 4" counter as one glass capsule, the counter's fill a quiet tint, tabular numbers in the text colour; "Back" (core's `.progress-back`, which floats above the capsule) a glass pill of its own |
 | `components/jt-command-menu.gts` + `api-initializers/jt-command-menu.ts` | ⌘K / Ctrl+K command menu (`jt-cmdk.scss`); opened from the header's search field too |
 | `lib/jt-shortcuts.ts` + `api-initializers/jt-shortcuts.ts` | the command menu's keyboard shortcuts: core's, and the theme's own `g` keys (bound outside text fields, labelled in core's `?` help by copying the menu's strings under `keyboard_shortcuts_help.jtech`; core collapses a repeated key, so each sequence is two chips, which `jt-cmdk.scss` joins into one) |
 | `stylesheets/jt-sidebar.scss` | sidebar: tokens, rows, headers, scroll fades, footer |

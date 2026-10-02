@@ -22,8 +22,7 @@
   }
 
   .jt-jump.--progress .btn,
-  .toggle-admin-menu,
-  .btn.progress-back {
+  .toggle-admin-menu {
     width: 2.25rem;
     min-width: 0;
     height: auto;
@@ -71,6 +70,39 @@
     .bg {
       background: var(--jt-active);
       border: 0;
+    }
+  }
+}
+
+// "Back" (to where you were before a jump) floats above the capsule, not in
+// it. Matched with the capsule's square buttons it lost its fill and showed
+// as bare grey text over the last line of a post. It's a small glass pill of
+// its own now, with its arrow and its word. (Under the wrapper's id, as core's
+// own button reset for it is.)
+#topic-progress-wrapper .progress-back-container {
+  margin-bottom: var(--space-2);
+
+  .btn.progress-back {
+    gap: 0.35rem;
+    height: 2rem;
+    padding: 0 0.75rem;
+    font-size: var(--jt-text-sm);
+    font-weight: 500;
+    color: var(--jt-text);
+    background: var(--jt-glass);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-pill);
+    box-shadow: var(--jt-shadow-menu);
+    backdrop-filter: blur(12px);
+
+    .d-icon {
+      color: var(--jt-text-muted);
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: var(--jt-surface-raised);
+      border-color: var(--jt-border-strong);
     }
   }
 }
