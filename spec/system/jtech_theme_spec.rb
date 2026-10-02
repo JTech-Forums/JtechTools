@@ -407,9 +407,11 @@ RSpec.describe "JTech theme" do
     pm = Fabricate(:private_message_topic, user: admin, recipient: member)
     Fabricate(:post, topic: pm, user: admin, raw: "A note for the inbox layout.")
     sign_in(member)
+    visit("/latest") # the theme compiles on the first request; don't time that
+    expect(page).to have_css(".jt-card")
 
     visit("/u/#{member.username}/activity/bookmarks")
-    expect(page).to have_css(".bookmark-list .bookmark-list-item", text: "Read again")
+    expect(page).to have_css(".bookmark-list .bookmark-list-item", text: "Read again", wait: 15)
     bookmarks_border = page.evaluate_script(<<~JS)
       getComputedStyle(document.querySelector(".topic-list.bookmark-list")).borderTopWidth
     JS
