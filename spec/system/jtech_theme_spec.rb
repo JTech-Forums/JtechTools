@@ -841,6 +841,9 @@ RSpec.describe "JTech theme" do
   # On sidebar pages core placed the composer at the sidebar plus its gap,
   # without the page's gutter, so it started left of everything above it.
   it "starts the composer at the content's left edge on sidebar pages" do
+    # the rich editor has no preview, so the composer takes core's previewless
+    # layout (tests otherwise start in Markdown with the preview open)
+    member.user_option.update!(composition_mode: UserOption.composition_mode_types[:rich])
     sign_in(member)
     visit(topic.relative_url)
     expect(page).to have_css("body.has-sidebar-page")
