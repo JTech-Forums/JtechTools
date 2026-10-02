@@ -14,6 +14,8 @@ What it adds on top of a restyle:
 
 Each of those has its own switch in the theme's settings.
 
+The command menu shows each command's keyboard shortcut beside it: Discourse's own (`g l` Latest, `g n` New, …), plus `g g` Tags, `g i` Notifications, `g e` Preferences, `g a` Admin and `g o` light / dark, which the theme adds and lists in the `?` help. They work anywhere outside a text field; in the open menu, typing searches.
+
 ## Installing it
 
 Installing or updating the plugin (a rebuild) installs the theme and keeps it up to date. It runs with the database migrations, the way Discourse installs its own themes.

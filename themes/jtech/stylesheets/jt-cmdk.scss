@@ -195,6 +195,13 @@ html.keyboard-visible.mobile-view .d-modal.jt-cmdk .d-modal__container {
     color: var(--jt-text-subtle);
   }
 
+  // A command's keyboard shortcut (lib/jt-shortcuts)
+  &__keys {
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 3px;
+  }
+
   &__enter {
     flex-shrink: 0;
     font-size: var(--jt-text-xs);

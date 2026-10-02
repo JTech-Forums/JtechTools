@@ -174,6 +174,35 @@ RSpec.describe "JTech theme" do
     expect(page).to have_no_css(".jt-cmdk")
   end
 
+  it "shows each command's keyboard shortcut, and binds the theme's own" do
+    SiteSetting.chat_enabled = false
+    sign_in(member)
+    visit("/latest")
+    send_keys([:control, "k"])
+    expect(page).to have_css(".jt-cmdk__item", text: "Latest")
+    keys = page.evaluate_script(<<~JS)
+      Object.fromEntries(
+        [...document.querySelectorAll(".jt-cmdk__item")].map((row) => [
+          row.querySelector(".jt-cmdk__label").textContent.trim(),
+          [...row.querySelectorAll(".jt-cmdk__keys kbd")].map((k) => k.textContent).join(" "),
+        ])
+      )
+    JS
+    expect(keys).to include(
+      "Latest" => "g l",
+      "Notifications" => "g i",
+      "Preferences" => "g e",
+      "Keyboard shortcuts" => "?",
+    )
+    shot("cmdk-shortcuts")
+
+    send_keys(:escape)
+    expect(page).to have_no_css(".jt-cmdk")
+    send_keys("g", "i")
+    expect(page).to have_current_path("/u/#{member.username}/notifications")
+    expect_no_theme_errors
+  end
+
   it "leaves Ctrl+K to chat for people who can chat" do
     SiteSetting.chat_enabled = true
     SiteSetting.chat_allowed_groups = Group::AUTO_GROUPS[:everyone]

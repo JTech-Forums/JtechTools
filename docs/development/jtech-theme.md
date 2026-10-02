@@ -71,6 +71,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `components/jt-footer.gts` (outlet `below-footer`) | footer columns from `footer_links` (`jt-footer.scss`) |
 | `components/jt-reading-progress.gts` (outlet `topic-above-post-stream`) | reading progress hairline (core `topic:current-post-scrolled`) |
 | `components/jt-command-menu.gts` + `api-initializers/jt-command-menu.ts` | ⌘K / Ctrl+K command menu (`jt-cmdk.scss`); opened from the header's search field too |
+| `lib/jt-shortcuts.ts` + `api-initializers/jt-shortcuts.ts` | the command menu's keyboard shortcuts: core's, and the theme's own `g` keys (bound outside text fields, labelled in core's `?` help by copying the menu's strings under `keyboard_shortcuts_help.jtech`) |
 | `stylesheets/jt-sidebar.scss` | sidebar: tokens, rows, headers, scroll fades, footer |
 | `api-initializers/jt-header-actions.gts` + `components/jt-header-search.gts`, `jt-header-icon.gts`, `jt-header-new-topic.gts` | header: search field (opens ⌘K) centred on the bar on wide screens with a mouse (outlet `before-header-panel`), otherwise in the icon row · home · messages · notifications · light/dark · new topic · avatar |
 | `api-initializers/jt-avatar-menu.ts` + `lib/jt-user-menu.ts` | the avatar opens core's user menu on the profile tab (review queue while its badge shows), so it doesn't repeat the bell; `pickUserMenuTab` is shared with the bell and envelope |
