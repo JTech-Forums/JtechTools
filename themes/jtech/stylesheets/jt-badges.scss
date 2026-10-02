@@ -1,0 +1,270 @@
+@use "lib/viewport";
+
+// Badges (/badges) and a badge's page (/badges/<id>/<slug>). Core's index is
+// a grid of boxes with a faint border under grey group headings, every box
+// as tall as the longest description in its row; a badge's page lists who
+// earned it as bare avatar + name pairs. Here the page has a display title,
+// each group a small label, each badge one of the theme's cards with its
+// description kept to three lines, and the people who earned it are cards
+// too. Gold / silver / bronze icons keep their tier colours: they mean
+// something.
+.container.badges,
+.container.show-badge {
+  > h1 {
+    margin: 1.6rem 0 var(--space-5);
+    font-size: var(--jt-text-3xl);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: var(--jt-tracking-display);
+    color: var(--jt-text);
+
+    // "Badges / <name>": the way back is quieter than where you are
+    a {
+      font-weight: 500;
+      color: var(--jt-text-muted);
+      transition: color var(--jt-motion);
+
+      &:hover {
+        color: var(--jt-text);
+      }
+    }
+  }
+
+  @include viewport.until(sm) {
+    > h1 {
+      margin-top: var(--space-4);
+      font-size: var(--jt-text-2xl);
+    }
+  }
+}
+
+.badge-groups {
+  margin: 0;
+  color: var(--jt-text);
+
+  .badge-grouping .title h2 {
+    margin: 0 0 var(--space-3);
+    font-size: var(--jt-text-xs);
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--jt-text-subtle);
+  }
+}
+
+.badge-group-list {
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.badge-card {
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-lg);
+  box-shadow: none;
+  transition:
+    background-color var(--jt-motion),
+    border-color var(--jt-motion);
+
+  &:has(.badge-link):hover {
+    background: var(--jt-hover);
+    border-color: var(--jt-border-strong);
+  }
+
+  .badge-contents {
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+
+    .badge-icon {
+      --badge-icon-size: 2.75rem;
+    }
+
+    .badge-info h3 {
+      margin: 0;
+      font-size: var(--jt-text-body);
+      font-weight: 600;
+      line-height: 1.3;
+      letter-spacing: var(--jt-tracking-ui);
+    }
+
+    .badge-link {
+      color: var(--jt-text);
+    }
+
+    .badge-summary {
+      display: -webkit-box;
+      overflow: hidden;
+      margin-top: var(--space-1);
+      font-size: var(--jt-text-md);
+      line-height: 1.5;
+      color: var(--jt-text-muted);
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+
+      &:empty {
+        display: none;
+      }
+    }
+  }
+
+  .badge-granted {
+    margin-top: var(--space-2);
+    font-size: var(--jt-text-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--jt-text-subtle);
+
+    .number {
+      font-weight: 500;
+      color: var(--jt-text-muted);
+    }
+  }
+
+  .grant-count,
+  .grant-text {
+    color: var(--jt-text-subtle);
+  }
+
+  .favorite-btn {
+    border-radius: var(--jt-radius-md) 0 var(--jt-radius-lg) 0;
+  }
+
+  // The badge's own page: its card bigger, its description whole
+  &.--badge-large {
+    .badge-contents {
+      gap: var(--space-5);
+      padding: var(--space-5) var(--space-6);
+
+      .badge-icon {
+        --badge-icon-size: 4rem;
+      }
+
+      h3 {
+        font-size: var(--jt-text-xl);
+        font-weight: 700;
+        letter-spacing: var(--jt-tracking-heading);
+      }
+
+      .badge-summary {
+        display: block;
+        font-size: var(--jt-text-body);
+        line-height: 1.55;
+        -webkit-line-clamp: none;
+      }
+    }
+  }
+}
+
+// ── A badge's page ────────────────────────────────────────
+.show-badge {
+  .show-badge-details {
+    gap: var(--space-4);
+    margin: 0 0 var(--space-6);
+
+    .badge-set-title {
+      padding: var(--space-5);
+      background: var(--jt-surface-raised);
+      border: 1px solid var(--jt-border);
+      border-radius: var(--jt-radius-lg);
+    }
+
+    .grant-info-item {
+      font-size: var(--jt-text-md);
+      color: var(--jt-text-muted);
+    }
+  }
+
+  // Who earned it: a grid of cards
+  .badges-granted {
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: var(--space-2);
+
+    .user-info.medium.badge-info {
+      display: flex;
+      gap: var(--space-3);
+      align-items: center;
+      min-width: 0;
+      margin: 0;
+      padding: var(--space-3) var(--space-4);
+      background: var(--jt-surface-raised);
+      border: 1px solid var(--jt-border);
+      border-radius: var(--jt-radius-lg);
+      transition:
+        background-color var(--jt-motion),
+        border-color var(--jt-motion);
+
+      &:hover {
+        background: var(--jt-hover);
+        border-color: var(--jt-border-strong);
+      }
+
+      .user-image,
+      .user-image-inner {
+        width: 2.5rem;
+        height: 2.5rem;
+
+        img.avatar {
+          width: 2.5rem;
+          height: 2.5rem;
+        }
+      }
+
+      .user-detail {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        min-width: 0;
+      }
+
+      .name-line {
+        font-size: var(--jt-text-md);
+        font-weight: 600;
+        line-height: 1.3;
+
+        a,
+        .username {
+          color: var(--jt-text);
+        }
+
+        .name {
+          font-weight: 400;
+          color: var(--jt-text-muted);
+        }
+      }
+
+      .title {
+        font-size: var(--jt-text-xs);
+        line-height: 1.3;
+        color: var(--jt-text-subtle);
+
+        &:empty {
+          display: none;
+        }
+      }
+
+      .details {
+        font-size: var(--jt-text-xs);
+        line-height: 1.4;
+        color: var(--jt-text-subtle);
+      }
+
+      .post-link {
+        display: block;
+        overflow: hidden;
+        font-size: var(--jt-text-sm);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--jt-text-muted);
+
+        &:hover {
+          color: var(--jt-text);
+        }
+      }
+    }
+  }
+
+  .single-user {
+    margin-left: 0;
+  }
+}
