@@ -156,6 +156,12 @@ export default class JtCommandMenu extends Component<JtCommandMenuSignature> {
     cancel(this.#searchTimer);
   }
 
+  // The full hint ("…or type a command") is cut off on a phone's width; touch
+  // screens get the sidebar's short label instead
+  get placeholder(): string {
+    return t(this.capabilities.hasKeyboard ? "placeholder" : "sidebar_label");
+  }
+
   get commands(): MenuEntry[] {
     const user = this.currentUser;
     const list: (Command | false | null | undefined)[] = [
@@ -514,10 +520,10 @@ export default class JtCommandMenu extends Component<JtCommandMenuSignature> {
           aria-activedescendant={{this.activeId}}
           aria-controls="jt-cmdk-list"
           aria-expanded="true"
-          aria-label={{t "placeholder"}}
+          aria-label={{this.placeholder}}
           autocomplete="off"
           class="jt-cmdk__input"
-          placeholder={{t "placeholder"}}
+          placeholder={{this.placeholder}}
           role="combobox"
           spellcheck="false"
           type="text"
