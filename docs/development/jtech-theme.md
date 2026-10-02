@@ -69,6 +69,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `components/jt-quick-look.gts` | Quick look dialog from topic cards (first post via `/posts/by_number`, decorated) |
 | `components/jt-context-banner.gts` (outlet `discovery-list-controls-above`) | category / tag banner (`jt-banner.scss`) |
 | `components/jt-footer.gts` (outlet `below-footer`) | footer columns from `footer_links` (`jt-footer.scss`) |
+| `stylesheets/jt-login.scss` | log in / sign up pages (/login, /signup): the form and the other ways in on one card, fields as the theme's controls with core's floating labels placed for them, the footer off these pages |
 | `components/jt-reading-progress.gts` (outlet `topic-above-post-stream`) | reading progress hairline (core `topic:current-post-scrolled`) |
 | `components/jt-command-menu.gts` + `api-initializers/jt-command-menu.ts` | ⌘K / Ctrl+K command menu (`jt-cmdk.scss`); opened from the header's search field too |
 | `lib/jt-shortcuts.ts` + `api-initializers/jt-shortcuts.ts` | the command menu's keyboard shortcuts: core's, and the theme's own `g` keys (bound outside text fields, labelled in core's `?` help by copying the menu's strings under `keyboard_shortcuts_help.jtech`) |
