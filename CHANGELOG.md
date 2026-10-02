@@ -21,6 +21,7 @@ What changed for forums running Jtech Tools. Newest first.
 - JTech theme: the ⌘K menu shows each command's keyboard shortcut. Most are Discourse's own (g l for Latest, g n for New, …); the theme adds g g for Tags, g i for Notifications, g e for Preferences, g a for Admin and g o for light / dark, which work anywhere outside a text field and are listed in the ? help.
 - JTech theme: on wide screens the header's search field sits in the middle of the bar. On narrower screens, touch screens and while a topic's title is in the header it stays in the icon row.
 - JTech theme: Discourse's icons are drawn with Lucide's thin outline set (as ChatGPT and Gemini use) instead of Font Awesome: the header, sidebar, post menu, composer, notifications and category icons. Liked and bookmarked keep a filled shape. Brand logos and icons without a Lucide match stay Font Awesome. Setting: `lucide_icons`.
+- JTech theme: the tags page redesigned. Each tag is a chip (# name, with its count in a small pill instead of "x 190"), lists wrap to fill the page rather than three floated columns, "Sort by" is a pair of pills, and the admin's create field and menu sit beside the title. Same on phones.
 - JTech theme: a login gate for chosen categories and tags replaces the Gated Topics in Category component. Logged-out visitors see the topic's first lines fade into a card to log in or create an account, with a link to the open categories. Settings: `gated_categories`, `gated_tags`.
 
 ## 0.5.0 — September 2026
