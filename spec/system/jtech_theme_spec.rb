@@ -425,6 +425,66 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  # Core's [details] is a grey bar with ► / ▼, a quote a grey title bar over a
+  # barred blockquote, a onebox a 1px + 4px ring. The theme: one hairline card
+  # for each, the section's chevron turning when it opens.
+  it "draws collapsible sections, quotes and link previews as hairline cards" do
+    post =
+      Fabricate(
+        :post,
+        topic: topic,
+        user: admin,
+        raw:
+          "[quote=\"#{member.username}, post:1, topic:#{topic.id}\"]\nI'm setting up a flip phone.\n[/quote]",
+      )
+    # written out rather than cooked, so the spec doesn't lean on the details
+    # plugin or a onebox fetch
+    post.update_column(:cooked, post.cooked + <<~HTML)
+      <details><summary>Steps</summary><p>Turn it off and on.</p></details>
+      <aside class="onebox allowlistedgeneric" data-onebox-src="https://example.com/">
+        <header class="source"><a href="https://example.com/">example.com</a></header>
+        <article class="onebox-body"><h3><a href="https://example.com/">Example</a></h3></article>
+      </aside>
+    HTML
+    sign_in(member)
+    visit("#{topic.relative_url}/#{post.post_number}")
+    selector = "#post_#{post.post_number} .cooked"
+    expect(page).to have_css("#{selector} details summary")
+    expect(page).to have_css("#{selector} aside.onebox")
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const post = document.querySelector("#{selector}");
+        const details = post.querySelector("details");
+        const quote = post.querySelector("aside.quote blockquote");
+        const onebox = post.querySelector("aside.onebox");
+        return {
+          marker: getComputedStyle(details.querySelector("summary"), "::before").content,
+          details: getComputedStyle(details).borderTopWidth,
+          quoteBar: getComputedStyle(quote).borderLeftWidth,
+          ring: getComputedStyle(onebox).boxShadow,
+          onebox: getComputedStyle(onebox).borderTopWidth,
+        };
+      })()
+    JS
+    expect(looks).to eq(
+      "marker" => '""',
+      "details" => "1px",
+      "quoteBar" => "0px",
+      "ring" => "none",
+      "onebox" => "1px",
+    )
+
+    find("#{selector} details summary").click
+    expect(page).to have_css("#{selector} details[open]")
+    turned =
+      page.evaluate_script(
+        "getComputedStyle(document.querySelector('#{selector} details summary'), '::before').transform",
+      )
+    expect(turned).not_to eq("none")
+    shot("post-blocks")
+    expect_no_theme_errors
+  end
+
   it "leaves a gap between New's All / Topics / Replies and the first card" do
     sign_in(member)
     visit("/new")

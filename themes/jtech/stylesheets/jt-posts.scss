@@ -86,18 +86,6 @@
   }
 }
 
-aside.quote,
-aside.onebox {
-  border: 1px solid var(--jt-border);
-  border-radius: var(--jt-radius-md);
-  overflow: hidden;
-}
-
-aside.quote .title {
-  background: var(--jt-surface-sunken);
-  border-left: none;
-}
-
 .topic-map,
 .topic-map__stats {
   border-color: var(--jt-border);
