@@ -307,6 +307,29 @@ RSpec.describe "JTech theme" do
 
   # Core's text-only empty states are a heading and a paragraph at the top
   # left of a blank page; the theme puts them on a centred card with a glyph.
+  # Core's error page was ":(" in huge type over the reason; the theme draws
+  # it as the empty states' card with a glyph chip. Reached the way core's own
+  # spec does: a hidden profile, visited logged out.
+  it "shows the error page on the empty states' card" do
+    SiteSetting.hide_user_profiles_from_public = true
+    visit("/u/#{member.username}")
+    expect(page).to have_css(".error-page .reason")
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const card = getComputedStyle(document.querySelector(".error-page"));
+        const face = document.querySelector(".error-page .face");
+        return {
+          card: card.borderTopWidth,
+          face: getComputedStyle(face).fontSize,
+          glyph: getComputedStyle(face, "::after").content,
+        };
+      })()
+    JS
+    expect(looks).to eq("card" => "1px", "face" => "0px", "glyph" => '""')
+    shot("error-page")
+    expect_no_theme_errors
+  end
+
   it "shows an empty page's message on a centred card" do
     sign_in(member)
     visit("/u/#{member.username}/activity/bookmarks")

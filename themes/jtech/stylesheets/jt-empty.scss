@@ -185,3 +185,98 @@ $jt-empty-inbox: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' v
     }
   }
 }
+
+// Core's error page (access denied, a server error, offline): ":(" in huge
+// type over the reason, the address in italics, two primary buttons. Here it
+// is the empty states' card: a glyph chip, the reason as the title, the
+// address small and quiet, the explanation, and Go Back as the quieter of
+// the two buttons.
+$jt-error-glyph: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v4M12 16h.01'/%3E%3C/svg%3E";
+
+.error-page {
+  box-sizing: border-box;
+  max-width: 34rem;
+  margin: var(--space-6) auto;
+  padding: var(--space-6) var(--space-5);
+  text-align: center;
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-xl);
+
+  .face {
+    position: relative;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin: 0 auto var(--space-4);
+    font-size: 0;
+    color: transparent;
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-lg);
+    box-shadow: 0 1px 0 var(--jt-glow) inset;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--jt-text);
+      mask: url($jt-error-glyph) center / 1.5rem no-repeat;
+    }
+  }
+
+  .reason {
+    margin: 0 0 var(--space-2);
+    font-size: var(--jt-text-lg);
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: var(--jt-tracking-heading);
+    color: var(--jt-text);
+  }
+
+  .url {
+    font-size: var(--jt-text-xs);
+    font-style: normal;
+    color: var(--jt-text-subtle);
+    overflow-wrap: anywhere;
+
+    a {
+      font-family: var(--jt-font-mono);
+      color: inherit;
+    }
+  }
+
+  .desc {
+    margin-top: var(--space-3);
+    font-size: var(--jt-text-md);
+    line-height: 1.55;
+    color: var(--jt-text-muted);
+  }
+
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+
+    button {
+      margin: 0;
+    }
+
+    > .btn:first-child:not(:last-child) {
+      color: var(--d-button-default-text-color);
+      background: var(--d-button-default-bg-color);
+      border-color: var(--d-button-default-border-color, var(--jt-border));
+
+      &:hover {
+        color: var(--d-button-default-text-color--hover);
+        background: var(--d-button-default-bg-color--hover);
+      }
+    }
+  }
+
+  @include viewport.until(sm) {
+    margin: var(--space-4) 0;
+    padding-inline: var(--space-4);
+  }
+}
