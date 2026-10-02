@@ -480,12 +480,15 @@ RSpec.describe "JTech theme" do
   # with a triangle and a blockquote as a grey box; in the post both are the
   # theme's (jt-post-blocks). Now the editor shows them as the post will.
   it "draws sections and blockquotes in the rich editor as they'll look in the post" do
+    # tests start in Markdown; core's rich editor specs set the mode the same way
+    member.user_option.update!(composition_mode: UserOption.composition_mode_types[:rich])
     sign_in(member)
     visit(topic.relative_url)
     find(".topic-footer-main-buttons .create").click
     composer = PageObjects::Components::Composer.new
     expect(composer).to be_opened
-    composer.toggle_rich_editor if page.has_css?("#reply-control .ProseMirror", wait: 2)
+    expect(page).to have_css("#reply-control .ProseMirror")
+    composer.toggle_rich_editor
     composer.fill_content("[details=\"Steps\"]\nHold power.\n[/details]\n\n> A plain blockquote")
     composer.toggle_rich_editor
     expect(page).to have_css("#reply-control .ProseMirror details summary")
