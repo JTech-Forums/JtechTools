@@ -1,3 +1,5 @@
+@use "lib/viewport";
+
 // The glass sits on a pseudo-element. backdrop-filter on .d-header itself
 // would make the header the containing block for everything fixed inside it:
 // the phone menu's backdrop (.header-cloak) would only dim the header strip,
@@ -8,6 +10,14 @@
   background-color: transparent;
   box-shadow: none;
   border-bottom: 1px solid var(--jt-border);
+
+  // Core's modernised header is 3.25em (52px); people found that cramped.
+  // 40px controls with room above and below.
+  height: 3.5rem;
+
+  @include viewport.from(sm) {
+    height: 3.75rem;
+  }
 
   &::before {
     content: "";
@@ -65,7 +75,7 @@
 }
 
 // ── Right side: search field · new topic · avatar ─────────
-// One height (2.2rem) and one gap for everything. While the search field
+// One height (2.5rem, 40px) and one gap for everything. While the search field
 // shows, core's magnifier stays in the DOM, hidden, so its "/" shortcut still
 // has an anchor; core's colour selector gives way to the theme's switch.
 html.jt-has-header-search .d-header-icons .search-dropdown,
@@ -92,8 +102,8 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
     display: grid;
     place-items: center;
     box-sizing: border-box;
-    width: 2.2rem;
-    height: 2.2rem;
+    width: 2.5rem;
+    height: 2.5rem;
     padding: 0;
     border-radius: var(--jt-radius-control);
 
@@ -111,7 +121,7 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
       width: 1em;
       height: 1em;
       margin: 0;
-      font-size: 1rem;
+      font-size: 1.125rem;
       line-height: 1;
       color: currentcolor;
     }
@@ -124,8 +134,8 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
   }
 
   #toggle-current-user img.avatar {
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2rem;
+    height: 2rem;
   }
 }
 
@@ -137,7 +147,7 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
   .d-icon {
   width: 1em;
   height: 1em;
-  font-size: var(--jt-search-glyph, 0.9rem);
+  font-size: var(--jt-search-glyph, 1rem);
   line-height: 1;
 }
 
@@ -173,9 +183,9 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
 // narrow screens and touch, and below 64rem while a topic's title is in the
 // header (it needs the room).
 @mixin jt-search-icon-only {
-  --jt-search-glyph: 1rem;
+  --jt-search-glyph: 1.125rem;
   justify-content: center;
-  width: 2.2rem;
+  width: 2.5rem;
   padding: 0;
   color: var(--jt-text-muted);
   background: transparent;
@@ -200,8 +210,8 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
   gap: 0.55rem;
   box-sizing: border-box;
   width: 15rem;
-  height: 2.2rem;
-  padding: 0 0.35rem 0 0.7rem;
+  height: 2.5rem;
+  padding: 0 0.4rem 0 0.75rem;
   font-size: var(--jt-text-md);
   color: var(--jt-text-subtle);
   text-align: left;
@@ -228,8 +238,8 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
     kbd {
       display: inline-grid;
       place-items: center;
-      min-width: 1.3rem;
-      height: 1.3rem;
+      min-width: 1.4rem;
+      height: 1.4rem;
       padding: 0 0.25rem;
       font-family: var(--jt-font-sans);
       font-size: var(--jt-text-2xs);

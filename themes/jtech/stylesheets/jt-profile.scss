@@ -205,8 +205,8 @@
     font-size: var(--jt-text-md);
   }
 
-  // The notification-level dropdown: core sizes it in em at 15px (taller,
-  // wider) against 14px buttons
+  // The notification-level dropdown: core sizes it in em at the root size
+  // (taller, wider) against the smaller buttons
   .controls .select-kit.user-notifications-dropdown {
     font-size: var(--jt-text-md);
 

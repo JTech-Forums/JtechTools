@@ -363,6 +363,32 @@ RSpec.describe "JTech theme" do
     expect(page).to have_css(".jt-footer a[href='/latest']:not([data-auto-route])")
   end
 
+  it "gives the header and sidebar room: core's 16px text, 40px header controls, 36px rows" do
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".sidebar-section-link")
+    root, header, control, glyph, row, label = page.evaluate_script(<<~JS)
+      (() => {
+        const size = (s) => document.querySelector(s).getBoundingClientRect();
+        return [
+          parseFloat(getComputedStyle(document.documentElement).fontSize),
+          size(".d-header").height,
+          size(".d-header-icons .jt-header-notifications > .icon").height,
+          size(".d-header-icons .jt-header-notifications .d-icon").width,
+          size(".sidebar-section-link").height,
+          parseFloat(getComputedStyle(document.querySelector(".sidebar-section-link")).fontSize),
+        ].map(Math.round);
+      })()
+    JS
+    expect(root).to eq(16)
+    expect(header).to be >= 60
+    expect(control).to eq(40)
+    expect(glyph).to eq(18)
+    expect(row).to eq(36)
+    expect(label).to eq(16)
+    expect_no_theme_errors
+  end
+
   describe "header icons" do
     # Every visible icon in the header row, the theme's and core's and chat's:
     # one glyph size, one vertical centre. The desktop search field has its

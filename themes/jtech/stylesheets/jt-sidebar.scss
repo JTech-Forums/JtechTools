@@ -3,20 +3,21 @@
 //    step dimmer, full contrast only on hover / the current page
 //  - one signal per state: hover is a 6% fill, current is 9% + strong text,
 //    same shape, no weight change (it would move the ellipsis)
-//  - one row height (32px; 40px on touch), a fixed 16px icon column so every
-//    label starts on the same line, rows inset from the edges
+//  - one row height (36px; 44px on touch), a fixed 18px icon column so every
+//    label starts on the same line, rows inset from the edges. Body-size
+//    labels and 16px icons: people found the denser 32px rows cramped
 //  - space separates sections, not rules; headers are small, sentence case,
 //    with the chevron revealed on hover (always when collapsed / on touch)
 //  - the list shows it scrolls (fade masks), counts stay quiet
 :root,
 body {
-  --d-sidebar-row-height: 2.1333rem; // 32px
-  --d-sidebar-row-horizontal-padding: 0.5333rem; // 8px
+  --d-sidebar-row-height: 2.25rem; // 36px
+  --d-sidebar-row-horizontal-padding: 0.625rem; // 10px
   --d-sidebar-vertical-gap: 1px;
-  --d-sidebar-section-link-prefix-width: 1.0667rem; // 16px
-  --d-sidebar-section-link-prefix-margin-right: 0.6rem; // 9px
-  --d-sidebar-section-link-icon-size: 0.9333rem; // 14px glyph in a 16px box
-  --d-sidebar-section-link-emoji-size: 1rem;
+  --d-sidebar-section-link-prefix-width: 1.125rem; // 18px
+  --d-sidebar-section-link-prefix-margin-right: 0.625rem; // 10px
+  --d-sidebar-section-link-icon-size: 1rem; // 16px glyph in an 18px box
+  --d-sidebar-section-link-emoji-size: 1.0625rem;
   --d-sidebar-animation-time: 0.2s;
   --d-sidebar-background: var(--jt-surface);
   --d-sidebar-border-color: var(--jt-border);
@@ -39,7 +40,7 @@ body {
   --d-sidebar-footer-fade: transparent;
 
   @media (pointer: coarse) {
-    --d-sidebar-row-height: 2.6667rem; // 40px
+    --d-sidebar-row-height: 2.75rem; // 44px
   }
 }
 
@@ -200,7 +201,7 @@ body {
 }
 
 .sidebar-section-link {
-  font-size: var(--jt-text-md);
+  font-size: var(--jt-text-body);
   letter-spacing: var(--jt-tracking-ui);
   transition:
     background-color 0.12s ease-out,
@@ -294,8 +295,8 @@ body {
 
   .btn.sidebar-footer-actions-button,
   .sidebar-footer-actions .btn-flat {
-    width: 2.1333rem;
-    height: 2.1333rem;
+    width: 2.25rem;
+    height: 2.25rem;
     padding: 0;
     border-radius: var(--jt-radius-control);
 
