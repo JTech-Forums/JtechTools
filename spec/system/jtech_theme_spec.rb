@@ -838,6 +838,24 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # On sidebar pages core placed the composer at the sidebar plus its gap,
+  # without the page's gutter, so it started left of everything above it.
+  it "starts the composer at the content's left edge on sidebar pages" do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css("body.has-sidebar-page")
+    find(".topic-footer-main-buttons .create").click
+    expect(page).to have_css("#reply-control.open.hide-preview")
+    offset = page.evaluate_script(<<~JS)
+      Math.round(
+        document.querySelector("#reply-control").getBoundingClientRect().left -
+          document.querySelector("#main-outlet").getBoundingClientRect().left
+      )
+    JS
+    expect(offset).to eq(0)
+    expect_no_theme_errors
+  end
+
   it "lines the footer up with the page above it" do
     sign_in(member)
     visit(topic.relative_url)
