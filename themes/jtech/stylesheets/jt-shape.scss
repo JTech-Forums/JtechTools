@@ -52,11 +52,14 @@
 
   // One radius for everything you press, type in or pick from (buttons,
   // fields, dropdowns, menu rows), one for surfaces (cards, menus), one
-  // for blocks in a post.
-  --d-border-radius: var(--jt-radius-control);
+  // for blocks in a post. Fields and core's small surfaces take it capped
+  // at md: with corner_style "round" a control is a 999px pill, which a
+  // tall field (the composer) or a toast can't be.
+  --jt-radius-field: min(var(--jt-radius-control), var(--jt-radius-md));
+  --d-border-radius: var(--jt-radius-field);
   --d-border-radius-large: var(--jt-radius-lg);
   --d-button-border-radius: var(--jt-radius-control);
-  --d-input-border-radius: var(--jt-radius-control);
+  --d-input-border-radius: var(--jt-radius-field);
   --d-nav-pill-border-radius: var(--jt-radius-control);
   --d-tag-border-radius: var(--jt-radius-pill);
   --d-post-control-border-radius: var(--jt-radius-control);
@@ -204,7 +207,7 @@ aside.onebox,
 }
 
 .select-kit .select-kit-header:not(.btn) {
-  border-radius: var(--jt-radius-control);
+  border-radius: var(--jt-radius-field);
 }
 
 // Buttons core squares off: the composer's corner controls and Discard, the
