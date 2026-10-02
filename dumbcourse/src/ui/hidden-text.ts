@@ -9,15 +9,10 @@ export interface HiddenParts {
   details: Element[];
 }
 
-let detailsWork: boolean | null = null;
-
 export function hiddenParts(post: ParentNode): HiddenParts {
-  // Engines without <details> (KaiOS 2.5) show its text already.
-  if (detailsWork === null)
-    detailsWork = "open" in document.createElement("details");
   return {
     spoilers: $$('[data-act="spoiler"]', post),
-    details: detailsWork ? $$("details", post) : [],
+    details: $$("details", post),
   };
 }
 
