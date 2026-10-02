@@ -1,6 +1,9 @@
-// Compiled once per palette (JTech Light / JTech Dark), so anything that
-// differs by mode lives here as a custom property. Everything else in the
-// theme reads these tokens and never branches on mode itself.
+// Compiled once per palette (JTech Light / JTech Dark / JTech Dim), so
+// anything that differs by mode lives here as a custom property. Everything
+// else in the theme reads these tokens and never branches on mode itself.
+// Surfaces and greys come from the palette's own ramp, so every palette (and
+// an admin's edits to one) carries through; JTech Dark is OLED black, JTech
+// Dim a softer grey for people who find black too harsh.
 :root {
   // Hairlines are translucent (JTech Market): they sit into any surface
   // instead of drawing a hard grey line on it.
@@ -10,24 +13,27 @@
       rgb(255 255 255 / 16%)
     )};
   --jt-fill: #{dark-light-choose(#fff, rgb(255 255 255 / 4.5%))};
-  --jt-glass: #{dark-light-choose(rgb(255 255 255 / 72%), rgb(10 10 10 / 62%))};
+  --jt-glass: #{dark-light-choose(
+      rgba($secondary, 0.72),
+      rgba($primary-very-low, 0.62)
+    )};
 
-  // Base surface and text follow the palette, so an admin's palette edits
-  // reach the theme's own surfaces too (JTech's palettes are #fff / #000).
+  // Cards and panels: white on the light page, one step up the ramp
+  // (primary-very-low) on a dark one
   --jt-surface: #{$secondary};
-  --jt-surface-raised: #{dark-light-choose(#fff, #0a0a0a)};
-  --jt-surface-sunken: #{dark-light-choose(#fafafa, #0a0a0a)};
+  --jt-surface-raised: #{dark-light-choose($secondary, $primary-very-low)};
+  --jt-surface-sunken: #{$primary-very-low};
   --jt-hover: #{dark-light-choose(rgb(0 0 0 / 4%), rgb(255 255 255 / 6%))};
 
   // Selected rows (sidebar, menus): one step above hover (Geist gray-alpha)
   --jt-active: #{dark-light-choose(rgb(0 0 0 / 8%), rgb(255 255 255 / 9%))};
   --jt-pressed: #{dark-light-choose(rgb(0 0 0 / 11%), rgb(255 255 255 / 13%))};
   --jt-text: #{$primary};
-  --jt-text-muted: #{dark-light-choose(#666, #a1a1a1)};
+  --jt-text-muted: #{$primary-high};
 
   // #767676 is the lightest grey that still reads at 4.5:1 on white (WCAG
   // AA); it carries small text (dates, counts, column headers).
-  --jt-text-subtle: #{dark-light-choose(#767676, #8f8f8f)};
+  --jt-text-subtle: #{dark-light-choose(#767676, $primary-medium)};
   --jt-focus: #{$primary};
   --jt-accent: #{$primary};
   --jt-on-accent: #{$secondary};
@@ -44,8 +50,8 @@
   --jt-grid: #{dark-light-choose(rgb(0 0 0 / 5%), rgb(255 255 255 / 5%))};
   --jt-glow: #{dark-light-choose(rgb(0 0 0 / 4%), rgb(255 255 255 / 9%))};
   --jt-header-blur-bg: #{dark-light-choose(
-      rgb(255 255 255 / 80%),
-      rgb(0 0 0 / 75%)
+      rgba($secondary, 0.8),
+      rgba($secondary, 0.75)
     )};
   --jt-shadow-menu: #{dark-light-choose(
       "0 4px 12px rgb(0 0 0 / 8%), 0 0 0 1px rgb(0 0 0 / 8%)",

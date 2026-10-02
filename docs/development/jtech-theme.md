@@ -57,7 +57,8 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 
 | | |
 |---|---|
-| `about.json` | palettes **JTech Light** / **JTech Dark** (incl. full Geist gray ramps), `only_theme_color_schemes`, theme site settings |
+| `about.json` | palettes **JTech Light** / **JTech Dark** / **JTech Dim** (incl. full gray ramps; `common/color_definitions.scss` derives the theme's surfaces and greys from them), `only_theme_color_schemes`, theme site settings |
+| `api-initializers/jt-palette-picker.ts` | interface preferences: the dark-palette picker names the theme's default ("JTech Dark") instead of core's "-1" when the theme limits palettes to its own |
 | `common/color_definitions.scss` | per-mode tokens (`--jt-*`): borders, surfaces, text, shadows |
 | `stylesheets/jt-tokens.scss` | maps tokens onto core's `--d-*` / `--token-*` hooks |
 | `stylesheets/jt-*.scss` | header, logo, topic list, posts, panels, component restyles, monochrome switches |

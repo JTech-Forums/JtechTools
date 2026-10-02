@@ -19,6 +19,13 @@ module ::DiscourseJtechTheme
     THEME_NAME = "JTech"
     ABOUT_URL = "https://jtechforums.org"
 
+    # Palettes people can choose in their interface preferences besides the
+    # theme's own light and dark defaults (JTech Dim: grey instead of OLED
+    # black). Core only applies a palette someone chose if it's
+    # user-selectable, and imported palettes never are; it's switched on once,
+    # so an admin who turns it off again (Customize → Colors) isn't overruled.
+    OFFERED_PALETTES = ["JTech Dim"].freeze
+
     def self.directory
       ENV["JTECH_THEME_DIR"].presence || File.expand_path("../../themes/jtech", __dir__)
     end
@@ -140,10 +147,25 @@ module ::DiscourseJtechTheme
           theme_id: theme_id,
           allow_out_of_sequence_migration: theme_id.present?,
         )
-      save_state("theme_id" => theme.id, "digest" => digest)
+      save_state(
+        "theme_id" => theme.id,
+        "digest" => digest,
+        "offered_palettes" => offer_palettes(theme),
+      )
       Stylesheet::Manager.clear_theme_cache!
       return :adopted if adopted
       theme_id ? :updated : :installed
+    end
+
+    def self.offer_palettes(theme)
+      offered = state["offered_palettes"] || []
+      ColorScheme
+        .where(theme_id: theme.id, name: OFFERED_PALETTES - offered)
+        .find_each do |scheme|
+          scheme.update!(user_selectable: true)
+          offered += [scheme.name]
+        end
+      offered
     end
   end
 end
