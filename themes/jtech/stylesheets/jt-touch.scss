@@ -29,3 +29,57 @@ html.mobile-view {
     @include jt-no-bar;
   }
 }
+
+// ── Tap targets ──────────────────────────────────────────
+// Small controls a finger has to hit: Quick look's eye and the hero's × on
+// cards (20px), the "Back" pill over a topic (16px tall), a post's date and
+// edit count (18–22px), the pinned post card's jump arrow
+// (16px), the category and tags on a card and a poster's name (17–20px). On
+// touch screens and the phone layout each gets a hit area of at least 32px
+// (WCAG 2.5.8 asks for 24) without changing what it looks like: an invisible
+// ::after centred on it, or, where the control clips its overflow (badges,
+// tags, names), padding balanced by a negative margin.
+@mixin jt-tap-area($size: 2rem) {
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, #{$size});
+    height: max(100%, #{$size});
+    transform: translate(-50%, -50%);
+  }
+}
+
+html.discourse-touch,
+html.mobile-view {
+  .jt-card__peek,
+  .progress-back-container .btn,
+  .topic-post .post-info.post-date a.post-date,
+  .topic-post .post-info.edits .btn,
+  .pinned-post-jump {
+    position: relative;
+  }
+
+  .jt-card__peek,
+  .pinned-post-jump {
+    @include jt-tap-area(2.25rem);
+  }
+
+  .jt-hero__close {
+    @include jt-tap-area(2.25rem);
+  }
+
+  .progress-back-container .btn,
+  .topic-post .post-info.post-date a.post-date,
+  .topic-post .post-info.edits .btn {
+    @include jt-tap-area;
+  }
+
+  .jt-card .badge-category__wrapper,
+  .jt-card .discourse-tag,
+  .topic-meta-data .names a {
+    padding-block: 0.375rem;
+    margin-block: -0.375rem;
+  }
+}
