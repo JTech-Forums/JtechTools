@@ -47,18 +47,6 @@ html.keyboard-visible.mobile-view .d-modal.jt-cmdk .d-modal__container {
       font-size: 1rem;
     }
 
-    @media (hover: none) {
-      width: 2rem;
-      height: 2rem;
-
-      > kbd {
-        display: none;
-      }
-
-      > .d-icon {
-        display: block;
-      }
-    }
   }
 
   kbd {
@@ -209,6 +197,7 @@ html.keyboard-visible.mobile-view .d-modal.jt-cmdk .d-modal__container {
     opacity: 0;
   }
 
+
   &__status {
     padding: 0.75rem 0.65rem;
     font-size: var(--jt-text-sm);
@@ -254,4 +243,38 @@ html.keyboard-visible.mobile-view .d-modal.jt-cmdk .d-modal__container {
     border-start-start-radius: 0;
     border-end-start-radius: 0;
   }
+}
+
+// Touch screens (and core's phone layout, which the phone system specs get
+// without touch) close the menu with an × and open a row by tapping: the ×
+// shows, and the "esc" keycap beside it and the ↵ on the active row go. The
+// keycap rule in .jt-cmdk has the same weight as a rule nested in &__esc and
+// came later, which is why the keycap used to stay beside the ×.
+@mixin jt-cmdk-touch {
+  .jt-cmdk__esc {
+    width: 2rem;
+    height: 2rem;
+
+    > .d-icon {
+      display: block;
+    }
+
+    > kbd {
+      display: none;
+    }
+  }
+
+  .jt-cmdk__enter {
+    display: none;
+  }
+}
+
+@media (hover: none) {
+  .jt-cmdk {
+    @include jt-cmdk-touch;
+  }
+}
+
+html.mobile-view .jt-cmdk {
+  @include jt-cmdk-touch;
 }

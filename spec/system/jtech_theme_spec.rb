@@ -292,6 +292,31 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # On phones the command menu showed keyboard hints beside its tap targets:
+  # an "esc" keycap next to the x (the keycap rule outweighed the touch one)
+  # and a return-key glyph on the active row.
+  it "drops the command menu's keyboard hints on phones", mobile: true do
+    SiteSetting.chat_enabled = false
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-card")
+    find(".jt-header-search__button").click
+    expect(page).to have_css(".jt-cmdk .jt-cmdk__item.--active")
+    hints = page.evaluate_script(<<~JS)
+      (() => {
+        const close = document.querySelector(".jt-cmdk__esc");
+        const shown = (el) => getComputedStyle(el).display !== "none";
+        return {
+          esc: shown(close.querySelector("kbd")),
+          x: shown(close.querySelector(".d-icon")),
+          enter: shown(document.querySelector(".jt-cmdk__item.--active .jt-cmdk__enter")),
+        };
+      })()
+    JS
+    expect(hints).to eq("esc" => false, "x" => true, "enter" => false)
+    expect_no_theme_errors
+  end
+
   it "leaves Ctrl+K to chat for people who can chat" do
     SiteSetting.chat_enabled = true
     SiteSetting.chat_allowed_groups = Group::AUTO_GROUPS[:everyone]
