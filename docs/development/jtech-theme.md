@@ -63,7 +63,6 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `stylesheets/jt-tokens.scss` | maps tokens onto core's `--d-*` / `--token-*` hooks |
 | `stylesheets/jt-notifications.scss` | notifications page (/my/notifications): filters as a toolbar, the list a divided card; the bell's panel: tabs, rows, bottom bar; on both, unread rows tinted with a bold name and the type badge black / white instead of the accent |
 | `stylesheets/jt-*.scss` | header, logo, topic list, posts, panels, component restyles, monochrome switches |
-| `stylesheets/jt-panels.scss` | menus, cards and dialogs as hairline surfaces; user and group cards keep their big avatar inside (core's `--avatar-margin` set to 0) |
 | `stylesheets/jt-legacy-content.scss` | post wrappers (`ghbtn`, `logos`) ported from prod's Default theme |
 | `stylesheets/jt-static.scss` | the static pages (/guidelines, /faq, /tos, /privacy): a measured reading column at the post's size and leading, headings, lists and links like a post's, the edit link quiet under the nav |
 | `components/jt-topic-card.gts` + `api-initializers/jt-topic-cards.gts` | discovery lists as cards (`stylesheets/jt-cards.scss`); the new-topics button kept in the flow above the cards (core floats it over a header row the cards don't have) |
@@ -86,6 +85,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `stylesheets/jt-topic-progress.scss` | the topic progress widget (phones, narrow desktop windows): the jump arrows, admin wrench and "1 / 4" counter as one glass capsule, the counter's fill a quiet tint, tabular numbers in the text colour |
 | `components/jt-command-menu.gts` + `api-initializers/jt-command-menu.ts` | ⌘K / Ctrl+K command menu (`jt-cmdk.scss`); opened from the header's search field too |
 | `lib/jt-shortcuts.ts` + `api-initializers/jt-shortcuts.ts` | the command menu's keyboard shortcuts: core's, and the theme's own `g` keys (bound outside text fields, labelled in core's `?` help by copying the menu's strings under `keyboard_shortcuts_help.jtech`; core collapses a repeated key, so each sequence is two chips, which `jt-cmdk.scss` joins into one) |
+| `stylesheets/jt-panels.scss` (cards) | user and group cards keep their big avatar inside (core's `--avatar-margin` set to 0) |
 | `stylesheets/jt-sidebar.scss` | sidebar: tokens, rows, headers, scroll fades, footer |
 | `stylesheets/jt-groups.scss` | groups (/g): filters as a toolbar, each group a card (name, @mention, member count pill, description, your standing); a group's page: header card, members filter; its members table gets jt-directory's table card |
 | `api-initializers/jt-header-actions.gts` + `components/jt-header-search.gts`, `jt-header-icon.gts`, `jt-header-new-topic.gts` | header: search field (opens ⌘K) centred on the bar on wide screens with a mouse (outlet `before-header-panel`), otherwise in the icon row · home · messages · notifications · light/dark · new topic · avatar |
