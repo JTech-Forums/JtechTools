@@ -1145,6 +1145,42 @@ RSpec.describe "JTech theme" do
 
   # The theme keeps thin scrollbars visible on touch screens, except under a
   # post's row of buttons, which scrolls sideways by a few pixels on phones.
+  # Small controls on phones get a hit area of at least 32px without growing
+  # (they were 16-22px): measured as how far above and below a control's
+  # centre a tap still lands on it.
+  it "gives small controls on phones a finger-sized hit area", mobile: true do
+    reach = <<~JS
+      ((selector) => {
+        const el = document.querySelector(selector);
+        el.scrollIntoView({ block: "center" });
+        const r = el.getBoundingClientRect();
+        const x = r.left + r.width / 2;
+        const y = r.top + r.height / 2;
+        const on = (dy) => {
+          const hit = document.elementFromPoint(x, y + dy);
+          return hit === el || el.contains(hit);
+        };
+        let up = 0;
+        let down = 0;
+        while (up < 40 && on(-(up + 1))) up++;
+        while (down < 40 && on(down + 1)) down++;
+        return Math.round(up + down + 1);
+      })
+    JS
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-card .jt-card__peek")
+    expect(page.evaluate_script("#{reach}('.jt-card__peek')")).to be >= 30
+    expect(page.evaluate_script("#{reach}('.jt-card .badge-category__wrapper')")).to be >= 30
+
+    visit(topic.relative_url)
+    expect(page).to have_css(".topic-post .post-info.post-date a.post-date")
+    expect(
+      page.evaluate_script("#{reach}('.topic-post .post-info.post-date a.post-date')"),
+    ).to be >= 30
+    expect_no_theme_errors
+  end
+
   it "draws no scrollbar under a post's buttons on phones", mobile: true do
     sign_in(member)
     visit(topic.relative_url)
