@@ -72,6 +72,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `stylesheets/jt-post-chrome.scss` | author block, post menu, reactions, solved answer, topic events |
 | `stylesheets/jt-topic-footer.scss` | under a topic: the suggested / new & unread list as a divided card (header hidden on phones), "want to read more?" as a sentence; on phones the footer buttons sized alike and Reply keeping its word |
 | `components/jt-quick-look.gts` | Quick look dialog from topic cards (first post via `/posts/by_number`, decorated) |
+| `stylesheets/jt-lists.scss` | a member's own lists: bookmarks as a divided card with the bookmark's name as a label, the activity stream as cards; the messages inbox is the topic cards (`"messages"` in `jt-topic-cards`' card contexts) |
 | `components/jt-context-banner.gts` (outlet `discovery-list-controls-above`) | category / tag banner (`jt-banner.scss`) |
 | `stylesheets/jt-phone-post-menu.scss` | a post's row of buttons on phones: 34px buttons, the row wraps instead of scrolling sideways, the buttons drop under the like count when they don't share a line |
 | `components/jt-footer.gts` (outlet `below-footer`) | footer columns from `footer_links` (`jt-footer.scss`) |

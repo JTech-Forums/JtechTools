@@ -46,9 +46,15 @@ interface TopicListItemClickContext {
   event: MouseEvent & { target: Element };
 }
 
-// Discovery lists (latest/new/top/category/tag, group + user activity) become
-// cards. Suggested/related lists at the foot of a topic stay compact rows.
-const CARD_CONTEXTS = ["discovery", "group-activity", "user-activity"];
+// Discovery lists (latest/new/top/category/tag, group + user activity) and
+// the messages inbox become cards. Suggested/related lists at the foot of a
+// topic stay compact rows.
+const CARD_CONTEXTS = [
+  "discovery",
+  "group-activity",
+  "user-activity",
+  "messages",
+];
 
 const isCardContext = ({ listContext, category }: TopicListContext): boolean =>
   settings.topic_cards &&

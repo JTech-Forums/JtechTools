@@ -694,6 +694,36 @@ RSpec.describe "JTech theme" do
     expect(page).to have_no_css(".jt-card__peek")
   end
 
+  # Core's bookmarks are a bare table, the activity stream posts stacked with
+  # hairlines, the inbox a plain topic list. The theme: a card, cards, cards.
+  it "puts a member's bookmarks, activity and inbox on cards" do
+    Fabricate(:bookmark, user: member, bookmarkable: first_post, name: "Read again")
+    Fabricate(:topic_user, user: member, topic: topic) # the bookmarks query joins it
+    pm = Fabricate(:private_message_topic, user: admin, recipient: member)
+    Fabricate(:post, topic: pm, user: admin, raw: "A note for the inbox layout.")
+    sign_in(member)
+    visit("/latest") # the theme compiles on the first request; don't time that
+    expect(page).to have_css(".jt-card")
+
+    visit("/u/#{member.username}/activity/bookmarks")
+    expect(page).to have_css(".bookmark-list .bookmark-list-item", text: "Read again", wait: 15)
+    bookmarks_border = page.evaluate_script(<<~JS)
+      getComputedStyle(document.querySelector(".topic-list.bookmark-list")).borderTopWidth
+    JS
+    expect(bookmarks_border).to eq("1px")
+
+    visit("/u/#{member.username}/activity")
+    expect(page).to have_css(".user-stream .post-list-item", text: "blocks the browser")
+    stream_border = page.evaluate_script(<<~JS)
+      getComputedStyle(document.querySelector(".user-stream .post-list-item")).borderTopWidth
+    JS
+    expect(stream_border).to eq("1px")
+
+    visit("/u/#{member.username}/messages")
+    expect(page).to have_css(".topic-list.jt-cards .jt-card", text: pm.title)
+    expect_no_theme_errors
+  end
+
   it "starts a topic in the tag being viewed from the header's +" do
     sign_in(member)
     visit("/tag/#{tag.name}")
