@@ -8,11 +8,14 @@ $jt-chevron: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewB
 $jt-block-pad: 0.9rem;
 
 // ── Collapsible sections ─────────────────────────────────
-// Quick look's post is outside .topic-body, where core's own rule stops.
+// Quick look's post is outside .topic-body, where core's own rule stops. The
+// composer's rich editor (.ProseMirror) gets the same, so a section looks in
+// the editor as it will in the post.
 // .elided is core's "…" toggle for trimmed email replies: left as core has it.
 .topic-body .cooked details:not(.elided),
 .jt-quick-look__cooked details:not(.elided),
-.d-editor-preview details:not(.elided) {
+.d-editor-preview details:not(.elided),
+.ProseMirror details:not(.elided) {
   margin-bottom: 0.75rem;
   padding: 0 $jt-block-pad;
   background: transparent;
@@ -43,7 +46,10 @@ $jt-block-pad: 0.9rem;
       height: 1lh; // the chevron sits on a long summary's first line
       margin: 0;
       background-color: var(--jt-text-muted);
-      mask: url($jt-chevron) center / contain no-repeat;
+
+      // a fixed size: in the rich editor core pads this caret (it is the
+      // click target there), and contain would scale the chevron with it
+      mask: url($jt-chevron) center / 1em no-repeat;
       transition: transform var(--jt-motion);
     }
 
@@ -87,7 +93,8 @@ $jt-block-pad: 0.9rem;
 // Scoped to posts and the composer's preview, to outrank the theme's own
 // barred blockquote and core's title bar.
 .cooked,
-.d-editor-preview {
+.d-editor-preview,
+.ProseMirror {
   // ── Quotes ───────────────────────────────────────────────
   // One sunken card: who's quoted on top, the text under it, no bar beside it
   // (the card already sets it apart).
@@ -148,4 +155,17 @@ $jt-block-pad: 0.9rem;
       }
     }
   }
+}
+
+// ── In the rich editor ───────────────────────────────────
+// The summary there is text being typed: no hover tint on it (core keeps the
+// hover on the chevron alone, which is also what opens and closes it).
+.ProseMirror details:not(.elided) > summary:hover {
+  background: transparent;
+}
+
+// A plain blockquote, as jt-posts draws it in a post: a bar, no grey box
+.ProseMirror blockquote {
+  background: transparent;
+  border-left: 2px solid var(--jt-border-strong);
 }
