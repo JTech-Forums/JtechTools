@@ -717,6 +717,26 @@ RSpec.describe "JTech theme" do
 
   # Core's suggested list is a bare table under a bold "want to read more?";
   # the theme: a divided card and a sentence.
+  # Core lifts a user card's big avatar 3.3em above the card; on the theme's
+  # hairline card it slipped out of place and covered the post behind it.
+  it "keeps the avatar inside the user card" do
+    sign_in(member)
+    visit(topic.relative_url)
+    find("#post_1 .topic-avatar a").click
+    expect(page).to have_css(".user-card.show img.avatar")
+    inside = page.evaluate_script(<<~JS)
+      (() => {
+        const card = document.querySelector(".user-card.show");
+        return (
+          card.querySelector("img.avatar").getBoundingClientRect().top >=
+          card.getBoundingClientRect().top
+        );
+      })()
+    JS
+    expect(inside).to eq(true)
+    expect_no_theme_errors
+  end
+
   it "puts the suggested topics under a topic on a card" do
     sign_in(member)
     visit(topic.relative_url)
