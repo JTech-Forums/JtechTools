@@ -674,6 +674,20 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's row of post buttons scrolled sideways on phones: eight or nine
+  # 38px buttons are wider than the column. The theme's row wraps instead.
+  it "fits a post's buttons in the phone's column without scrolling", mobile: true do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css(".topic-post .post-controls .actions .btn")
+    overflowing = page.evaluate_script(<<~JS)
+      [...document.querySelectorAll(".topic-post .post-controls")]
+        .filter((row) => row.scrollWidth > row.clientWidth + 1).length
+    JS
+    expect(overflowing).to eq(0)
+    expect_no_theme_errors
+  end
+
   it "doesn't offer Quick look to visitors, so it can't get round a login gate" do
     visit("/latest")
     expect(page).to have_css(".jt-card")
