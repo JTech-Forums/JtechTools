@@ -47,3 +47,12 @@ html.mobile-view .d-modal:not(.jt-cmdk) .d-modal__container {
     border-top: 1px solid var(--jt-border);
   }
 }
+
+// User and group cards: core lifts the big avatar 3.3em above the card's top
+// edge. On the theme's hairline card that reads as a block that slipped out
+// of place, and it covers whatever is behind the card (the post's name row).
+// It sits inside the card instead.
+.user-card,
+.group-card {
+  --avatar-margin: 0;
+}
