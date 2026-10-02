@@ -61,6 +61,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `api-initializers/jt-palette-picker.ts` | interface preferences: the dark-palette picker names the theme's default ("JTech Dark") instead of core's "-1" when the theme limits palettes to its own |
 | `common/color_definitions.scss` | per-mode tokens (`--jt-*`): borders, surfaces, text, shadows |
 | `stylesheets/jt-tokens.scss` | maps tokens onto core's `--d-*` / `--token-*` hooks |
+| `stylesheets/jt-notifications.scss` | notifications page (/my/notifications): filters as a toolbar, the list a divided card; the bell's panel: tabs, rows, bottom bar; on both, unread rows tinted with a bold name and the type badge black / white instead of the accent |
 | `stylesheets/jt-*.scss` | header, logo, topic list, posts, panels, component restyles, monochrome switches |
 | `stylesheets/jt-legacy-content.scss` | post wrappers (`ghbtn`, `logos`) ported from prod's Default theme |
 | `components/jt-topic-card.gts` + `api-initializers/jt-topic-cards.gts` | discovery lists as cards (`stylesheets/jt-cards.scss`) |
