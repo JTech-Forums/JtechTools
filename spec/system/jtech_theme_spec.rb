@@ -767,7 +767,7 @@ RSpec.describe "JTech theme" do
           ].filter((s) => radius(s) !== control),
           circle:
             avatar.borderTopLeftRadius === "50%" &&
-            (!avatar.cornerShape || /round|\(1\)/.test(avatar.cornerShape)),
+            (!avatar.cornerShape || /round|[(]1[)]/.test(avatar.cornerShape)),
         };
       })()
     JS
@@ -887,8 +887,9 @@ RSpec.describe "JTech theme" do
   # Core fills a deleted post with bright pink and turns its name and buttons
   # red. The theme: a dashed outline over a faint hatch, everything in greys.
   it "shows staff a deleted post in greys, not pink and red" do
-    deleted = replies.first
-    PostDestroyer.new(admin, deleted).destroy
+    # staff see a deleted reply only after "show deleted"; a deleted first
+    # post is always in the stream (core keeps post 1), as on the live forum
+    first_post.update_columns(deleted_at: Time.zone.now, deleted_by_id: admin.id)
     sign_in(admin)
     visit(topic.relative_url)
     expect(page).to have_css(".topic-post.deleted .regular > .cooked")
@@ -897,7 +898,7 @@ RSpec.describe "JTech theme" do
         const post = document.querySelector(".topic-post.deleted");
         const cooked = getComputedStyle(post.querySelector(".regular > .cooked"));
         const grey = (c) => {
-          const [r, g, b] = c.match(/[\d.]+/g).map(Number);
+          const [r, g, b] = c.match(/[0-9.]+/g).map(Number);
           return Math.max(r, g, b) - Math.min(r, g, b) < 12;
         };
         return {
@@ -1418,7 +1419,7 @@ RSpec.describe "JTech theme" do
   it "keeps secondary text at 4.5:1 or better in light and dark" do
     contrast = <<~JS
       (() => {
-        const rgb = (c) => c.match(/[\d.]+/g).slice(0, 3).map(Number);
+        const rgb = (c) => c.match(/[0-9.]+/g).slice(0, 3).map(Number);
         const lum = ([r, g, b]) => {
           const f = (v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
           return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
