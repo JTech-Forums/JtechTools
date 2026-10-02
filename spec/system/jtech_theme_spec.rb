@@ -404,6 +404,7 @@ RSpec.describe "JTech theme" do
   # hairlines, the inbox a plain topic list. The theme: a card, cards, cards.
   it "puts a member's bookmarks, activity and inbox on cards" do
     Fabricate(:bookmark, user: member, bookmarkable: first_post, name: "Read again")
+    Fabricate(:topic_user, user: member, topic: topic) # the bookmarks query joins it
     pm = Fabricate(:private_message_topic, user: admin, recipient: member)
     Fabricate(:post, topic: pm, user: admin, raw: "A note for the inbox layout.")
     sign_in(member)
