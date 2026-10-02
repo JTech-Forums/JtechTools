@@ -203,6 +203,31 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's /g: boxes with a faint border under a loose row of filters, and a
+  # group's members table bare. The theme: cards under a toolbar of equal
+  # controls, and the users directory's table card for the members.
+  it "shows groups as cards, and a group's members in the directory's table card" do
+    sign_in(admin)
+    visit("/g")
+    expect(page).to have_css(".groups-boxes .group-box", minimum: 2)
+    box_border, filter_height = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".group-box")).borderTopWidth,
+        Math.round(document.querySelector(".groups-header-filters-name").getBoundingClientRect().height),
+      ]
+    JS
+    expect(box_border).to eq("1px")
+    expect(filter_height).to eq(38) # 2.4rem, like the other controls
+
+    visit("/g/staff")
+    expect(page).to have_css(".group-members .directory-table__row", text: admin.username)
+    card_border = page.evaluate_script(<<~JS)
+      getComputedStyle(document.querySelector(".container.group .horizontal-scroll-sync__content")).borderTopWidth
+    JS
+    expect(card_border).to eq("1px")
+    expect_no_theme_errors
+  end
+
   it "leaves Ctrl+K to chat for people who can chat" do
     SiteSetting.chat_enabled = true
     SiteSetting.chat_allowed_groups = Group::AUTO_GROUPS[:everyone]

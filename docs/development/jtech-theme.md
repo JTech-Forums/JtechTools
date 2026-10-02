@@ -73,6 +73,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `components/jt-command-menu.gts` + `api-initializers/jt-command-menu.ts` | ⌘K / Ctrl+K command menu (`jt-cmdk.scss`); opened from the header's search field too |
 | `lib/jt-shortcuts.ts` + `api-initializers/jt-shortcuts.ts` | the command menu's keyboard shortcuts: core's, and the theme's own `g` keys (bound outside text fields, labelled in core's `?` help by copying the menu's strings under `keyboard_shortcuts_help.jtech`) |
 | `stylesheets/jt-sidebar.scss` | sidebar: tokens, rows, headers, scroll fades, footer |
+| `stylesheets/jt-groups.scss` | groups (/g): filters as a toolbar, each group a card (name, @mention, member count pill, description, your standing); a group's page: header card, members filter; its members table gets jt-directory's table card |
 | `api-initializers/jt-header-actions.gts` + `components/jt-header-search.gts`, `jt-header-icon.gts`, `jt-header-new-topic.gts` | header: search field (opens ⌘K) centred on the bar on wide screens with a mouse (outlet `before-header-panel`), otherwise in the icon row · home · messages · notifications · light/dark · new topic · avatar |
 | `api-initializers/jt-avatar-menu.ts` + `lib/jt-user-menu.ts` | the avatar opens core's user menu on the profile tab (review queue while its badge shows), so it doesn't repeat the bell; `pickUserMenuTab` is shared with the bell and envelope |
 | `components/jt-back-to-top.gts` (outlet `above-site-header`) | back-to-top button on long non-topic pages |
