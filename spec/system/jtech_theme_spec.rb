@@ -382,6 +382,54 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core opens each review item with a bar in the inverted text colour (solid
+  # black, or white in dark mode) and says "no items" in bare text; the
+  # avatar's review badge is red. The theme: a quiet title row, an outlined
+  # Pending, the empty-page card, and the header's inverse pill.
+  it "keeps the review queue in the theme's quiet cards" do
+    Fabricate(:reviewable_flagged_post, topic: topic, target: first_post)
+    sign_in(admin)
+    visit("/latest")
+    expect(page).to have_css(".d-header .badge-notification.new-reviewables")
+    badge = page.evaluate_script(<<~JS)
+      (() => {
+        const badge = getComputedStyle(document.querySelector(".d-header .new-reviewables"));
+        return badge.backgroundColor === getComputedStyle(document.body).color;
+      })()
+    JS
+    expect(badge).to eq(true)
+
+    visit("/review")
+    expect(page).to have_css(".review-item__header")
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const header = getComputedStyle(document.querySelector(".review-item__header"));
+        const pending = getComputedStyle(document.querySelector(".review-item__status.--pending"));
+        const text = getComputedStyle(document.body).color;
+        return {
+          headerInText: header.color === text,
+          headerFilled: header.backgroundColor === text,
+          pending: pending.backgroundColor,
+        };
+      })()
+    JS
+    expect(looks).to eq(
+      "headerInText" => true,
+      "headerFilled" => false,
+      "pending" => "rgba(0, 0, 0, 0)",
+    )
+    shot("review-queue")
+
+    visit("/review?type=ReviewableUser")
+    expect(page).to have_css(".reviewable-list .no-review")
+    empty =
+      page.evaluate_script(
+        "getComputedStyle(document.querySelector('.reviewable-list .no-review')).borderTopWidth",
+      )
+    expect(empty).to eq("1px")
+    expect_no_theme_errors
+  end
+
   it "keeps New Topic on the row of tabs when the window narrows" do
     sign_in(member)
     resize_window(width: 900) do
