@@ -216,7 +216,8 @@ RSpec.describe "Dumbcourse" do
         :post,
         topic: topic,
         user: bob,
-        raw: "Mine: ![DuraXV](https://example.com/duraxv.png) Specs at https://example.com/specs here.",
+        raw:
+          "Mine: ![DuraXV](https://example.com/duraxv.png) Specs at https://example.com/specs here.",
       )
       phone do
         visit "/dumb/t/#{topic.slug}/#{topic.id}"
