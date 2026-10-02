@@ -1,0 +1,227 @@
+@use "lib/viewport";
+
+// Notifications: the page (/my/notifications) and the bell's panel. Core's
+// page is a bare list under two filters that don't match each other, its
+// unread rows are a grey slab, and every unread row's type badge is painted
+// in the palette's accent. Here the filters are a toolbar of equal controls,
+// the list is a divided card, unread rows keep a quiet tint with a bold name,
+// and the type badges are black on white (white on black) like the rest.
+
+// ── The page ──────────────────────────────────────────────
+.notification-history {
+  --jt-notif-control: 2.2rem;
+
+  .user-notifications-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+    margin: 0 0 var(--space-4);
+
+    .filter-text {
+      font-size: var(--jt-text-sm);
+      font-weight: 500;
+      color: var(--jt-text-subtle);
+    }
+
+    .notifications-type-filter {
+      display: flex;
+      gap: var(--space-2);
+      align-items: center;
+      margin: 0;
+    }
+
+    .select-kit-header {
+      box-sizing: border-box;
+      gap: 0.4rem;
+      height: var(--jt-notif-control);
+      min-height: 0;
+      padding: 0 0.7rem;
+      font-size: var(--jt-text-sm);
+      color: var(--jt-text);
+      background: var(--jt-fill);
+      border: 1px solid var(--jt-border-strong);
+      border-radius: var(--jt-radius-control);
+
+      &:hover {
+        background: var(--jt-hover);
+      }
+
+      .header-text,
+      .name {
+        font-weight: 500;
+      }
+    }
+  }
+
+  .user-notifications-list {
+    overflow: hidden;
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-xl);
+
+    li.notification {
+      padding: 0;
+      border-bottom: 0;
+      transition: background-color var(--jt-motion);
+
+      + li.notification {
+        border-top: 1px solid var(--jt-border);
+      }
+
+      &.unread,
+      &.pending {
+        background: var(--jt-hover);
+      }
+
+      &:hover,
+      &:focus-within {
+        background: var(--jt-active);
+      }
+
+      a {
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        color: var(--jt-text);
+      }
+
+      .relative-date {
+        flex-shrink: 0;
+        margin-left: auto;
+        padding-left: var(--space-3);
+        font-size: var(--jt-text-xs);
+        font-variant-numeric: tabular-nums;
+        color: var(--jt-text-subtle);
+      }
+    }
+
+    .loading-container:empty {
+      display: none;
+    }
+  }
+}
+
+// ── Rows, on the page and in the panel ────────────────────
+.user-menu.show-avatars,
+.user-notifications-list.show-avatars {
+  li.notification,
+  li.bookmark,
+  li.reviewable,
+  li.message {
+    a {
+      .icon-avatar {
+        width: 2.25rem;
+        height: 2.25rem;
+        margin: 0 var(--space-3) 0 0;
+      }
+
+      .item-label {
+        font-size: var(--jt-text-md);
+        font-weight: 500;
+        line-height: 1.35;
+        color: var(--jt-text);
+      }
+
+      .item-description {
+        font-size: var(--jt-text-md);
+        line-height: 1.4;
+        color: var(--jt-text-muted);
+      }
+
+      // The type badge on the avatar's corner: a ring the colour of the row,
+      // the glyph in the text colour
+      .icon-avatar__icon-wrapper {
+        top: -0.3rem;
+        right: -0.35rem;
+        width: 1.25rem;
+        height: 1.25rem;
+        background: var(--jt-surface-raised);
+        box-shadow: 0 0 0 2px var(--jt-surface-raised);
+
+        .d-icon {
+          font-size: 0.7rem;
+          color: var(--jt-text);
+        }
+      }
+    }
+
+    &.unread,
+    &.pending {
+      a .item-label {
+        font-weight: 600;
+      }
+
+      a .item-description {
+        color: var(--jt-text);
+      }
+
+      // unread: the badge inverts, instead of taking the accent colour
+      .icon-avatar__icon-wrapper {
+        background: var(--jt-text);
+
+        .d-icon {
+          color: var(--jt-surface);
+        }
+      }
+    }
+  }
+}
+
+// ── The bell's panel ──────────────────────────────────────
+.user-menu.revamped.menu-panel {
+  background: var(--jt-surface-raised);
+
+  .menu-tabs-container {
+    background: var(--jt-surface-sunken);
+  }
+
+  .user-menu-tab {
+    color: var(--jt-text-subtle);
+    transition:
+      color var(--jt-motion),
+      background-color var(--jt-motion);
+
+    &:hover {
+      color: var(--jt-text);
+    }
+
+    &.active {
+      color: var(--jt-text);
+      background: var(--jt-surface-raised);
+    }
+
+    .badge-notification {
+      color: var(--jt-surface);
+      background: var(--jt-text);
+    }
+  }
+
+  .quick-access-panel li {
+    &.unread,
+    &.pending {
+      background: var(--jt-hover);
+    }
+
+    &:hover,
+    &:focus-within {
+      background: var(--jt-active);
+    }
+  }
+
+  .panel-body-bottom {
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3)
+      max(env(safe-area-inset-bottom), var(--space-2));
+    border-top: 1px solid var(--jt-border);
+
+    .btn {
+      height: var(--jt-notif-control, 2.2rem);
+      margin: 0;
+      font-size: var(--jt-text-sm);
+    }
+
+    .notifications-dismiss {
+      margin: 0;
+    }
+  }
+}

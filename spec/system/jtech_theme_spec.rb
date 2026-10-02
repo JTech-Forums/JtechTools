@@ -230,6 +230,44 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's notifications page: a bare list under two filters; unread type
+  # badges in the accent colour. The theme: a toolbar, a card, black / white.
+  it "lists notifications on a card, with unread type badges in the text colour" do
+    Fabricate(
+      :notification,
+      user: member,
+      topic: topic,
+      post_number: first_post.post_number,
+      notification_type: Notification.types[:mentioned],
+      read: false,
+      data: {
+        topic_title: topic.title,
+        original_post_id: first_post.id,
+        original_username: admin.username,
+        display_username: admin.username,
+      }.to_json,
+    )
+    sign_in(member)
+    visit("/u/#{member.username}/notifications")
+    expect(page).to have_css(".user-notifications-list li.notification.unread .item-label")
+
+    card_border, filter_height, badge_bg, label_color = page.evaluate_script(<<~JS)
+      (() => {
+        const row = document.querySelector(".user-notifications-list li.notification.unread");
+        return [
+          getComputedStyle(document.querySelector(".user-notifications-list")).borderTopWidth,
+          Math.round(document.querySelector(".notifications-filter .select-kit-header").getBoundingClientRect().height),
+          getComputedStyle(row.querySelector(".icon-avatar__icon-wrapper")).backgroundColor,
+          getComputedStyle(row.querySelector(".item-label")).color,
+        ];
+      })()
+    JS
+    expect(card_border).to eq("1px")
+    expect(filter_height).to eq(35) # 2.2rem, like the other toolbars
+    expect(badge_bg).to eq(label_color) # the text colour, not the accent
+    expect_no_theme_errors
+  end
+
   it "keeps New Topic on the row of tabs when the window narrows" do
     sign_in(member)
     resize_window(width: 900) do
