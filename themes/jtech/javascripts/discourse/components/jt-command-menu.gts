@@ -24,6 +24,7 @@ import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { colorToggleAvailable, toggleColorMode } from "../lib/jt-color-mode";
+import { CORE_SHORTCUTS, JT_SHORTCUTS } from "../lib/jt-shortcuts";
 
 const t = (key: string, opts?: Record<string, unknown>): string =>
   i18n(themePrefix(`jt.cmdk.${key}`), opts);
@@ -72,6 +73,8 @@ interface Command {
   icon: string;
   label: string;
   keywords?: string;
+  // keyboard shortcut, as bound: "g l", "shift+b" (lib/jt-shortcuts)
+  keys?: string;
   url?: string;
   run?: () => unknown;
 }
@@ -81,6 +84,7 @@ interface MenuEntry {
   label: string;
   icon?: string;
   keywords?: string;
+  keys?: string;
   hint?: string | null;
   url?: string;
   user?: SearchUser;
@@ -130,6 +134,21 @@ export default class JtCommandMenu extends Component<JtCommandMenuSignature> {
 
   isSelected = (index: number): boolean => index === this.selected;
 
+  // Shortcut keys beside a command, as keycaps: "g l" → g l, "shift+b" → ⇧ B
+  keysFor = (item: MenuEntry): string[] | null => {
+    if (!item.keys || !this.capabilities.hasKeyboard) {
+      return null;
+    }
+    const shift = this.capabilities.isApple ? "⇧" : "Shift";
+    return item.keys
+      .split(" ")
+      .flatMap((combo) =>
+        combo.startsWith("shift+")
+          ? [shift, combo.slice("shift+".length).toUpperCase()]
+          : [combo]
+      );
+  };
+
   #searchTimer: Timer | null = null;
 
   willDestroy() {
@@ -145,46 +164,89 @@ export default class JtCommandMenu extends Component<JtCommandMenuSignature> {
           icon: "plus",
           label: t("new_topic"),
           keywords: "create post write",
+          keys: CORE_SHORTCUTS.new_topic,
           run: () => this.composer.openNewTopic({}),
         },
-      { icon: "list", label: t("latest"), url: "/latest" },
-      user && { icon: "bolt", label: t("new"), url: "/new" },
-      user && { icon: "circle-dot", label: t("unread"), url: "/unread" },
-      { icon: "arrow-trend-up", label: t("top"), url: "/top" },
-      { icon: "layer-group", label: t("categories"), url: "/categories" },
+      {
+        icon: "list",
+        label: t("latest"),
+        keys: CORE_SHORTCUTS.latest,
+        url: "/latest",
+      },
+      user && {
+        icon: "bolt",
+        label: t("new"),
+        keys: CORE_SHORTCUTS.new,
+        url: "/new",
+      },
+      user && {
+        icon: "circle-dot",
+        label: t("unread"),
+        keys: CORE_SHORTCUTS.unread,
+        url: "/unread",
+      },
+      {
+        icon: "arrow-trend-up",
+        label: t("top"),
+        keys: CORE_SHORTCUTS.top,
+        url: "/top",
+      },
+      {
+        icon: "layer-group",
+        label: t("categories"),
+        keys: CORE_SHORTCUTS.categories,
+        url: "/categories",
+      },
       this.siteSettings.tagging_enabled && {
         icon: "tag",
         label: t("tags"),
+        keys: JT_SHORTCUTS.tags,
         url: "/tags",
       },
       user && {
         icon: "bookmark",
         label: t("bookmarks"),
+        keys: CORE_SHORTCUTS.bookmarks,
         url: "/my/activity/bookmarks",
       },
-      user && { icon: "envelope", label: t("messages"), url: "/my/messages" },
+      user && {
+        icon: "envelope",
+        label: t("messages"),
+        keys: CORE_SHORTCUTS.messages,
+        url: "/my/messages",
+      },
       user && {
         icon: "bell",
         label: t("notifications"),
+        keys: JT_SHORTCUTS.notifications,
         url: "/my/notifications",
       },
-      user && { icon: "user", label: t("profile"), url: "/my/summary" },
+      // the profile's activity, where core's g p goes too
+      user && {
+        icon: "user",
+        label: t("profile"),
+        keys: CORE_SHORTCUTS.profile,
+        url: "/my/activity",
+      },
       user && {
         icon: "gear",
         label: t("preferences"),
         keywords: "settings account",
+        keys: JT_SHORTCUTS.preferences,
         url: "/my/preferences",
       },
       colorToggleAvailable(this.interfaceColor) && {
         icon: "circle-half-stroke",
         label: t("toggle_theme"),
         keywords: "dark light mode appearance color",
+        keys: JT_SHORTCUTS.toggle_theme,
         run: () => toggleColorMode(this.interfaceColor),
       },
       this.capabilities.hasKeyboard && {
         icon: "keyboard",
         label: t("shortcuts"),
         keywords: "keys hotkeys help",
+        keys: CORE_SHORTCUTS.shortcuts,
         run: () => this.modal.show(KeyboardShortcutsHelp, undefined),
       },
       // Only on lists that offer it (core's header button, hidden on cards)
@@ -192,12 +254,18 @@ export default class JtCommandMenu extends Component<JtCommandMenuSignature> {
         icon: "list-check",
         label: t("bulk_select"),
         keywords: "select multiple topics bulk",
+        keys: CORE_SHORTCUTS.bulk_select,
         run: () =>
           document
             .querySelector<HTMLButtonElement>("button.bulk-select")
             ?.click(),
       },
-      user?.staff && { icon: "wrench", label: t("admin"), url: "/admin" },
+      user?.staff && {
+        icon: "wrench",
+        label: t("admin"),
+        keys: JT_SHORTCUTS.admin,
+        url: "/admin",
+      },
     ];
     return list
       .filter((c): c is Command => Boolean(c))
@@ -418,7 +486,7 @@ export default class JtCommandMenu extends Component<JtCommandMenuSignature> {
   }
 
   @action
-  run(item: MenuItem, event?: MouseEvent | KeyboardEvent) {
+  run(item: MenuEntry, event?: MouseEvent | KeyboardEvent) {
     const newTab = event?.metaKey || event?.ctrlKey;
     if (item.url && newTab) {
       window.open(item.url, "_blank", "noopener");
@@ -501,6 +569,13 @@ export default class JtCommandMenu extends Component<JtCommandMenuSignature> {
                 {{#if item.hint}}
                   <span class="jt-cmdk__hint">{{item.hint}}</span>
                 {{/if}}
+                {{#let (this.keysFor item) as |keys|}}
+                  {{#if keys}}
+                    <span aria-hidden="true" class="jt-cmdk__keys">
+                      {{#each keys as |key|}}<kbd>{{key}}</kbd>{{/each}}
+                    </span>
+                  {{/if}}
+                {{/let}}
                 <span aria-hidden="true" class="jt-cmdk__enter">↵</span>
               </button>
               {{! eslint-enable ember/template-require-context-role }}
