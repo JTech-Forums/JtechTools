@@ -193,6 +193,47 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  it "moves the filters up a line rather than squeezing the tabs" do
+    Fabricate(:category, name: "Filter apps", parent_category: category)
+    sign_in(admin)
+    resize_window(width: 900) do
+      visit(category.url)
+      expect(page).to have_css(".list-controls #create-topic")
+      filters, tabs, new_topic, tabs_fit, scrolls_sideways = page.evaluate_script(<<~JS)
+        (() => {
+          const row = document.querySelector(".list-controls .navigation-container");
+          const tabs = row.querySelector(":scope > #navigation-bar");
+          const top = (e) => Math.round(e.getBoundingClientRect().top);
+          return [
+            top(row.querySelector(":scope > .category-breadcrumb")),
+            top(tabs),
+            top(row.querySelector("#create-topic")),
+            tabs.scrollWidth <= tabs.clientWidth + 1,
+            document.documentElement.scrollWidth > window.innerWidth,
+          ];
+        })()
+      JS
+      expect(filters).to be < tabs
+      expect(new_topic).to eq(tabs)
+      expect(tabs_fit).to eq(true)
+      expect(scrolls_sideways).to eq(false)
+      expect_no_theme_errors
+    end
+  end
+
+  it "leaves a gap between New's All / Topics / Replies and the first card" do
+    sign_in(member)
+    visit("/new")
+    expect(page).to have_css(".topic-replies-toggle-wrapper")
+    expect(page).to have_css(".topic-list.jt-cards .topic-list-item")
+    gap = page.evaluate_script(<<~JS)
+      document.querySelector(".topic-list.jt-cards .topic-list-item").getBoundingClientRect().top -
+        document.querySelector(".topic-replies-toggle-wrapper").getBoundingClientRect().bottom
+    JS
+    expect(gap).to be >= 8
+    expect_no_theme_errors
+  end
+
   it "puts Me too on the post menu's line, next to the like count" do
     skip("needs discourse-solved") unless defined?(::DiscourseSolved)
     SiteSetting.solved_enabled = true
