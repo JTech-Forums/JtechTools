@@ -4,6 +4,7 @@
 // and every link is collected so the post's action sheet can list them —
 // much easier with a D-pad than tabbing through a paragraph.
 
+import { closest } from "../compat.ts";
 import { APP_ROOT, settings } from "../config.ts";
 import { raw, type SafeHtml } from "../html.ts";
 import { prefs } from "../prefs.ts";
@@ -13,6 +14,8 @@ export interface PostLink {
   text: string;
   href: string;
   internal: boolean;
+  // A picture in the post: href is its full-size original.
+  image?: boolean;
 }
 
 export interface Processed {
@@ -169,6 +172,32 @@ export function processCooked(cooked: string | null | undefined): Processed {
     images++;
     img.setAttribute("loading", "lazy");
     img.setAttribute("src", absolute(src));
+    // A post is one D-pad stop, so pictures open from its menu: the full-size
+    // original (the lightbox link around a resized picture), or the picture.
+    // Link previews' thumbnails aren't the post's own pictures.
+    if (!closest(img, ".onebox")) {
+      const box = img.parentNode as Element | null;
+      const full =
+        box &&
+        box.getAttribute &&
+        /\blightbox\b/.test(box.getAttribute("class") || "")
+          ? box.getAttribute("href") || src
+          : src;
+      const alt = (img.getAttribute("alt") || "").replace(/^\s+|\s+$/g, "");
+      let pictures = 1;
+      for (let i = 0; i < links.length; i++) if (links[i].image) pictures++;
+      links.push({
+        // Pasted pictures are all called "image", and phone photos are named
+        // with digits; number those instead.
+        text:
+          /[a-z]/i.test(alt) && !/^image$/i.test(alt)
+            ? alt.slice(0, 60)
+            : "Picture " + pictures,
+        href: absolute(full),
+        internal: false,
+        image: true,
+      });
+    }
     if (prefs.images === "show") continue;
     const w = img.getAttribute("width");
     const h = img.getAttribute("height");

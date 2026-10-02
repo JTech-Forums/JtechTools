@@ -873,13 +873,28 @@ function wireTopic(
         run: () => flag(p),
       });
 
-    if (links.length) {
+    const pictures = links.filter((l) => l.image);
+    const others = links.filter((l) => !l.image);
+    if (pictures.length) {
       items.push({
-        label: plural(links.length, "link") + " in this post",
+        label: plural(pictures.length, "picture") + " in this post",
         heading: true,
       });
-      for (let i = 0; i < links.length && i < 25; i++) {
-        const l = links[i];
+      for (let i = 0; i < pictures.length && i < 25; i++)
+        items.push({
+          label: pictures[i].text,
+          icon: "image",
+          href: pictures[i].href,
+          external: true,
+        });
+    }
+    if (others.length) {
+      items.push({
+        label: plural(others.length, "link") + " in this post",
+        heading: true,
+      });
+      for (let i = 0; i < others.length && i < 25; i++) {
+        const l = others[i];
         items.push({
           label: l.text,
           icon: l.internal ? "link" : "external",
