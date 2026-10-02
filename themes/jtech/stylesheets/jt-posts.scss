@@ -1,14 +1,14 @@
 .topic-post .cooked,
 .cooked {
   a:not(.mention, .hashtag-cooked, .lightbox, .badge-category__wrapper, .btn) {
-    color: var(--jt-text);
+    color: var(--jt-link);
     text-decoration: underline;
     text-decoration-color: var(--jt-border-strong);
     text-underline-offset: 3px;
     transition: text-decoration-color 0.15s ease;
 
     &:hover {
-      text-decoration-color: var(--jt-text);
+      text-decoration-color: var(--jt-link);
     }
   }
 

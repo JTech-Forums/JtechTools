@@ -34,6 +34,10 @@
   // #767676 is the lightest grey that still reads at 4.5:1 on white (WCAG
   // AA); it carries small text (dates, counts, column headers).
   --jt-text-subtle: #{dark-light-choose(#767676, $primary-medium)};
+
+  // Blue for inline text links: #2563eb on light (contrast ≥ 4.5:1 on white),
+  // #60a5fa on dark/dim (lighter blue so it stays readable on dark surfaces).
+  --jt-link: #{dark-light-choose(#2563eb, #60a5fa)};
   --jt-focus: #{$primary};
   --jt-accent: #{$primary};
   --jt-on-accent: #{$secondary};

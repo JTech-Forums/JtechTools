@@ -145,6 +145,10 @@
     font-size: var(--jt-text-body);
     line-height: 1.6;
     color: var(--jt-text-muted);
+
+    a {
+      color: var(--jt-link);
+    }
   }
 
   // Controls: a row of quiet buttons sized to their labels (core makes

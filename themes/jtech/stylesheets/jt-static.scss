@@ -103,14 +103,14 @@
     }
 
     a:not(.anchor) {
-      color: var(--jt-text);
+      color: var(--jt-link);
       text-decoration: underline;
       text-decoration-color: var(--jt-border-strong);
       text-underline-offset: 3px;
       transition: text-decoration-color var(--jt-motion);
 
       &:hover {
-        text-decoration-color: var(--jt-text);
+        text-decoration-color: var(--jt-link);
       }
     }
 
