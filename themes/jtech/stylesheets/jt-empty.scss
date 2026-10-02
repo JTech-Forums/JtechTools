@@ -1,0 +1,178 @@
+@use "lib/viewport";
+
+// Empty states and the 404 page. Core's text-only empty states ("You don't
+// have any messages", "You haven't bookmarked anything yet", no drafts, no
+// notifications …) are a heading and a paragraph at the top left of an
+// otherwise blank page. Here each is a card in the middle of the space: a
+// quiet glyph in a chip, the title, the explanation, and whatever core
+// offers to do next. The two illustrated states keep their chips in
+// jt-components. The 404 page's title, button and search card follow the
+// same type and controls.
+$jt-empty-inbox: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='22 12 16 12 14 15 10 15 8 12 2 12'/%3E%3Cpath d='M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z'/%3E%3C/svg%3E";
+
+.empty-state__container.--text-only {
+  box-sizing: border-box;
+  max-width: 34rem;
+  margin: var(--space-6) auto;
+  padding: var(--space-6) var(--space-5);
+  text-align: center;
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-xl);
+
+  .empty-state {
+    position: relative;
+    padding-top: calc(3.5rem + var(--space-4));
+
+    // the chip, and the glyph on it
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 3.5rem;
+      height: 3.5rem;
+      transform: translateX(-50%);
+    }
+
+    &::before {
+      background: var(--jt-surface-raised);
+      border: 1px solid var(--jt-border-strong);
+      border-radius: var(--jt-radius-lg);
+      box-shadow: 0 1px 0 var(--jt-glow) inset;
+    }
+
+    &::after {
+      background: var(--jt-text);
+      mask: url($jt-empty-inbox) center / 1.5rem no-repeat;
+    }
+  }
+
+  .empty-state__title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--jt-text-lg);
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: var(--jt-tracking-heading);
+    color: var(--jt-text);
+  }
+
+  .empty-state__body {
+    font-size: var(--jt-text-md);
+    line-height: 1.55;
+    color: var(--jt-text-muted);
+
+    p {
+      margin: 0;
+    }
+
+    a {
+      color: var(--jt-text);
+      text-decoration: underline;
+      text-decoration-color: var(--jt-border-strong);
+      text-underline-offset: 0.15em;
+
+      &:hover {
+        text-decoration-color: currentcolor;
+      }
+    }
+
+    .d-icon {
+      font-size: 0.9em;
+      color: var(--jt-text-muted);
+    }
+  }
+
+  .empty-state__cta {
+    margin-top: var(--space-4);
+
+    .btn {
+      height: 2.4rem;
+    }
+  }
+
+  .empty-state__tip {
+    margin-top: var(--space-4);
+    font-size: var(--jt-text-xs);
+    color: var(--jt-text-subtle);
+  }
+
+  @include viewport.until(sm) {
+    margin: var(--space-4) 0;
+    padding: var(--space-5) var(--space-4);
+  }
+}
+
+// "There are no posts" under an empty list (drafts, activity): quiet
+.post-list__empty-text {
+  padding: var(--space-4) 0;
+  font-size: var(--jt-text-sm);
+  text-align: center;
+  color: var(--jt-text-subtle);
+}
+
+// ── 404 ───────────────────────────────────────────────────
+.page-not-found {
+  h1.title {
+    font-size: var(--jt-text-2xl);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: var(--jt-tracking-display);
+    color: var(--jt-text);
+  }
+
+  .subtitle {
+    font-size: var(--jt-text-md);
+    color: var(--jt-text-muted);
+  }
+
+  .btn.--home {
+    height: 2.75rem;
+    padding-inline: var(--space-5);
+    font-weight: 600;
+  }
+
+  // The not-found art is drawn in greys that sit oddly on black
+  .illustration-not-found svg {
+    opacity: 0.85;
+  }
+
+  &-search {
+    label {
+      font-size: var(--jt-text-lg);
+      font-weight: 600;
+      letter-spacing: var(--jt-tracking-heading);
+      color: var(--jt-text);
+    }
+
+    .search-input {
+      box-sizing: border-box;
+      height: 2.75rem;
+      font-size: var(--jt-text-body);
+      background: var(--jt-fill);
+      border: 1px solid var(--jt-border-strong);
+      border-radius: var(--jt-radius-control);
+
+      &:focus {
+        border-color: var(--jt-text-subtle);
+        box-shadow: 0 0 0 3px var(--jt-glow);
+        outline: none;
+      }
+
+      &__icon {
+        color: var(--jt-text-subtle);
+      }
+    }
+
+    form .btn {
+      height: 2.75rem;
+    }
+  }
+
+  @include viewport.until(sm) {
+    h1.title {
+      font-size: var(--jt-text-xl);
+    }
+  }
+}

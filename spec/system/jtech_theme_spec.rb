@@ -216,6 +216,28 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's text-only empty states are a heading and a paragraph at the top
+  # left of a blank page; the theme puts them on a centred card with a glyph.
+  it "shows an empty page's message on a centred card" do
+    sign_in(member)
+    visit("/u/#{member.username}/activity/bookmarks")
+    expect(page).to have_css(".empty-state__container.--text-only .empty-state__title")
+    border, centred = page.evaluate_script(<<~JS)
+      (() => {
+        const card = document.querySelector(".empty-state__container.--text-only");
+        const outlet = document.querySelector("#main-outlet").getBoundingClientRect();
+        const r = card.getBoundingClientRect();
+        return [
+          getComputedStyle(card).borderTopWidth,
+          Math.abs((r.left - outlet.left) - (outlet.right - r.right)) <= 1,
+        ];
+      })()
+    JS
+    expect(border).to eq("1px")
+    expect(centred).to eq(true)
+    expect_no_theme_errors
+  end
+
   it "centres the search field on the header bar on wide screens" do
     sign_in(member)
     visit("/latest")
