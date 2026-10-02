@@ -61,7 +61,7 @@ body {
   --d-nav-bg-color--hover: transparent;
   --d-nav-bg-color--active: transparent;
   --d-nav-border-color--active: var(--jt-text);
-  --d-nav-underline-height: 2px;
+  --d-nav-underline-height: 1px; // jt-tabs adds the glow
 
   // Topic list
   --d-topic-list-header-text-color: var(--jt-text-subtle);

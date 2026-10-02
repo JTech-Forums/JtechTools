@@ -999,6 +999,27 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core marks the selected tab with a solid 2px bar. The theme: a 1px line
+  # that glows, with a faint light behind the label.
+  it "marks the selected tab with a thin glowing line" do
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".navigation-container .nav-pills > li > a.active")
+    tab = page.evaluate_script(<<~JS)
+      (() => {
+        const tab = document.querySelector(".navigation-container .nav-pills > li > a.active");
+        const line = getComputedStyle(tab, "::after");
+        return {
+          line: line.height,
+          glow: line.boxShadow !== "none",
+          light: getComputedStyle(tab).backgroundImage.startsWith("radial-gradient"),
+        };
+      })()
+    JS
+    expect(tab).to eq("line" => "1px", "glow" => true, "light" => true)
+    expect_no_theme_errors
+  end
+
   it "sends links that aren't forum pages to the browser" do
     visit("/latest")
     expect(page).to have_css(".jt-header-home a[href='/home'][data-auto-route='true']")

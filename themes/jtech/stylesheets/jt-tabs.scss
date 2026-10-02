@@ -1,0 +1,28 @@
+// The selected tab. Core marks it with a solid 2px bar, which read heavy
+// under the theme's light type. Here the bar is a 1px line in the text colour
+// (jt-tokens) that glows a little, with a faint light rising behind the
+// tab's label from it. The glow is mixed from the text colour, so it's a soft
+// white in dark mode and a soft grey in light mode, Dim included.
+.nav-pills > li > a.active,
+.nav-pills > li > button.active,
+.d-tabs__nav-item.--active,
+.user-navigation .nav-pills > li > a.active {
+  background-image: radial-gradient(
+    60% 90% at 50% 100%,
+    color-mix(in srgb, var(--jt-text) 7%, transparent),
+    transparent
+  );
+
+  &::after {
+    box-shadow: 0 0 8px 0.5px
+      color-mix(in srgb, var(--jt-text) 45%, transparent);
+  }
+}
+
+@media (forced-colors: active) {
+  .nav-pills > li > a.active,
+  .nav-pills > li > button.active,
+  .d-tabs__nav-item.--active {
+    background-image: none;
+  }
+}
