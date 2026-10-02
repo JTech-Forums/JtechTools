@@ -53,6 +53,13 @@
         border-radius: var(--jt-radius-pill);
       }
 
+      // On phones core gives the title a row of its own (flex-basis: 100%),
+      // which would stretch the pill across the post. Sized to its text, it
+      // follows the name when there's room and wraps under it when not.
+      .user-title {
+        flex-basis: auto;
+      }
+
       .user-title a {
         padding: 0;
         border: 0;
