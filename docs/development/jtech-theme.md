@@ -73,6 +73,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `components/jt-command-menu.gts` + `api-initializers/jt-command-menu.ts` | ⌘K / Ctrl+K command menu (`jt-cmdk.scss`); opened from the header's search field too |
 | `stylesheets/jt-sidebar.scss` | sidebar: tokens, rows, headers, scroll fades, footer |
 | `api-initializers/jt-header-actions.gts` + `components/jt-header-search.gts`, `jt-header-icon.gts`, `jt-header-new-topic.gts` | header: search field (opens ⌘K) centred on the bar on wide screens with a mouse (outlet `before-header-panel`), otherwise in the icon row · home · messages · notifications · light/dark · new topic · avatar |
+| `api-initializers/jt-avatar-menu.ts` + `lib/jt-user-menu.ts` | the avatar opens core's user menu on the profile tab (review queue while its badge shows), so it doesn't repeat the bell; `pickUserMenuTab` is shared with the bell and envelope |
 | `components/jt-back-to-top.gts` (outlet `above-site-header`) | back-to-top button on long non-topic pages |
 | `api-initializers/jt-code-blocks.ts` | language header on code blocks whose author named one |
 | `connectors/category-title-before/jt-category-icon.gts` | category icon / emoji / square in the Category Boxes tiles (in-element into the tile) |

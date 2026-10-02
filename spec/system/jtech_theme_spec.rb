@@ -129,6 +129,29 @@ RSpec.describe "JTech theme" do
     include_examples "renders the main pages"
   end
 
+  describe "the avatar's menu" do
+    it "opens on the profile tab, and the bell on notifications" do
+      sign_in(member)
+      visit("/latest")
+      find("#toggle-current-user").click
+      expect(page).to have_css("#user-menu-button-profile.active")
+
+      find(".jt-header-notifications > .icon").click
+      expect(page).to have_css("#user-menu-button-all-notifications.active")
+      expect_no_theme_errors
+    end
+
+    it "opens on the review queue while the avatar's badge says something is waiting" do
+      Fabricate(:reviewable)
+      sign_in(admin)
+      visit("/latest")
+      expect(page).to have_css("#toggle-current-user .badge-notification.new-reviewables")
+      find("#toggle-current-user").click
+      expect(page).to have_css("#user-menu-button-review-queue.active")
+      expect_no_theme_errors
+    end
+  end
+
   it "opens the command menu with Ctrl+K and finds a topic" do
     SiteSetting.chat_enabled = false
     SearchIndexer.enable
