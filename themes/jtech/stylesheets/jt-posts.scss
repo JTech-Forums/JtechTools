@@ -118,3 +118,35 @@
 .cooked a.jt-external:hover::after {
   opacity: 1;
 }
+
+// "view 1 hidden reply" between posts: core's bold uppercase grey line,
+// indented to the post text. Here it is the topic list's "last visit"
+// divider (jt-cards): a small label centred on a hairline that fades out at
+// both ends, darkening on hover since it opens the replies.
+.post-stream > .gap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  font-size: var(--jt-text-xs);
+  font-weight: 500;
+  text-transform: none;
+  color: var(--jt-text-subtle);
+  transition: color var(--jt-motion);
+
+  &::before,
+  &::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--jt-border));
+  }
+
+  &::after {
+    background: linear-gradient(to left, transparent, var(--jt-border));
+  }
+
+  &:hover {
+    color: var(--jt-text);
+  }
+}
