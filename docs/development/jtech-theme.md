@@ -58,7 +58,6 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | | |
 |---|---|
 | `about.json` | palettes **JTech Light** / **JTech Dark** (incl. full Geist gray ramps), `only_theme_color_schemes`, theme site settings |
-| `lib/jt-icon-map.ts` + `api-initializers/jt-lucide-icons.ts` + `assets/icons-sprite.svg` | Lucide icons (setting `lucide_icons`): the map says which Font Awesome icon becomes which Lucide one (filled for on-states); `pnpm theme:icons` builds the sprite from `lucide-static` and `lint:theme` fails if it's stale; the initializer points icons and core's aliases (`d-liked`, `notification.*`) at it. `LUCIDE-LICENSE.txt` is Lucide's ISC licence |
 | `common/color_definitions.scss` | per-mode tokens (`--jt-*`): borders, surfaces, text, shadows |
 | `stylesheets/jt-tokens.scss` | maps tokens onto core's `--d-*` / `--token-*` hooks |
 | `stylesheets/jt-*.scss` | header, logo, topic list, posts, panels, component restyles, monochrome switches |
@@ -79,6 +78,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `api-initializers/jt-sidebar-docked.ts` | no ☰ where the sidebar docks (`jt-header.scss`); clears a remembered "sidebar hidden" |
 | `api-initializers/jt-mobile-logo.ts` | phones: `logo_small` in the header through core's `home-logo-image-url` transformer, unless a `mobile_logo` is uploaded |
 | `components/jt-scrollbar.gts` (outlet `above-site-header`) + `jt-base.scss` | overlay page scrollbar on mouse/trackpad devices; thin hover-only scrollbars in panels |
+| `lib/jt-icon-map.ts` + `api-initializers/jt-lucide-icons.ts` + `assets/icons-sprite.svg` | Lucide icons (setting `lucide_icons`): the map says which Font Awesome icon becomes which Lucide one (filled for on-states); `pnpm theme:icons` builds the sprite from `lucide-static` and `lint:theme` fails if it's stale; the initializer points icons and core's aliases (`d-liked`, `notification.*`) at it. `LUCIDE-LICENSE.txt` is Lucide's ISC licence |
 | `stylesheets/jt-profile.scss` | user profiles: header card (every /u/* tab), meta strip, summary stat tiles and section cards |
 | `stylesheets/jt-directory.scss` | users directory (/u): period title, toolbar, table card |
 | `api-initializers/jt-notice-dismiss.ts` | × on core's site notices (7 days / until the text changes; critical notices excluded) |
