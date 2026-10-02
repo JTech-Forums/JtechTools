@@ -555,6 +555,38 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core mixes radii: square composer controls and Discard, 10px rows and
+  # menus, 14px fields beside 12px buttons, circular avatars among rounded
+  # boxes. The theme: one radius for controls, avatars as rounded boxes.
+  it "gives every control one radius and draws avatars as rounded boxes" do
+    sign_in(member)
+    visit(topic.relative_url)
+    find(".topic-footer-main-buttons .create").click
+    expect(page).to have_css("#reply-control.open .save-or-cancel .discard-button")
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const radius = (s) => getComputedStyle(document.querySelector(s)).borderTopLeftRadius;
+        const control = radius("#reply-control .save-or-cancel .btn-primary");
+        const avatar = getComputedStyle(document.querySelector(".topic-avatar img.avatar"));
+        return {
+          odd: [
+            "#reply-control .composer-controls .toggle-minimize",
+            "#reply-control .save-or-cancel .discard-button",
+            "#reply-control .d-editor-textarea-wrapper",
+            "#reply-control .d-editor-button-bar .btn:not(.composer-toggle-switch)",
+            ".post-controls .actions .btn",
+          ].filter((s) => radius(s) !== control),
+          circle:
+            avatar.borderTopLeftRadius === "50%" &&
+            (!avatar.cornerShape || /round|\(1\)/.test(avatar.cornerShape)),
+        };
+      })()
+    JS
+    expect(looks).to eq("odd" => [], "circle" => false)
+    shot("one-radius")
+    expect_no_theme_errors
+  end
+
   it "puts the tracking menu in the topic's row of buttons, without the explanation" do
     sign_in(member)
     visit(topic.relative_url)

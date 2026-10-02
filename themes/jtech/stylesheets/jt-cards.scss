@@ -274,7 +274,7 @@
       height: 22px;
       margin-left: -6px;
       border: 2px solid var(--jt-surface-raised);
-      border-radius: 50%;
+      border-radius: var(--jt-radius-avatar);
       background: var(--jt-surface-raised);
     }
 
