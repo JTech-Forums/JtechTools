@@ -1,0 +1,128 @@
+@use "lib/viewport";
+
+// Under a topic: the suggested / new & unread list and the "want to read
+// more?" line, and on phones the row of footer buttons. Core's list is a
+// bare table with a column header, the line under it a bold heading, and on
+// phones every footer button is an icon, Reply included. Here the list is
+// the theme's divided card (its header hidden on phones, where only "Topic"
+// is left of it), the line reads as a sentence, and Reply keeps its word
+// and takes the room left on the row.
+.more-topics__container {
+  .more-topics__list-title {
+    margin: var(--space-6) 0 var(--space-3);
+    padding: 0;
+    font-size: var(--jt-text-body);
+    font-weight: 600;
+    letter-spacing: var(--jt-tracking-heading);
+    color: var(--jt-text);
+  }
+
+  // The list as a card
+  .more-topics__list .topic-list {
+    overflow: hidden;
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-xl);
+
+    .topic-list-header th {
+      padding-block: var(--space-2);
+      font-size: var(--jt-text-xs);
+      font-weight: 500;
+      color: var(--jt-text-subtle);
+      background: var(--jt-surface-sunken);
+      border-bottom: 1px solid var(--jt-border);
+    }
+
+    .topic-list-body {
+      border-top: 0;
+    }
+
+    .topic-list-item {
+      transition: background-color var(--jt-motion);
+
+      &:hover {
+        background: var(--jt-hover);
+      }
+
+      &:last-child .topic-list-data {
+        border-bottom: 0;
+      }
+    }
+
+    .topic-list-data {
+      padding-inline: var(--space-4);
+    }
+  }
+
+  // "Want to read more? Browse other topics in … or view latest topics."
+  .more-topics__browse-more {
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    font-size: var(--jt-text-md);
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--jt-text-muted);
+
+    a:not(.badge-category__wrapper) {
+      color: var(--jt-text);
+      text-decoration: underline;
+      text-decoration-color: var(--jt-border-strong);
+      text-underline-offset: 0.15em;
+
+      &:hover {
+        text-decoration-color: currentcolor;
+      }
+    }
+  }
+
+  @include viewport.until(sm) {
+    .more-topics__list-title {
+      margin-top: var(--space-5);
+    }
+
+    // one column, and the header left of it says only "Topic"
+    .more-topics__list .topic-list .topic-list-header:not(.--has-tabs) {
+      display: none;
+    }
+
+    .more-topics__list .topic-list .topic-list-header.--has-tabs th.default {
+      display: none;
+    }
+  }
+}
+
+// ── Phone footer buttons ──────────────────────────────────
+html.mobile-view #topic-footer-buttons {
+  .topic-footer-main-buttons {
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  // the icons stay together on one line; when the row is too narrow for
+  // Reply beside them, Reply drops under them whole
+  .topic-footer-main-buttons__actions {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+  }
+
+  .topic-footer-button {
+    height: 2.5rem;
+    min-width: 2.5rem;
+    margin: 0;
+  }
+
+  // Reply says so
+  .topic-footer-main-buttons > .create {
+    flex: 0 0 auto;
+    justify-content: center;
+    margin-left: auto;
+    padding-inline: var(--space-4);
+    font-weight: 600;
+
+    .d-button-label {
+      display: inline;
+      margin-left: 0.4em;
+    }
+  }
+}
