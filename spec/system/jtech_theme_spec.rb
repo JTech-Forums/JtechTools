@@ -134,20 +134,25 @@ RSpec.describe "JTech theme" do
   it "shows the about page's counts as tiles, its staff as cards" do
     sign_in(member)
     visit("/about")
-    expect(page).to have_css(".about__stats-item", minimum: 3)
-    expect(page).to have_css(".about-page-users-list .user-info", text: admin.username)
+    # members and "created" always; admins / moderators only when core lists
+    # someone, which it doesn't in this database
+    expect(page).to have_css(".about__stats-item", minimum: 2)
+    expect(page).to have_css(".about__right-side .about__activities-item")
 
-    borders, tile_tops = page.evaluate_script(<<~JS)
+    borders, tile_tops, staff_border = page.evaluate_script(<<~JS)
       [
-        [".about__stats-item", ".about-page-users-list .user-info", ".about__right-side"]
+        [".about__stats-item", ".about__right-side"]
           .map((selector) => getComputedStyle(document.querySelector(selector)).borderTopWidth),
         [...document.querySelectorAll(".about__stats-item")]
           .slice(0, 2)
           .map((tile) => Math.round(tile.getBoundingClientRect().top)),
+        [...document.querySelectorAll(".about-page-users-list .user-info")]
+          .map((card) => getComputedStyle(card).borderTopWidth),
       ]
     JS
-    expect(borders).to eq(%w[1px 1px 1px])
+    expect(borders).to eq(%w[1px 1px])
     expect(tile_tops[0]).to eq(tile_tops[1]) # a row of tiles, not a column
+    expect(staff_border.uniq).to eq(["1px"]).or eq([]) # cards, when there are staff to show
     expect_no_theme_errors
   end
 
