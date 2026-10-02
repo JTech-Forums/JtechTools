@@ -1,0 +1,218 @@
+@use "lib/viewport";
+
+// A member's own lists: bookmarks (/my/activity/bookmarks) and the activity
+// stream (/my/activity, replies, likes …). Core draws the bookmarks as a bare
+// table and the stream as posts stacked with hairlines. Here the bookmarks
+// table is the theme's divided card with the bookmark's own name as a small
+// label over the topic, and each stream entry is a card. (The messages inbox
+// becomes the theme's topic cards in api-initializers/jt-topic-cards.)
+
+// ── Bookmarks ─────────────────────────────────────────────
+.bookmark-search-form {
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+
+  input {
+    flex: 1 1 auto;
+    box-sizing: border-box;
+    height: 2.4rem;
+    margin: 0;
+    padding: 0 0.75rem;
+    font-size: var(--jt-text-md);
+    color: var(--jt-text);
+    background: var(--jt-fill);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-control);
+
+    &:focus {
+      border-color: var(--jt-text-subtle);
+      box-shadow: 0 0 0 3px var(--jt-glow);
+      outline: none;
+    }
+  }
+
+  .btn {
+    width: 2.4rem;
+    height: 2.4rem;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.topic-list.bookmark-list {
+  overflow: hidden;
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-xl);
+
+  .topic-list-header th {
+    padding-block: var(--space-2);
+    font-size: var(--jt-text-xs);
+    font-weight: 500;
+    color: var(--jt-text-subtle);
+    background: var(--jt-surface-sunken);
+    border-bottom: 1px solid var(--jt-border);
+  }
+
+  .topic-list-body {
+    border-top: 0;
+  }
+
+  .bookmark-list-item {
+    transition: background-color var(--jt-motion);
+
+    &:hover {
+      background: var(--jt-hover);
+    }
+
+    &:last-child .topic-list-data {
+      border-bottom: 0;
+    }
+
+    .topic-list-data {
+      padding: var(--space-3) var(--space-4);
+      vertical-align: top;
+    }
+
+    // The bookmark's own name (and reminder) as a label over the topic
+    .bookmark-metadata {
+      margin-bottom: var(--space-1);
+      font-size: var(--jt-text-xs);
+      font-weight: 500;
+      color: var(--jt-text-muted);
+
+      .d-icon {
+        font-size: 0.85em;
+        color: var(--jt-text-subtle);
+      }
+    }
+
+    .bookmark-status-with-link .title {
+      font-size: var(--jt-text-body);
+      font-weight: 600;
+      line-height: 1.35;
+      letter-spacing: var(--jt-tracking-ui);
+      color: var(--jt-text);
+    }
+
+    .link-bottom-line {
+      margin-top: var(--space-1);
+      font-size: var(--jt-text-xs);
+    }
+
+    .post-excerpt {
+      display: -webkit-box;
+      overflow: hidden;
+      margin: var(--space-2) 0 0;
+      font-size: var(--jt-text-md);
+      line-height: 1.5;
+      color: var(--jt-text-muted);
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .author-avatar .avatar {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .post-metadata {
+      font-size: var(--jt-text-xs);
+      font-variant-numeric: tabular-nums;
+      color: var(--jt-text-subtle);
+      white-space: nowrap;
+    }
+
+    .bookmark-actions-dropdown .select-kit-header {
+      box-sizing: border-box;
+      height: 2.2rem;
+      min-height: 0;
+      padding: 0 0.5rem;
+      background: var(--jt-fill);
+      border: 1px solid var(--jt-border-strong);
+      border-radius: var(--jt-radius-control);
+    }
+  }
+
+  @include viewport.until(sm) {
+    .topic-list-header {
+      display: none;
+    }
+  }
+}
+
+// ── Activity stream ───────────────────────────────────────
+.user-content .post-list.user-stream {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+
+  .post-list-item {
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-lg);
+    transition:
+      background-color var(--jt-motion),
+      border-color var(--jt-motion);
+
+    &:hover {
+      border-color: var(--jt-border-strong);
+    }
+
+    &__header {
+      gap: var(--space-3);
+      align-items: flex-start;
+    }
+
+    .avatar-wrapper .avatar {
+      width: 2.25rem;
+      height: 2.25rem;
+    }
+
+    &__details {
+      min-width: 0;
+    }
+
+    .stream-topic-title .title a {
+      font-size: var(--jt-text-body);
+      font-weight: 600;
+      line-height: 1.35;
+      letter-spacing: var(--jt-tracking-ui);
+      color: var(--jt-text);
+    }
+
+    &__metadata {
+      margin-top: var(--space-1);
+      font-size: var(--jt-text-xs);
+      color: var(--jt-text-subtle);
+
+      .time {
+        font-variant-numeric: tabular-nums;
+      }
+    }
+
+    .excerpt {
+      margin: var(--space-3) 0 0;
+      padding: 0;
+      font-size: var(--jt-text-md);
+      line-height: 1.55;
+      color: var(--jt-text-muted);
+      border: 0;
+
+      .cooked {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+      }
+    }
+  }
+
+  @include viewport.until(sm) {
+    .post-list-item {
+      padding: var(--space-3) var(--space-4);
+    }
+  }
+}

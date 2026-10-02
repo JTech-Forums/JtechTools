@@ -7,6 +7,7 @@ What changed for forums running Jtech Tools. Newest first.
 **New**
 
 - JTech theme: the forum's own theme now ships with the plugin and is installed and kept up to date on every rebuild. It is never made the default; turn it on under Customize → Themes. Switch: `jtech_theme_install`. See [docs/features/jtech-theme.md](docs/features/jtech-theme.md).
+- JTech theme: a member's own lists redesigned. The messages inbox is the same topic cards as the rest of the forum, bookmarks are a divided card with the bookmark's name as a small label over its topic, and the activity stream (all, replies, likes …) is a card per entry. Same on phones.
 - JTech theme: the forum's small theme components are built in, each with its own setting: first-reply prompt, code line numbers, last seen on user cards, first/last post buttons, hidden padlocks, the tablet composer full-screen button, and full-page links to the landing site from posts. It also styles core's category boxes. The theme docs list which components to detach and which to keep.
 - JTech theme: a softer dark mode, **JTech Dim** (soft grey instead of OLED black), that anyone can pick under Preferences → Interface → Color Palette → Dark mode. OLED black stays the default.
 - JTech theme: the flair on avatars for trust levels, moderators and admins is drawn in black and white with the theme's own marks (a ring for new users, one to three chevrons for trust levels 1–3, a star for 4, a shield for staff) instead of each group's bright colour and icon. Other groups' flair is unchanged. Setting: `monochrome_flair`.
