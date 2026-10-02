@@ -7,6 +7,9 @@ monochrome_letter_avatars:
 monochrome_heatmap:
   type: bool
   default: true
+monochrome_flair:
+  type: bool
+  default: true
 corner_style:
   type: enum
   default: squircle
