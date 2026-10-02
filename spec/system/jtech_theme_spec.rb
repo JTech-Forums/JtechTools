@@ -174,6 +174,26 @@ RSpec.describe "JTech theme" do
     expect(page).to have_no_css(".jt-cmdk")
   end
 
+  # Core's /badges: boxes with a faint border under grey group headings. The
+  # theme: cards under small labels, and a badge's own page on its big card.
+  it "shows badges as cards under group labels" do
+    sign_in(member)
+    visit("/badges")
+    expect(page).to have_css(".badge-groups .badge-card .badge-link", minimum: 1)
+    border, label_case = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".badge-card")).borderTopWidth,
+        getComputedStyle(document.querySelector(".badge-grouping .title h2")).textTransform,
+      ]
+    JS
+    expect(border).to eq("1px")
+    expect(label_case).to eq("uppercase")
+
+    find(".badge-card .badge-link", match: :first).click
+    expect(page).to have_css(".show-badge .badge-card.--badge-large")
+    expect_no_theme_errors
+  end
+
   it "shows each command's keyboard shortcut, and binds the theme's own" do
     SiteSetting.chat_enabled = false
     sign_in(member)
