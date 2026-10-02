@@ -129,7 +129,11 @@ RSpec.describe ::DiscourseJtechTheme::Installer do
       expect(result).to eq(:adopted)
       expect(installed.id).to eq(hand_installed.id)
       expect(SiteSetting.default_theme_id).to eq(hand_installed.id)
-      expect(installed.color_schemes.pluck(:name)).to contain_exactly("JTech Light", "JTech Dark")
+      expect(installed.color_schemes.pluck(:name)).to contain_exactly(
+        "JTech Light",
+        "JTech Dark",
+        "JTech Dim",
+      )
     end
 
     it "stops following the Git repo, so core's theme updates can't pull it back" do
