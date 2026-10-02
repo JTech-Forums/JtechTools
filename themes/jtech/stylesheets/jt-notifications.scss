@@ -93,6 +93,14 @@
         font-variant-numeric: tabular-nums;
         color: var(--jt-text-subtle);
       }
+
+      // on a tinted row the subtle grey drops under 4.5:1
+      &.unread .relative-date,
+      &.pending .relative-date,
+      &:hover .relative-date,
+      &:focus-within .relative-date {
+        color: var(--jt-text-muted);
+      }
     }
 
     .loading-container:empty {
@@ -205,6 +213,13 @@
     &:hover,
     &:focus-within {
       background: var(--jt-active);
+    }
+
+    &.unread .relative-date,
+    &.pending .relative-date,
+    &:hover .relative-date,
+    &:focus-within .relative-date {
+      color: var(--jt-text-muted);
     }
   }
 

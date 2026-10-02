@@ -314,3 +314,9 @@ html.desktop-view #topic-footer-buttons {
   border: 1px solid var(--jt-border);
   border-radius: var(--jt-radius-lg);
 }
+
+// "Pinned post" on the pinned post's card under a topic: the medium grey on
+// its grey pill is 3.8:1
+.topic-footer-pinned-post .pinned-post-badge {
+  color: var(--jt-text-muted);
+}
