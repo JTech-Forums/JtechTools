@@ -286,6 +286,33 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's static pages: a 700px column at the interface size. The theme: a
+  # reading column at the post's size, with a post's heading and list rhythm.
+  it "sets the guidelines page in a reading column" do
+    guidelines = Fabricate(:topic, user: admin, title: "Community guidelines for the forum")
+    Fabricate(
+      :post,
+      topic: guidelines,
+      user: admin,
+      raw: "Be kind.\n\n## No ads\n\n- One\n- Two\n\nThat's all.",
+    )
+    SiteSetting.guidelines_topic_id = guidelines.id
+
+    visit("/guidelines")
+    expect(page).to have_css(".body-page h2", text: "No ads")
+    width, size, indent = page.evaluate_script(<<~JS)
+      [
+        Math.round(document.querySelector(".body-page").getBoundingClientRect().width),
+        getComputedStyle(document.querySelector(".body-page h2").parentElement).fontSize,
+        getComputedStyle(document.querySelector(".body-page ul:not(.nav-pills)")).marginLeft,
+      ]
+    JS
+    expect(width).to eq(704) # 44rem
+    expect(size).to eq("17.0672px") # the post's reading size, not core's 16px
+    expect(indent).to eq("0px") # a post's indent, not core's 40px
+    expect_no_theme_errors
+  end
+
   it "puts Me too on the post menu's line, next to the like count" do
     skip("needs discourse-solved") unless defined?(::DiscourseSolved)
     SiteSetting.solved_enabled = true
