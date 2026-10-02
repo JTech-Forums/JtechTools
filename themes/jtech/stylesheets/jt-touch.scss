@@ -2,9 +2,10 @@
 // nothing hovers to reveal them and code blocks, tables and the command menu
 // would otherwise scroll with no sign that they can. Two places don't need
 // the sign and were drawing a grey bar under every post and down the side of
-// the ☰ drawer: the post menu row (its actions scroll sideways by a few
-// pixels on narrow phones) and the drawer's panel (a full-height list that
-// anyone swipes). Both still scroll; only the bar goes. Keyed on core's
+// the slide-in panels: the post menu row (its actions scroll sideways by a
+// few pixels on narrow phones) and the menu panels' bodies (the ☰ drawer,
+// the bell's and the avatar's: full-height lists anyone swipes). They all
+// still scroll; only the bar goes. Keyed on core's
 // phone layout as well as on touch, so a phone-sized window without touch
 // (and the phone system specs) gets the same.
 @mixin jt-no-bar {
