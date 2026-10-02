@@ -6,13 +6,15 @@ What it adds on top of a restyle:
 
 - **Topic cards** instead of table rows, with the first image beside the title and a Quick look preview.
 - **A front-page hero** with search and quick links, **category and tag banners**, and a **footer** with link columns.
-- **⌘K / Ctrl+K command menu** to jump to pages, categories, topics and people, each command with its keyboard shortcut beside it (Discourse's own, plus `g g` Tags, `g i` Notifications, `g e` Preferences, `g a` Admin and `g o` light / dark, which the theme adds and lists in the `?` help). The header's search field opens it. For people who can use chat, ⌘K stays chat's channel switcher (core binds it) and the menu opens from the search field only; "/" still opens Discourse's own search.
+- **⌘K / Ctrl+K command menu** to jump to pages, categories, topics and people. The header's search field opens it. For people who can use chat, ⌘K stays chat's channel switcher (core binds it) and the menu opens from the search field only; "/" still opens Discourse's own search.
 - **Header**: search (in the middle of the bar on wide screens), JTech homepage, messages and notifications (with unread counts), light/dark, new topic. Staff keep core's review-queue badge on their avatar.
 - **Sidebar**, **profiles**, **users directory** and **empty pages** redesigned; site notices get a dismiss button.
 - A **login gate** for chosen categories and tags: logged-out visitors see a topic's first lines fade into a card to log in or create an account.
 - An overlay page scrollbar, a back-to-top button, reading progress, language labels on code blocks, category icons on the categories page.
 
 Each of those has its own switch in the theme's settings.
+
+The command menu shows each command's keyboard shortcut beside it: Discourse's own (`g l` Latest, `g n` New, …), plus `g g` Tags, `g i` Notifications, `g e` Preferences, `g a` Admin and `g o` light / dark, which the theme adds and lists in the `?` help. They work anywhere outside a text field; in the open menu, typing searches.
 
 ## Installing it
 
