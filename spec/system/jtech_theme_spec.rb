@@ -328,6 +328,35 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's suggested list is a bare table under a bold "want to read more?";
+  # the theme: a divided card and a sentence.
+  it "puts the suggested topics under a topic on a card" do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css(".more-topics__container .topic-list .topic-list-item")
+    border, weight = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".more-topics__list .topic-list")).borderTopWidth,
+        getComputedStyle(document.querySelector(".more-topics__browse-more")).fontWeight,
+      ]
+    JS
+    expect(border).to eq("1px")
+    expect(weight).to eq("400")
+    expect_no_theme_errors
+  end
+
+  # On phones core makes every footer button an icon, Reply included
+  it "keeps the word on the phone's Reply button", mobile: true do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css(
+      "#topic-footer-buttons .create .d-button-label",
+      text: "Reply",
+      visible: true,
+    )
+    expect_no_theme_errors
+  end
+
   it "puts the tracking menu in the topic's row of buttons, without the explanation" do
     sign_in(member)
     visit(topic.relative_url)

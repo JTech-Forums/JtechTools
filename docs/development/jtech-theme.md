@@ -66,6 +66,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `components/jt-topic-card.gts` + `api-initializers/jt-topic-cards.gts` | discovery lists as cards (`stylesheets/jt-cards.scss`) |
 | `components/jt-hero.gts` (outlet `discovery-list-controls-above`) | front-page hero: headline, search, quick links (`jt-hero.scss`) |
 | `stylesheets/jt-post-chrome.scss` | author block, post menu, reactions, solved answer, topic events |
+| `stylesheets/jt-topic-footer.scss` | under a topic: the suggested / new & unread list as a divided card (header hidden on phones), "want to read more?" as a sentence; on phones the footer buttons sized alike and Reply keeping its word |
 | `components/jt-quick-look.gts` | Quick look dialog from topic cards (first post via `/posts/by_number`, decorated) |
 | `components/jt-context-banner.gts` (outlet `discovery-list-controls-above`) | category / tag banner (`jt-banner.scss`) |
 | `components/jt-footer.gts` (outlet `below-footer`) | footer columns from `footer_links` (`jt-footer.scss`) |
