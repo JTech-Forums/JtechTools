@@ -1,6 +1,6 @@
 # JTech theme
 
-The forum's own theme ships with the plugin: AMOLED black and pure white, monochrome everywhere, hairline borders, rounded ("squircle") corners and the Geist typeface. Light and dark are exact inverses and follow each person's colour-mode choice.
+The forum's own theme ships with the plugin: AMOLED black and pure white, monochrome everywhere, hairline borders, rounded ("squircle") corners and the Geist typeface. Light and dark are exact inverses and follow each person's colour-mode choice. People who find the black too harsh can pick **JTech Dim** (soft grey) instead under Preferences → Interface → Color Palette → Dark mode; OLED black stays the default.
 
 What it adds on top of a restyle:
 
@@ -64,6 +64,8 @@ Several components on the forum's Default theme are built into JTech, and some c
 | `jtech_theme_install` | on | Install the bundled theme and update it when the plugin updates. Never made the default. Turning it on installs now and brings back a deleted theme. |
 
 The look itself is configured in the theme's own settings (corner style, cards, hero text and links, footer links, header home link and the other switches).
+
+The theme brings three palettes: **JTech Light** and **JTech Dark** (OLED black) are its light and dark defaults, and **JTech Dim** is offered to users as a softer dark mode. The plugin marks JTech Dim "users can select" once when it first installs it; turn that off under Customize → Colors and it stays off. Being user-selectable, it's also offered with other themes that let people pick any palette.
 
 ## Things outside the theme
 

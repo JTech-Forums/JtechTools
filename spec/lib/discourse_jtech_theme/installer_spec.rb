@@ -32,7 +32,11 @@ RSpec.describe ::DiscourseJtechTheme::Installer do
       expect(theme.id).to be > 0
       expect(theme.user_selectable).to eq(false)
       expect(SiteSetting.default_theme_id).not_to eq(theme.id)
-      expect(theme.color_schemes.pluck(:name)).to contain_exactly("JTech Light", "JTech Dark")
+      expect(theme.color_schemes.pluck(:name)).to contain_exactly(
+        "JTech Light",
+        "JTech Dark",
+        "JTech Dim",
+      )
       expect(described_class.state["digest"]).to eq(described_class.digest)
     end
 
@@ -69,6 +73,28 @@ RSpec.describe ::DiscourseJtechTheme::Installer do
 
       expect(installed.user_selectable).to eq(true)
       expect(SiteSetting.default_theme_id).to eq(theme.id)
+    end
+
+    it "lets people choose JTech Dim, but only the theme's defaults are the defaults" do
+      described_class.sync_now
+      theme = installed
+
+      dim = theme.color_schemes.find_by(name: "JTech Dim")
+      expect(dim.user_selectable).to eq(true)
+      expect(dim.is_dark?).to eq(true)
+      expect(theme.color_scheme.name).to eq("JTech Light")
+      expect(theme.dark_color_scheme.name).to eq("JTech Dark")
+      expect(theme.color_schemes.where(user_selectable: true).pluck(:name)).to eq(["JTech Dim"])
+    end
+
+    it "doesn't offer JTech Dim again after an admin stops offering it" do
+      described_class.sync_now
+      installed.color_schemes.find_by(name: "JTech Dim").update!(user_selectable: false)
+      described_class.save_state(described_class.state.merge("digest" => "older"))
+
+      described_class.sync_now
+
+      expect(installed.color_schemes.find_by(name: "JTech Dim").user_selectable).to eq(false)
     end
 
     it "leaves a theme an admin deleted deleted" do

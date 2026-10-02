@@ -599,4 +599,24 @@ RSpec.describe "JTech theme" do
     shot("dark-topic")
     expect_no_theme_errors
   end
+
+  it "lets people pick JTech Dim instead of OLED black" do
+    page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
+    sign_in(member)
+    preferences = PageObjects::Pages::UserPreferencesInterface.new.visit(member)
+    dark = PageObjects::Components::SelectKit.new(".dark-color-scheme .select-kit")
+    # the theme's own default, by name rather than core's "-1"
+    expect(dark).to have_selected_name("JTech Dark")
+    dark.expand
+    expect(dark).to have_option_name("JTech Dim")
+    dark.select_row_by_name("JTech Dim")
+    preferences.save_changes
+
+    visit("/latest")
+    expect(page).to have_css(".jt-card")
+    background = page.evaluate_script("getComputedStyle(document.body).backgroundColor")
+    expect(background).to eq("rgb(22, 22, 22)")
+    shot("dim-latest")
+    expect_no_theme_errors
+  end
 end
