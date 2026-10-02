@@ -1,0 +1,31 @@
+// Touch screens keep the theme's thin scrollbars visible (jt-base), because
+// nothing hovers to reveal them and code blocks, tables and the command menu
+// would otherwise scroll with no sign that they can. Two places don't need
+// the sign and were drawing a grey bar under every post and down the side of
+// the slide-in panels: the post menu row (its actions scroll sideways by a
+// few pixels on narrow phones) and the menu panels' bodies (the ☰ drawer,
+// the bell's and the avatar's: full-height lists anyone swipes). They all
+// still scroll; only the bar goes. Keyed on core's
+// phone layout as well as on touch, so a phone-sized window without touch
+// (and the phone system specs) gets the same.
+@mixin jt-no-bar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+html.mobile-view {
+  .post-controls,
+  .menu-panel .panel-body {
+    @include jt-no-bar;
+  }
+}
+
+@media (hover: none) {
+  .post-controls,
+  .menu-panel .panel-body {
+    @include jt-no-bar;
+  }
+}
