@@ -211,6 +211,29 @@ RSpec.describe "Dumbcourse" do
       end
     end
 
+    it "lists a post's pictures in its action sheet, apart from its links" do
+      Fabricate(
+        :post,
+        topic: topic,
+        user: bob,
+        raw:
+          "Mine: ![DuraXV](https://example.com/duraxv.png) Specs at https://example.com/specs here.",
+      )
+      phone do
+        visit "/dumb/t/#{topic.slug}/#{topic.id}"
+        # The post's timestamp, not its middle: the middle of this post is its link.
+        find(".post[data-n='3'] .post-when").click
+        press(:enter)
+        expect(page).to have_css(".sheet-heading", text: /1 picture in this post/i)
+        expect(page).to have_css(
+          ".sheet-item[href='https://example.com/duraxv.png'][target='_blank']",
+          text: "DuraXV",
+        )
+        expect(page).to have_css(".sheet-heading", text: /1 link in this post/i)
+        expect(page).to have_css(".sheet-item[href='https://example.com/specs']")
+      end
+    end
+
     it "replies with the keypad and the soft keys" do
       phone do
         visit "/dumb/t/#{topic.slug}/#{topic.id}"
