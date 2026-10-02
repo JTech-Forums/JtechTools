@@ -6,6 +6,10 @@ en:
     quick_look: "Quick look"
     back_to_top: "Back to top"
     dismiss: "Dismiss"
+    icon_style:
+      title: "Icon style"
+      lucide: "Outline (Lucide)"
+      classic: "Classic filled (Font Awesome)"
     quick_look_error: "Couldn't load this topic's first post."
     open_topic: "Open topic"
     latest_reply: "Latest reply"
