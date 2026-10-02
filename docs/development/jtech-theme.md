@@ -58,6 +58,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | | |
 |---|---|
 | `about.json` | palettes **JTech Light** / **JTech Dark** (incl. full Geist gray ramps), `only_theme_color_schemes`, theme site settings |
+| `lib/jt-icon-map.ts` + `api-initializers/jt-lucide-icons.ts` + `assets/icons-sprite.svg` | Lucide icons (setting `lucide_icons`): the map says which Font Awesome icon becomes which Lucide one (filled for on-states); `pnpm theme:icons` builds the sprite from `lucide-static` and `lint:theme` fails if it's stale; the initializer points icons and core's aliases (`d-liked`, `notification.*`) at it. `LUCIDE-LICENSE.txt` is Lucide's ISC licence |
 | `common/color_definitions.scss` | per-mode tokens (`--jt-*`): borders, surfaces, text, shadows |
 | `stylesheets/jt-tokens.scss` | maps tokens onto core's `--d-*` / `--token-*` hooks |
 | `stylesheets/jt-*.scss` | header, logo, topic list, posts, panels, component restyles, monochrome switches |
@@ -88,5 +89,5 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `stylesheets/jt-leaderboard.scss`, `jt-components.scss` | restyles for gamification, Gated Topics, Category Boxes, admin |
 | `stylesheets/jt-type.scss` | type scale (15px root, Geist steps, tracking by size, tabular numerals) |
 | `stylesheets/jt-shape.scss` | `corner_style` radii (squircles via `corner-shape`), fading dividers, glass header, press motion |
-| `settings.yml` | `corner_style` (squircle/sharp/soft/round), `topic_cards`, `hero_*` (incl. `hero_links` list), `quick_look`, `category_banners`, `tag_banners`, `footer_*`, `reading_progress`, `external_link_icon`, `internal_hosts`, `command_menu`, `card_thumbnails`, `code_language_labels`, `back_to_top`, `overlay_scrollbar`, `header_home_url`, `color_mode_toggle`, `code_line_numbers`, `first_reply_prompt*`, `user_card_last_seen`, `topic_jump_buttons`, `hide_lock_icons`, `mobile_small_logo`, `gated_categories`, `gated_tags`, `monochrome_categories`, `monochrome_letter_avatars`, `monochrome_heatmap`, `monochrome_flair` |
+| `settings.yml` | `corner_style` (squircle/sharp/soft/round), `topic_cards`, `hero_*` (incl. `hero_links` list), `quick_look`, `category_banners`, `tag_banners`, `footer_*`, `reading_progress`, `external_link_icon`, `internal_hosts`, `command_menu`, `card_thumbnails`, `code_language_labels`, `back_to_top`, `overlay_scrollbar`, `header_home_url`, `color_mode_toggle`, `code_line_numbers`, `first_reply_prompt*`, `user_card_last_seen`, `topic_jump_buttons`, `hide_lock_icons`, `mobile_small_logo`, `gated_categories`, `gated_tags`, `monochrome_categories`, `monochrome_letter_avatars`, `monochrome_heatmap`, `monochrome_flair`, `lucide_icons` |
 | `lib/jt-links.ts`, `lib/jt-color-mode.ts`, `lib/jt-command-menu-shortcut.ts` | full-page links for non-forum paths; the light/dark switch (returns to "follow the device"); whether ⌘K is the menu's or chat's |

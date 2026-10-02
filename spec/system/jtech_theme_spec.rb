@@ -363,6 +363,24 @@ RSpec.describe "JTech theme" do
     expect(page).to have_css(".jt-footer a[href='/latest']:not([data-auto-route])")
   end
 
+  it "draws Discourse's icons with Lucide's outline set" do
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-header-notifications .d-icon-bell")
+    icon, drawn = page.evaluate_script(<<~JS)
+      (() => {
+        const id = document
+          .querySelector(".jt-header-notifications .d-icon-bell use")
+          .getAttribute("href")
+          .slice(1);
+        return [id, !!document.querySelector(`symbol#${id}`)];
+      })()
+    JS
+    expect(icon).to eq("jt-bell")
+    expect(drawn).to eq(true)
+    expect_no_theme_errors
+  end
+
   describe "header icons" do
     # Every visible icon in the header row, the theme's and core's and chat's:
     # one glyph size, one vertical centre. The desktop search field has its
