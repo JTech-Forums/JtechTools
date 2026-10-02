@@ -9,6 +9,7 @@
     --jt-radius-xl: 14px;
     --jt-radius-control: 6px;
     --jt-radius-pill: 6px;
+    --jt-radius-avatar: 22%;
   } @else if $corner_style == "soft" {
     --jt-radius-sm: 8px;
     --jt-radius-md: 10px;
@@ -16,6 +17,7 @@
     --jt-radius-xl: 20px;
     --jt-radius-control: 10px;
     --jt-radius-pill: 999px;
+    --jt-radius-avatar: 30%;
   } @else if $corner_style == "round" {
     --jt-radius-sm: 10px;
     --jt-radius-md: 14px;
@@ -23,6 +25,7 @@
     --jt-radius-xl: 24px;
     --jt-radius-control: 999px;
     --jt-radius-pill: 999px;
+    --jt-radius-avatar: 50%;
   } @else {
     // squircle: superellipse corners via `corner-shape`. A squircle hugs the
     // corner more tightly than a circle, so it takes bigger radii to read the
@@ -33,7 +36,9 @@
     --jt-radius-xl: 16px;
     --jt-radius-control: 8px;
     --jt-radius-pill: 6px;
+    --jt-radius-avatar: 30%;
 
+    // a squircle at 50% is the rounded box an app icon is
     @supports (corner-shape: squircle) {
       --jt-radius-sm: 10px;
       --jt-radius-md: 14px;
@@ -41,13 +46,20 @@
       --jt-radius-xl: 28px;
       --jt-radius-control: 12px;
       --jt-radius-pill: 10px;
+      --jt-radius-avatar: 50%;
     }
   }
 
-  --d-border-radius: var(--jt-radius-sm);
+  // One radius for everything you press, type in or pick from (buttons,
+  // fields, dropdowns, menu rows), one for surfaces (cards, menus), one
+  // for blocks in a post. Fields and core's small surfaces take it capped
+  // at md: with corner_style "round" a control is a 999px pill, which a
+  // tall field (the composer) or a toast can't be.
+  --jt-radius-field: min(var(--jt-radius-control), var(--jt-radius-md));
+  --d-border-radius: var(--jt-radius-field);
   --d-border-radius-large: var(--jt-radius-lg);
   --d-button-border-radius: var(--jt-radius-control);
-  --d-input-border-radius: var(--jt-radius-md);
+  --d-input-border-radius: var(--jt-radius-field);
   --d-nav-pill-border-radius: var(--jt-radius-control);
   --d-tag-border-radius: var(--jt-radius-pill);
   --d-post-control-border-radius: var(--jt-radius-control);
@@ -63,11 +75,9 @@
       corner-shape: squircle;
     }
 
-    // Things that are meant to be true circles
-    .avatar,
+    // Things that are meant to be true circles (avatars are rounded boxes,
+    // below)
     .avatar-flair,
-    .user-image,
-    [class*="avatar"] img,
     input[type="radio"],
     .emoji,
     .d-icon,
@@ -192,9 +202,30 @@
 aside.quote,
 aside.onebox,
 .cooked pre code,
-.cooked table,
-.select-kit .select-kit-header:not(.btn) {
+.cooked table {
   border-radius: var(--jt-radius-md);
+}
+
+.select-kit .select-kit-header:not(.btn) {
+  border-radius: var(--jt-radius-field);
+}
+
+// Buttons core squares off: the composer's corner controls and Discard, the
+// user menu's tabs and its bottom bar
+#reply-control .composer-controls .btn,
+#reply-control .save-or-cancel .btn,
+.user-menu.revamped .menu-tabs-container .btn,
+.user-menu.revamped .panel-body-bottom .btn {
+  border-radius: var(--jt-radius-control);
+}
+
+// Avatars: a rounded box like the rest of the theme's shapes (a squircle
+// where corner-shape works), a circle only with corner_style "round"
+img.avatar,
+.avatar-wrapper,
+.placeholder-avatar,
+.user-card a.card-huge-avatar {
+  border-radius: var(--jt-radius-avatar);
 }
 
 .cooked img:not(.emoji, .avatar, .site-icon) {

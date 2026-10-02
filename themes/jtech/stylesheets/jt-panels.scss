@@ -1,12 +1,15 @@
 // Menus, cards, modals: flat surface, hairline border, no heavy shadows
+// (.drop-down and .is-expanded: core's own selectors, which outranked these
+// and left menus and dropdowns at its small radius)
 .menu-panel,
+.menu-panel.drop-down,
 // .show: core keeps an empty, zero-height card in the page while none is
 // open, and a border on it draws a stray line under the content
 .user-card.show,
 .group-card.show,
 // core draws d-menus on the inner box; the outer one is just a positioner
-.fk-d-menu__inner-content,
-.select-kit .select-kit-body,
+.fk-d-menu .fk-d-menu__inner-content,
+.select-kit.is-expanded .select-kit-body,
 .popup-menu {
   border: 1px solid var(--jt-border);
   border-radius: var(--jt-radius-lg);
