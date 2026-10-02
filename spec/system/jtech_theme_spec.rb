@@ -887,8 +887,9 @@ RSpec.describe "JTech theme" do
   # Core fills a deleted post with bright pink and turns its name and buttons
   # red. The theme: a dashed outline over a faint hatch, everything in greys.
   it "shows staff a deleted post in greys, not pink and red" do
-    deleted = replies.first
-    PostDestroyer.new(admin, deleted).destroy
+    # staff see a deleted reply only after "show deleted"; a deleted first
+    # post is always in the stream (core keeps post 1), as on the live forum
+    first_post.update_columns(deleted_at: Time.zone.now, deleted_by_id: admin.id)
     sign_in(admin)
     visit(topic.relative_url)
     expect(page).to have_css(".topic-post.deleted .regular > .cooked")
