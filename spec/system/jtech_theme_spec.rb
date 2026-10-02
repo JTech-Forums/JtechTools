@@ -358,6 +358,29 @@ RSpec.describe "JTech theme" do
     expect(footer_edges[1]).to be_within(1).of(page_edges[1])
   end
 
+  # Core lists tags as "name x 190" in floated columns; the theme makes each
+  # a chip with the number alone in a pill, and the lists wrap.
+  it "shows the tags page as chips, with the count alone in its pill" do
+    Fabricate(:topic, category: category, user: admin, tags: [Fabricate(:tag, name: "ios")])
+    Tag.ensure_consistency! # the counts the page shows
+    sign_in(member)
+    visit("/tags")
+    expect(page).to have_css(".tags-index .tag-box", minimum: 2)
+    expect(find(".tag-box", text: tag.name).find(".tag-count")).to have_text(/\A1\z/)
+
+    display, android_top, ios_top = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".tags-index .tags-list")).display,
+        ...[...document.querySelectorAll(".tags-index .tag-box")]
+          .slice(0, 2)
+          .map((box) => Math.round(box.getBoundingClientRect().top)),
+      ]
+    JS
+    expect(display).to eq("flex")
+    expect(android_top).to eq(ios_top) # side by side, not stacked
+    expect_no_theme_errors
+  end
+
   def horizontal_edges(*selectors)
     page.evaluate_script(<<~JS)
       #{selectors.to_json}

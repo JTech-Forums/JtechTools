@@ -11,6 +11,7 @@ What it adds on top of a restyle:
 - **Sidebar**, **profiles**, **users directory**, **full-page search** and **empty pages** redesigned; site notices get a dismiss button.
 - A **login gate** for chosen categories and tags: logged-out visitors see a topic's first lines fade into a card to log in or create an account.
 - **Lucide icons**: Discourse's icons in Lucide's thin outline style (lucide.dev) instead of Font Awesome, as ChatGPT and Gemini use.
+- The **tags page** as chips with their counts, instead of columns of "name x 190".
 - An overlay page scrollbar, a back-to-top button, reading progress, language labels on code blocks, category icons on the categories page.
 
 Each of those has its own switch in the theme's settings.
