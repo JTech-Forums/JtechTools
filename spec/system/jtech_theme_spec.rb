@@ -524,6 +524,44 @@ RSpec.describe "JTech theme" do
   # Core's [details] is a grey bar with ► / ▼, a quote a grey title bar over a
   # barred blockquote, a onebox a 1px + 4px ring. The theme: one hairline card
   # for each, the section's chevron turning when it opens.
+  # The composer's rich editor (core's default) drew [details] as a grey bar
+  # with a triangle and a blockquote as a grey box; in the post both are the
+  # theme's (jt-post-blocks). Now the editor shows them as the post will.
+  it "draws sections and blockquotes in the rich editor as they'll look in the post" do
+    # tests start in Markdown; core's rich editor specs set the mode the same way
+    member.user_option.update!(composition_mode: UserOption.composition_mode_types[:rich])
+    sign_in(member)
+    visit(topic.relative_url)
+    find(".topic-footer-main-buttons .create").click
+    composer = PageObjects::Components::Composer.new
+    expect(composer).to be_opened
+    expect(page).to have_css("#reply-control .ProseMirror")
+    composer.toggle_rich_editor
+    composer.fill_content("[details=\"Steps\"]\nHold power.\n[/details]\n\n> A plain blockquote")
+    composer.toggle_rich_editor
+    expect(page).to have_css("#reply-control .ProseMirror details summary")
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const editor = document.querySelector("#reply-control .ProseMirror");
+        const details = editor.querySelector("details");
+        const quote = editor.querySelector(":scope > blockquote");
+        return {
+          details: getComputedStyle(details).borderTopWidth,
+          marker: getComputedStyle(details.querySelector("summary"), "::before").content,
+          bar: getComputedStyle(quote).borderLeftWidth,
+          fill: getComputedStyle(quote).backgroundColor,
+        };
+      })()
+    JS
+    expect(looks).to eq(
+      "details" => "1px",
+      "marker" => '""',
+      "bar" => "2px",
+      "fill" => "rgba(0, 0, 0, 0)",
+    )
+    expect_no_theme_errors
+  end
+
   it "draws collapsible sections, quotes and link previews as hairline cards" do
     post =
       Fabricate(
