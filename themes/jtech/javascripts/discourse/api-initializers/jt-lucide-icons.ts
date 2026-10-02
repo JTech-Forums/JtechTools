@@ -8,8 +8,14 @@ import { JT_ICON_MAP, jtIconId } from "../lib/jt-icon-map";
 // sprite (assets/icons-sprite.svg) instead. Core's own aliases (d-liked →
 // heart, notification.replied → reply, …) are only looked up one level deep,
 // so they're pointed at the sprite as well. Unlisted icons stay Font Awesome.
+// Someone who picked Classic icons (Preferences → Interface) keeps Font
+// Awesome throughout.
 export default apiInitializer((api) => {
   if (!settings.lucide_icons) {
+    return;
+  }
+  const user = api.getCurrentUser() as { jtech_icon_style?: string } | null;
+  if (user?.jtech_icon_style === "classic") {
     return;
   }
   // core's aliases, before this adds its own entries to the same table
