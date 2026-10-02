@@ -65,7 +65,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `stylesheets/jt-*.scss` | header, logo, topic list, posts, panels, component restyles, monochrome switches |
 | `stylesheets/jt-legacy-content.scss` | post wrappers (`ghbtn`, `logos`) ported from prod's Default theme |
 | `stylesheets/jt-static.scss` | the static pages (/guidelines, /faq, /tos, /privacy): a measured reading column at the post's size and leading, headings, lists and links like a post's, the edit link quiet under the nav |
-| `components/jt-topic-card.gts` + `api-initializers/jt-topic-cards.gts` | discovery lists as cards (`stylesheets/jt-cards.scss`) |
+| `components/jt-topic-card.gts` + `api-initializers/jt-topic-cards.gts` | discovery lists as cards (`stylesheets/jt-cards.scss`); the new-topics button kept in the flow above the cards (core floats it over a header row the cards don't have) |
 | `stylesheets/jt-preferences.scss` | preferences (/my/preferences/*): each group a card with its label as title, fields with quiet labels and the theme's controls, help text small, Save Changes on a ruled bar |
 | `components/jt-hero.gts` (outlet `discovery-list-controls-above`) | front-page hero: headline, search, quick links (`jt-hero.scss`) |
 | `stylesheets/jt-polls.scss` | polls: the theme's radius on the frame, core's `--poll-bar-*` pointed at a faint track, a muted bar and the text colour for your vote; rounded bars on the track, the voter count as a number, the settings gear flat |
