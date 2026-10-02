@@ -884,6 +884,40 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core fills a deleted post with bright pink and turns its name and buttons
+  # red. The theme: a dashed outline over a faint hatch, everything in greys.
+  it "shows staff a deleted post in greys, not pink and red" do
+    deleted = replies.first
+    PostDestroyer.new(admin, deleted).destroy
+    sign_in(admin)
+    visit(topic.relative_url)
+    expect(page).to have_css(".topic-post.deleted .regular > .cooked")
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const post = document.querySelector(".topic-post.deleted");
+        const cooked = getComputedStyle(post.querySelector(".regular > .cooked"));
+        const grey = (c) => {
+          const [r, g, b] = c.match(/[\d.]+/g).map(Number);
+          return Math.max(r, g, b) - Math.min(r, g, b) < 12;
+        };
+        return {
+          outline: cooked.borderTopStyle,
+          fill: cooked.backgroundColor,
+          name: grey(getComputedStyle(post.querySelector(".topic-meta-data")).color),
+          buttons: grey(getComputedStyle(post.querySelector("nav.post-controls")).color),
+        };
+      })()
+    JS
+    expect(looks).to eq(
+      "outline" => "dashed",
+      "fill" => "rgba(0, 0, 0, 0)",
+      "name" => true,
+      "buttons" => true,
+    )
+    shot("deleted-post")
+    expect_no_theme_errors
+  end
+
   it "previews a topic's first post in Quick look" do
     sign_in(member)
     visit("/latest")

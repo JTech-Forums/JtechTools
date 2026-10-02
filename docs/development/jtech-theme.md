@@ -70,6 +70,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `components/jt-hero.gts` (outlet `discovery-list-controls-above`) | front-page hero: headline, search, quick links (`jt-hero.scss`) |
 | `stylesheets/jt-polls.scss` | polls: the theme's radius on the frame, core's `--poll-bar-*` pointed at a faint track, a muted bar and the text colour for your vote; rounded bars on the track, the voter count as a number, the settings gear flat |
 | `stylesheets/jt-badges.scss` | badges (/badges): display title, group labels, each badge a card with a three-line description; a badge's page: the big card, the people who earned it as cards |
+| `stylesheets/jt-deleted.scss` | deleted posts (staff): a dashed outline over a faint hatch instead of core's `--danger-low-mid` fill, the meta line, buttons and "deleted by" mark in greys instead of `--danger`; deleted small actions struck through |
 | `stylesheets/jt-post-chrome.scss` | author block, post menu, reactions, solved answer, topic events |
 | `stylesheets/jt-post-blocks.scss` | blocks in a post and the composer's preview: `[details]` as a hairline card with a turning chevron (core's `.elided` email toggle left alone), quotes as one sunken card without the blockquote bar, oneboxes with one border instead of core's 1px + 4px ring |
 | `stylesheets/jt-topic-footer.scss` | under a topic: the suggested / new & unread list as a divided card (header hidden on phones), "want to read more?" as a sentence; on phones the footer buttons sized alike and Reply keeping its word |
