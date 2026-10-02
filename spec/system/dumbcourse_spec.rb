@@ -221,7 +221,8 @@ RSpec.describe "Dumbcourse" do
       )
       phone do
         visit "/dumb/t/#{topic.slug}/#{topic.id}"
-        find(".post[data-n='3']").click
+        # The post's timestamp, not its middle: the middle of this post is its link.
+        find(".post[data-n='3'] .post-when").click
         press(:enter)
         expect(page).to have_css(".sheet-heading", text: /1 picture in this post/i)
         expect(page).to have_css(
