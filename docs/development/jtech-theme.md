@@ -70,6 +70,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `components/jt-context-banner.gts` (outlet `discovery-list-controls-above`) | category / tag banner (`jt-banner.scss`) |
 | `components/jt-footer.gts` (outlet `below-footer`) | footer columns from `footer_links` (`jt-footer.scss`) |
 | `components/jt-reading-progress.gts` (outlet `topic-above-post-stream`) | reading progress hairline (core `topic:current-post-scrolled`) |
+| `stylesheets/jt-topic-progress.scss` | the topic progress widget (phones, narrow desktop windows): the jump arrows, admin wrench and "1 / 4" counter as one glass capsule, the counter's fill a quiet tint, tabular numbers in the text colour |
 | `components/jt-command-menu.gts` + `api-initializers/jt-command-menu.ts` | ⌘K / Ctrl+K command menu (`jt-cmdk.scss`); opened from the header's search field too |
 | `lib/jt-shortcuts.ts` + `api-initializers/jt-shortcuts.ts` | the command menu's keyboard shortcuts: core's, and the theme's own `g` keys (bound outside text fields, labelled in core's `?` help by copying the menu's strings under `keyboard_shortcuts_help.jtech`) |
 | `stylesheets/jt-sidebar.scss` | sidebar: tokens, rows, headers, scroll fades, footer |
