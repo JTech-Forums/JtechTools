@@ -129,6 +129,33 @@ RSpec.describe "JTech theme" do
     include_examples "renders the main pages"
   end
 
+  # Core's about page: stats on a ruled strip, staff as avatar + name, the
+  # right column as plain text. The theme: tiles, cards, one ruled card.
+  it "shows the about page's counts as tiles, its staff as cards" do
+    sign_in(member)
+    visit("/about")
+    # members and "created" always; admins / moderators only when core lists
+    # someone, which it doesn't in this database
+    expect(page).to have_css(".about__stats-item", minimum: 2)
+    expect(page).to have_css(".about__right-side .about__activities-item")
+
+    borders, tile_tops, staff_border = page.evaluate_script(<<~JS)
+      [
+        [".about__stats-item", ".about__right-side"]
+          .map((selector) => getComputedStyle(document.querySelector(selector)).borderTopWidth),
+        [...document.querySelectorAll(".about__stats-item")]
+          .slice(0, 2)
+          .map((tile) => Math.round(tile.getBoundingClientRect().top)),
+        [...document.querySelectorAll(".about-page-users-list .user-info")]
+          .map((card) => getComputedStyle(card).borderTopWidth),
+      ]
+    JS
+    expect(borders).to eq(%w[1px 1px])
+    expect(tile_tops[0]).to eq(tile_tops[1]) # a row of tiles, not a column
+    expect(staff_border.uniq).to eq(["1px"]).or eq([]) # cards, when there are staff to show
+    expect_no_theme_errors
+  end
+
   describe "the avatar's menu" do
     it "opens on the profile tab, and the bell on notifications" do
       sign_in(member)
@@ -152,6 +179,23 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  # Core's log in page: a bare form beside the other ways in. The theme puts
+  # both on one card and makes the fields its own 44px controls.
+  it "puts the log in page's form and other ways in on one card" do
+    visit("/login")
+    expect(page).to have_css(".login-fullpage #login-account-name")
+    border, field_height = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".login-fullpage .login-body")).borderTopWidth,
+        Math.round(document.querySelector("#login-account-name").getBoundingClientRect().height),
+      ]
+    JS
+    expect(border).to eq("1px")
+    expect(field_height).to eq(44)
+    expect(page).to have_no_css(".jt-footer")
+    expect_no_theme_errors
+  end
+
   it "opens the command menu with Ctrl+K and finds a topic" do
     SiteSetting.chat_enabled = false
     SearchIndexer.enable
@@ -172,6 +216,26 @@ RSpec.describe "JTech theme" do
 
     send_keys(:escape)
     expect(page).to have_no_css(".jt-cmdk")
+  end
+
+  # Core's /badges: boxes with a faint border under grey group headings. The
+  # theme: cards under small labels, and a badge's own page on its big card.
+  it "shows badges as cards under group labels" do
+    sign_in(member)
+    visit("/badges")
+    expect(page).to have_css(".badge-groups .badge-card .badge-link", minimum: 1)
+    border, label_case = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".badge-card")).borderTopWidth,
+        getComputedStyle(document.querySelector(".badge-grouping .title h2")).textTransform,
+      ]
+    JS
+    expect(border).to eq("1px")
+    expect(label_case).to eq("uppercase")
+
+    find(".badge-card .badge-link", match: :first).click
+    expect(page).to have_css(".show-badge .badge-card.--badge-large")
+    expect_no_theme_errors
   end
 
   it "shows each command's keyboard shortcut, and binds the theme's own" do
@@ -203,6 +267,31 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's /g: boxes with a faint border under a loose row of filters, and a
+  # group's members table bare. The theme: cards under a toolbar of equal
+  # controls, and the users directory's table card for the members.
+  it "shows groups as cards, and a group's members in the directory's table card" do
+    sign_in(admin)
+    visit("/g")
+    expect(page).to have_css(".groups-boxes .group-box", minimum: 2)
+    box_border, filter_height = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".group-box")).borderTopWidth,
+        Math.round(document.querySelector(".groups-header-filters-name").getBoundingClientRect().height),
+      ]
+    JS
+    expect(box_border).to eq("1px")
+    expect(filter_height).to eq(38) # 2.4rem, like the other controls
+
+    visit("/g/staff")
+    expect(page).to have_css(".group-members .directory-table__row", text: admin.username)
+    card_border = page.evaluate_script(<<~JS)
+      getComputedStyle(document.querySelector(".container.group .horizontal-scroll-sync__content")).borderTopWidth
+    JS
+    expect(card_border).to eq("1px")
+    expect_no_theme_errors
+  end
+
   it "leaves Ctrl+K to chat for people who can chat" do
     SiteSetting.chat_enabled = true
     SiteSetting.chat_allowed_groups = Group::AUTO_GROUPS[:everyone]
@@ -213,6 +302,28 @@ RSpec.describe "JTech theme" do
 
     find(".jt-header-search__button").click
     expect(page).to have_css(".jt-cmdk")
+    expect_no_theme_errors
+  end
+
+  # Core's text-only empty states are a heading and a paragraph at the top
+  # left of a blank page; the theme puts them on a centred card with a glyph.
+  it "shows an empty page's message on a centred card" do
+    sign_in(member)
+    visit("/u/#{member.username}/activity/bookmarks")
+    expect(page).to have_css(".empty-state__container.--text-only .empty-state__title")
+    border, centred = page.evaluate_script(<<~JS)
+      (() => {
+        const card = document.querySelector(".empty-state__container.--text-only");
+        const outlet = document.querySelector("#main-outlet").getBoundingClientRect();
+        const r = card.getBoundingClientRect();
+        return [
+          getComputedStyle(card).borderTopWidth,
+          Math.abs((r.left - outlet.left) - (outlet.right - r.right)) <= 1,
+        ];
+      })()
+    JS
+    expect(border).to eq("1px")
+    expect(centred).to eq(true)
     expect_no_theme_errors
   end
 
@@ -227,6 +338,47 @@ RSpec.describe "JTech theme" do
         .map((r) => r.left + r.width / 2)
     JS
     expect(field_centre).to be_within(1).of(bar_centre)
+    expect_no_theme_errors
+  end
+
+  # Core's notifications page: a bare list under two filters; unread type
+  # badges in the accent colour. The theme: a toolbar, a card, black / white.
+  it "lists notifications on a card, with unread type badges in the text colour" do
+    Fabricate(
+      :notification,
+      user: member,
+      topic: topic,
+      post_number: first_post.post_number,
+      notification_type: Notification.types[:mentioned],
+      read: false,
+      data: {
+        topic_title: topic.title,
+        original_post_id: first_post.id,
+        original_username: admin.username,
+        display_username: admin.username,
+      }.to_json,
+    )
+    SiteSetting.show_user_menu_avatars = true # the badge sits on the avatar
+    sign_in(member)
+    visit("/u/#{member.username}/notifications")
+    expect(page).to have_css(
+      ".user-notifications-list li.notification.unread .icon-avatar__icon-wrapper",
+    )
+
+    card_border, filter_height, badge_bg, label_color = page.evaluate_script(<<~JS)
+      (() => {
+        const row = document.querySelector(".user-notifications-list li.notification.unread");
+        return [
+          getComputedStyle(document.querySelector(".user-notifications-list")).borderTopWidth,
+          Math.round(document.querySelector(".user-notifications-filter .select-kit-header").getBoundingClientRect().height),
+          getComputedStyle(row.querySelector(".icon-avatar__icon-wrapper")).backgroundColor,
+          getComputedStyle(row.querySelector(".item-label")).color,
+        ];
+      })()
+    JS
+    expect(card_border).to eq("1px")
+    expect(filter_height).to eq(35) # 2.2rem, like the other toolbars
+    expect(badge_bg).to eq(label_color) # the text colour, not the accent
     expect_no_theme_errors
   end
 
@@ -286,6 +438,33 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's static pages: a 700px column at the interface size. The theme: a
+  # reading column at the post's size, with a post's heading and list rhythm.
+  it "sets the guidelines page in a reading column" do
+    guidelines = Fabricate(:topic, user: admin, title: "Community guidelines for the forum")
+    Fabricate(
+      :post,
+      topic: guidelines,
+      user: admin,
+      raw: "Be kind.\n\n## No ads\n\n- One\n- Two\n\nThat's all.",
+    )
+    SiteSetting.guidelines_topic_id = guidelines.id
+
+    visit("/guidelines")
+    expect(page).to have_css(".body-page h2", text: "No ads")
+    width, size, indent = page.evaluate_script(<<~JS)
+      [
+        Math.round(document.querySelector(".body-page").getBoundingClientRect().width),
+        getComputedStyle(document.querySelector(".body-page h2").parentElement).fontSize,
+        getComputedStyle(document.querySelector(".body-page ul:not(.nav-pills)")).marginLeft,
+      ]
+    JS
+    expect(width).to eq(704) # 44rem
+    expect(size).to eq("17.0672px") # the post's reading size, not core's 16px
+    expect(indent).to eq("0px") # a post's indent, not core's 40px
+    expect_no_theme_errors
+  end
+
   it "puts Me too on the post menu's line, next to the like count" do
     skip("needs discourse-solved") unless defined?(::DiscourseSolved)
     SiteSetting.solved_enabled = true
@@ -310,6 +489,25 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's preferences: bold labels over small pills in a loose stack. The
+  # theme: each group a card, the controls 2.4rem, Save on a ruled bar.
+  it "shows each preferences group as a card with the theme's controls" do
+    sign_in(member)
+    visit("/u/#{member.username}/preferences/emails")
+    expect(page).to have_css(".user-preferences .control-group .select-kit-header")
+    card_border, control_height, save_height = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".user-preferences .form-vertical > .control-group")).borderTopWidth,
+        Math.round(document.querySelector(".user-preferences .control-group .select-kit-header").getBoundingClientRect().height),
+        Math.round(document.querySelector(".user-preferences .save-button .btn").getBoundingClientRect().height),
+      ]
+    JS
+    expect(card_border).to eq("1px")
+    expect(control_height).to eq(38) # 2.4rem
+    expect(save_height).to eq(38)
+    expect_no_theme_errors
+  end
+
   it "keeps a user title's pill to the size of its text on phones", mobile: true do
     admin.update!(title: "Forum Administrator")
     visit(topic.relative_url)
@@ -325,6 +523,35 @@ RSpec.describe "JTech theme" do
     JS
     expect(pill).to be < text + 30
     expect(pill).to be < names
+    expect_no_theme_errors
+  end
+
+  # Core's suggested list is a bare table under a bold "want to read more?";
+  # the theme: a divided card and a sentence.
+  it "puts the suggested topics under a topic on a card" do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css(".more-topics__container .topic-list .topic-list-item")
+    border, weight = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".more-topics__list .topic-list")).borderTopWidth,
+        getComputedStyle(document.querySelector(".more-topics__browse-more")).fontWeight,
+      ]
+    JS
+    expect(border).to eq("1px")
+    expect(weight).to eq("400")
+    expect_no_theme_errors
+  end
+
+  # On phones core makes every footer button an icon, Reply included
+  it "keeps the word on the phone's Reply button", mobile: true do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css(
+      "#topic-footer-buttons .create .d-button-label",
+      text: "Reply",
+      visible: true,
+    )
     expect_no_theme_errors
   end
 
@@ -358,6 +585,29 @@ RSpec.describe "JTech theme" do
     expect(footer_edges[1]).to be_within(1).of(page_edges[1])
   end
 
+  # Core lists tags as "name x 190" in floated columns; the theme makes each
+  # a chip with the number alone in a pill, and the lists wrap.
+  it "shows the tags page as chips, with the count alone in its pill" do
+    Fabricate(:topic, category: category, user: admin, tags: [Fabricate(:tag, name: "ios")])
+    Tag.ensure_consistency! # the counts the page shows
+    sign_in(member)
+    visit("/tags")
+    expect(page).to have_css(".tags-index .tag-box", minimum: 2)
+    expect(find(".tag-box", text: tag.name).find(".tag-count")).to have_text(/\A1\z/)
+
+    display, android_top, ios_top = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".tags-index .tags-list")).display,
+        ...[...document.querySelectorAll(".tags-index .tag-box")]
+          .slice(0, 2)
+          .map((box) => Math.round(box.getBoundingClientRect().top)),
+      ]
+    JS
+    expect(display).to eq("flex")
+    expect(android_top).to eq(ios_top) # side by side, not stacked
+    expect_no_theme_errors
+  end
+
   def horizontal_edges(*selectors)
     page.evaluate_script(<<~JS)
       #{selectors.to_json}
@@ -383,6 +633,36 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core puts the bulk-select / sort row above the count, insets the count by
+  # a different rule than the results (so it sat further in), and separates
+  # results with margins. The theme makes the count the title, the row a
+  # toolbar under it, and the results one divided card.
+  it "lays the search page out as a count, a toolbar and a card of results" do
+    SearchIndexer.enable
+    SearchIndexer.index(topic, force: true)
+    SearchIndexer.index(first_post, force: true)
+    sign_in(member)
+    visit("/search?q=filter")
+    expect(page).to have_css(".fps-result-entries .fps-result", text: "Which filter works best")
+
+    count, info, entries = page.evaluate_script(<<~JS)
+        [".result-count", ".search-info", ".fps-result-entries"]
+          .map((selector) => document.querySelector(selector).getBoundingClientRect())
+          .map((r) => [Math.round(r.top), Math.round(r.bottom)])
+      JS
+    expect(count[1]).to be <= info[0]
+    expect(info[1]).to be <= entries[0]
+
+    wall, counted, card = horizontal_edges("#main-outlet", ".result-count", ".fps-result-entries")
+    expect(counted).to eq(wall)
+    expect(card).to eq(wall)
+    border = page.evaluate_script(<<~JS)
+      getComputedStyle(document.querySelector(".fps-result-entries")).borderTopWidth
+    JS
+    expect(border).to eq("1px")
+    expect_no_theme_errors
+  end
+
   it "previews a topic's first post in Quick look" do
     sign_in(member)
     visit("/latest")
@@ -391,6 +671,20 @@ RSpec.describe "JTech theme" do
     card.find(".jt-card__peek").click
     expect(page).to have_css(".jt-quick-look .cooked", text: "blocks the browser")
     shot("quick-look")
+    expect_no_theme_errors
+  end
+
+  # Core's row of post buttons scrolled sideways on phones: eight or nine
+  # 38px buttons are wider than the column. The theme's row wraps instead.
+  it "fits a post's buttons in the phone's column without scrolling", mobile: true do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css(".topic-post .post-controls .actions .btn")
+    overflowing = page.evaluate_script(<<~JS)
+      [...document.querySelectorAll(".topic-post .post-controls")]
+        .filter((row) => row.scrollWidth > row.clientWidth + 1).length
+    JS
+    expect(overflowing).to eq(0)
     expect_no_theme_errors
   end
 
@@ -436,6 +730,25 @@ RSpec.describe "JTech theme" do
     find(".jt-header-new-topic button").click
     expect(page).to have_css("#reply-control.open")
     expect(page).to have_css("#reply-control .mini-tag-chooser", text: tag.name)
+    expect_no_theme_errors
+  end
+
+  # Core's progress widget on phones is a row of boxes with the accent on its
+  # numbers; the theme makes it one hairline capsule with tabular numbers.
+  it "shows the phone's progress widget as one capsule", mobile: true do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css("#topic-progress .nums")
+    border, radius, numerals = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector("#topic-progress-wrapper")).borderTopWidth,
+        parseFloat(getComputedStyle(document.querySelector("#topic-progress-wrapper")).borderTopLeftRadius),
+        getComputedStyle(document.querySelector("#topic-progress .nums")).fontVariantNumeric,
+      ]
+    JS
+    expect(border).to eq("1px")
+    expect(radius).to be > 4
+    expect(numerals).to eq("tabular-nums")
     expect_no_theme_errors
   end
 
@@ -505,6 +818,19 @@ RSpec.describe "JTech theme" do
       expect(glyphs.size).to be >= 4
       expect(glyphs.uniq.size).to eq(1)
     end
+  end
+
+  # The theme keeps thin scrollbars visible on touch screens, except under a
+  # post's row of buttons, which scrolls sideways by a few pixels on phones.
+  it "draws no scrollbar under a post's buttons on phones", mobile: true do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css(".topic-post .post-controls")
+    scrollbar = page.evaluate_script(<<~JS)
+      getComputedStyle(document.querySelector(".topic-post .post-controls")).scrollbarWidth
+    JS
+    expect(scrollbar).to eq("none")
+    expect_no_theme_errors
   end
 
   it "draws trust-level and staff flair in black and white, with its own marks" do

@@ -61,19 +61,28 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `api-initializers/jt-palette-picker.ts` | interface preferences: the dark-palette picker names the theme's default ("JTech Dark") instead of core's "-1" when the theme limits palettes to its own |
 | `common/color_definitions.scss` | per-mode tokens (`--jt-*`): borders, surfaces, text, shadows |
 | `stylesheets/jt-tokens.scss` | maps tokens onto core's `--d-*` / `--token-*` hooks |
+| `stylesheets/jt-notifications.scss` | notifications page (/my/notifications): filters as a toolbar, the list a divided card; the bell's panel: tabs, rows, bottom bar; on both, unread rows tinted with a bold name and the type badge black / white instead of the accent |
 | `stylesheets/jt-*.scss` | header, logo, topic list, posts, panels, component restyles, monochrome switches |
 | `stylesheets/jt-legacy-content.scss` | post wrappers (`ghbtn`, `logos`) ported from prod's Default theme |
+| `stylesheets/jt-static.scss` | the static pages (/guidelines, /faq, /tos, /privacy): a measured reading column at the post's size and leading, headings, lists and links like a post's, the edit link quiet under the nav |
 | `components/jt-topic-card.gts` + `api-initializers/jt-topic-cards.gts` | discovery lists as cards (`stylesheets/jt-cards.scss`) |
+| `stylesheets/jt-preferences.scss` | preferences (/my/preferences/*): each group a card with its label as title, fields with quiet labels and the theme's controls, help text small, Save Changes on a ruled bar |
 | `components/jt-hero.gts` (outlet `discovery-list-controls-above`) | front-page hero: headline, search, quick links (`jt-hero.scss`) |
+| `stylesheets/jt-badges.scss` | badges (/badges): display title, group labels, each badge a card with a three-line description; a badge's page: the big card, the people who earned it as cards |
 | `stylesheets/jt-post-chrome.scss` | author block, post menu, reactions, solved answer, topic events |
+| `stylesheets/jt-topic-footer.scss` | under a topic: the suggested / new & unread list as a divided card (header hidden on phones), "want to read more?" as a sentence; on phones the footer buttons sized alike and Reply keeping its word |
 | `components/jt-quick-look.gts` | Quick look dialog from topic cards (first post via `/posts/by_number`, decorated) |
 | `stylesheets/jt-lists.scss` | a member's own lists: bookmarks as a divided card with the bookmark's name as a label, the activity stream as cards; the messages inbox is the topic cards (`"messages"` in `jt-topic-cards`' card contexts) |
 | `components/jt-context-banner.gts` (outlet `discovery-list-controls-above`) | category / tag banner (`jt-banner.scss`) |
+| `stylesheets/jt-phone-post-menu.scss` | a post's row of buttons on phones: 34px buttons, the row wraps instead of scrolling sideways, the buttons drop under the like count when they don't share a line |
 | `components/jt-footer.gts` (outlet `below-footer`) | footer columns from `footer_links` (`jt-footer.scss`) |
+| `stylesheets/jt-login.scss` | log in / sign up pages (/login, /signup): the form and the other ways in on one card, fields as the theme's controls with core's floating labels placed for them, the footer off these pages |
 | `components/jt-reading-progress.gts` (outlet `topic-above-post-stream`) | reading progress hairline (core `topic:current-post-scrolled`) |
+| `stylesheets/jt-topic-progress.scss` | the topic progress widget (phones, narrow desktop windows): the jump arrows, admin wrench and "1 / 4" counter as one glass capsule, the counter's fill a quiet tint, tabular numbers in the text colour |
 | `components/jt-command-menu.gts` + `api-initializers/jt-command-menu.ts` | ⌘K / Ctrl+K command menu (`jt-cmdk.scss`); opened from the header's search field too |
 | `lib/jt-shortcuts.ts` + `api-initializers/jt-shortcuts.ts` | the command menu's keyboard shortcuts: core's, and the theme's own `g` keys (bound outside text fields, labelled in core's `?` help by copying the menu's strings under `keyboard_shortcuts_help.jtech`) |
 | `stylesheets/jt-sidebar.scss` | sidebar: tokens, rows, headers, scroll fades, footer |
+| `stylesheets/jt-groups.scss` | groups (/g): filters as a toolbar, each group a card (name, @mention, member count pill, description, your standing); a group's page: header card, members filter; its members table gets jt-directory's table card |
 | `api-initializers/jt-header-actions.gts` + `components/jt-header-search.gts`, `jt-header-icon.gts`, `jt-header-new-topic.gts` | header: search field (opens ⌘K) centred on the bar on wide screens with a mouse (outlet `before-header-panel`), otherwise in the icon row · home · messages · notifications · light/dark · new topic · avatar |
 | `api-initializers/jt-avatar-menu.ts` + `lib/jt-user-menu.ts` | the avatar opens core's user menu on the profile tab (review queue while its badge shows), so it doesn't repeat the bell; `pickUserMenuTab` is shared with the bell and envelope |
 | `components/jt-back-to-top.gts` (outlet `above-site-header`) | back-to-top button on long non-topic pages |
@@ -85,13 +94,18 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `lib/jt-icon-map.ts` + `api-initializers/jt-lucide-icons.ts` + `assets/icons-sprite.svg` | Lucide icons (setting `lucide_icons`): the map says which Font Awesome icon becomes which Lucide one (filled for on-states); `pnpm theme:icons` builds the sprite from `lucide-static` and `lint:theme` fails if it's stale; the initializer points icons and core's aliases (`d-liked`, `notification.*`) at it. `LUCIDE-LICENSE.txt` is Lucide's ISC licence |
 | `stylesheets/jt-profile.scss` | user profiles: header card (every /u/* tab), meta strip, summary stat tiles and section cards |
 | `stylesheets/jt-directory.scss` | users directory (/u): period title, toolbar, table card |
+| `stylesheets/jt-search.scss` | full-page search (/search): the field with its glyph, the count as the title with the term in a pill, bulk-select / sort as a toolbar under it, results in one divided card, chips for tags and categories, cards for people, the nothing-found card; lifts core's 10% insets |
 | `api-initializers/jt-notice-dismiss.ts` | × on core's site notices (7 days / until the text changes; critical notices excluded) |
 | `components/jt-first-reply.gts`, `jt-jump-buttons.gts`, `connectors/user-card-metadata/jt-last-seen.gts`, `api-initializers/jt-post-links.ts`, `stylesheets/jt-extras.scss` | what used to be separate components: first-reply prompt, first/last post buttons, last seen on user cards, full-page links in posts, code line numbers, padlocks, tablet composer, core category boxes |
 | `components/jt-gate.gts` (outlet `topic-area-bottom`) | login gate for logged-out visitors on `gated_categories` / `gated_tags`: the post stream is clipped and fades into the card (`jt-gate.scss`) |
+| `stylesheets/jt-empty.scss` | core's text-only empty states (no messages / bookmarks / drafts / notifications …) as a centred card with a glyph chip; the 404 page's title, button and search card |
 | `stylesheets/jt-topic-list.scss` + `api-initializers/jt-active-tab.ts`, `jt-list-controls.ts` | desktop list controls: one line when it fits, otherwise the filters move up a line and the tabs stay beside the buttons (`--jt-list-buttons` holds the buttons' width); New Topic icon-only below 66rem, tabs scroll sideways with edge fades, current tab scrolled into view |
 | `api-initializers/jt-external-links.ts` | ↗ on outbound links in posts (`decorateCookedElement`) |
 | `stylesheets/jt-leaderboard.scss`, `jt-components.scss` | restyles for gamification, Gated Topics, Category Boxes, admin |
+| `stylesheets/jt-tags.scss` + `api-initializers/jt-tags-page.ts` | tags page (/tags): title row with the admin's create form, sort as pills, each list a wrap of chips (# name, count in a pill); the initializer strips core's "x" from the counts |
 | `stylesheets/jt-type.scss` | type scale (core's 16px root, Geist steps, tracking by size, tabular numerals) |
+| `stylesheets/jt-about.scss` | about page (/about): display title over the description, stats as tiles, staff as cards, the contact / activity column as one ruled card; lifts core's 1100px cap |
 | `stylesheets/jt-shape.scss` | `corner_style` radii (squircles via `corner-shape`), fading dividers, glass header, press motion |
+| `stylesheets/jt-touch.scss` | phones / touch: no scrollbar under the post menu row or down the slide-in menu panels (☰ drawer, bell, avatar; all still scroll); elsewhere touch keeps jt-base's visible thin bars |
 | `settings.yml` | `corner_style` (squircle/sharp/soft/round), `topic_cards`, `hero_*` (incl. `hero_links` list), `quick_look`, `category_banners`, `tag_banners`, `footer_*`, `reading_progress`, `external_link_icon`, `internal_hosts`, `command_menu`, `card_thumbnails`, `code_language_labels`, `back_to_top`, `overlay_scrollbar`, `header_home_url`, `color_mode_toggle`, `code_line_numbers`, `first_reply_prompt*`, `user_card_last_seen`, `topic_jump_buttons`, `hide_lock_icons`, `mobile_small_logo`, `gated_categories`, `gated_tags`, `monochrome_categories`, `monochrome_letter_avatars`, `monochrome_heatmap`, `monochrome_flair`, `lucide_icons` |
 | `lib/jt-links.ts`, `lib/jt-color-mode.ts`, `lib/jt-command-menu-shortcut.ts` | full-page links for non-forum paths; the light/dark switch (returns to "follow the device"); whether ⌘K is the menu's or chat's |

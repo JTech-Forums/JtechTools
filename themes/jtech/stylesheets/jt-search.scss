@@ -1,0 +1,671 @@
+@use "lib/viewport";
+
+// Full-page search (/search). The field is the page's one big control, the
+// count reads as a title with the term in a pill, and the results sit in a
+// divided card like the users directory's table. Core insets the header, the
+// count and the results by 10% a side on wide screens (and not all by the
+// same rule, so the count used to sit further in than the results); here it
+// all runs wall to wall like the rest of the theme.
+
+$jt-search-glyph: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E";
+
+.search-container {
+  --jt-search-control: 2.75rem; // the field and its button
+  --jt-search-tool: 2.2rem; // toolbar controls: filters, bulk select, sort
+
+  .search-header,
+  .search-advanced .search-results {
+    padding-inline: 0;
+  }
+
+  .search-advanced .search-info,
+  .search-advanced .result-count {
+    margin-inline: 0;
+  }
+
+  // ── Header: types, field, filters ─────────────────────────
+  .search-header {
+    padding-top: var(--space-2);
+  }
+
+  .search-types {
+    margin-bottom: var(--space-4);
+  }
+
+  .search-bar {
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+
+    &__field {
+      flex: 1 1 auto;
+
+      // a search field reads as one: the glyph sits inside at the start
+      &::before {
+        content: "";
+        position: absolute;
+        inset-inline-start: 0.95rem;
+        width: 1.1rem;
+        height: 1.1rem;
+        background: var(--jt-text-subtle);
+        mask: url($jt-search-glyph) center / contain no-repeat;
+        pointer-events: none;
+      }
+    }
+
+    input.search-query {
+      box-sizing: border-box;
+      height: var(--jt-search-control);
+      margin: 0;
+      padding-inline: 2.7rem 2.5rem;
+      font-size: var(--jt-text-body);
+      letter-spacing: var(--jt-tracking-body);
+      color: var(--jt-text);
+      background: var(--jt-fill);
+      border: 1px solid var(--jt-border-strong);
+      border-radius: var(--jt-radius-control);
+      transition:
+        border-color var(--jt-motion),
+        box-shadow var(--jt-motion);
+
+      &:focus {
+        border-color: var(--jt-text-subtle);
+        box-shadow: 0 0 0 3px var(--jt-glow);
+        outline: none;
+      }
+
+      &::placeholder {
+        color: var(--jt-text-subtle);
+      }
+    }
+
+    .clear-search {
+      inset-inline-end: 0.8rem;
+      color: var(--jt-text-subtle);
+      transition: color var(--jt-motion);
+
+      &:hover {
+        color: var(--jt-text);
+      }
+    }
+
+    .search-cta {
+      flex: 0 0 auto;
+      height: var(--jt-search-control);
+      padding-inline: var(--space-5);
+      font-weight: 600;
+
+      .d-icon {
+        font-size: 0.95em;
+      }
+    }
+
+    @include viewport.until(sm) {
+      .search-cta {
+        width: 100%;
+      }
+    }
+  }
+
+  .search-filters {
+    padding-top: 0;
+
+    .advanced-filters:not(.--is-expanded) {
+      padding-bottom: 0;
+    }
+
+    // Ghost toggle: a box only when hovered or open
+    .advanced-filters__toggle {
+      height: var(--jt-search-tool);
+      padding-inline: var(--space-2);
+      font-size: var(--jt-text-sm);
+      font-weight: 500;
+      color: var(--jt-text-muted);
+      background: none;
+      border-color: transparent;
+      transition:
+        color var(--jt-motion),
+        background-color var(--jt-motion);
+
+      &:hover,
+      &:focus-visible {
+        color: var(--jt-text);
+        background: var(--jt-hover);
+        border-color: transparent;
+      }
+
+      .d-icon {
+        font-size: 0.85em;
+        color: inherit;
+      }
+
+      .badge-notification {
+        background: var(--jt-text);
+        color: var(--jt-surface);
+      }
+    }
+
+    .advanced-filters.--is-expanded .advanced-filters__toggle {
+      color: var(--jt-text);
+    }
+
+    // The filters panel: a sunken card, two columns of quiet labels
+    .search-advanced-filters {
+      margin-top: var(--space-2);
+      padding: var(--space-5) var(--space-5) var(--space-2);
+      background: var(--jt-surface-sunken);
+      border: 1px solid var(--jt-border);
+      border-radius: var(--jt-radius-xl);
+
+      .control-group {
+        margin-bottom: var(--space-4);
+      }
+
+      .control-label {
+        display: block;
+        margin-bottom: var(--space-1);
+        font-size: var(--jt-text-xs);
+        font-weight: 500;
+        letter-spacing: 0;
+        color: var(--jt-text-subtle);
+      }
+
+      .select-kit-header,
+      input[type="number"],
+      input[type="date"] {
+        box-sizing: border-box;
+        min-height: var(--jt-search-tool);
+        margin: 0;
+        font-size: var(--jt-text-md);
+        background: var(--jt-fill);
+        border-radius: var(--jt-radius-control);
+      }
+
+      .count-group .d-icon {
+        color: var(--jt-text-subtle);
+      }
+
+      .second-search-button {
+        margin-top: 0;
+        margin-bottom: var(--space-2);
+      }
+    }
+  }
+
+  .search-notice .fps-invalid,
+  .search-advanced .warning {
+    margin-block: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--jt-text-md);
+    color: var(--jt-text);
+    background: var(--jt-surface-sunken);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-md);
+  }
+
+  // ── Count, toolbar, results ───────────────────────────────
+  // Core puts the bulk-select / sort row above the count; the count is the
+  // page's title, so it comes first and the row is a toolbar under it.
+  .search-advanced {
+    display: flex;
+    flex-direction: column;
+
+    .result-count {
+      order: -1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 0.3em;
+      margin: var(--space-6) 0 var(--space-3);
+      padding: 0;
+      font-size: var(--jt-text-2xl);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: var(--jt-tracking-display);
+      color: var(--jt-text);
+
+      span + span {
+        margin-left: 0;
+      }
+
+      .term {
+        max-width: 100%;
+        padding: 0.1em 0.5em;
+        overflow: hidden;
+        font-size: 0.66em;
+        font-weight: 600;
+        line-height: 1.5;
+        letter-spacing: var(--jt-tracking-heading);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--jt-text);
+        background: var(--jt-hover);
+        border: 1px solid var(--jt-border-strong);
+        border-radius: var(--jt-radius-pill);
+      }
+
+      @include viewport.until(sm) {
+        margin-top: var(--space-5);
+        font-size: var(--jt-text-xl);
+      }
+    }
+
+    .search-info {
+      align-items: center;
+      gap: var(--space-2);
+      margin: 0;
+      padding: 0 0 var(--space-3);
+      background: var(--jt-surface);
+      border-top: 0;
+
+      &.bulk-select-visible {
+        top: var(--header-offset, 60px);
+        padding-top: var(--space-2);
+      }
+
+      button,
+      #bulk-select button {
+        margin: 0;
+      }
+
+      .bulk-select,
+      .bulk-select-actions .btn {
+        height: var(--jt-search-tool);
+        min-height: 0;
+        font-size: var(--jt-text-sm);
+      }
+
+      .bulk-select.no-text {
+        width: var(--jt-search-tool);
+        padding: 0;
+      }
+
+      .sort-by {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        margin-left: auto;
+
+        label {
+          margin: 0;
+          font-size: var(--jt-text-sm);
+          font-weight: 500;
+          color: var(--jt-text-subtle);
+        }
+
+        .select-kit-header {
+          box-sizing: border-box;
+          height: var(--jt-search-tool);
+          min-height: 0;
+          padding: 0 0.7rem;
+          font-size: var(--jt-text-sm);
+          background: var(--jt-fill);
+          border: 1px solid var(--jt-border-strong);
+          border-radius: var(--jt-radius-control);
+
+          &:hover {
+            background: var(--jt-hover);
+          }
+        }
+      }
+    }
+
+    .search-results {
+      padding-block: 0 var(--space-6);
+    }
+
+    // The list is a card; rows divide it
+    .fps-result-entries {
+      padding-top: 0;
+      overflow: hidden;
+      background: var(--jt-surface-raised);
+      border: 1px solid var(--jt-border);
+      border-radius: var(--jt-radius-xl);
+
+      &:empty {
+        display: none;
+      }
+    }
+
+    .search-footer {
+      margin: var(--space-5) 0 0;
+      font-size: var(--jt-text-sm);
+      font-weight: 500;
+      text-align: center;
+      color: var(--jt-text-subtle);
+    }
+  }
+}
+
+.fps-result {
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  transition: background-color var(--jt-motion);
+
+  + .fps-result {
+    border-top: 1px solid var(--jt-border);
+  }
+
+  &:hover {
+    background: var(--jt-hover);
+  }
+
+  &.bulk-select-enabled {
+    padding-left: 3.4rem;
+  }
+
+  .author {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
+
+    .avatar {
+      display: block;
+      width: 2.25rem;
+      height: 2.25rem;
+    }
+  }
+
+  .fps-topic {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .topic {
+    padding-bottom: 0;
+
+    .bulk-select {
+      top: calc(var(--space-4) + 0.1em);
+      left: var(--space-4);
+      padding: 0;
+    }
+  }
+
+  .search-link {
+    gap: var(--space-2);
+
+    .topic-title {
+      font-size: var(--jt-text-body);
+      font-weight: 600;
+      line-height: 1.35;
+      letter-spacing: var(--jt-tracking-ui);
+      color: var(--jt-text);
+    }
+
+    &:hover .topic-title {
+      text-decoration: underline;
+      text-decoration-color: var(--jt-border-strong);
+      text-underline-offset: 0.15em;
+    }
+
+    &.visited .topic-title {
+      color: var(--jt-text-muted);
+    }
+
+    .topic-statuses {
+      font-size: 0.95em;
+      color: var(--jt-text-subtle);
+    }
+  }
+
+  .search-category {
+    gap: var(--space-1) var(--space-2);
+    margin-top: var(--space-1);
+    font-size: var(--jt-text-xs);
+    color: var(--jt-text-muted);
+
+    .badge-category__wrapper,
+    .discourse-tags {
+      margin-left: 0;
+    }
+
+    .badge-category__name,
+    .discourse-tag.simple {
+      font-size: var(--jt-text-xs);
+    }
+
+    .discourse-tags {
+      gap: var(--space-1);
+    }
+  }
+
+  // Date on its own line above the excerpt; the hit marked, not shouted
+  .blurb {
+    margin-top: var(--space-2);
+    font-size: var(--jt-text-md);
+    line-height: 1.55;
+    color: var(--jt-text-muted);
+
+    .date {
+      display: block;
+      margin-bottom: 1px;
+      font-size: var(--jt-text-xs);
+      font-variant-numeric: tabular-nums;
+      color: var(--jt-text-subtle);
+    }
+
+    .separator {
+      display: none;
+    }
+
+    .search-highlight {
+      margin-inline: -0.05em;
+      padding-inline: 0.15em;
+      font-weight: 600;
+      color: var(--jt-text);
+      background: var(--jt-active);
+      border-radius: 3px;
+      box-decoration-break: clone;
+    }
+  }
+
+  .like-count {
+    margin-top: var(--space-2);
+    font-size: var(--jt-text-xs);
+    color: var(--jt-text-subtle);
+
+    .d-icon {
+      font-size: 0.9em;
+      color: inherit;
+    }
+  }
+
+  @include viewport.until(sm) {
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+
+    .author .avatar {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    &.bulk-select-enabled {
+      padding-left: 3rem;
+    }
+
+    .blurb {
+      font-size: var(--jt-text-sm);
+    }
+  }
+}
+
+// ── Categories & tags, Users ──────────────────────────────
+.search-container .search-results {
+  .category-heading,
+  .tag-heading {
+    margin: var(--space-2) 0 var(--space-3);
+    font-size: var(--jt-text-xs);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--jt-text-subtle);
+  }
+
+  .category-items,
+  .tag-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+  }
+
+  // Chips: the tag's name after a quiet #, the category's badge as it is
+  .fps-tag-item,
+  .fps-category-item {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--jt-search-tool);
+    margin: 0;
+    padding: 0 0.8rem;
+    font-size: var(--jt-text-sm);
+    font-weight: 500;
+    color: var(--jt-text);
+    background: var(--jt-fill);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-pill);
+    transition:
+      background-color var(--jt-motion),
+      border-color var(--jt-motion);
+
+    &:hover {
+      background: var(--jt-hover);
+      border-color: var(--jt-text-subtle);
+    }
+  }
+
+  .fps-tag-item a {
+    color: inherit;
+
+    &::before {
+      content: "#";
+      margin-right: 0.25em;
+      font-weight: 400;
+      color: var(--jt-text-subtle);
+    }
+  }
+
+  .fps-category-item .badge-category__name {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  // People: a grid of cards
+  .user-items {
+    gap: var(--space-3);
+    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  }
+
+  .fps-user-item {
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-3) var(--space-4);
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-lg);
+    transition:
+      background-color var(--jt-motion),
+      border-color var(--jt-motion);
+
+    &:hover {
+      background: var(--jt-hover);
+      border-color: var(--jt-border-strong);
+    }
+
+    .avatar {
+      width: 2.5rem;
+      height: 2.5rem;
+      margin: 0;
+    }
+
+    .user-titles {
+      max-width: none;
+      min-width: 0;
+      gap: 1px;
+
+      .name {
+        font-size: var(--jt-text-md);
+        font-weight: 600;
+        color: var(--jt-text);
+      }
+
+      .username {
+        font-size: var(--jt-text-sm);
+        color: var(--jt-text-muted);
+
+        &:only-child {
+          font-size: var(--jt-text-md);
+          font-weight: 600;
+          color: var(--jt-text);
+        }
+      }
+    }
+  }
+}
+
+// ── Nothing found ─────────────────────────────────────────
+.search-container .no-results-container,
+.search-container .search-results > div > .loading-container > h3:only-child {
+  box-sizing: border-box;
+  max-width: 32rem;
+  margin: var(--space-6) auto;
+  padding: var(--space-6) var(--space-5);
+  text-align: center;
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-xl);
+}
+
+.search-container .no-results-container h3,
+.search-container .search-results > div > .loading-container > h3:only-child {
+  margin: 0;
+  font-size: var(--jt-text-lg);
+  font-weight: 600;
+  letter-spacing: var(--jt-tracking-heading);
+  color: var(--jt-text);
+}
+
+.search-container .no-results-container {
+  .no-results-suggestion {
+    margin: var(--space-2) 0 0;
+    font-size: var(--jt-text-md);
+    line-height: 1.5;
+    color: var(--jt-text-muted);
+
+    a {
+      color: var(--jt-text);
+      text-decoration: underline;
+      text-decoration-color: var(--jt-border-strong);
+      text-underline-offset: 0.15em;
+
+      &:hover {
+        text-decoration-color: currentcolor;
+      }
+    }
+  }
+
+  .google-search-form {
+    margin-top: var(--space-4);
+
+    .inline-form {
+      display: flex;
+      gap: var(--space-2);
+      justify-content: center;
+    }
+
+    input[type="text"] {
+      flex: 1 1 auto;
+      box-sizing: border-box;
+      min-width: 0;
+      height: var(--jt-search-tool);
+      margin: 0;
+      font-size: var(--jt-text-md);
+      background: var(--jt-fill);
+      border-radius: var(--jt-radius-control);
+    }
+
+    .btn {
+      height: var(--jt-search-tool);
+      margin: 0;
+    }
+  }
+}

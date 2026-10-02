@@ -1,0 +1,148 @@
+@use "lib/viewport";
+
+// The static pages (/guidelines, /faq, /tos, /privacy): core sets them in a
+// 700px column at the interface size with list indents of 40px, and the only
+// chrome is the nav and a staff-only "Edit this page" link. Here they read
+// like a post: the theme's reading size and leading in a measured column,
+// headings with room above them, lists with a post's indents, and the edit
+// link as a quiet line under the nav. The about page has its own file
+// (jt-about) and keeps its full width.
+.contents.body-page {
+  max-width: 44rem; // about 70 characters at the reading size
+
+  .about-page & {
+    max-width: none;
+  }
+
+  // The nav scrolls sideways on phones; no scrollbar under it
+  .nav-pills {
+    margin-bottom: var(--space-5);
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  // "Edit this page" (staff), right under the nav
+  .nav-pills + p {
+    margin: calc(-1 * var(--space-3)) 0 var(--space-4);
+    font-size: var(--jt-text-sm);
+
+    a {
+      color: var(--jt-text-muted);
+      transition: color var(--jt-motion);
+
+      &:hover {
+        color: var(--jt-text);
+      }
+    }
+  }
+
+  // The page's text (core renders the topic's first post here)
+  > div > div {
+    font-size: var(--jt-text-reading);
+    line-height: 1.65;
+    letter-spacing: var(--jt-tracking-body);
+    color: var(--jt-text);
+
+    p {
+      margin: 0 0 1em;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      margin: 1.6em 0 0.6em;
+      line-height: 1.25;
+      letter-spacing: var(--jt-tracking-heading);
+      color: var(--jt-text);
+
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+
+    h1 {
+      font-size: var(--jt-text-2xl);
+      font-weight: 700;
+    }
+
+    h2 {
+      font-size: var(--jt-text-xl);
+      font-weight: 700;
+    }
+
+    h3 {
+      font-size: var(--jt-text-lg);
+      font-weight: 600;
+    }
+
+    h4 {
+      font-size: var(--jt-text-body);
+      font-weight: 600;
+    }
+
+    ul,
+    ol {
+      margin: 0 0 1em;
+      padding-left: 1.5em;
+    }
+
+    li {
+      margin: 0 0 0.4em;
+
+      &::marker {
+        color: var(--jt-text-subtle);
+      }
+    }
+
+    strong {
+      font-weight: 600;
+    }
+
+    a:not(.anchor) {
+      color: var(--jt-text);
+      text-decoration: underline;
+      text-decoration-color: var(--jt-border-strong);
+      text-underline-offset: 3px;
+      transition: text-decoration-color var(--jt-motion);
+
+      &:hover {
+        text-decoration-color: var(--jt-text);
+      }
+    }
+
+    img.emoji {
+      width: 1.1em;
+      height: 1.1em;
+      vertical-align: -0.2em;
+    }
+
+    blockquote {
+      margin: 1em 0;
+      padding: 0.25em 0 0.25em 1em;
+      color: var(--jt-text-muted);
+      background: transparent;
+      border-left: 2px solid var(--jt-border-strong);
+    }
+
+    hr {
+      margin: 2em 0;
+      border: 0;
+      border-top: 1px solid var(--jt-border);
+    }
+
+    code {
+      font-size: 0.9em;
+    }
+  }
+
+  @include viewport.until(sm) {
+    > div > div {
+      font-size: var(--jt-text-body);
+      line-height: 1.6;
+    }
+  }
+}

@@ -1,0 +1,195 @@
+@use "lib/viewport";
+
+// Preferences (/my/preferences/*). Core's form is a 500px stack of groups,
+// each a bold label over its controls, the selects as small pills and Save
+// Changes loose at the bottom. Here each group is a card with the label as
+// its title, the fields have their own quiet labels and the theme's
+// controls, help text sits small underneath, and Save Changes closes the
+// form on a ruled bar.
+.user-preferences {
+  --jt-pref-control: 2.4rem;
+
+  .form-vertical {
+    width: 100%;
+    max-width: 44rem;
+
+    .control-group {
+      margin: 0 0 var(--space-3);
+      padding: var(--space-4) var(--space-5) var(--space-5);
+      background: var(--jt-surface-raised);
+      border: 1px solid var(--jt-border);
+      border-radius: var(--jt-radius-lg);
+    }
+  }
+
+  // The group's title: a label, or a legend when the group is a fieldset
+  .control-group > .control-label {
+    display: block;
+    margin: 0 0 var(--space-3);
+    padding: 0;
+    font-size: var(--jt-text-body);
+    font-weight: 600;
+    letter-spacing: var(--jt-tracking-heading);
+    color: var(--jt-text);
+  }
+
+  // A subhead inside a group (plugins add these: "Policies")
+  .control-group h3 {
+    margin: var(--space-4) 0 var(--space-3);
+    font-size: var(--jt-text-md);
+    font-weight: 600;
+    color: var(--jt-text);
+  }
+
+  // Fields: a quiet label over the control, help text under it
+  .controls {
+    margin: 0;
+
+    + .controls,
+    + span > .controls,
+    + span > .control-group {
+      margin-top: var(--space-4);
+    }
+
+    > label:not(.checkbox-label) {
+      display: block;
+      margin: 0 0 var(--space-1);
+      font-size: var(--jt-text-sm);
+      font-weight: 500;
+      color: var(--jt-text-muted);
+    }
+  }
+
+  // Nested groups (a plugin's group inside core's) are fields, not cards
+  .control-group .control-group {
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    background: none;
+    border: 0;
+
+    > label {
+      display: block;
+      margin: 0 0 var(--space-1);
+      font-size: var(--jt-text-sm);
+      font-weight: 500;
+      color: var(--jt-text-muted);
+    }
+  }
+
+  .control-subgroup {
+    margin-bottom: var(--space-3);
+
+    > .instructions {
+      margin: 0 0 var(--space-1);
+      font-size: var(--jt-text-sm);
+      font-weight: 500;
+      color: var(--jt-text-muted);
+    }
+  }
+
+  .instructions {
+    margin-top: var(--space-2);
+    font-size: var(--jt-text-xs);
+    line-height: 1.5;
+    color: var(--jt-text-subtle);
+
+    a[href] {
+      color: var(--jt-text-muted);
+      text-decoration: underline;
+      text-decoration-color: var(--jt-border-strong);
+      text-underline-offset: 0.15em;
+
+      &:hover {
+        color: var(--jt-text);
+      }
+    }
+  }
+
+  // Controls
+  .select-kit .select-kit-header {
+    box-sizing: border-box;
+    min-height: var(--jt-pref-control);
+    padding: 0 0.7rem;
+    font-size: var(--jt-text-md);
+    background: var(--jt-fill);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-control);
+
+    &:hover {
+      background: var(--jt-hover);
+    }
+  }
+
+  .select-kit.single-select:not(.color-palette-picker) {
+    min-width: 12rem;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="url"],
+  textarea {
+    box-sizing: border-box;
+    min-height: var(--jt-pref-control);
+    padding: 0.5rem 0.75rem;
+    font-size: var(--jt-text-md);
+    color: var(--jt-text);
+    background: var(--jt-fill);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-control);
+
+    &:focus {
+      border-color: var(--jt-text-subtle);
+      box-shadow: 0 0 0 3px var(--jt-glow);
+      outline: none;
+    }
+  }
+
+  .checkbox-label {
+    display: flex;
+    gap: var(--space-2);
+    align-items: flex-start;
+    font-size: var(--jt-text-md);
+    line-height: 1.45;
+    color: var(--jt-text);
+
+    input[type="checkbox"] {
+      flex-shrink: 0;
+      width: 1rem;
+      height: 1rem;
+      margin: 0.2rem 0 0;
+      accent-color: var(--jt-text);
+    }
+  }
+
+  // Save Changes closes the form
+  .save-button {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+    margin: var(--space-4) 0 0;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--jt-border);
+
+    .btn {
+      height: var(--jt-pref-control);
+      padding-inline: var(--space-5);
+      font-weight: 600;
+    }
+
+    .saved {
+      font-size: var(--jt-text-sm);
+      color: var(--jt-text-muted);
+    }
+  }
+
+  @include viewport.until(sm) {
+    .form-vertical .control-group {
+      padding: var(--space-4);
+    }
+
+    .select-kit.single-select:not(.color-palette-picker) {
+      min-width: 0;
+    }
+  }
+}
