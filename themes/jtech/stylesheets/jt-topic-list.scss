@@ -143,3 +143,9 @@ html.desktop-view .list-controls .navigation-container {
     }
   }
 }
+
+// The categories page's latest column dates its topics in core's border grey
+// (#c9c9c9 on white, 1.7:1; #4d4d4d on black)
+.latest-topic-list-item .topic-last-activity a {
+  color: var(--jt-text-subtle);
+}
