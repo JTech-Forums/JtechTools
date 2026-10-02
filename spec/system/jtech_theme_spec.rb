@@ -179,6 +179,23 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  # Core's log in page: a bare form beside the other ways in. The theme puts
+  # both on one card and makes the fields its own 44px controls.
+  it "puts the log in page's form and other ways in on one card" do
+    visit("/login")
+    expect(page).to have_css(".login-fullpage #login-account-name")
+    border, field_height = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".login-fullpage .login-body")).borderTopWidth,
+        Math.round(document.querySelector("#login-account-name").getBoundingClientRect().height),
+      ]
+    JS
+    expect(border).to eq("1px")
+    expect(field_height).to eq(44)
+    expect(page).to have_no_css(".jt-footer")
+    expect_no_theme_errors
+  end
+
   it "opens the command menu with Ctrl+K and finds a topic" do
     SiteSetting.chat_enabled = false
     SearchIndexer.enable

@@ -1,0 +1,284 @@
+@use "lib/viewport";
+
+// Log in (/login) and sign up (/signup), core's full pages. Core centres a
+// bare form beside the other ways in, a hairline between them, with the
+// floating labels of a material form. Here the two sit together on one card,
+// the fields are the theme's controls, the labels float against the card,
+// and the footer stays off these pages: they're a doorway, not a page.
+body.login-page,
+body.signup-page {
+  .jt-footer {
+    display: none;
+  }
+}
+
+.login-fullpage,
+.signup-fullpage {
+  --jt-login-control: 2.75rem;
+  padding: var(--space-6) 0;
+
+  .login-body,
+  .signup-body {
+    gap: 0;
+    max-width: 52rem;
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-xl);
+  }
+
+  .login-left-side {
+    max-width: 30rem;
+
+    @include viewport.from(md) {
+      padding: 2.5rem;
+    }
+  }
+
+  // The other ways in: beside the form on wide screens; on phones core puts
+  // them first, over the form, so the rule between them is a line across
+  .login-right-side {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    @include viewport.from(md) {
+      padding: 2.5rem;
+    }
+
+    &::before {
+      background: var(--jt-border);
+    }
+
+    @include viewport.until(md) {
+      margin: 0 1rem;
+      padding: 1.25rem 0 0.25rem;
+      border-top: 1px solid var(--jt-border);
+
+      &::before {
+        display: none;
+      }
+    }
+  }
+
+  .login-title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--jt-text-2xl);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: var(--jt-tracking-display);
+    color: var(--jt-text);
+  }
+
+  .code-login-form__instructions,
+  .login-welcome-header p {
+    margin: 0;
+    font-size: var(--jt-text-md);
+    line-height: 1.55;
+    color: var(--jt-text-muted);
+  }
+
+  .login-form,
+  #login-form,
+  .invite-form {
+    margin-top: var(--space-5);
+  }
+
+  // Fields: the theme's controls, with core's floating label placed for
+  // them. Core sets the phone sizes with an id in the selector, so these
+  // match it with :is().
+  :is(#login-form, .login-form, .invite-form, .signup-body) .input-group {
+    margin-bottom: var(--space-4);
+
+    input,
+    .select-kit-header,
+    textarea {
+      box-sizing: border-box;
+      min-width: 0;
+      height: var(--jt-login-control);
+      min-height: var(--jt-login-control);
+      margin-bottom: var(--space-1);
+      padding: 0 0.875rem;
+      font-size: var(--jt-text-body);
+      color: var(--jt-text);
+      background: var(--jt-fill);
+      border: 1px solid var(--jt-border-strong);
+      border-radius: var(--jt-radius-control);
+      transition:
+        border-color var(--jt-motion),
+        box-shadow var(--jt-motion);
+    }
+
+    textarea {
+      height: auto;
+      padding-block: 0.75rem;
+    }
+
+    input:not(.filter-input):focus {
+      border-color: var(--jt-text-subtle);
+      box-shadow: 0 0 0 3px var(--jt-glow);
+    }
+
+    input:disabled {
+      background: var(--jt-surface-sunken);
+    }
+
+    label.alt-placeholder,
+    .user-field.text label.control-label {
+      top: calc((var(--jt-login-control) - 1.5em) / 2);
+      left: 0.875rem;
+      font-size: var(--jt-text-body);
+      line-height: 1.5;
+      color: var(--jt-text-subtle);
+    }
+
+    input:focus + label.alt-placeholder,
+    input.value-entered + label.alt-placeholder,
+    .user-field.text:focus-within label.control-label,
+    .user-field.text.value-entered label.control-label,
+    .user-field.dropdown label.control-label,
+    .user-field.multiselect label.control-label,
+    .user-field.date label.control-label {
+      top: -0.6rem;
+      left: 0.6rem;
+      padding: 0 0.3rem;
+      font-size: var(--jt-text-xs);
+      line-height: 1.2;
+      color: var(--jt-text-muted);
+      background: var(--jt-surface-raised);
+    }
+
+    #email-login-link,
+    #one-time-code-link,
+    .login__password-links,
+    span.more-info,
+    .tip,
+    .instructions {
+      font-size: var(--jt-text-sm);
+    }
+
+    span.more-info,
+    .instructions {
+      color: var(--jt-text-subtle);
+    }
+
+    a {
+      color: var(--jt-text-muted);
+      text-decoration: underline;
+      text-decoration-color: var(--jt-border-strong);
+      text-underline-offset: 0.15em;
+      transition: color var(--jt-motion);
+
+      &:hover {
+        color: var(--jt-text);
+        text-decoration-color: currentcolor;
+      }
+    }
+  }
+
+  // The buttons under the form
+  .login-page-cta,
+  .signup-page-cta {
+    &__buttons .btn {
+      height: var(--jt-login-control);
+    }
+
+    &__login,
+    &__signup {
+      font-weight: 600;
+    }
+
+    .btn-flat {
+      font-weight: 500;
+      color: var(--jt-text);
+
+      &:hover {
+        background: var(--jt-hover);
+      }
+    }
+
+    &__no-account-yet,
+    &__existing-account {
+      color: var(--jt-text-subtle);
+
+      &::before {
+        background: var(--jt-border);
+      }
+    }
+
+    &__disclaimer {
+      font-size: var(--jt-text-sm);
+      line-height: 1.5;
+      color: var(--jt-text-subtle);
+
+      a {
+        color: var(--jt-text-muted);
+        text-decoration: underline;
+        text-decoration-color: var(--jt-border-strong);
+        text-underline-offset: 0.15em;
+
+        &:hover {
+          color: var(--jt-text);
+        }
+      }
+    }
+  }
+
+  // Passkey, Google, … : the theme's default buttons, one per line
+  #login-buttons .btn-social {
+    justify-content: center;
+    height: var(--jt-login-control);
+    padding-inline: var(--space-4);
+    font-size: var(--jt-text-md);
+    font-weight: 500;
+    color: var(--jt-text);
+    background: var(--jt-fill);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-control);
+    transition:
+      background-color var(--jt-motion),
+      border-color var(--jt-motion);
+
+    &:hover {
+      background: var(--jt-hover);
+      border-color: var(--jt-text-subtle);
+    }
+
+    .d-icon {
+      color: var(--jt-text-muted);
+    }
+  }
+
+  // Sign up asks for the email first (form-kit)
+  .code-login-form {
+    .form-kit__container-title {
+      font-size: var(--jt-text-sm);
+      font-weight: 500;
+      color: var(--jt-text-muted);
+    }
+
+    .form-kit__control-input {
+      height: var(--jt-login-control);
+      font-size: var(--jt-text-body);
+    }
+
+    .code-login-form__continue,
+    .form-kit__button {
+      height: var(--jt-login-control);
+      font-weight: 600;
+    }
+  }
+
+  @include viewport.until(md) {
+    padding: var(--space-4) 0;
+
+    .login-body,
+    .signup-body {
+      margin-inline: 1rem;
+      padding: 0.5rem 0 0.75rem;
+    }
+
+    .login-title {
+      font-size: var(--jt-text-xl);
+    }
+  }
+}
