@@ -573,6 +573,54 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's polls: square corners, flat grey bars with no track (a 0% option
+  # shows nothing), the voter count in grey and the settings gear a bare
+  # button (a grey box in dark mode). The theme: its radius, a track under
+  # every result with your vote in the text colour, the count in the text
+  # colour, a flat gear.
+  it "draws a poll's results on tracks, with the voter's choice in the text colour" do
+    post = PostCreator.create!(admin, topic_id: topic.id, raw: <<~MD)
+      Which day?
+
+      [poll]
+      * Monday
+      * Tuesday
+      [/poll]
+    MD
+    monday = post.polls.first.poll_options.find_by(html: "Monday").digest
+    # staff, so the gear has something to offer (close, export)
+    DiscoursePoll::Poll.vote(admin, post.id, "poll", [monday])
+    sign_in(admin)
+    visit("#{topic.relative_url}/#{post.post_number}")
+    poll = "#post_#{post.post_number} .poll"
+    expect(page).to have_css("#{poll} .results li.chosen")
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const poll = document.querySelector("#{poll}");
+        const text = getComputedStyle(document.body).color;
+        const tracks = [...poll.querySelectorAll(".results .bar-back")];
+        return {
+          rounded: getComputedStyle(poll).borderTopLeftRadius !== "0px",
+          tracks: tracks.length,
+          tracksShown: tracks.every((t) => getComputedStyle(t).backgroundColor !== "rgba(0, 0, 0, 0)"),
+          chosen: getComputedStyle(poll.querySelector(".chosen .bar")).backgroundColor === text,
+          count: getComputedStyle(poll.querySelector(".info-number")).color === text,
+          gear: getComputedStyle(poll.querySelector(".poll-buttons .widget-dropdown-header")).backgroundColor,
+        };
+      })()
+    JS
+    expect(looks).to eq(
+      "rounded" => true,
+      "tracks" => 2,
+      "tracksShown" => true,
+      "chosen" => true,
+      "count" => true,
+      "gear" => "rgba(0, 0, 0, 0)",
+    )
+    shot("poll")
+    expect_no_theme_errors
+  end
+
   it "puts Me too on the post menu's line, next to the like count" do
     skip("needs discourse-solved") unless defined?(::DiscourseSolved)
     SiteSetting.solved_enabled = true
