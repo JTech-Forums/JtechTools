@@ -16,8 +16,10 @@ export function isUnread(t: TopicListItem): boolean {
   return false;
 }
 
+// Discourse sends new_posts as an old alias of unread_posts (the same
+// number), so adding them counted every unread post twice.
 export function unreadCount(t: TopicListItem): number {
-  return (t.unread_posts || 0) + (t.new_posts || 0);
+  return Math.max(t.unread_posts || 0, t.new_posts || 0);
 }
 
 // Where tapping a topic should land: the first post you haven't read.
