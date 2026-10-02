@@ -508,6 +508,39 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core sets a table as bare text: a grey header, 3px cells and a faint line
+  # between rows. The theme: a hairline card with a sunken header strip,
+  # roomy cells and a rule between rows.
+  it "sets a table in a post as a card with a header strip" do
+    post =
+      Fabricate(
+        :post,
+        topic: topic,
+        user: admin,
+        raw: "| Phone | Filter |\n|---|---|\n| Qin F21 | eGate |\n| Flip 3 | Mitzuyan |",
+      )
+    sign_in(member)
+    visit("#{topic.relative_url}/#{post.post_number}")
+    table = "#post_#{post.post_number} .cooked table"
+    expect(page).to have_css("#{table} tbody tr", count: 2)
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const table = document.querySelector("#{table}");
+        const th = getComputedStyle(table.querySelector("th"));
+        const rows = table.querySelectorAll("tbody tr");
+        return {
+          frame: getComputedStyle(table).borderTopWidth,
+          strip: th.backgroundColor !== "rgba(0, 0, 0, 0)",
+          rule: getComputedStyle(rows[1].querySelector("td")).borderTopWidth,
+          roomy: parseFloat(getComputedStyle(rows[0].querySelector("td")).paddingLeft) >= 8,
+        };
+      })()
+    JS
+    expect(looks).to eq("frame" => "1px", "strip" => true, "rule" => "1px", "roomy" => true)
+    shot("table")
+    expect_no_theme_errors
+  end
+
   it "keeps a user title's pill to the size of its text on phones", mobile: true do
     admin.update!(title: "Forum Administrator")
     visit(topic.relative_url)

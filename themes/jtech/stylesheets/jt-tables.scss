@@ -1,0 +1,65 @@
+@use "lib/viewport";
+
+// Tables in posts and the composer's preview. Core sets them as bare text:
+// a grey header, 3px cell padding and a faint line between rows, so a wide
+// comparison reads as loose words, and lifts the table on hover with a drop
+// shadow. Here a table is a hairline card like the theme's other blocks: the
+// header a sunken strip, roomy cells with a rule between rows, tabular
+// numbers. The frame is on the table rather than core's wrapper, so the
+// full-screen button that touch screens show under it stays outside.
+// Tables inside link previews (code excerpts) keep the preview's own look.
+.cooked table:not(aside.onebox table),
+.d-editor-preview table:not(aside.onebox table) {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-md);
+
+  tbody {
+    border-top: 0;
+  }
+
+  tr {
+    border-bottom: 0;
+  }
+
+  th,
+  td {
+    padding: 0.55rem 0.85rem;
+    vertical-align: top;
+
+    @include viewport.until(sm) {
+      padding: 0.45rem 0.6rem;
+    }
+  }
+
+  th {
+    font-size: var(--jt-text-sm);
+    font-weight: 500;
+    color: var(--jt-text-muted);
+    background: var(--jt-surface-sunken);
+    border-bottom: 1px solid var(--jt-border);
+  }
+
+  // the header's fill follows the frame's corners
+  tr:first-child > th:first-child {
+    border-top-left-radius: calc(var(--jt-radius-md) - 1px);
+  }
+
+  tr:first-child > th:last-child {
+    border-top-right-radius: calc(var(--jt-radius-md) - 1px);
+  }
+
+  tbody tr + tr > td {
+    border-top: 1px solid var(--jt-border);
+  }
+}
+
+html.discourse-no-touch .cooked .fullscreen-table-wrapper:hover {
+  box-shadow: none;
+
+  table {
+    border-color: var(--jt-border-strong);
+  }
+}
