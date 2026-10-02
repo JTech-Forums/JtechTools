@@ -383,6 +383,36 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core puts the bulk-select / sort row above the count, insets the count by
+  # a different rule than the results (so it sat further in), and separates
+  # results with margins. The theme makes the count the title, the row a
+  # toolbar under it, and the results one divided card.
+  it "lays the search page out as a count, a toolbar and a card of results" do
+    SearchIndexer.enable
+    SearchIndexer.index(topic, force: true)
+    SearchIndexer.index(first_post, force: true)
+    sign_in(member)
+    visit("/search?q=filter")
+    expect(page).to have_css(".fps-result-entries .fps-result", text: "Which filter works best")
+
+    count, info, entries = page.evaluate_script(<<~JS)
+        [".result-count", ".search-info", ".fps-result-entries"]
+          .map((selector) => document.querySelector(selector).getBoundingClientRect())
+          .map((r) => [Math.round(r.top), Math.round(r.bottom)])
+      JS
+    expect(count[1]).to be <= info[0]
+    expect(info[1]).to be <= entries[0]
+
+    wall, counted, card = horizontal_edges("#main-outlet", ".result-count", ".fps-result-entries")
+    expect(counted).to eq(wall)
+    expect(card).to eq(wall)
+    border = page.evaluate_script(<<~JS)
+      getComputedStyle(document.querySelector(".fps-result-entries")).borderTopWidth
+    JS
+    expect(border).to eq("1px")
+    expect_no_theme_errors
+  end
+
   it "previews a topic's first post in Quick look" do
     sign_in(member)
     visit("/latest")
