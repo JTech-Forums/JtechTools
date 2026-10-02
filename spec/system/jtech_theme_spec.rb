@@ -247,16 +247,19 @@ RSpec.describe "JTech theme" do
         display_username: admin.username,
       }.to_json,
     )
+    SiteSetting.show_user_menu_avatars = true # the badge sits on the avatar
     sign_in(member)
     visit("/u/#{member.username}/notifications")
-    expect(page).to have_css(".user-notifications-list li.notification.unread .item-label")
+    expect(page).to have_css(
+      ".user-notifications-list li.notification.unread .icon-avatar__icon-wrapper",
+    )
 
     card_border, filter_height, badge_bg, label_color = page.evaluate_script(<<~JS)
       (() => {
         const row = document.querySelector(".user-notifications-list li.notification.unread");
         return [
           getComputedStyle(document.querySelector(".user-notifications-list")).borderTopWidth,
-          Math.round(document.querySelector(".notifications-filter .select-kit-header").getBoundingClientRect().height),
+          Math.round(document.querySelector(".user-notifications-filter .select-kit-header").getBoundingClientRect().height),
           getComputedStyle(row.querySelector(".icon-avatar__icon-wrapper")).backgroundColor,
           getComputedStyle(row.querySelector(".item-label")).color,
         ];
