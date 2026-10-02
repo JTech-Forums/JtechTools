@@ -724,6 +724,28 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core floats "See 1 new or updated topic" over the list's header row on
+  # wide screens; card lists have none, so it sat on the first card.
+  it "keeps the new topics button above the first card, not on it" do
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".topic-list.jt-cards .topic-list-item")
+    PostCreator.create!(
+      admin,
+      title: "A topic posted while the list is open",
+      raw: "Posted while someone had the list open.",
+      category: category.id,
+    )
+    expect(page).to have_css(".show-more.has-topics .alert")
+    gap = page.evaluate_script(<<~JS)
+      document.querySelector(".topic-list.jt-cards .topic-list-item").getBoundingClientRect().top -
+        document.querySelector(".show-more .alert").getBoundingClientRect().bottom
+    JS
+    expect(gap).to be >= 0
+    shot("new-topics-button")
+    expect_no_theme_errors
+  end
+
   it "starts a topic in the tag being viewed from the header's +" do
     sign_in(member)
     visit("/tag/#{tag.name}")
