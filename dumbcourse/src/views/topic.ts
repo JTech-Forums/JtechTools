@@ -816,9 +816,10 @@ function wireTopic(
         icon: hiddenNow === "hidden" ? "eye" : "eyeOff",
         run: () => showHidden(hidden, hiddenNow === "hidden"),
       });
+    // First in the menu: it's what a post with pictures is opened for.
     const pictures = state.pictures[p.id] || [];
     if (pictures.length)
-      items.push({
+      items.unshift({
         label:
           pictures.length === 1
             ? "View picture"

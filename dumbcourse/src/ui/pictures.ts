@@ -3,8 +3,10 @@
 // gallery of thumbnails first.
 //
 // Viewer keys: OK zooms (fit, 2x, 3x, fit), the D-pad moves a zoomed picture
-// around or, at fit, goes to the previous / next picture, the right soft key
-// saves it, Back or the left soft key closes. The soft-key bar says so.
+// around or, at fit, goes to the previous / next picture, 4 / 6 go to the
+// previous / next picture at any zoom, the right soft key saves it, Back or
+// the left soft key closes. The soft-key bar says so, and the counter's ‹ ›
+// show which way there are more pictures.
 
 import type { Picture } from "../content/cooked.ts";
 import { $, $$, show } from "../dom.ts";
@@ -159,7 +161,12 @@ export function viewPicture(list: Picture[], start: number): Layer {
     zoom = 1;
     loaded = false;
     const p = list[i];
-    count.textContent = list.length > 1 ? `${i + 1} / ${list.length}` : "";
+    count.textContent =
+      list.length > 1
+        ? (i > 0 ? "‹ " : "") +
+          `${i + 1} / ${list.length}` +
+          (i < list.length - 1 ? " ›" : "")
+        : "";
     name.textContent = p.name;
     stage.setAttribute(
       "aria-label",
@@ -193,9 +200,17 @@ export function viewPicture(list: Picture[], start: number): Layer {
     updateKeys();
   });
 
-  // The stage owns its arrows (data-own-arrows): the page leaves them alone.
+  // The stage owns its arrows (data-own-arrows): the page leaves them alone,
+  // and number keys inside a layer too.
   stage.addEventListener("keydown", (e) => {
     const key = keyOf(e);
+    // 4 / 6, the keypad's left / right: previous / next picture, even zoomed.
+    if (key === "4" || key === "6") {
+      e.preventDefault();
+      if (key === "4" && index > 0) open(index - 1);
+      if (key === "6" && index < list.length - 1) open(index + 1);
+      return;
+    }
     if (key !== "up" && key !== "down" && key !== "left" && key !== "right")
       return;
     e.preventDefault();

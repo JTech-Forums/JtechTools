@@ -245,7 +245,8 @@ RSpec.describe "Dumbcourse" do
       HTML
       phone do
         open_post_menu(3)
-        expect(page).to have_css(".sheet-item", text: "View picture")
+        # First in the menu, and focused: OK, OK opens it.
+        expect(page).to have_css(".sheet-item:focus", text: "View picture")
         expect(page).to have_css(".sheet-heading", text: /1 link in this post/i)
         expect(page).to have_no_css(".sheet-heading", text: /picture/i)
         find(".sheet-item", text: "View picture").click
@@ -293,8 +294,18 @@ RSpec.describe "Dumbcourse" do
         expect(page).to have_css("#softkeys .sk-center", text: /zoom/i)
         # Not forum uploads: nothing to download.
         expect(page).to have_no_css("#softkeys .sk-right", text: /\S/)
+        expect(page).to have_css(".picture-layer .pv-count", exact_text: "‹ 2 / 2")
         press(:left)
-        expect(page).to have_css(".picture-layer .pv-count", text: "1 / 2")
+        expect(page).to have_css(".picture-layer .pv-count", exact_text: "1 / 2 ›")
+
+        # Zoomed, the D-pad moves the picture; 6 still goes to the next one.
+        press(:enter)
+        expect(page).to have_css(".pv-stage[data-zoom='2']")
+        press("6")
+        expect(page).to have_css(".picture-layer .pv-count", exact_text: "‹ 2 / 2")
+        expect(page).to have_css(".pv-stage[data-zoom='1']")
+        press("4")
+        expect(page).to have_css(".picture-layer .pv-count", exact_text: "1 / 2 ›")
 
         press(:backspace)
         expect(page).to have_no_css(".picture-layer")
