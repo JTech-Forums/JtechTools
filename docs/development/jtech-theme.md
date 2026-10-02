@@ -68,6 +68,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `stylesheets/jt-post-chrome.scss` | author block, post menu, reactions, solved answer, topic events |
 | `components/jt-quick-look.gts` | Quick look dialog from topic cards (first post via `/posts/by_number`, decorated) |
 | `components/jt-context-banner.gts` (outlet `discovery-list-controls-above`) | category / tag banner (`jt-banner.scss`) |
+| `stylesheets/jt-phone-post-menu.scss` | a post's row of buttons on phones: 34px buttons, the row wraps instead of scrolling sideways, the buttons drop under the like count when they don't share a line |
 | `components/jt-footer.gts` (outlet `below-footer`) | footer columns from `footer_links` (`jt-footer.scss`) |
 | `components/jt-reading-progress.gts` (outlet `topic-above-post-stream`) | reading progress hairline (core `topic:current-post-scrolled`) |
 | `components/jt-command-menu.gts` + `api-initializers/jt-command-menu.ts` | ⌘K / Ctrl+K command menu (`jt-cmdk.scss`); opened from the header's search field too |
