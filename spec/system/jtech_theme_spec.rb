@@ -477,6 +477,19 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  # The theme keeps thin scrollbars visible on touch screens, except under a
+  # post's row of buttons, which scrolls sideways by a few pixels on phones.
+  it "draws no scrollbar under a post's buttons on phones", mobile: true do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css(".topic-post .post-controls")
+    scrollbar = page.evaluate_script(<<~JS)
+      getComputedStyle(document.querySelector(".topic-post .post-controls")).scrollbarWidth
+    JS
+    expect(scrollbar).to eq("none")
+    expect_no_theme_errors
+  end
+
   it "draws trust-level and staff flair in black and white, with its own marks" do
     Group.refresh_automatic_groups!
     Group.find(Group::AUTO_GROUPS[:trust_level_2]).update!(
