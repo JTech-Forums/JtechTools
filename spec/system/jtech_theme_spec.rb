@@ -717,33 +717,6 @@ RSpec.describe "JTech theme" do
 
   # Core's suggested list is a bare table under a bold "want to read more?";
   # the theme: a divided card and a sentence.
-  # "view 1 hidden reply" was core's bold uppercase grey line; the theme draws
-  # it like the list's "last visit" divider. Core only renders it around
-  # filtered posts, so the spec adds the same markup and checks its look.
-  it "draws the hidden replies link as a centred divider" do
-    sign_in(member)
-    visit(topic.relative_url)
-    expect(page).to have_css(".post-stream")
-    gap = page.evaluate_script(<<~JS)
-      (() => {
-        const gap = document.createElement("div");
-        gap.className = "gap";
-        gap.textContent = "view 1 hidden reply";
-        document.querySelector(".post-stream").appendChild(gap);
-        const style = getComputedStyle(gap);
-        const look = {
-          display: style.display,
-          case: style.textTransform,
-          rule: getComputedStyle(gap, "::before").height,
-        };
-        gap.remove();
-        return look;
-      })()
-    JS
-    expect(gap).to eq("display" => "flex", "case" => "none", "rule" => "1px")
-    expect_no_theme_errors
-  end
-
   it "puts the suggested topics under a topic on a card" do
     sign_in(member)
     visit(topic.relative_url)
@@ -800,6 +773,33 @@ RSpec.describe "JTech theme" do
     JS
     expect(looks).to eq("odd" => [], "circle" => false)
     shot("one-radius")
+    expect_no_theme_errors
+  end
+
+  # "view 1 hidden reply" was core's bold uppercase grey line; the theme draws
+  # it like the list's "last visit" divider. Core only renders it around
+  # filtered posts, so the spec adds the same markup and checks its look.
+  it "draws the hidden replies link as a centred divider" do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css(".post-stream")
+    gap = page.evaluate_script(<<~JS)
+      (() => {
+        const gap = document.createElement("div");
+        gap.className = "gap";
+        gap.textContent = "view 1 hidden reply";
+        document.querySelector(".post-stream").appendChild(gap);
+        const style = getComputedStyle(gap);
+        const look = {
+          display: style.display,
+          case: style.textTransform,
+          rule: getComputedStyle(gap, "::before").height,
+        };
+        gap.remove();
+        return look;
+      })()
+    JS
+    expect(gap).to eq("display" => "flex", "case" => "none", "rule" => "1px")
     expect_no_theme_errors
   end
 
