@@ -2,7 +2,6 @@ import Component from "@glimmer/component";
 import { on } from "@ember/modifier";
 import { action, get } from "@ember/object";
 import type RouterService from "@ember/routing/router-service";
-import { schedule } from "@ember/runloop";
 import { service } from "@ember/service";
 import { themePrefix } from "virtual:theme";
 import type User from "discourse/models/user";
@@ -12,6 +11,7 @@ import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { toggleColorMode } from "../lib/jt-color-mode";
 import { needsFullPageLoad } from "../lib/jt-links";
+import { pickUserMenuTab } from "../lib/jt-user-menu";
 
 export type JtHeaderIconKind = "home" | "messages" | "notifications" | "theme";
 
@@ -102,27 +102,15 @@ export default class JtHeaderIcon extends Component<JtHeaderIconSignature> {
     if (!this.header.userVisible) {
       document.getElementById("toggle-current-user")?.click();
     }
-    // The menu renders over the next few frames; then pick the tab. If core's
-    // menu ever changes shape, fall back to the full page.
-    let frames = 30;
-    const pick = () => {
-      const button = tabButton();
-      if (button) {
-        if (!button.classList.contains("active")) {
-          button.click();
-        }
-      } else if (--frames > 0) {
-        requestAnimationFrame(pick);
-      } else {
-        if (this.header.userVisible) {
-          document.getElementById("toggle-current-user")?.click(); // close
-        }
-        this.router.transitionTo(
-          this.kind === "messages" ? "/my/messages" : "/my/notifications"
-        );
+    // If core's menu ever changes shape, fall back to the full page
+    pickUserMenuTab(this.tab, () => {
+      if (this.header.userVisible) {
+        document.getElementById("toggle-current-user")?.click(); // close
       }
-    };
-    schedule("afterRender", () => requestAnimationFrame(pick));
+      this.router.transitionTo(
+        this.kind === "messages" ? "/my/messages" : "/my/notifications"
+      );
+    });
   }
 
   <template>
