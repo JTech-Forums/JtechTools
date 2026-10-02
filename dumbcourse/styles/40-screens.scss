@@ -1278,3 +1278,112 @@ img.emoji.kind {
   width: 1.2rem;
   height: 1.2rem;
 }
+
+/* ── Pictures: viewer and gallery (ui/pictures.ts) ─────────────────── */
+
+.picture-layer .layer-panel {
+  background: #000;
+  color: #e6e6e6;
+}
+
+.pv {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pv-head {
+  display: flex;
+  justify-content: space-between;
+  min-height: 1.6rem;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  line-height: 1rem;
+  color: #bbb;
+}
+
+/* One picture: no "1 / 1", and the name starts at the left. */
+.pv-count:empty {
+  display: none;
+}
+
+.pv-name {
+  margin-left: 0.6rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pv-count:empty + .pv-name {
+  margin-left: 0;
+}
+
+/* The picture is sized and centred by ui/pictures.ts; a zoomed one scrolls. */
+.pv-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  outline: none;
+}
+
+.pv-img {
+  display: block;
+  max-width: none;
+}
+
+.pv-msg {
+  position: absolute;
+  top: 45%;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  color: #bbb;
+}
+
+.pg {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pg-head {
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+}
+
+.pg-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  flex: 1;
+  min-height: 0;
+  padding: 0.2rem;
+}
+
+.pg-cell {
+  width: 33.333%;
+  height: 5rem;
+  padding: 0.15rem;
+  border: 0;
+  background: transparent;
+}
+
+.pg-cell img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-s);
+  background: var(--surface2);
+}
+
+.pg-cell:focus {
+  outline: none;
+}
+
+.pg-cell:focus img {
+  box-shadow: 0 0 0 3px var(--focus);
+}

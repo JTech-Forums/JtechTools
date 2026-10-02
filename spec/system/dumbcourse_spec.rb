@@ -211,26 +211,107 @@ RSpec.describe "Dumbcourse" do
       end
     end
 
-    it "lists a post's pictures in its action sheet, apart from its links" do
-      Fabricate(
-        :post,
-        topic: topic,
-        user: bob,
-        raw:
-          "Mine: ![DuraXV](https://example.com/duraxv.png) Specs at https://example.com/specs here.",
-      )
+    # A small PNG as a data: URI (the page's CSP allows data: pictures), so the
+    # viewer loads real pictures without upload files.
+    def png_uri(width, height, rgb)
+      chunk = ->(type, data) do
+        [data.bytesize].pack("N") + type.b + data + [Zlib.crc32(type.b + data)].pack("N")
+      end
+      rows = ("\x00".b + rgb.pack("C3") * width) * height
+      png =
+        "\x89PNG\r\n\x1a\n".b + chunk.call("IHDR", [width, height, 8, 2, 0, 0, 0].pack("NNC5")) +
+          chunk.call("IDAT", Zlib::Deflate.deflate(rows)) + chunk.call("IEND", "".b)
+      "data:image/png;base64,#{Base64.strict_encode64(png)}"
+    end
+
+    # Post #3, with this cooked HTML as-is (what Discourse makes of an upload).
+    def picture_post(cooked)
+      post = Fabricate(:post, topic: topic, user: bob, raw: "Pictures of my phone, and a link.")
+      post.update_columns(cooked: cooked)
+    end
+
+    def open_post_menu(number)
+      visit "/dumb/t/#{topic.slug}/#{topic.id}"
+      # Its timestamp, not its middle, which may be a link or a picture.
+      find(".post[data-n='#{number}'] .post-when").click
+      press(:enter)
+    end
+
+    it "shows a post's picture full size: zooms, saves, and Back returns to the post" do
+      wide = png_uri(600, 400, [200, 40, 40])
+      picture_post(<<~HTML)
+        <p>Specs at <a href="https://example.com/specs">example.com</a>.</p>
+        <div class="lightbox-wrapper"><a class="lightbox" href="#{wide}" data-download-href="/uploads/default/0123abcd" title="My phone"><img src="#{wide}" alt="My phone" width="300" height="200"></a></div>
+      HTML
       phone do
-        visit "/dumb/t/#{topic.slug}/#{topic.id}"
-        # The post's timestamp, not its middle: the middle of this post is its link.
-        find(".post[data-n='3'] .post-when").click
-        press(:enter)
-        expect(page).to have_css(".sheet-heading", text: /1 picture in this post/i)
-        expect(page).to have_css(
-          ".sheet-item[href='https://example.com/duraxv.png'][target='_blank']",
-          text: "DuraXV",
-        )
+        open_post_menu(3)
+        # First in the menu, and focused: OK, OK opens it.
+        expect(page).to have_css(".sheet-item:focus", text: "View picture")
         expect(page).to have_css(".sheet-heading", text: /1 link in this post/i)
-        expect(page).to have_css(".sheet-item[href='https://example.com/specs']")
+        expect(page).to have_no_css(".sheet-heading", text: /picture/i)
+        find(".sheet-item", text: "View picture").click
+
+        expect(page).to have_css(".picture-layer .pv-stage[data-zoom='1']:focus")
+        expect(page).to have_css(".picture-layer .pv-name", text: "My phone")
+        expect(page).to have_no_css(".picture-layer .pv-count", text: /\S/)
+        # The labels appear once the picture has loaded.
+        expect(page).to have_css("#softkeys .sk-left", text: /close/i)
+        expect(page).to have_css("#softkeys .sk-center", text: /zoom/i)
+        expect(page).to have_css("#softkeys .sk-right", text: /save/i)
+        expect(page).to have_css(
+          ".pv-save[href='/uploads/default/0123abcd?dl=1'][download]",
+          visible: :all,
+        )
+
+        press(:enter)
+        expect(page).to have_css(".pv-stage[data-zoom='2']")
+        press(:enter)
+        expect(page).to have_css(".pv-stage[data-zoom='3']")
+        expect(page).to have_css("#softkeys .sk-center", text: /fit/i)
+        press(:enter)
+        expect(page).to have_css(".pv-stage[data-zoom='1']")
+
+        press(:backspace)
+        expect(page).to have_no_css(".picture-layer")
+        expect(focused_key).to eq("p3")
+      end
+    end
+
+    it "pages through a post's pictures from a gallery" do
+      wide = png_uri(600, 400, [200, 40, 40])
+      tall = png_uri(300, 500, [40, 80, 200])
+      picture_post(%(<p><img src="#{wide}" alt="image"> <img src="#{tall}" alt="image"></p>))
+      phone do
+        open_post_menu(3)
+        find(".sheet-item", text: "View pictures (2)").click
+
+        expect(page).to have_css(".pictures-layer .pg-cell", count: 2)
+        expect(page).to have_css(".pictures-layer .pg-cell[data-i='0']:focus")
+        expect(page).to have_css("#softkeys .sk-center", text: /view/i)
+        press(:right, :enter)
+
+        expect(page).to have_css(".picture-layer .pv-count", text: "2 / 2")
+        expect(page).to have_css("#softkeys .sk-center", text: /zoom/i)
+        # Not forum uploads: nothing to download.
+        expect(page).to have_no_css("#softkeys .sk-right", text: /\S/)
+        expect(page).to have_css(".picture-layer .pv-count", exact_text: "‹ 2 / 2")
+        press(:left)
+        expect(page).to have_css(".picture-layer .pv-count", exact_text: "1 / 2 ›")
+
+        # Zoomed, the D-pad moves the picture; 6 still goes to the next one.
+        press(:enter)
+        expect(page).to have_css(".pv-stage[data-zoom='2']")
+        press("6")
+        expect(page).to have_css(".picture-layer .pv-count", exact_text: "‹ 2 / 2")
+        expect(page).to have_css(".pv-stage[data-zoom='1']")
+        press("4")
+        expect(page).to have_css(".picture-layer .pv-count", exact_text: "1 / 2 ›")
+
+        press(:backspace)
+        expect(page).to have_no_css(".picture-layer")
+        expect(page).to have_css(".pictures-layer .pg-cell[data-i='1']:focus")
+        press(:backspace)
+        expect(page).to have_no_css(".pictures-layer")
       end
     end
 

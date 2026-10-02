@@ -140,6 +140,15 @@ export function openLayer(opts: {
   return layer;
 }
 
+// Relabels an open layer's soft keys, e.g. as a viewer moves between
+// pictures. The keys object is kept, so they stay right when a layer on top
+// of it closes.
+export function setLayerKeys(layer: Layer, keys: Softkeys): void {
+  for (let i = 0; i < stack.length; i++)
+    if (stack[i] === layer) stack[i].softkeys = keys;
+  refreshSoftkeys();
+}
+
 export function topLayer(): Layer | null {
   return stack[stack.length - 1] || null;
 }
