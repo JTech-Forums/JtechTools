@@ -699,6 +699,10 @@ RSpec.describe "JTech theme" do
   it "puts a member's bookmarks, activity and inbox on cards" do
     Fabricate(:bookmark, user: member, bookmarkable: first_post, name: "Read again")
     Fabricate(:topic_user, user: member, topic: topic) # the bookmarks query joins it
+    # the activity stream reads user actions, which specs don't log by default
+    UserActionManager.enable
+    UserActionManager.topic_created(topic)
+    UserActionManager.post_created(first_post)
     pm = Fabricate(:private_message_topic, user: admin, recipient: member)
     Fabricate(:post, topic: pm, user: admin, raw: "A note for the inbox layout.")
     sign_in(member)
