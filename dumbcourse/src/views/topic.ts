@@ -29,6 +29,7 @@ import type { Screen } from "../screen.ts";
 import { isStaff, user } from "../session.ts";
 import { category, categoryBadge, topicPath, userPath } from "../site.ts";
 import type { Post, Topic } from "../types.ts";
+import { hiddenParts, hiddenState, showHidden } from "../ui/hidden-text.ts";
 import { icon } from "../ui/icons.ts";
 import {
   actionSheet,
@@ -797,6 +798,15 @@ function wireTopic(
       });
 
     const links = state.links[p.id] || [];
+    const postEl = byId("post-" + p.id);
+    const hidden = postEl ? hiddenParts(postEl) : null;
+    const hiddenNow = hidden ? hiddenState(hidden) : null;
+    if (hidden && hiddenNow)
+      items.push({
+        label: hiddenNow === "hidden" ? "Show hidden text" : "Hide hidden text",
+        icon: hiddenNow === "hidden" ? "eye" : "eyeOff",
+        run: () => showHidden(hidden, hiddenNow === "hidden"),
+      });
     if (state.images[p.id] && prefs.images !== "show") {
       items.push({
         label: plural(state.images[p.id], "Show image", "Show images"),
