@@ -1,0 +1,76 @@
+// The topic progress widget: on phones, and in desktop windows too narrow
+// for the timeline. Core's is a row of separate boxes, the "1 / 4" one with
+// the accent colour for its numbers and a coloured fill creeping up behind
+// them. Here the row is one capsule: the jump arrows (components/jt-jump-
+// buttons), the admin wrench and the counter share a glass bar with a
+// hairline, the counter's fill is a quiet tint, and the numbers are tabular
+// in the text colour.
+#topic-progress-wrapper {
+  gap: 2px;
+  align-items: stretch;
+  padding: 3px;
+  overflow: visible;
+  background: var(--jt-glass);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-pill);
+  box-shadow: var(--jt-shadow-menu);
+  backdrop-filter: blur(12px);
+
+  // the arrows and the wrench: flat squares in the capsule
+  .jt-jump.--progress {
+    gap: 2px;
+  }
+
+  .jt-jump.--progress .btn,
+  .toggle-admin-menu,
+  .btn.progress-back {
+    width: 2.25rem;
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    color: var(--jt-text-muted);
+    background: none;
+    border: 0;
+    border-radius: var(--jt-radius-pill);
+    transition:
+      color var(--jt-motion),
+      background-color var(--jt-motion);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--jt-text);
+      background: var(--jt-hover);
+      border-color: transparent;
+    }
+  }
+
+  #topic-progress {
+    overflow: hidden;
+    padding: 0 var(--space-4);
+    color: var(--jt-text);
+    background: var(--jt-fill);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-pill);
+
+    .nums {
+      gap: 0.25rem;
+      min-width: 5ch;
+      min-height: 2.25rem;
+      font-size: var(--jt-text-md);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .d-icon {
+      color: var(--jt-text-subtle);
+    }
+
+    // how far through the topic you are: a tint, not a bar with an edge
+    .bg {
+      background: var(--jt-active);
+      border: 0;
+    }
+  }
+}

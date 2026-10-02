@@ -689,6 +689,25 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core's progress widget on phones is a row of boxes with the accent on its
+  # numbers; the theme makes it one hairline capsule with tabular numbers.
+  it "shows the phone's progress widget as one capsule", mobile: true do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css("#topic-progress .nums")
+    border, radius, numerals = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector("#topic-progress-wrapper")).borderTopWidth,
+        parseFloat(getComputedStyle(document.querySelector("#topic-progress-wrapper")).borderTopLeftRadius),
+        getComputedStyle(document.querySelector("#topic-progress .nums")).fontVariantNumeric,
+      ]
+    JS
+    expect(border).to eq("1px")
+    expect(radius).to be > 4
+    expect(numerals).to eq("tabular-nums")
+    expect_no_theme_errors
+  end
+
   it "sends links that aren't forum pages to the browser" do
     visit("/latest")
     expect(page).to have_css(".jt-header-home a[href='/home'][data-auto-route='true']")
