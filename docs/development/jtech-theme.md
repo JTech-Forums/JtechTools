@@ -63,6 +63,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `stylesheets/jt-tokens.scss` | maps tokens onto core's `--d-*` / `--token-*` hooks |
 | `stylesheets/jt-notifications.scss` | notifications page (/my/notifications): filters as a toolbar, the list a divided card; the bell's panel: tabs, rows, bottom bar; on both, unread rows tinted with a bold name and the type badge black / white instead of the accent |
 | `stylesheets/jt-*.scss` | header, logo, topic list, posts, panels, component restyles, monochrome switches |
+| `stylesheets/jt-panels.scss` | menus, cards and dialogs as hairline surfaces; on sidebar pages the previewless composer gets the page gutter core leaves out of its `margin-left` (and gives it back from `max-width`), at each of core's breakpoints |
 | `stylesheets/jt-legacy-content.scss` | post wrappers (`ghbtn`, `logos`) ported from prod's Default theme |
 | `stylesheets/jt-posts.scss` | links, blockquotes and code in posts; "view N hidden replies" (core's `.gap`) as jt-cards' "last visit" divider |
 | `stylesheets/jt-static.scss` | the static pages (/guidelines, /faq, /tos, /privacy): a measured reading column at the post's size and leading, headings, lists and links like a post's, the edit link quiet under the nav |

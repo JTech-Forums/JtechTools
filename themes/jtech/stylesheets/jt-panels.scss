@@ -56,3 +56,30 @@ html.mobile-view .d-modal:not(.jt-cmdk) .d-modal__container {
     border-top: 1px solid var(--jt-border);
   }
 }
+
+// The composer without a preview lines up with the topic column. On sidebar
+// pages core places it at the sidebar's width plus its gap and forgets the
+// page's gutter (it adds it on pages without a sidebar), so it started 0.67em
+// left of everything above it. The gutter goes back on the left and comes off
+// the width, so the left edge meets the content and the right one stays put.
+body.has-sidebar-page #reply-control:not(.fullscreen).hide-preview {
+  --jt-gutter: var(--d-wrap-padding-x, 0.67em);
+  max-width: calc(
+    var(--topic-width) + var(--topic-avatar-width) - var(--jt-gutter)
+  );
+  margin-left: calc(
+    var(--d-sidebar-width) + var(--layout-gap) + var(--jt-gutter)
+  );
+
+  // core's: the window is wider than the page, which is centred
+  @media screen and (width >= 1390px) {
+    margin-left: calc(var(--layout-gap) + var(--jt-gutter));
+  }
+
+  // core's: the topic column starts to shrink, the composer fills the content
+  @media screen and (width <= 1180px) {
+    width: calc(
+      100% - var(--d-sidebar-width) - var(--layout-gap) - 2 * var(--jt-gutter)
+    );
+  }
+}
