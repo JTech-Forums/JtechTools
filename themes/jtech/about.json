@@ -9,7 +9,8 @@
   "maximum_discourse_version": null,
   "assets": {
     "geist": "assets/Geist-Variable.woff2",
-    "geist-mono": "assets/GeistMono-Variable.woff2"
+    "geist-mono": "assets/GeistMono-Variable.woff2",
+    "icons-sprite": "assets/icons-sprite.svg"
   },
   "color_schemes": {
     "JTech Light": {

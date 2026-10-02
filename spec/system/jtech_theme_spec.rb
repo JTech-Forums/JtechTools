@@ -664,6 +664,24 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  it "draws Discourse's icons with Lucide's outline set" do
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-header-notifications .d-icon-bell")
+    icon, drawn = page.evaluate_script(<<~JS)
+      (() => {
+        const id = document
+          .querySelector(".jt-header-notifications .d-icon-bell use")
+          .getAttribute("href")
+          .slice(1);
+        return [id, !!document.querySelector(`symbol#${id}`)];
+      })()
+    JS
+    expect(icon).to eq("jt-bell")
+    expect(drawn).to eq(true)
+    expect_no_theme_errors
+  end
+
   it "shows the dark palette when the browser prefers dark" do
     page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
     sign_in(member)

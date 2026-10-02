@@ -3,8 +3,11 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022", "DOM"],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    // Bundler-style, so the scripts can import the theme's plain-data
+    // modules (themes/jtech/…/lib/*.ts), which NodeNext would read as
+    // CommonJS; Node itself detects their ESM syntax.
+    "module": "preserve",
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
