@@ -10,7 +10,7 @@
 // ── Author block ──────────────────────────────────────────
 .topic-post {
   .topic-avatar .avatar {
-    border-radius: 50%;
+    border-radius: var(--jt-radius-avatar);
     box-shadow: 0 0 0 1px var(--jt-border);
   }
 
@@ -150,7 +150,7 @@ nav.post-controls {
   padding: 0 0.7em 0 0.45em;
   background: var(--jt-fill);
   border: 1px solid var(--jt-border);
-  border-radius: var(--jt-radius-pill);
+  border-radius: var(--jt-radius-control); // as Me too beside it
   transition:
     border-color var(--jt-motion),
     background-color var(--jt-motion);
@@ -189,7 +189,7 @@ nav.post-controls {
   box-shadow: var(--jt-shadow-menu);
 
   .pickable-reaction {
-    border-radius: var(--jt-radius-md);
+    border-radius: var(--jt-radius-control);
     transition:
       background-color var(--jt-motion),
       transform var(--jt-motion);
@@ -313,4 +313,10 @@ html.desktop-view #topic-footer-buttons {
   background: var(--jt-surface-sunken);
   border: 1px solid var(--jt-border);
   border-radius: var(--jt-radius-lg);
+}
+
+// "Pinned post" on the pinned post's card under a topic: the medium grey on
+// its grey pill is 3.8:1
+.topic-footer-pinned-post .pinned-post-badge {
+  color: var(--jt-text-muted);
 }

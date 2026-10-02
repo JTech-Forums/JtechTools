@@ -274,7 +274,7 @@
       height: 22px;
       margin-left: -6px;
       border: 2px solid var(--jt-surface-raised);
-      border-radius: 50%;
+      border-radius: var(--jt-radius-avatar);
       background: var(--jt-surface-raised);
     }
 
@@ -421,5 +421,35 @@
 
   .d-modal__footer {
     gap: var(--space-2);
+  }
+}
+
+// "See 1 new or updated topic": on wide screens core floats it over the
+// list's header row, which card lists don't have, so it sat on the first
+// card's top edge. Here it stays in the flow: a centred button above the
+// cards, the same on phones.
+.show-more.has-topics:has(~ .topic-list.jt-cards) {
+  position: relative;
+  width: auto;
+  margin: 0 0 var(--space-3);
+
+  .alert {
+    width: fit-content;
+    margin-inline: auto;
+    padding: 0.45rem 1rem;
+    font-size: var(--jt-text-sm);
+    font-weight: 500;
+    color: var(--jt-text);
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-control);
+    transition:
+      background-color var(--jt-motion),
+      border-color var(--jt-motion);
+
+    &:hover {
+      background: var(--jt-hover);
+      border-color: var(--jt-text-subtle);
+    }
   }
 }

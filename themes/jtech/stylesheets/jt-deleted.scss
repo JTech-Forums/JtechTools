@@ -1,0 +1,60 @@
+// Deleted posts, which staff still see. Core fills the post with a bright
+// pink and turns its name, date, buttons and the "deleted by" mark red: the
+// loudest thing on the page in a theme that's otherwise black and white.
+// Here a deleted post is a dashed outline over a faint hatch, its text muted,
+// and everything around it in the theme's greys; the trash mark beside the
+// deleter's avatar still says what happened.
+.topic-post.deleted {
+  .regular > .cooked {
+    color: var(--jt-text-muted);
+    background: repeating-linear-gradient(
+      135deg,
+      transparent 0 7px,
+      var(--jt-hover) 7px 8px
+    );
+    border: 1px dashed var(--jt-border-strong);
+    border-radius: var(--jt-radius-md);
+  }
+
+  .topic-meta-data:not(.embedded-reply) {
+    color: var(--jt-text-muted);
+  }
+
+  nav.post-controls {
+    color: var(--jt-text-subtle);
+
+    .show-replies,
+    button.reply.create,
+    .show-replies .d-icon,
+    button.reply.create .d-icon,
+    .d-icon {
+      color: var(--jt-text-subtle);
+    }
+
+    .btn:hover {
+      color: var(--jt-text);
+      background: var(--jt-hover);
+
+      .d-icon {
+        color: var(--jt-text);
+      }
+    }
+  }
+
+  .post-action {
+    color: var(--jt-text-muted);
+  }
+}
+
+.small-action.deleted {
+  .topic-avatar,
+  .small-action-desc {
+    background: transparent;
+  }
+
+  .small-action-desc {
+    color: var(--jt-text-muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--jt-border-strong);
+  }
+}

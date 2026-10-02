@@ -382,6 +382,54 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core opens each review item with a bar in the inverted text colour (solid
+  # black, or white in dark mode) and says "no items" in bare text; the
+  # avatar's review badge is red. The theme: a quiet title row, an outlined
+  # Pending, the empty-page card, and the header's inverse pill.
+  it "keeps the review queue in the theme's quiet cards" do
+    Fabricate(:reviewable_flagged_post, topic: topic, target: first_post)
+    sign_in(admin)
+    visit("/latest")
+    expect(page).to have_css(".d-header .badge-notification.new-reviewables")
+    badge = page.evaluate_script(<<~JS)
+      (() => {
+        const badge = getComputedStyle(document.querySelector(".d-header .new-reviewables"));
+        return badge.backgroundColor === getComputedStyle(document.body).color;
+      })()
+    JS
+    expect(badge).to eq(true)
+
+    visit("/review")
+    expect(page).to have_css(".review-item__header")
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const header = getComputedStyle(document.querySelector(".review-item__header"));
+        const pending = getComputedStyle(document.querySelector(".review-item__status.--pending"));
+        const text = getComputedStyle(document.body).color;
+        return {
+          headerInText: header.color === text,
+          headerFilled: header.backgroundColor === text,
+          pending: pending.backgroundColor,
+        };
+      })()
+    JS
+    expect(looks).to eq(
+      "headerInText" => true,
+      "headerFilled" => false,
+      "pending" => "rgba(0, 0, 0, 0)",
+    )
+    shot("review-queue")
+
+    visit("/review?type=ReviewableUser")
+    expect(page).to have_css(".reviewable-list .no-review")
+    empty =
+      page.evaluate_script(
+        "getComputedStyle(document.querySelector('.reviewable-list .no-review')).borderTopWidth",
+      )
+    expect(empty).to eq("1px")
+    expect_no_theme_errors
+  end
+
   it "keeps New Topic on the row of tabs when the window narrows" do
     sign_in(member)
     resize_window(width: 900) do
@@ -425,6 +473,66 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  # Core's [details] is a grey bar with ► / ▼, a quote a grey title bar over a
+  # barred blockquote, a onebox a 1px + 4px ring. The theme: one hairline card
+  # for each, the section's chevron turning when it opens.
+  it "draws collapsible sections, quotes and link previews as hairline cards" do
+    post =
+      Fabricate(
+        :post,
+        topic: topic,
+        user: admin,
+        raw:
+          "[quote=\"#{member.username}, post:1, topic:#{topic.id}\"]\nI'm setting up a flip phone.\n[/quote]",
+      )
+    # written out rather than cooked, so the spec doesn't lean on the details
+    # plugin or a onebox fetch
+    post.update_column(:cooked, post.cooked + <<~HTML)
+      <details><summary>Steps</summary><p>Turn it off and on.</p></details>
+      <aside class="onebox allowlistedgeneric" data-onebox-src="https://example.com/">
+        <header class="source"><a href="https://example.com/">example.com</a></header>
+        <article class="onebox-body"><h3><a href="https://example.com/">Example</a></h3></article>
+      </aside>
+    HTML
+    sign_in(member)
+    visit("#{topic.relative_url}/#{post.post_number}")
+    selector = "#post_#{post.post_number} .cooked"
+    expect(page).to have_css("#{selector} details summary")
+    expect(page).to have_css("#{selector} aside.onebox")
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const post = document.querySelector("#{selector}");
+        const details = post.querySelector("details");
+        const quote = post.querySelector("aside.quote blockquote");
+        const onebox = post.querySelector("aside.onebox");
+        return {
+          marker: getComputedStyle(details.querySelector("summary"), "::before").content,
+          details: getComputedStyle(details).borderTopWidth,
+          quoteBar: getComputedStyle(quote).borderLeftWidth,
+          ring: getComputedStyle(onebox).boxShadow,
+          onebox: getComputedStyle(onebox).borderTopWidth,
+        };
+      })()
+    JS
+    expect(looks).to eq(
+      "marker" => '""',
+      "details" => "1px",
+      "quoteBar" => "0px",
+      "ring" => "none",
+      "onebox" => "1px",
+    )
+
+    find("#{selector} details summary").click
+    expect(page).to have_css("#{selector} details[open]")
+    turned =
+      page.evaluate_script(
+        "getComputedStyle(document.querySelector('#{selector} details summary'), '::before').transform",
+      )
+    expect(turned).not_to eq("none")
+    shot("post-blocks")
+    expect_no_theme_errors
+  end
+
   it "leaves a gap between New's All / Topics / Replies and the first card" do
     sign_in(member)
     visit("/new")
@@ -462,6 +570,54 @@ RSpec.describe "JTech theme" do
     expect(width).to eq(704) # 44rem
     expect(size).to eq("17.0672px") # the post's reading size, not core's 16px
     expect(indent).to eq("0px") # a post's indent, not core's 40px
+    expect_no_theme_errors
+  end
+
+  # Core's polls: square corners, flat grey bars with no track (a 0% option
+  # shows nothing), the voter count in grey and the settings gear a bare
+  # button (a grey box in dark mode). The theme: its radius, a track under
+  # every result with your vote in the text colour, the count in the text
+  # colour, a flat gear.
+  it "draws a poll's results on tracks, with the voter's choice in the text colour" do
+    post = PostCreator.create!(admin, topic_id: topic.id, raw: <<~MD)
+      Which day?
+
+      [poll]
+      * Monday
+      * Tuesday
+      [/poll]
+    MD
+    monday = post.polls.first.poll_options.find_by(html: "Monday").digest
+    # staff, so the gear has something to offer (close, export)
+    DiscoursePoll::Poll.vote(admin, post.id, "poll", [monday])
+    sign_in(admin)
+    visit("#{topic.relative_url}/#{post.post_number}")
+    poll = "#post_#{post.post_number} .poll"
+    expect(page).to have_css("#{poll} .results li.chosen")
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const poll = document.querySelector("#{poll}");
+        const text = getComputedStyle(document.body).color;
+        const tracks = [...poll.querySelectorAll(".results .bar-back")];
+        return {
+          rounded: getComputedStyle(poll).borderTopLeftRadius !== "0px",
+          tracks: tracks.length,
+          tracksShown: tracks.every((t) => getComputedStyle(t).backgroundColor !== "rgba(0, 0, 0, 0)"),
+          chosen: getComputedStyle(poll.querySelector(".chosen .bar")).backgroundColor === text,
+          count: getComputedStyle(poll.querySelector(".info-number")).color === text,
+          gear: getComputedStyle(poll.querySelector(".poll-buttons .widget-dropdown-header")).backgroundColor,
+        };
+      })()
+    JS
+    expect(looks).to eq(
+      "rounded" => true,
+      "tracks" => 2,
+      "tracksShown" => true,
+      "chosen" => true,
+      "count" => true,
+      "gear" => "rgba(0, 0, 0, 0)",
+    )
+    shot("poll")
     expect_no_theme_errors
   end
 
@@ -505,6 +661,39 @@ RSpec.describe "JTech theme" do
     expect(card_border).to eq("1px")
     expect(control_height).to eq(38) # 2.4rem
     expect(save_height).to eq(38)
+    expect_no_theme_errors
+  end
+
+  # Core sets a table as bare text: a grey header, 3px cells and a faint line
+  # between rows. The theme: a hairline card with a sunken header strip,
+  # roomy cells and a rule between rows.
+  it "sets a table in a post as a card with a header strip" do
+    post =
+      Fabricate(
+        :post,
+        topic: topic,
+        user: admin,
+        raw: "| Phone | Filter |\n|---|---|\n| Qin F21 | eGate |\n| Flip 3 | Mitzuyan |",
+      )
+    sign_in(member)
+    visit("#{topic.relative_url}/#{post.post_number}")
+    table = "#post_#{post.post_number} .cooked table"
+    expect(page).to have_css("#{table} tbody tr", count: 2)
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const table = document.querySelector("#{table}");
+        const th = getComputedStyle(table.querySelector("th"));
+        const rows = table.querySelectorAll("tbody tr");
+        return {
+          frame: getComputedStyle(table).borderTopWidth,
+          strip: th.backgroundColor !== "rgba(0, 0, 0, 0)",
+          rule: getComputedStyle(rows[1].querySelector("td")).borderTopWidth,
+          roomy: parseFloat(getComputedStyle(rows[0].querySelector("td")).paddingLeft) >= 8,
+        };
+      })()
+    JS
+    expect(looks).to eq("frame" => "1px", "strip" => true, "rule" => "1px", "roomy" => true)
+    shot("table")
     expect_no_theme_errors
   end
 
@@ -552,6 +741,38 @@ RSpec.describe "JTech theme" do
       text: "Reply",
       visible: true,
     )
+    expect_no_theme_errors
+  end
+
+  # Core mixes radii: square composer controls and Discard, 10px rows and
+  # menus, 14px fields beside 12px buttons, circular avatars among rounded
+  # boxes. The theme: one radius for controls, avatars as rounded boxes.
+  it "gives every control one radius and draws avatars as rounded boxes" do
+    sign_in(member)
+    visit(topic.relative_url)
+    find(".topic-footer-main-buttons .create").click
+    expect(page).to have_css("#reply-control.open .save-or-cancel .discard-button")
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const radius = (s) => getComputedStyle(document.querySelector(s)).borderTopLeftRadius;
+        const control = radius("#reply-control .save-or-cancel .btn-primary");
+        const avatar = getComputedStyle(document.querySelector(".topic-avatar img.avatar"));
+        return {
+          odd: [
+            "#reply-control .composer-controls .toggle-minimize",
+            "#reply-control .save-or-cancel .discard-button",
+            "#reply-control .d-editor-textarea-wrapper",
+            "#reply-control .d-editor-button-bar .btn:not(.composer-toggle-switch)",
+            ".post-controls .actions .btn",
+          ].filter((s) => radius(s) !== control),
+          circle:
+            avatar.borderTopLeftRadius === "50%" &&
+            (!avatar.cornerShape || /round|\(1\)/.test(avatar.cornerShape)),
+        };
+      })()
+    JS
+    expect(looks).to eq("odd" => [], "circle" => false)
+    shot("one-radius")
     expect_no_theme_errors
   end
 
@@ -663,6 +884,40 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core fills a deleted post with bright pink and turns its name and buttons
+  # red. The theme: a dashed outline over a faint hatch, everything in greys.
+  it "shows staff a deleted post in greys, not pink and red" do
+    deleted = replies.first
+    PostDestroyer.new(admin, deleted).destroy
+    sign_in(admin)
+    visit(topic.relative_url)
+    expect(page).to have_css(".topic-post.deleted .regular > .cooked")
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const post = document.querySelector(".topic-post.deleted");
+        const cooked = getComputedStyle(post.querySelector(".regular > .cooked"));
+        const grey = (c) => {
+          const [r, g, b] = c.match(/[\d.]+/g).map(Number);
+          return Math.max(r, g, b) - Math.min(r, g, b) < 12;
+        };
+        return {
+          outline: cooked.borderTopStyle,
+          fill: cooked.backgroundColor,
+          name: grey(getComputedStyle(post.querySelector(".topic-meta-data")).color),
+          buttons: grey(getComputedStyle(post.querySelector("nav.post-controls")).color),
+        };
+      })()
+    JS
+    expect(looks).to eq(
+      "outline" => "dashed",
+      "fill" => "rgba(0, 0, 0, 0)",
+      "name" => true,
+      "buttons" => true,
+    )
+    shot("deleted-post")
+    expect_no_theme_errors
+  end
+
   it "previews a topic's first post in Quick look" do
     sign_in(member)
     visit("/latest")
@@ -728,6 +983,28 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core floats "See 1 new or updated topic" over the list's header row on
+  # wide screens; card lists have none, so it sat on the first card.
+  it "keeps the new topics button above the first card, not on it" do
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".topic-list.jt-cards .topic-list-item")
+    PostCreator.create!(
+      admin,
+      title: "A topic posted while the list is open",
+      raw: "Posted while someone had the list open.",
+      category: category.id,
+    )
+    expect(page).to have_css(".show-more.has-topics .alert")
+    gap = page.evaluate_script(<<~JS)
+      document.querySelector(".topic-list.jt-cards .topic-list-item").getBoundingClientRect().top -
+        document.querySelector(".show-more .alert").getBoundingClientRect().bottom
+    JS
+    expect(gap).to be >= 0
+    shot("new-topics-button")
+    expect_no_theme_errors
+  end
+
   it "starts a topic in the tag being viewed from the header's +" do
     sign_in(member)
     visit("/tag/#{tag.name}")
@@ -756,10 +1033,52 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core marks the selected tab with a solid 2px bar. The theme: a 1px line
+  # that glows, with a faint light behind the label.
+  it "marks the selected tab with a thin glowing line" do
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".navigation-container .nav-pills > li > a.active")
+    tab = page.evaluate_script(<<~JS)
+      (() => {
+        const tab = document.querySelector(".navigation-container .nav-pills > li > a.active");
+        const line = getComputedStyle(tab, "::after");
+        return {
+          line: line.height,
+          glow: line.boxShadow !== "none",
+          light: getComputedStyle(tab).backgroundImage.startsWith("radial-gradient"),
+        };
+      })()
+    JS
+    expect(tab).to eq("line" => "1px", "glow" => true, "light" => true)
+    expect_no_theme_errors
+  end
+
   it "sends links that aren't forum pages to the browser" do
     visit("/latest")
     expect(page).to have_css(".jt-header-home a[href='/home'][data-auto-route='true']")
     expect(page).to have_css(".jt-footer a[href='/latest']:not([data-auto-route])")
+  end
+
+  it "draws the theme's own shortcuts in the ? help like core's" do
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-card")
+    find("body").send_keys("?")
+    expect(page).to have_css(".keyboard-shortcuts-modal .delimiter-space kbd.d-shortcut")
+    spacing = page.evaluate_script(<<~JS)
+      (() => {
+        const rows = [...document.querySelectorAll(".keyboard-shortcuts-modal tr")];
+        const gap = (name) => {
+          const row = rows.find((r) => r.querySelector(".shortcut-description")?.textContent.trim() === name);
+          const [a, b] = row.querySelectorAll(".d-shortcut__key");
+          return Math.round(b.getBoundingClientRect().left - a.getBoundingClientRect().right);
+        };
+        return { core: gap("Home"), theme: gap("Tags") };
+      })()
+    JS
+    expect(spacing["theme"]).to eq(spacing["core"])
+    expect_no_theme_errors
   end
 
   it "gives the header and sidebar room: core's 16px text, 40px header controls, 36px rows" do
@@ -1053,6 +1372,59 @@ RSpec.describe "JTech theme" do
     visit(topic.relative_url)
     expect(page).to have_css(".topic-post")
     shot("dark-topic")
+    expect_no_theme_errors
+  end
+
+  # Core's secondary text (timeline dates, "1 Reply", "view 1 hidden reply",
+  # the topic's category in the header) used greys that read at 2.5:1 to
+  # 3.4:1. Every grey core and the theme put text in reaches WCAG AA, on the
+  # page and on the sunken surface, in light and dark.
+  it "keeps secondary text at 4.5:1 or better in light and dark" do
+    contrast = <<~JS
+      (() => {
+        const rgb = (c) => c.match(/[\d.]+/g).slice(0, 3).map(Number);
+        const lum = ([r, g, b]) => {
+          const f = (v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+          return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+        };
+        const probe = document.createElement("div");
+        document.body.appendChild(probe);
+        const resolve = (prop, value) => {
+          probe.style[prop] = value;
+          return rgb(getComputedStyle(probe)[prop]);
+        };
+        const surfaces = ["var(--secondary)", "var(--jt-surface-sunken)"].map((v) =>
+          resolve("backgroundColor", v)
+        );
+        const worst = {};
+        for (const grey of [
+          "--primary-medium",
+          "--primary-med-or-secondary-high",
+          "--header_primary-high",
+          "--jt-text-subtle",
+        ]) {
+          const fg = lum(resolve("color", `var(${grey})`));
+          worst[grey] = Math.min(
+            ...surfaces.map((bg) => {
+              const b = lum(bg);
+              return (Math.max(fg, b) + 0.05) / (Math.min(fg, b) + 0.05);
+            })
+          );
+        }
+        probe.remove();
+        return Object.fromEntries(Object.entries(worst).filter(([, ratio]) => ratio < 4.5));
+      })()
+    JS
+
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-card")
+    expect(page.evaluate_script(contrast)).to eq({})
+
+    page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
+    visit("/latest")
+    expect(page).to have_css(".jt-card")
+    expect(page.evaluate_script(contrast)).to eq({})
     expect_no_theme_errors
   end
 

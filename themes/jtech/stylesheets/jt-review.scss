@@ -1,0 +1,129 @@
+@use "lib/viewport";
+
+// The review queue (/review), for staff. Core opens each item with a bar in
+// the inverted text colour, which in a black-and-white palette is a solid
+// black bar (white in dark mode) heavier than anything else on the page. Here
+// it's the card's title row: sunken, in the text colour, with a hairline
+// under it and Pending as a quiet outlined pill. An empty queue is the same
+// centred card as the theme's other empty pages, and the review-queue badge
+// on the avatar is the header's inverse pill instead of red.
+$jt-review-check: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E";
+
+.review-item {
+  &__primary-content {
+    border-color: var(--jt-border);
+    border-radius: var(--jt-radius-md);
+
+    @include viewport.until(sm) {
+      border-radius: 0;
+    }
+  }
+
+  @include viewport.until(sm) {
+    border-color: var(--jt-border);
+    border-radius: var(--jt-radius-md);
+    overflow: hidden;
+  }
+
+  &__header {
+    color: var(--jt-text);
+    background: var(--jt-surface-sunken);
+    border-bottom: 1px solid var(--jt-border);
+    border-radius: calc(var(--jt-radius-md) - 1px)
+      calc(var(--jt-radius-md) - 1px) 0 0;
+
+    @include viewport.until(sm) {
+      border-radius: 0;
+    }
+  }
+
+  &__flag-label {
+    color: var(--jt-text-muted);
+  }
+
+  &__header &__flag-reason {
+    font-weight: 600;
+  }
+
+  .reviewable-created-date {
+    color: var(--jt-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .reviewable-permalink-copy .d-icon {
+    color: var(--jt-text-muted);
+  }
+
+  .reviewable-permalink-copy:hover .d-icon {
+    color: var(--jt-text);
+  }
+
+  &__aside > *:not(:last-child) {
+    border-bottom-color: var(--jt-border);
+  }
+}
+
+.review-item__status.--pending {
+  color: var(--jt-text-muted);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--jt-border-strong);
+}
+
+// Nothing to review: the empty-page card (jt-empty) with a shield-check
+.reviewable-list .no-review {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 34rem;
+  margin: var(--space-6) auto;
+  padding: calc(3.5rem + var(--space-6) + var(--space-4)) var(--space-5)
+    var(--space-6);
+  font-size: var(--jt-text-lg);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: var(--jt-tracking-heading);
+  color: var(--jt-text);
+  text-align: center;
+  background: var(--jt-surface-raised);
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-xl);
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    top: var(--space-6);
+    left: 50%;
+    width: 3.5rem;
+    height: 3.5rem;
+    transform: translateX(-50%);
+  }
+
+  &::before {
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: var(--jt-radius-lg);
+    box-shadow: 0 1px 0 var(--jt-glow) inset;
+  }
+
+  &::after {
+    background: var(--jt-text);
+    mask: url($jt-review-check) center / 1.5rem no-repeat;
+  }
+
+  @include viewport.until(sm) {
+    margin: var(--space-4) 0;
+    padding-inline: var(--space-4);
+  }
+}
+
+// The avatar's review-queue count, as the bell's and the envelope's
+.d-header .current-user .badge-notification.new-reviewables {
+  color: var(--jt-surface);
+  background: var(--jt-text);
+  border: 2px solid var(--jt-surface);
+  box-shadow: none;
+
+  .d-icon {
+    color: inherit;
+  }
+}

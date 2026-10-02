@@ -235,3 +235,23 @@ html.keyboard-visible.mobile-view .d-modal.jt-cmdk .d-modal__container {
     }
   }
 }
+
+// The ? help: core draws "g h" as one key chip, but collapses a repeated key
+// ("g g" for Tags) into one letter, so the theme's own sequences are two
+// chips side by side (api-initializers/jt-shortcuts). Joined here, they read
+// like core's.
+.keyboard-shortcuts-modal .shortcut-key .delimiter-space {
+  display: inline-flex;
+
+  > kbd.d-shortcut:first-child:not(:last-child) {
+    padding-inline-end: 4px;
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+  }
+
+  > kbd.d-shortcut:last-child:not(:first-child) {
+    padding-inline-start: 4px;
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+  }
+}

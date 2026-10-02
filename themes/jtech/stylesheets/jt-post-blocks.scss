@@ -1,0 +1,151 @@
+// Blocks inside a post: collapsible sections ([details]), quotes and link
+// previews (oneboxes). Core draws each its own way: a grey bar with a ► / ▼
+// for details, a grey title bar over a barred blockquote for quotes, and a
+// 1px + 4px ring for oneboxes, which with the theme's hairline made three
+// rings. Here all three are the same hairline card, so a post reads as one
+// set of blocks.
+$jt-chevron: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E";
+$jt-block-pad: 0.9rem;
+
+// ── Collapsible sections ─────────────────────────────────
+// Quick look's post is outside .topic-body, where core's own rule stops.
+// .elided is core's "…" toggle for trimmed email replies: left as core has it.
+.topic-body .cooked details:not(.elided),
+.jt-quick-look__cooked details:not(.elided),
+.d-editor-preview details:not(.elided) {
+  margin-bottom: 0.75rem;
+  padding: 0 $jt-block-pad;
+  background: transparent;
+  border: 1px solid var(--jt-border);
+  border-radius: var(--jt-radius-md);
+
+  &:not([open]):hover,
+  &:not([open]):focus,
+  &:not([open]):focus-within {
+    background: transparent;
+  }
+
+  > summary {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0 (-$jt-block-pad);
+    padding: 0.6rem $jt-block-pad;
+    font-weight: 500;
+    color: var(--jt-text);
+    border-radius: calc(var(--jt-radius-md) - 1px);
+    transition: background-color var(--jt-motion);
+
+    &::before {
+      content: "";
+      flex: none;
+      width: 1em;
+      height: 1lh; // the chevron sits on a long summary's first line
+      margin: 0;
+      background-color: var(--jt-text-muted);
+      mask: url($jt-chevron) center / contain no-repeat;
+      transition: transform var(--jt-motion);
+    }
+
+    &:hover {
+      background: var(--jt-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--jt-focus);
+      outline-offset: -2px;
+    }
+
+    > p {
+      padding-block: 0;
+    }
+  }
+
+  &[open] {
+    padding-bottom: 0.25rem;
+
+    > summary {
+      margin-bottom: 0.75rem;
+      border-bottom: 1px solid var(--jt-border);
+      border-radius: calc(var(--jt-radius-md) - 1px)
+        calc(var(--jt-radius-md) - 1px) 0 0;
+
+      &::before {
+        transform: rotate(90deg);
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    > summary,
+    > summary::before {
+      transition: none;
+    }
+  }
+}
+
+// Scoped to posts and the composer's preview, to outrank the theme's own
+// barred blockquote and core's title bar.
+.cooked,
+.d-editor-preview {
+  // ── Quotes ───────────────────────────────────────────────
+  // One sunken card: who's quoted on top, the text under it, no bar beside it
+  // (the card already sets it apart).
+  aside.quote {
+    background: var(--jt-surface-sunken);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-md);
+    overflow: hidden;
+
+    .title {
+      padding: 0.7rem $jt-block-pad 0;
+      color: var(--jt-text-muted);
+      background: transparent;
+      border-left: none;
+    }
+
+    blockquote {
+      margin: 0;
+      padding: 0.5rem $jt-block-pad 0.75rem;
+      background: transparent;
+      border-left: none;
+    }
+  }
+
+  // ── Link previews ────────────────────────────────────────
+  aside.onebox {
+    margin-inline: 0;
+    background: var(--jt-surface-raised);
+    border: 1px solid var(--jt-border);
+    border-radius: var(--jt-radius-md);
+    box-shadow: none;
+    transition: border-color var(--jt-motion);
+
+    &:hover {
+      border-color: var(--jt-border-strong);
+    }
+
+    // the site's name: quiet, like the date over a search result
+    header.source {
+      font-size: var(--jt-text-sm);
+
+      a[href] {
+        color: var(--jt-text-muted);
+        text-decoration: none;
+      }
+    }
+
+    .onebox-body {
+      h3 a[href],
+      h4 a[href] {
+        color: var(--jt-text);
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
+      }
+    }
+  }
+}

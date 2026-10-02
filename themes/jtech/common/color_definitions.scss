@@ -31,9 +31,21 @@
   --jt-text: #{$primary};
   --jt-text-muted: #{$primary-high};
 
-  // #767676 is the lightest grey that still reads at 4.5:1 on white (WCAG
-  // AA); it carries small text (dates, counts, column headers).
-  --jt-text-subtle: #{dark-light-choose(#767676, $primary-medium)};
+  // #737373 is the lightest grey that still reads at 4.5:1 on white and on
+  // the sunken #fafafa (WCAG AA); it carries small text (dates, counts,
+  // column headers). JTech Light's primary-medium is the same grey, so core's
+  // own secondary text (timeline dates, "1 Reply", the hidden-reply link)
+  // reads too.
+  --jt-text-subtle: #{dark-light-choose(#737373, $primary-medium)};
+
+  // Core's "view 1 hidden reply" and other quiet text use this, which on a
+  // dark palette falls to secondary-high: #4d4d4d on black, 2.5:1. The
+  // palette's medium grey reads in every mode.
+  --primary-med-or-secondary-high: #{$primary-medium};
+
+  // The topic's category beside its title in the header uses core's derived
+  // header grey (#8c8c8c on white, 3.4:1)
+  --header_primary-high: var(--jt-text-muted);
   --jt-focus: #{$primary};
   --jt-accent: #{$primary};
   --jt-on-accent: #{$secondary};

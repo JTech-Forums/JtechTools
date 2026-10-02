@@ -1,0 +1,87 @@
+@use "lib/viewport";
+
+// Polls. Core frames a poll with square corners, draws its results as flat
+// grey bars with no track (so a 0% option shows nothing at all), the voter
+// count in grey, and the settings gear as a bare button: white on white in
+// light mode, a grey box on black in dark. Here the frame has the theme's
+// radius, each result sits on a faint track with rounded ends, the option
+// you voted for in the text colour, the count reads as a number, and the
+// gear is a flat icon button like the post menu's.
+div.poll-outer div.poll {
+  --poll-bar-background: var(--jt-hover);
+  --poll-bar-color: var(--jt-text-subtle);
+  --poll-bar-color--chosen: var(--jt-text);
+  border-color: var(--jt-border);
+  border-radius: var(--jt-radius-md);
+  overflow: hidden;
+
+  .poll-info,
+  .poll-buttons,
+  .poll-title {
+    border-color: var(--jt-border);
+  }
+
+  .poll-info {
+    color: var(--jt-text-muted);
+  }
+
+  .poll-info_counts-count .info-number {
+    font-size: var(--jt-text-3xl);
+    font-weight: 600;
+    letter-spacing: var(--jt-tracking-display);
+    font-variant-numeric: tabular-nums;
+    color: var(--jt-text);
+  }
+
+  .poll-info_counts-count .info-label {
+    font-size: var(--jt-text-sm);
+  }
+
+  @include viewport.until(sm) {
+    .poll-info_counts-count .info-number {
+      font-size: var(--jt-text-lg);
+    }
+  }
+
+  .results {
+    .percentage,
+    .absolute {
+      font-variant-numeric: tabular-nums;
+      color: var(--jt-text-muted);
+    }
+
+    .chosen .percentage,
+    .chosen .absolute {
+      font-weight: 600;
+      color: var(--jt-text);
+    }
+
+    .bar-back {
+      margin-top: 0.35em;
+      border-radius: var(--jt-radius-pill);
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 0.5rem;
+      border-radius: var(--jt-radius-pill);
+    }
+  }
+
+  .poll-buttons .widget-dropdown-header {
+    color: var(--jt-text-muted);
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+
+    .d-icon {
+      color: inherit;
+    }
+
+    &:hover,
+    &[aria-expanded="true"] {
+      color: var(--jt-text);
+      background: var(--jt-hover);
+    }
+  }
+}
