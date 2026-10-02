@@ -129,6 +129,33 @@ RSpec.describe "JTech theme" do
     include_examples "renders the main pages"
   end
 
+  # Core's about page: stats on a ruled strip, staff as avatar + name, the
+  # right column as plain text. The theme: tiles, cards, one ruled card.
+  it "shows the about page's counts as tiles, its staff as cards" do
+    sign_in(member)
+    visit("/about")
+    # members and "created" always; admins / moderators only when core lists
+    # someone, which it doesn't in this database
+    expect(page).to have_css(".about__stats-item", minimum: 2)
+    expect(page).to have_css(".about__right-side .about__activities-item")
+
+    borders, tile_tops, staff_border = page.evaluate_script(<<~JS)
+      [
+        [".about__stats-item", ".about__right-side"]
+          .map((selector) => getComputedStyle(document.querySelector(selector)).borderTopWidth),
+        [...document.querySelectorAll(".about__stats-item")]
+          .slice(0, 2)
+          .map((tile) => Math.round(tile.getBoundingClientRect().top)),
+        [...document.querySelectorAll(".about-page-users-list .user-info")]
+          .map((card) => getComputedStyle(card).borderTopWidth),
+      ]
+    JS
+    expect(borders).to eq(%w[1px 1px])
+    expect(tile_tops[0]).to eq(tile_tops[1]) # a row of tiles, not a column
+    expect(staff_border.uniq).to eq(["1px"]).or eq([]) # cards, when there are staff to show
+    expect_no_theme_errors
+  end
+
   describe "the avatar's menu" do
     it "opens on the profile tab, and the bell on notifications" do
       sign_in(member)

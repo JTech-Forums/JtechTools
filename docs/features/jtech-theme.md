@@ -6,6 +6,7 @@ What it adds on top of a restyle:
 
 - **Topic cards** instead of table rows, with the first image beside the title and a Quick look preview.
 - **A front-page hero** with search and quick links, **category and tag banners**, and a **footer** with link columns.
+- The **about page** with its counts as tiles and the staff as cards.
 - **⌘K / Ctrl+K command menu** to jump to pages, categories, topics and people. The header's search field opens it. For people who can use chat, ⌘K stays chat's channel switcher (core binds it) and the menu opens from the search field only; "/" still opens Discourse's own search.
 - **Header**: search (in the middle of the bar on wide screens), JTech homepage, messages and notifications (with unread counts), light/dark, new topic. The avatar opens your profile menu (account, preferences, log out); staff keep core's review-queue badge on it, and while that shows, the avatar opens the review queue.
 - **Sidebar**, **profiles**, **users directory**, **full-page search** and **empty pages** redesigned; site notices get a dismiss button.
