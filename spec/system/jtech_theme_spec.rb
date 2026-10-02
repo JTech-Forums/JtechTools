@@ -1026,6 +1026,27 @@ RSpec.describe "JTech theme" do
     expect(page).to have_css(".jt-footer a[href='/latest']:not([data-auto-route])")
   end
 
+  it "draws the theme's own shortcuts in the ? help like core's" do
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-card")
+    find("body").send_keys("?")
+    expect(page).to have_css(".keyboard-shortcuts-modal .delimiter-space kbd.d-shortcut")
+    spacing = page.evaluate_script(<<~JS)
+      (() => {
+        const rows = [...document.querySelectorAll(".keyboard-shortcuts-modal tr")];
+        const gap = (name) => {
+          const row = rows.find((r) => r.querySelector(".shortcut-description")?.textContent.trim() === name);
+          const [a, b] = row.querySelectorAll(".d-shortcut__key");
+          return Math.round(b.getBoundingClientRect().left - a.getBoundingClientRect().right);
+        };
+        return { core: gap("Home"), theme: gap("Tags") };
+      })()
+    JS
+    expect(spacing["theme"]).to eq(spacing["core"])
+    expect_no_theme_errors
+  end
+
   it "gives the header and sidebar room: core's 16px text, 40px header controls, 36px rows" do
     sign_in(member)
     visit("/latest")
