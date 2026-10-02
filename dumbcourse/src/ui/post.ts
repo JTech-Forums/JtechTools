@@ -2,7 +2,11 @@
 // With a D-pad the whole post is one stop; OK opens its action sheet.
 
 import { settings } from "../config.ts";
-import { processCooked, type PostLink } from "../content/cooked.ts";
+import {
+  processCooked,
+  type Picture,
+  type PostLink,
+} from "../content/cooked.ts";
 import { emojiImg } from "../content/emoji.ts";
 import { count, dateTime, timeAgo } from "../format.ts";
 import { html, raw, type SafeHtml } from "../html.ts";
@@ -15,6 +19,7 @@ export interface RenderedPost {
   html: SafeHtml;
   links: PostLink[];
   images: number;
+  pictures: Picture[];
 }
 
 export const LIKE = 2;
@@ -243,7 +248,7 @@ export function renderPost(
         .replace(/<[^>]*>/g, "")
         .trim())
   ) {
-    return { html: smallAction(p), links: [], images: 0 };
+    return { html: smallAction(p), links: [], images: 0, pictures: [] };
   }
   const hiddenForMe = (p.deleted_at || p.hidden) && !isStaff() && !p.yours;
   if (p.deleted_at && !isStaff()) {
@@ -262,6 +267,7 @@ export function renderPost(
       </article>`,
       links: [],
       images: 0,
+      pictures: [],
     };
   }
   const body = hiddenForMe
@@ -269,6 +275,7 @@ export function renderPost(
         html: html`<p class="muted">This post was hidden by the community.</p>`,
         links: [],
         images: 0,
+        pictures: [],
       }
     : processCooked(p.cooked);
   const polls = (p.polls || []).map((poll) => pollHtml(p, poll));
@@ -408,5 +415,10 @@ export function renderPost(
       </button>
     </footer>
   </article>`;
-  return { html: markup, links: body.links, images: body.images };
+  return {
+    html: markup,
+    links: body.links,
+    images: body.images,
+    pictures: body.pictures,
+  };
 }

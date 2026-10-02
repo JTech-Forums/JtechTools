@@ -9,7 +9,8 @@ A light version of the forum at `/dumb` for flip phones, KaiOS and old Android b
   - **←→** switches tabs.
   - Unread topics open at your first unread post, and Back returns you exactly where you were.
   - Live updates and read tracking.
-- **Doing.** **OK** on a post opens its actions: like or react, reply, quote, bookmark, edit, delete, flag, copy link, and every link in the post. There's a full-screen composer with mentions, emoji, formatting, uploads, preview and optional spell check.
+- **Doing.** **OK** on a post opens its actions: like or react, reply, quote, bookmark, edit, delete, flag, copy link, every link in the post, hidden text (spoilers and details), and the post's pictures. There's a full-screen composer with mentions, emoji, formatting, uploads, preview and optional spell check.
+- **Pictures.** **View picture** opens it full screen; with several, a gallery of thumbnails comes first. **OK** zooms (fit, 2×, 3×), the D-pad moves a zoomed picture around or, at fit, goes to the previous / next picture, and the right soft key saves a forum upload to the phone.
 - **Your stuff.** Notifications, bookmarks, drafts, messages, profile, search and REQ-PM, with one-press **Call / Text / WhatsApp**.
 - **Signing in without typing a password on a keypad.** Approve the phone from another signed-in device, or use an emailed link or code, social logins, or password plus two-factor code. Sign-up, password reset and account activation work here too.
 - **Keys.**

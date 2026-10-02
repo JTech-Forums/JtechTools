@@ -8,7 +8,11 @@ import { invalidate, peek, store } from "../cache.ts";
 import { closest, removeNode } from "../compat.ts";
 import { settings } from "../config.ts";
 import { emojify } from "../content/emoji.ts";
-import { cookedToText, type PostLink } from "../content/cooked.ts";
+import {
+  cookedToText,
+  type Picture,
+  type PostLink,
+} from "../content/cooked.ts";
 import {
   $,
   $$,
@@ -30,6 +34,7 @@ import { isStaff, user } from "../session.ts";
 import { category, categoryBadge, topicPath, userPath } from "../site.ts";
 import type { Post, Topic } from "../types.ts";
 import { hiddenParts, hiddenState, showHidden } from "../ui/hidden-text.ts";
+import { showPictures } from "../ui/pictures.ts";
 import { icon } from "../ui/icons.ts";
 import {
   actionSheet,
@@ -57,6 +62,7 @@ interface State {
   posts: Record<number, Post>; // by post id
   links: Record<number, PostLink[]>;
   images: Record<number, number>;
+  pictures: Record<number, Picture[]>;
   stream: number[];
   loadedFrom: number; // index into stream
   loadedTo: number; // exclusive
@@ -135,6 +141,7 @@ function paintTopic(
     posts: {},
     links: {},
     images: {},
+    pictures: {},
     stream: t.post_stream.stream || [],
     loadedFrom: 0,
     loadedTo: 0,
@@ -278,6 +285,7 @@ function appendPosts(
     const r = renderPost(p, { categoryId: t.category_id, topicSlug: t.slug });
     state.links[p.id] = r.links;
     state.images[p.id] = r.images;
+    state.pictures[p.id] = r.pictures;
     parts.push(r.html);
   }
   if (!parts.length) return;
@@ -294,6 +302,7 @@ function replacePost(state: State, p: Post): void {
   });
   state.links[p.id] = r.links;
   state.images[p.id] = r.images;
+  state.pictures[p.id] = r.pictures;
   const fresh = fromHtml(r.html);
   if (!old || !old.parentNode || !fresh) return;
   const hadFocus = old.contains(document.activeElement);
@@ -807,6 +816,16 @@ function wireTopic(
         icon: hiddenNow === "hidden" ? "eye" : "eyeOff",
         run: () => showHidden(hidden, hiddenNow === "hidden"),
       });
+    const pictures = state.pictures[p.id] || [];
+    if (pictures.length)
+      items.push({
+        label:
+          pictures.length === 1
+            ? "View picture"
+            : `View pictures (${pictures.length})`,
+        icon: "image",
+        run: () => showPictures(pictures),
+      });
     if (state.images[p.id] && prefs.images !== "show") {
       items.push({
         label: plural(state.images[p.id], "Show image", "Show images"),
@@ -873,28 +892,13 @@ function wireTopic(
         run: () => flag(p),
       });
 
-    const pictures = links.filter((l) => l.image);
-    const others = links.filter((l) => !l.image);
-    if (pictures.length) {
+    if (links.length) {
       items.push({
-        label: plural(pictures.length, "picture") + " in this post",
+        label: plural(links.length, "link") + " in this post",
         heading: true,
       });
-      for (let i = 0; i < pictures.length && i < 25; i++)
-        items.push({
-          label: pictures[i].text,
-          icon: "image",
-          href: pictures[i].href,
-          external: true,
-        });
-    }
-    if (others.length) {
-      items.push({
-        label: plural(others.length, "link") + " in this post",
-        heading: true,
-      });
-      for (let i = 0; i < others.length && i < 25; i++) {
-        const l = others[i];
+      for (let i = 0; i < links.length && i < 25; i++) {
+        const l = links[i];
         items.push({
           label: l.text,
           icon: l.internal ? "link" : "external",
