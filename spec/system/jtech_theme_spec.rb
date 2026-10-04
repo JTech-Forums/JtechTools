@@ -485,7 +485,9 @@ RSpec.describe "JTech theme" do
   # has neither: in the theme's column of lines under the name each took a
   # gap, blank space under the name on most profiles
   it "leaves no blank lines under a profile's name" do
-    sign_in(member)
+    # someone else's profile: on your own, core collapses the header and leaves
+    # the bio out
+    sign_in(admin)
     blank = <<~JS
       [...document.querySelector(".user-main .primary-textual").children]
         .filter((line) => getComputedStyle(line).display !== "none")
