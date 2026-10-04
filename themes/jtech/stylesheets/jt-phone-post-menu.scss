@@ -4,7 +4,11 @@
 // sideways (and the first post's, with the like count beside it, by more).
 // Here the buttons are 34px on phones, the row may wrap, and when the like
 // count and the buttons don't fit on one line the buttons drop under it,
-// still against the right edge. Nothing scrolls sideways.
+// still against the right edge. Nothing scrolls sideways. Nine or more
+// buttons (staff can get View translation, Solution, Share …) are wider
+// than a 320px phone's column (a Qin F21) even so: pushed against the right
+// edge, the first ones hung off the screen's left edge, out of reach. They
+// wrap too, the last ones onto a line of their own under the others.
 html.mobile-view nav.post-controls {
   flex-wrap: wrap;
   row-gap: var(--space-2);
@@ -12,7 +16,9 @@ html.mobile-view nav.post-controls {
 
   .actions {
     flex: 1 1 auto;
+    flex-wrap: wrap;
     justify-content: flex-end;
+    row-gap: var(--space-2);
     min-width: 0;
 
     .btn {

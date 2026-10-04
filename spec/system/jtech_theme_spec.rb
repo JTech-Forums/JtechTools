@@ -1985,6 +1985,31 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Nine or more buttons (staff on jtechforums.org also get View translation
+  # and Solution) are wider than a 320px phone's column (a Qin F21). The row
+  # sits against the right edge, so the first ones hung off the screen's left
+  # edge, where nothing scrolls to them: they wrap now. (The row's scroll
+  # width doesn't count what hangs off the left, so the spec above can't see
+  # it.)
+  it "keeps every one of a long row of post buttons on a 320px phone", mobile: true do
+    SiteSetting.post_menu = "read|like|copyLink|share|flag|edit|bookmark|delete|admin|reply"
+    SiteSetting.post_menu_hidden_items = ""
+    sign_in(admin)
+    resize_window(width: 320) do
+      visit(topic.relative_url)
+      expect(page).to have_css("#post_1 nav.post-controls .actions .post-action-menu__share")
+      edges = page.evaluate_script(<<~JS)
+        [...document.querySelectorAll("nav.post-controls .actions > *")]
+          .map((button) => button.getBoundingClientRect())
+          .filter((box) => box.width)
+          .flatMap((box) => [Math.round(box.left), Math.round(box.right)])
+      JS
+      expect(edges.min).to be >= 0
+      expect(edges.max).to be <= 320
+      expect_no_theme_errors
+    end
+  end
+
   it "doesn't offer Quick look to visitors, so it can't get round a login gate" do
     visit("/latest")
     expect(page).to have_css(".jt-card")
