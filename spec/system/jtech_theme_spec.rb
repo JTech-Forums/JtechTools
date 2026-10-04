@@ -1997,6 +1997,10 @@ RSpec.describe "JTech theme" do
   # was cut short went before the text. It takes its own direction from its
   # text now; with the setting off it keeps the interface's, as core does.
   it "runs a card's excerpt in its own direction when mixed text direction is on" do
+    # a fabricated post doesn't set its topic's excerpt
+    topic.update!(
+      excerpt: "I'm setting up a flip phone and want something that blocks the browser.",
+    )
     SiteSetting.default_locale = "he"
     # how far the excerpt's text starts from its left edge
     start = <<~JS
