@@ -608,6 +608,41 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core draws a quote's expand chevron and jump arrow in a pale grey (1.5:1 on
+  # the card), and the arrow, a link, smaller than the chevron, a button
+  it "draws a quote's controls at one size in a readable grey" do
+    post =
+      Fabricate(
+        :post,
+        topic: topic,
+        user: admin,
+        raw:
+          "[quote=\"#{member.username}, post:1, topic:#{topic.id}\"]\nI'm setting up a flip phone.\n[/quote]",
+      )
+    sign_in(member)
+    visit("#{topic.relative_url}/#{post.post_number}")
+    controls = "#post_#{post.post_number} aside.quote .quote-controls"
+    expect(page).to have_css("#{controls} .quote-toggle")
+    expect(page).to have_css("#{controls} .back")
+    icons = page.evaluate_script(<<~JS)
+      (() => {
+        const probe = document.createElement("div");
+        probe.style.color = "var(--jt-text-subtle)";
+        document.body.appendChild(probe);
+        const subtle = getComputedStyle(probe).color;
+        probe.remove();
+        return [...document.querySelectorAll("#{controls} .d-icon")].map((icon) => [
+          Math.round(icon.getBoundingClientRect().width),
+          getComputedStyle(icon).color === subtle,
+        ]);
+      })()
+    JS
+    expect(icons.size).to eq(2)
+    expect(icons.uniq.size).to eq(1)
+    expect(icons.first.last).to eq(true)
+    expect_no_theme_errors
+  end
+
   # Core's [details] is a grey bar with ► / ▼, a quote a grey title bar over a
   # barred blockquote, a onebox a 1px + 4px ring. The theme: one hairline card
   # for each, the section's chevron turning when it opens.
