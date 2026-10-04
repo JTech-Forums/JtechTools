@@ -2288,6 +2288,35 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  # The sidebar fades at the edge where more links are, with a scroll-driven
+  # animation. Under a blanket `animation-duration: 0s !important` (a
+  # reduce-motion user style, or Capybara's own animation switch) the fade sat
+  # at its end: the top of a sidebar that hadn't scrolled faded instead of its
+  # cut-off bottom
+  it "fades the sidebar's cut-off bottom, not its top, under a no-animations style" do
+    sign_in(member)
+    resize_window(height: 400) do
+      visit("/latest")
+      expect(page).to have_css(".sidebar-wrapper .sidebar-sections")
+      fades = page.evaluate_script(<<~JS)
+        (() => {
+          const style = document.createElement("style");
+          style.textContent = "*, *::before, *::after { animation-duration: 0s !important; }";
+          document.head.appendChild(style);
+          const sections = document.querySelector(".sidebar-wrapper .sidebar-sections");
+          const computed = getComputedStyle(sections);
+          return [
+            sections.scrollHeight > sections.clientHeight,
+            parseFloat(computed.getPropertyValue("--jt-fade-top")),
+            parseFloat(computed.getPropertyValue("--jt-fade-bottom")) > 0,
+          ];
+        })()
+      JS
+      expect(fades).to eq([true, 0, true])
+    end
+    expect_no_theme_errors
+  end
+
   it "draws Discourse's icons with Lucide's outline set" do
     sign_in(member)
     visit("/latest")

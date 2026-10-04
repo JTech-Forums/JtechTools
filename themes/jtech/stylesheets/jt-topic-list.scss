@@ -133,6 +133,9 @@ html.desktop-view .list-controls .navigation-container {
       );
       animation: jt-tabs-fade linear both;
       animation-timeline: scroll(self inline);
+
+      // scroll-driven, so the duration stays auto (see jt-sidebar's fade)
+      animation-duration: auto !important;
     }
   }
 
