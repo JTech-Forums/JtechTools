@@ -1,11 +1,17 @@
 // ⌘K command menu (components/jt-command-menu.gts)
 .d-modal.jt-cmdk {
+  // On phones core makes a dialog a fixed sheet with no left or right, so the
+  // menu, a margin narrower than the screen, sat against the left edge: both
+  // insets and auto side margins centre it (on desktop it's a centred flex
+  // item already).
   .d-modal__container {
+    inset-inline: 0;
     align-self: flex-start;
     width: min(40rem, calc(100vw - 2rem));
     max-width: none;
     max-height: min(36rem, 76dvh);
     margin-top: 12dvh;
+    margin-inline: auto;
     overflow: hidden;
     background: var(--jt-surface-raised);
     border: 0;
