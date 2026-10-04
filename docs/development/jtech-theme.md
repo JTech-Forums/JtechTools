@@ -72,6 +72,7 @@ Paths are inside `themes/jtech/`; the TypeScript is under `javascripts/discourse
 | `components/jt-hero.gts` (outlet `discovery-list-controls-above`) | front-page hero: headline, search, quick links (`jt-hero.scss`) |
 | `stylesheets/jt-polls.scss` | polls: the theme's radius on the frame, core's `--poll-bar-*` pointed at a faint track, a muted bar and the text colour for your vote; rounded bars on the track, the voter count as a number, the settings gear flat |
 | `stylesheets/jt-posts.scss` (keys) | `<kbd>` in posts as the theme's keycaps (header search, ⌘K, shortcuts help): sunken chip, `--jt-border-strong` hairline, 5px corners, instead of core's 3px key with a 2px bottom edge |
+| `stylesheets/jt-hero.scss` (phones) | in the phone layout (container under 460px) a quick link's title wraps instead of ending in "…" (a 320px phone is narrower than "JTech Homepage") |
 | `stylesheets/jt-badges.scss` | badges (/badges): display title, group labels, each badge a card with a three-line description; a badge's page: the big card, the people who earned it as cards |
 | `stylesheets/jt-deleted.scss` | deleted posts (staff): a dashed outline over a faint hatch instead of core's `--danger-low-mid` fill, the meta line, buttons and "deleted by" mark in greys instead of `--danger`; deleted small actions struck through |
 | `stylesheets/jt-post-chrome.scss` | author block, post menu, reactions, solved answer, topic events |
