@@ -124,6 +124,20 @@
     min-width: 12rem;
   }
 
+  // Core fixes a multi-select (content languages, watched categories, tags,
+  // muted users …) at 300px; inside a card on a 320px phone (a Qin F21) that's
+  // wider than the card, and the page scrolled sideways. A card that's a
+  // <fieldset> is also at least as wide as its content by default, and on
+  // Tracking core sets the cards' width, which their padding came on top of.
+  .select-kit.multi-select {
+    max-width: 100%;
+  }
+
+  .form-vertical .control-group {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
   input[type="text"],
   input[type="email"],
   input[type="password"],

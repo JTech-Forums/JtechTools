@@ -987,6 +987,42 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core sets the Tracking page's two cards' width, and the theme's padding came
+  # on top: on desktop they overlapped and the second ran past the page
+  it "keeps the Tracking preferences' two cards apart" do
+    sign_in(member)
+    visit("/u/#{member.username}/preferences/tracking")
+    wrapper = ".user-preferences__tracking-categories-tags-wrapper"
+    expect(page).to have_css("#{wrapper} .control-group", minimum: 2)
+    first, second, outer = page.evaluate_script(<<~JS)
+      [
+        ...[...document.querySelectorAll("#{wrapper} .control-group")].slice(0, 2),
+        document.querySelector("#{wrapper}"),
+      ].map((box) => {
+        const rect = box.getBoundingClientRect();
+        return [Math.round(rect.left), Math.round(rect.right)];
+      })
+    JS
+    expect(first[1]).to be <= second[0]
+    expect(second[1]).to be <= outer[1]
+    expect_no_theme_errors
+  end
+
+  # On a 320px phone (a Qin F21) core's 300px multi-selects, inside the theme's
+  # padded cards, made the preferences scroll sideways
+  it "fits the Tracking preferences on a 320px phone", mobile: true do
+    sign_in(member)
+    resize_window(width: 320) do
+      visit("/u/#{member.username}/preferences/tracking")
+      expect(page).to have_css(".user-preferences .select-kit.multi-select")
+      page_width, window_width = page.evaluate_script(<<~JS)
+        [document.documentElement.scrollWidth, document.documentElement.clientWidth]
+      JS
+      expect(page_width).to eq(window_width)
+      expect_no_theme_errors
+    end
+  end
+
   # Core sets a table as bare text: a grey header, 3px cells and a faint line
   # between rows. The theme: a hairline card with a sunken header strip,
   # roomy cells and a rule between rows.
