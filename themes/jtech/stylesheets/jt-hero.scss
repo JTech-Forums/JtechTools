@@ -58,11 +58,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
-
-    // keep a long headline clear of the close button
-    .jt-hero:has(.jt-hero__close) & {
-      padding-inline-end: 2.5rem;
-    }
     min-width: 0;
   }
 
@@ -79,6 +74,15 @@
     letter-spacing: -0.045em;
     text-wrap: balance;
     color: var(--jt-text);
+
+    // Keep a long headline clear of the close button. Only the headline: the
+    // button sits beside its first line, and room kept clear the whole way
+    // down left the search field on a phone 40px short of the links under
+    // it. A physical right (left in right-to-left), as the headline's own
+    // direction can differ from the interface's.
+    .jt-hero:has(.jt-hero__close) & {
+      padding-right: 2.5rem;
+    }
   }
 
   &__subtitle {
@@ -114,7 +118,16 @@
     }
   }
 
+  // The placeholder is admin-written, usually English. In a right-to-left
+  // interface (Hebrew) an English placeholder read from the right, so on a
+  // phone, where it's wider than the field, the field cut off its start
+  // ("h phones, filters, guides"). It reads in its own direction (dir="auto",
+  // as does whatever's typed) and lines up with the interface (a physical
+  // left: core's right-to-left stylesheet turns it into right); one too long
+  // for the field ends in "…" rather than mid-letter.
   &__input[type="search"] {
+    text-align: left;
+    text-overflow: ellipsis;
     flex: 1;
     min-width: 0;
     height: 100%;

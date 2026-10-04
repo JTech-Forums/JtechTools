@@ -98,6 +98,7 @@ What changed for forums running Jtech Tools. Newest first.
 - JTech theme: in Hebrew, the login gate's "Browse open categories" arrow nudges the way it points when hovered, not backwards.
 - JTech theme: the tags page redesigned. Each tag is a chip (# name, with its count in a small pill instead of "x 190"), lists wrap to fill the page rather than three floated columns, "Sort by" is a pair of pills, and the admin's create field and menu sit beside the title. Same on phones.
 - JTech theme: mixed Hebrew and English read the right way round. In a Hebrew interface the welcome banner's and the footer's English text keep their full stop at the end (still on the right-hand side), the login gate's "Topics in … are for members." no longer comes out scrambled, and in the search and command menu a Hebrew title (or an English one in Hebrew) keeps its punctuation at its end.
+- JTech theme: on phones, the welcome banner's search field is as wide as the links under it, instead of stopping short of them on one side, and a placeholder too long for it ends in "…". In Hebrew it starts at its start ("Search phones, filters…") instead of losing its first letters.
 - JTech theme: a login gate for chosen categories and tags replaces the Gated Topics in Category component. Logged-out visitors see the topic's first lines fade into a card to log in or create an account, with a link to the open categories. Settings: `gated_categories`, `gated_tags`.
 
 **Fixed**

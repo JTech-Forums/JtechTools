@@ -878,8 +878,6 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
-  # At 320px (a Qin F21) a hero tile is narrower than "JTech Homepage", which
-  # ended in "…"
   # The hero's copy is admin-written, usually English. In a Hebrew interface it
   # took the page's direction, so a sentence's full stop landed at its start;
   # it reads in its own direction now, still aligned to the interface's side
@@ -895,6 +893,42 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # So does the search field's placeholder: on a phone it's wider than the
+  # field, which cut off its start ("h phones, filters, guides"). It ends in
+  # "…" instead.
+  it "starts the hero search's English placeholder at its start in a Hebrew interface",
+     mobile: true do
+    SiteSetting.default_locale = "he"
+    resize_window(width: 375) do
+      visit("/latest")
+      expect(page).to have_css("html.rtl .jt-hero__input")
+      input =
+        page.evaluate_script(
+          '(() => { const s = getComputedStyle(document.querySelector(".jt-hero__input")); return [s.direction, s.textAlign, s.textOverflow]; })()',
+        )
+      expect(input).to eq(%w[ltr right ellipsis])
+      expect_no_theme_errors
+    end
+  end
+
+  # The room kept clear of the close button ran down the whole column, so on
+  # a phone the search field stopped 40px short of the links under it
+  it "keeps the hero's search field as wide as its links on a phone", mobile: true do
+    resize_window(width: 375) do
+      visit("/latest")
+      expect(page).to have_css(".jt-hero__close")
+      edges = page.evaluate_script(<<~JS)
+        [".jt-hero__search", ".jt-hero__links"]
+          .map((selector) => document.querySelector(selector).getBoundingClientRect())
+          .map((box) => [Math.round(box.left), Math.round(box.right)])
+      JS
+      expect(edges[0]).to eq(edges[1])
+      expect_no_theme_errors
+    end
+  end
+
+  # At 320px (a Qin F21) a hero tile is narrower than "JTech Homepage", which
+  # ended in "…"
   it "wraps the hero's link titles on a 320px phone", mobile: true do
     resize_window(width: 320) do
       visit("/latest")
