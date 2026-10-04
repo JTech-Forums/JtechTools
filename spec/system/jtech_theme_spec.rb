@@ -1824,6 +1824,25 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # On a phone the timeline opens as a sheet, where core's own rule makes its
+  # controls a wrapping row: at 320px the last-post arrow wrapped alone, under
+  # Jump to… and the first-post arrow
+  it "keeps the timeline sheet's arrows together on a 320px phone", mobile: true do
+    sign_in(member)
+    resize_window(width: 320) do
+      visit(topic.relative_url)
+      find("#topic-progress").click
+      expect(page).to have_css(".timeline-container.timeline-fullscreen.show .jt-jump__bottom")
+      tops = page.evaluate_script(<<~JS)
+        [".jt-jump__top", ".jt-jump__bottom"].map((arrow) =>
+          Math.round(document.querySelector(`.timeline-fullscreen ${arrow}`).getBoundingClientRect().top)
+        )
+      JS
+      expect(tops.uniq.size).to eq(1)
+      expect_no_theme_errors
+    end
+  end
+
   # Core marks the selected tab with a solid 2px bar. The theme: a 1px line
   # that glows, with a faint light behind the label.
   it "marks the selected tab with a thin glowing line" do
