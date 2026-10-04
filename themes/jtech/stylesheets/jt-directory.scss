@@ -124,6 +124,21 @@
   }
 }
 
+// Phones: the six periods need about 350px in a row, so at 360px (and 320px,
+// a Qin F21) "All time" was cut off and only reachable by swiping. Two rows
+// of three instead.
+@media (width < 24rem) {
+  .jt-seg {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    height: auto;
+
+    &__item {
+      min-height: 2rem;
+    }
+  }
+}
+
 // ── Toolbar ───────────────────────────────────────────────
 // Core's period dropdown and "1301 users" are replaced by the header above;
 // what's left is "Last updated" at left and one row of equal controls.

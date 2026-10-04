@@ -218,6 +218,24 @@ RSpec.describe "JTech theme" do
     expect(page).to have_no_css(".jt-cmdk")
   end
 
+  # The People page's six periods need about 350px in a row: at 360px "All
+  # time" was cut off and only reachable by swiping
+  it "shows every period on the People page on a 360px phone", mobile: true do
+    sign_in(member)
+    resize_window(width: 360) do
+      visit("/u")
+      expect(page).to have_css(".jt-seg .jt-seg__item", count: 6)
+      hidden = page.evaluate_script(<<~JS)
+        (() => {
+          const periods = document.querySelector(".jt-seg");
+          return periods.scrollWidth - periods.clientWidth;
+        })()
+      JS
+      expect(hidden).to be <= 1
+      expect_no_theme_errors
+    end
+  end
+
   # Core's /badges: boxes with a faint border under grey group headings. The
   # theme: cards under small labels, and a badge's own page on its big card.
   it "shows badges as cards under group labels" do
