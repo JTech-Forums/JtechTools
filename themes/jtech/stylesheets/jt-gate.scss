@@ -179,6 +179,14 @@ body.jt-gated {
         translate: 2px 0;
       }
     }
+
+    // In a right-to-left interface (Hebrew) core mirrors the arrow to point
+    // left (a scaleX(-1) transform, which is why this nudges with translate)
+    // and its stylesheet flipping leaves translate alone: nudge it left too.
+    html.rtl &:hover .d-icon,
+    html.rtl &:focus-visible .d-icon {
+      translate: -2px 0;
+    }
   }
 }
 
