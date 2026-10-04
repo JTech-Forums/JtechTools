@@ -120,7 +120,10 @@
       transform: translateY(1px);
     }
 
+    // the column may shrink (the component below makes this an inline grid
+    // sized to its content)
     .group-box-inner {
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--space-2);
       min-height: 0;
       padding: var(--space-4) var(--space-5);
@@ -153,52 +156,69 @@
       width: 2.5rem;
     }
 
-    .group-info {
-      gap: var(--space-2);
-      align-items: flex-start;
-      min-width: 0;
-    }
+    // The Modern Category + Group Boxes component (installed with the theme
+    // on the live forum) styles every span in here at 0-5-1: big, bold and
+    // one clipped line each, so the @handle looked like a second name and a
+    // long one made every card wider than a 320px phone (a Qin F21). These
+    // go a class deeper.
+    .group-box-inner .group-info-wrapper {
+      .group-info {
+        gap: var(--space-2);
+        align-items: flex-start;
+        min-width: 0;
+        padding-right: 0;
+      }
 
-    // core gives it width: 100%, which with the count beside it overflowed
-    // the wrapper and clipped the name
-    .group-info-details {
-      flex: 1 1 auto;
-      width: auto;
-      min-width: 0;
-    }
+      // core gives it width: 100%, which with the count beside it overflowed
+      // the wrapper and clipped the name
+      .group-info-details {
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
+      }
 
-    .group-info-name {
-      display: block;
-      font-size: var(--jt-text-body);
-      font-weight: 600;
-      line-height: 1.3;
-      letter-spacing: var(--jt-tracking-ui);
-      color: var(--jt-text);
-    }
+      .group-info-details,
+      .group-info-name,
+      .group-info-mention-name {
+        overflow: visible;
+        white-space: normal;
+      }
 
-    .group-info-mention-name {
-      display: block;
-      margin: 1px 0 0;
-      font-size: var(--jt-text-sm);
-      color: var(--jt-text-muted);
-    }
+      .group-info-name {
+        display: block;
+        font-size: var(--jt-text-body);
+        font-weight: 600;
+        line-height: 1.3;
+        letter-spacing: var(--jt-tracking-ui);
+        color: var(--jt-text);
+      }
 
-    .group-user-count {
-      flex-shrink: 0;
-      gap: 0.3rem;
-      height: 1.5rem;
-      padding: 0 0.5rem;
-      font-size: var(--jt-text-xs);
-      font-weight: 500;
-      font-variant-numeric: tabular-nums;
-      color: var(--jt-text-muted);
-      background: var(--jt-hover);
-      border-radius: var(--jt-radius-pill);
+      .group-info-mention-name {
+        display: block;
+        margin: 1px 0 0;
+        font-size: var(--jt-text-sm);
+        font-weight: 400;
+        letter-spacing: normal;
+        color: var(--jt-text-muted);
+      }
 
-      .d-icon {
-        margin: 0;
-        font-size: 0.8rem;
-        color: var(--jt-text-subtle);
+      .group-info .group-user-count {
+        flex-shrink: 0;
+        gap: 0.3rem;
+        height: 1.5rem;
+        padding: 0 0.5rem;
+        font-size: var(--jt-text-xs);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        color: var(--jt-text-muted);
+        background: var(--jt-hover);
+        border-radius: var(--jt-radius-pill);
+
+        .d-icon {
+          margin: 0;
+          font-size: 0.8rem;
+          color: var(--jt-text-subtle);
+        }
       }
     }
 
