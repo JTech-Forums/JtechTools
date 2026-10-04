@@ -166,6 +166,13 @@
       flex: 0 0 auto;
     }
 
+    // A plugin's outlet with nothing to show (Follow, on your own profile)
+    // is an empty <li> that still took a gap, so the first button sat 8px in
+    // from the ones under it. Core hides it on the user card the same way.
+    ul > li:empty {
+      display: none;
+    }
+
     // One text size for the row, the buttons' own: core makes a <button>
     // 1rem, which outranks the theme's zero-specificity :where(.btn), but a
     // link styled as a button (Admin) kept the theme's smaller size, a 2px

@@ -511,6 +511,25 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # A plugin's outlet with nothing to show (Follow, on your own profile) left
+  # an empty <li> at the start of a profile's row of buttons; it took a gap,
+  # so the first button sat 8px in from the ones on the line under it
+  it "lines a profile's buttons up when the row starts with an empty outlet" do
+    sign_in(member)
+    visit("/u/#{member.username}/summary")
+    expect(page).to have_css(".user-main .controls ul > li .btn")
+    offset = page.evaluate_script(<<~JS)
+      (() => {
+        const row = document.querySelector(".user-main .controls ul");
+        row.prepend(document.createElement("li"));
+        const button = row.querySelector("li .btn");
+        return Math.round(button.getBoundingClientRect().left - row.getBoundingClientRect().left);
+      })()
+    JS
+    expect(offset).to eq(0)
+    expect_no_theme_errors
+  end
+
   it "shows groups as cards, and a group's members in the directory's table card" do
     sign_in(admin)
     visit("/g")
