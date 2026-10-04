@@ -113,6 +113,42 @@ h4 {
   outline: none;
 }
 
+// Core turns the outline off on every kind of button (.btn, .btn-flat, the
+// primary and danger buttons, select boxes, the post menu's buttons) with
+// selectors up to five classes deep, and marks focus with the hover fill
+// instead: on the theme's quiet buttons that's a faint tint or nothing, so
+// keyboard focus vanished. The ring mustn't depend on out-ranking each of
+// those rules, hence !important.
+:is(
+  .btn,
+  .btn-flat,
+  .select-kit-header,
+  .composer-toggle-switch,
+  .discourse-reactions-counter
+):focus-visible {
+  outline: 2px solid var(--jt-focus) !important;
+  outline-offset: 2px;
+}
+
+// Inside a box that scrolls or clips (the post menu scrolls sideways, the
+// sidebar, the user menu's tabs, the composer's title row and toolbar) an
+// outer ring is cut off: draw it inside the button instead.
+:is(
+    nav.post-controls,
+    .sidebar-sections,
+    .user-menu .menu-tabs-container,
+    #reply-control .action-title,
+    .d-editor-button-bar
+  )
+  :is(
+    .btn,
+    .btn-flat,
+    .composer-toggle-switch,
+    .discourse-reactions-counter
+  ):focus-visible {
+  outline-offset: -2px;
+}
+
 ::selection {
   background: var(--jt-text);
   color: var(--jt-surface);
