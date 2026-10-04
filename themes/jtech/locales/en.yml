@@ -56,12 +56,6 @@ en:
     people:
       title: "People"
       period: "Period"
-      period_daily: "Day"
-      period_weekly: "Week"
-      period_monthly: "Month"
-      period_quarterly: "Quarter"
-      period_yearly: "Year"
-      period_all: "All time"
     cmdk:
       sidebar_label: "Search or jump to…"
       placeholder: "Search topics, categories, people, or type a command…"
