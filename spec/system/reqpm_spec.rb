@@ -245,4 +245,42 @@ RSpec.describe "REQ-PM", reqpm_prompt: true do
     call = card.find(".reqpm-contact-list__item", text: "555-0100")
     expect(call.find("a.reqpm-contact-list__go")[:href]).to eq("tel:+17185550100")
   end
+
+  # The forum offers Hebrew, but REQ-PM's strings are English, and a phone
+  # number has nothing in it to say which way it runs: in a right-to-left
+  # interface "+972 52 123 4517" read "4517 123 52 972+", and a sentence's
+  # full stop came first
+  it "reads contact details and its sentences the right way round in Hebrew" do
+    SiteSetting.default_locale = "he"
+    phone = add_method(alice, "phone", "+972 52 123 4517")
+    DiscourseReqpm::Share.create!(
+      owner_id: alice.id,
+      recipient_id: bob.id,
+      contact_method_id: phone.id,
+    )
+    # where a text's first and last characters start, from the left
+    ends = <<~JS
+      ((selector) => {
+        const text = document.querySelector(selector).firstChild;
+        const at = (i) => {
+          const range = document.createRange();
+          range.setStart(text, i);
+          range.setEnd(text, i + 1);
+          return Math.round(range.getBoundingClientRect().left);
+        };
+        return [at(0), at(text.length - 1)];
+      })
+    JS
+
+    sign_in(bob)
+    visit "/reqpm?tab=contacts"
+    expect(page).to have_css("html.rtl .reqpm-contact-list__value", text: "123 4517")
+    first, last = page.evaluate_script("#{ends}('.reqpm-contact-list__value')")
+    expect(first).to be < last # the "+" first, on the left
+
+    visit "/reqpm?tab=shared"
+    expect(page).to have_css("html.rtl .reqpm-empty--big p")
+    first, last = page.evaluate_script("#{ends}('.reqpm-empty--big p')")
+    expect(first).to be < last # the full stop last, on the right
+  end
 end

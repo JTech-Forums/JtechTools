@@ -6,6 +6,35 @@
   font-size: var(--font-down-1);
 }
 
+// ── Right to left ──────────────────────────────────────────────────────────
+// The forum offers Hebrew, but REQ-PM's strings are English: read right to
+// left, a sentence's full stop or question mark came first (".You haven't
+// sent your details to anyone yet", "?How can people reach you"). A phone
+// number has nothing in it to say which way it runs, so "+972 52 123 4517"
+// read "4517 123 52 972+". The sentences, the contact details and their
+// notes (members write those in either language) take their direction from
+// their own text, and still line up with the interface: a physical left,
+// which core's right-to-left stylesheet turns into right.
+:is(
+    .reqpm-hub,
+    .reqpm-user-modal,
+    .reqpm-setup-modal,
+    .reqpm-card-editor,
+    .reqpm-preferences,
+    .reqpm-method-form
+  )
+  :is(p, .reqpm-status > span, .reqpm-callout > span, .reqpm-error),
+.reqpm-method-form__error,
+.reqpm-field__hint,
+.reqpm-contact-list__value,
+.reqpm-contact-list__note,
+.reqpm-card-editor__value,
+.reqpm-card-editor__note,
+.reqpm-share-list__value {
+  unicode-bidi: plaintext;
+  text-align: left;
+}
+
 // ── Kind icon ──────────────────────────────────────────────────────────────
 .reqpm-kind-icon {
   display: inline-flex;
