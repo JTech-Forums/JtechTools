@@ -162,6 +162,29 @@ RSpec.describe "First-post checklist" do
     shot("58_tl1_checklist_modal")
   end
 
+  # The items are staff-written, usually in English: in a Hebrew interface a
+  # sentence's full stop came first (".I read the community guidelines")
+  it "reads the checklist's items in their own direction in a Hebrew interface" do
+    SiteSetting.default_locale = "he"
+    set_checklist(version: 1, max_tl: 2)
+
+    sign_in(user)
+    visit(topic.url)
+    open_reply
+
+    expect(page).to have_css(
+      "html.rtl .mod-first-post-checklist-modal .mod-checklist-text",
+      wait: 10,
+    )
+    styles = page.evaluate_script(<<~JS)
+      [...document.querySelectorAll(".mod-checklist-text")].map((text) => {
+        const style = getComputedStyle(text);
+        return [style.unicodeBidi, style.textAlign];
+      })
+    JS
+    expect(styles.uniq).to eq([%w[plaintext right]])
+  end
+
   it "re-prompts a user after the checklist version is bumped" do
     # The user accepted version 1; staff then publish version 2.
     set_checklist(version: 1, max_tl: 2)

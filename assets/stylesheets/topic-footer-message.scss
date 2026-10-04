@@ -553,6 +553,19 @@
     color: var(--primary-high);
   }
 
+  // The items and the statement are staff-written, usually in English. In a
+  // Hebrew interface they read right to left, which put a sentence's full
+  // stop at its start (".I read the community guidelines"). Each reads in
+  // its own text's direction and still lines up with the interface: a
+  // physical left, which core's right-to-left stylesheet turns into right.
+  .mod-checklist-text,
+  .mod-checklist-statement:not(.cooked),
+  .mod-checklist-statement.cooked
+    :is(p, li, h1, h2, h3, h4, h5, h6, blockquote) {
+    unicode-bidi: plaintext;
+    text-align: left;
+  }
+
   .mod-checklist-link {
     display: flex;
     align-items: center;
