@@ -1317,6 +1317,24 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  # On phones core puts a message's tag picker beside its title, but neither can
+  # shrink below its own width, so the picker ran off the screen
+  it "keeps a new message's tag picker on a phone's screen", mobile: true do
+    SiteSetting.tagging_enabled = true
+    SiteSetting.pm_tags_allowed_for_groups = Group::AUTO_GROUPS[:everyone].to_s
+    sign_in(admin)
+    visit("/new-message?username=#{member.username}")
+    expect(page).to have_css("#reply-control .title-and-category .tags-input")
+    tags_right, window_width = page.evaluate_script(<<~JS)
+      [
+        document.querySelector("#reply-control .title-and-category .tags-input").getBoundingClientRect().right,
+        document.documentElement.clientWidth,
+      ]
+    JS
+    expect(tags_right).to be <= window_width
+    expect_no_theme_errors
+  end
+
   it "lines the footer up with the page above it" do
     sign_in(member)
     visit(topic.relative_url)
