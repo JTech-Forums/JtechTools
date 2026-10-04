@@ -1915,6 +1915,33 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # A search result whose topic has no status icon kept the empty statuses
+  # <span> before its title, which took the row's gap: the title sat 8px in
+  # from the category line and the excerpt under it
+  it "lines a search result's title up with the lines under it" do
+    SearchIndexer.enable
+    SearchIndexer.index(topic, force: true)
+    SearchIndexer.index(first_post, force: true)
+    sign_in(member)
+    visit("/search?q=flip%20phone")
+    expect(page).to have_css(".fps-result .search-link .topic-title", text: topic.title)
+    offset = page.evaluate_script(<<~JS)
+      (() => {
+        const result = [...document.querySelectorAll(".fps-result")].find((r) =>
+          r.querySelector(".search-link .topic-title")
+        );
+        return Math.round(
+          result.querySelector(".search-link .topic-title").getBoundingClientRect().left -
+            result.querySelector(".search-category").getBoundingClientRect().left
+        );
+      })()
+    JS
+    expect(offset).to eq(0)
+    expect_no_theme_errors
+  ensure
+    SearchIndexer.disable
+  end
+
   # Core's progress widget on phones is a row of boxes with the accent on its
   # numbers; the theme makes it one hairline capsule with tabular numbers.
   it "shows the phone's progress widget as one capsule", mobile: true do
