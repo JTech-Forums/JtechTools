@@ -311,6 +311,36 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # On a profile core makes a <button> 1rem, which outranked the theme's button
+  # size, so a link styled as a button (Admin), the notification-level
+  # dropdown and REQ-PM came out a size smaller and 2px shorter. On every tab
+  # but the summary core's translucent fill also put a darker box in the card.
+  it "gives a profile's controls one size, and no box behind the compact header" do
+    sign_in(admin)
+    visit("/u/#{member.username}/summary")
+    expect(page).to have_css(".user-main .controls .user-admin")
+    expect(page).to have_css(".user-main .controls .user-notifications-dropdown")
+    sizes = page.evaluate_script(<<~JS)
+      [...document.querySelectorAll(".user-main .controls :is(.btn, .select-kit-header)")]
+        .filter((control) => control.getBoundingClientRect().width > 0)
+        .map((control) => [
+          getComputedStyle(control).fontSize,
+          Math.round(control.getBoundingClientRect().height),
+        ])
+    JS
+    expect(sizes.uniq.size).to eq(1)
+
+    page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
+    visit("/u/#{member.username}/activity")
+    expect(page).to have_css(".user-main .about.collapsed-info .details")
+    fill = page.evaluate_script(<<~JS)
+      getComputedStyle(document.querySelector(".user-main .about.collapsed-info .details"))
+        .backgroundColor
+    JS
+    expect(fill).to eq("rgba(0, 0, 0, 0)")
+    expect_no_theme_errors
+  end
+
   it "shows groups as cards, and a group's members in the directory's table card" do
     sign_in(admin)
     visit("/g")

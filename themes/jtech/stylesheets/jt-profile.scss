@@ -60,6 +60,12 @@
     background: none;
   }
 
+  // Core puts its translucent fill back on the compact header (every tab but
+  // the summary), a darker box inside the card in dark mode
+  &.collapsed-info .details {
+    background: none;
+  }
+
   // Expanded (summary): avatar on the left, names then controls beside it
   &:not(.collapsed-info) .details .primary {
     display: grid;
@@ -160,9 +166,14 @@
       flex: 0 0 auto;
     }
 
+    // One text size for the row, the buttons' own: core makes a <button>
+    // 1rem, which outranks the theme's zero-specificity :where(.btn), but a
+    // link styled as a button (Admin) kept the theme's smaller size, a 2px
+    // shorter button beside the others
     .btn {
       width: auto;
       min-width: 0;
+      font-size: var(--font-0);
     }
   }
 
@@ -198,17 +209,17 @@
   }
 
   // jtech-tools' REQ-PM: btn-small (sized for the user card) and without
-  // the <li> core wraps its own controls in. Same size as its neighbours.
+  // the <li> core wraps its own controls in. Its neighbours' padding (the
+  // text size comes from the row's .btn rule).
   .controls ul > .reqpm-user-button.btn {
     width: auto;
     padding: 0.5em 0.65em;
-    font-size: var(--jt-text-md);
   }
 
-  // The notification-level dropdown: core sizes it in em at the root size
-  // (taller, wider) against the smaller buttons
+  // The notification-level dropdown: the buttons' text size and padding, so
+  // it's their height (core's header has its own min-height and padding)
   .controls .select-kit.user-notifications-dropdown {
-    font-size: var(--jt-text-md);
+    font-size: var(--font-0);
 
     .select-kit-header {
       min-height: 0;
