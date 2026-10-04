@@ -76,6 +76,12 @@
       color: var(--d-nav-color--hover);
     }
 
+    // The strip scrolls, so it clips: an outer focus ring lost its top and
+    // bottom. It's drawn inside the tab, as on the list's tabs.
+    &:focus-visible {
+      outline-offset: -2px;
+    }
+
     &.active {
       color: var(--d-nav-color--active);
 
