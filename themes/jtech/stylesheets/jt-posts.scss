@@ -12,6 +12,12 @@
     }
   }
 
+  // An image can fill the post's width, and the post clips its overflow
+  // (core), which cut an outer focus ring off: draw it inside the image
+  .lightbox-wrapper a.lightbox:focus-visible {
+    outline-offset: -2px;
+  }
+
   blockquote {
     background: transparent;
 
@@ -94,6 +100,14 @@
 .topic-map,
 .topic-map__stats {
   border-color: var(--jt-border);
+}
+
+// Core clips the topic map's row of avatars (overflow: hidden) at the first
+// one's left edge, which cut its focus ring off: room for it, balanced by a
+// negative margin.
+.topic-map .--users-summary {
+  padding-inline: 0.25rem;
+  margin-inline: -0.25rem;
 }
 
 .topic-body,

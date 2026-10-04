@@ -330,3 +330,19 @@ html.mobile-view {
     display: none;
   }
 }
+
+// ── Focus rings ───────────────────────────────────────────
+// Core clips the logo and, once the title has scrolled away, the topic's
+// title and category (overflow: hidden, for the ellipsis), and each link
+// fills its box, so a keyboard focus ring was cut away entirely. The logo's
+// box takes the ring; the title's and category's get room for it, balanced by
+// a negative margin so nothing moves.
+.d-header .home-logo-wrapper-outlet:has(a:focus-visible) {
+  outline: 2px solid var(--jt-focus);
+  outline-offset: 2px;
+}
+
+.extra-info-wrapper :is(.extra-info, .categories-wrapper) {
+  padding: 0.25rem;
+  margin: -0.25rem;
+}

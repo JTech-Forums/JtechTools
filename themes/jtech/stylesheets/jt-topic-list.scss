@@ -33,6 +33,19 @@
 
 .nav-pills > li > a {
   font-weight: 500;
+
+  // The tabs fill a row that scrolls sideways, which cut an outer focus ring
+  // off: draw it inside the tab
+  &:focus-visible {
+    outline-offset: -2px;
+  }
+}
+
+// Core takes the focus ring off topic titles in its own lists (suggested
+// topics under a topic)
+.topic-list .main-link a.title:focus-visible {
+  outline: 2px solid var(--jt-focus);
+  outline-offset: 2px;
 }
 
 // ── Desktop list controls: filters · tabs · New Topic ──

@@ -1056,6 +1056,64 @@ RSpec.describe "JTech theme" do
     JS
   end
 
+  # Gives each element keyboard focus and reports its focus ring: [outline
+  # style, whether the ring reaches past the element, whether a box that clips
+  # its overflow cuts it]. A pair [selector, ancestor] reads the ring off the
+  # ancestor, for a link whose box takes the ring.
+  def focus_rings(*targets)
+    send_keys(:tab) # keyboard first, so focus() below counts as keyboard focus
+    page.evaluate_script(<<~JS)
+      #{targets.to_json}.map((target) => {
+        const [selector, ringOn] = [].concat(target);
+        const link = document.querySelector(selector);
+        link.focus();
+        const ringed = ringOn ? link.closest(ringOn) : link;
+        const style = getComputedStyle(ringed);
+        const reach = parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset);
+        const box = ringed.getBoundingClientRect();
+        let cut = false;
+        for (let el = ringed.parentElement; el !== document.documentElement; el = el.parentElement) {
+          const s = getComputedStyle(el);
+          if (s.overflowX === "visible" && s.overflowY === "visible") continue;
+          const clip = el.getBoundingClientRect();
+          cut ||=
+            box.left - reach < clip.left - 0.5 ||
+            box.top - reach < clip.top - 0.5 ||
+            box.right + reach > clip.right + 0.5 ||
+            box.bottom + reach > clip.bottom + 0.5;
+        }
+        return [style.outlineStyle, reach > 0, cut];
+      })
+    JS
+  end
+
+  # Core clips a post's names, the header's logo and the topic map's avatars
+  # (overflow: hidden) right at the link's edge, which cut a keyboard focus
+  # ring away, and takes the ring off suggested topics' titles.
+  it "shows the whole focus ring on links in boxes that clip" do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css("#post_1 .names .first a")
+    expect(page).to have_css(".more-topics__container .topic-list a.title")
+    rings =
+      focus_rings(
+        "#post_1 .names .first a",
+        [".d-header .home-logo-wrapper-outlet a", ".home-logo-wrapper-outlet"],
+        ".more-topics__container .topic-list a.title",
+      )
+    expect(rings).to all(eq(["solid", true, false]))
+    expect_no_theme_errors
+  end
+
+  # On phones the name link is taller, for a bigger tap area
+  it "shows the whole focus ring on a post's names on a phone", mobile: true do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css("#post_1 .names .first a")
+    expect(focus_rings("#post_1 .names .first a")).to eq([["solid", true, false]])
+    expect_no_theme_errors
+  end
+
   # Suggested topics and the search page used to stop short of the right
   # edge the header, content and footer share
   it "runs suggested topics and the search page to the page's edges" do

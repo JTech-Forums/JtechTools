@@ -29,6 +29,16 @@
         margin-right: 0;
       }
 
+      // Core clips the row and each name (overflow: hidden, for the
+      // ellipsis) right at the link's edge, which cut a focused name's ring
+      // away: room for it, balanced by a negative margin so nothing moves.
+      &,
+      > .first,
+      > .second {
+        padding: 0.25rem;
+        margin: -0.25rem;
+      }
+
       .first a,
       .first {
         color: var(--jt-text);
