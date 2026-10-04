@@ -108,6 +108,7 @@ What changed for forums running Jtech Tools. Newest first.
 
 - Moderator tools: in a narrow window, the first-post checklist's acceptance log scrolls in its own box instead of the whole dialog scrolling sideways.
 - Moderator tools: on a phone, the first-post checklist's "who must accept" and button text, and a topic's prompt checklist's "show this prompt" and "show this prompt to", each get a line of their own instead of sharing one at half width (on a 320px phone a choice took three lines and the button text was cut off). The acceptance log's checklist filter goes under the name filter instead of past the dialog's edge.
+- Moderator tools: in Hebrew, the checklist a new member accepts before posting reads its staff-written English items and statement the right way round: a sentence's full stop at its end, not its start, still on the right-hand side.
 
 ## 0.5.0 — September 2026
 
