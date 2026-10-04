@@ -31,6 +31,7 @@ What changed for forums running Jtech Tools. Newest first.
 - JTech theme: deleted posts, which staff still see, are a dashed outline over a faint hatch with muted text, and their name, date and buttons are grey, instead of a bright pink block with red everywhere. Deleted small notices (closed, split …) are struck through in grey. Same on phones.
 - JTech theme: on your own profile, the first of the buttons under your name lines up with the ones below it instead of sitting 8px in.
 - JTech theme: on a profile, the row of buttons (Message, the notification level, Admin, Follow, REQ-PM, User notes) is one size; three of them were a size smaller and a little shorter. In dark mode the header on every tab but Summary no longer has a darker box inside the card.
+- JTech theme: on every profile tab but the summary, no stray line under the buttons in the header card.
 - JTech theme: the badges page redesigned. A display title, each badge group as a small label, each badge a card whose description stops at three lines (so a row of cards is no longer as tall as its longest one), and on a badge's own page the people who earned it are cards too. Gold, silver and bronze icons keep their colours. Same on phones.
 - JTech theme: on small phones, a topic found in the search and command menu shows its category under the title, so the title isn't cut short.
 - JTech theme: on phones the search and command menu sits in the middle of the screen, with the same margin on both sides, instead of against the left edge.

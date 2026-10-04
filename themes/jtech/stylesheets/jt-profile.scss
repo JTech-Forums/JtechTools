@@ -61,9 +61,12 @@
   }
 
   // Core puts its translucent fill back on the compact header (every tab but
-  // the summary), a darker box inside the card in dark mode
+  // the summary), a darker box inside the card in dark mode. Its line under
+  // the details separates them from the stats strip, which the compact header
+  // doesn't have: alone, it was a stray rule under the buttons.
   &.collapsed-info .details {
     background: none;
+    border-bottom: 0;
   }
 
   // Expanded (summary): avatar on the left, names then controls beside it
