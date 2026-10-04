@@ -1747,6 +1747,31 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core draws a video as a black box with square corners, between images and
+  # cards with rounded ones
+  it "rounds videos like the images around them" do
+    post = Fabricate(:post, topic: topic, user: admin, raw: "A video.")
+    post.update_columns(
+      cooked: '<div class="video-container"><video preload="none" controls></video></div>',
+    )
+    sign_in(member)
+    visit(post.url)
+    expect(page).to have_css("#post_#{post.post_number} .cooked .video-container")
+    corner = page.evaluate_script(<<~JS)
+      (() => {
+        const video = getComputedStyle(document.querySelector("#post_#{post.post_number} .video-container"));
+        const probe = document.createElement("div");
+        probe.style.borderRadius = "var(--jt-radius-sm)";
+        document.body.appendChild(probe);
+        const image = getComputedStyle(probe).borderTopLeftRadius;
+        probe.remove();
+        return [video.borderTopLeftRadius === image, image !== "0px", video.overflow];
+      })()
+    JS
+    expect(corner).to eq([true, true, "clip"])
+    expect_no_theme_errors
+  end
+
   it "shows the dark palette when the browser prefers dark" do
     page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
     sign_in(member)
