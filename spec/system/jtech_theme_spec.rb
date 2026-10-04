@@ -1419,6 +1419,26 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # REQ-PM's strip of tabs scrolls, so it clips: the theme's outer focus ring
+  # lost its top and bottom on a tab
+  it "draws REQ-PM's tab focus ring inside the tab" do
+    SiteSetting.reqpm_enabled = true
+    sign_in(member)
+    visit("/reqpm")
+    expect(page).to have_css(".reqpm-tabs .reqpm-tabs__tab", count: 4)
+    find("body").send_keys(:tab) # keyboard use, so focus counts as keyboard focus
+    ring = page.evaluate_script(<<~JS)
+      (() => {
+        const tab = document.querySelector(".reqpm-tabs__tab:not(.active)");
+        tab.focus();
+        const style = getComputedStyle(tab);
+        return [tab.matches(":focus-visible"), style.outlineStyle, parseFloat(style.outlineOffset) < 0];
+      })()
+    JS
+    expect(ring).to eq([true, "solid", true])
+    expect_no_theme_errors
+  end
+
   it "puts the suggested topics under a topic on a card" do
     sign_in(member)
     visit(topic.relative_url)
