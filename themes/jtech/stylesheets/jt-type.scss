@@ -200,3 +200,28 @@ table {
     font-size: 0.875em;
   }
 }
+
+// ── Mixed text direction ──────────────────────────────────
+// With core's "support mixed text direction" on (api-initializers/
+// jt-text-direction marks the page), a title, excerpt or post reads in its
+// own direction. The theme cuts excerpts and descriptions short after a few
+// lines, and the "…" goes at the end of the block's direction: in a Hebrew
+// interface an English excerpt showed its "…" before the text, at the start
+// of its last line ("…first time. Test message two for the inbox", cut after
+// "inbox"), and a Hebrew one did the same in English. Each takes its
+// direction from its own text instead, so the "…" is where it stops, and it
+// lines up as its post does (core aligns an English post left in a Hebrew
+// interface). Aligned to its start: with left or right (core's bookmark list
+// sets one) Chrome leaves the "…" out.
+html.jt-mixed-direction
+  :is(
+    .jt-card .topic-excerpt,
+    .bookmark-list .post-excerpt,
+    .user-stream .post-list-item .excerpt .cooked,
+    .group-box .group-description,
+    .badge-card .badge-summary,
+    .jt-banner__desc
+  ) {
+  unicode-bidi: plaintext;
+  text-align: start;
+}

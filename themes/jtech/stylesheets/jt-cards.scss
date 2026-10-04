@@ -250,6 +250,10 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     margin: 0;
+
+    // core's 4px at the line's far end: an English excerpt in a Hebrew
+    // interface starts there (jt-type's mixed text direction), 4px in
+    padding: 0;
     font-size: var(--jt-text-md);
     line-height: 1.55;
     color: var(--jt-text-muted);

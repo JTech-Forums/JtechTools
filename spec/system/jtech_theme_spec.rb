@@ -1992,6 +1992,36 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # With core's "support mixed text direction" on, an English excerpt in a
+  # Hebrew interface still ran right to left on the card, so the "…" where it
+  # was cut short went before the text. It takes its own direction from its
+  # text now; with the setting off it keeps the interface's, as core does.
+  it "runs a card's excerpt in its own direction when mixed text direction is on" do
+    SiteSetting.default_locale = "he"
+    # how far the excerpt's text starts from its left edge
+    start = <<~JS
+      (() => {
+        const excerpt = [...document.querySelectorAll(".jt-card .topic-excerpt")].find((e) =>
+          e.textContent.includes("blocks the browser")
+        );
+        const text = document.createRange();
+        text.selectNodeContents(excerpt.firstElementChild);
+        return Math.round(text.getClientRects()[0].left - excerpt.getBoundingClientRect().left);
+      })()
+    JS
+
+    visit("/latest")
+    expect(page).to have_css("html.rtl .jt-card .topic-excerpt", text: "blocks the browser")
+    expect(page).to have_no_css("html.jt-mixed-direction")
+    expect(page.evaluate_script(start)).to be > 0
+
+    SiteSetting.support_mixed_text_direction = true
+    visit("/latest")
+    expect(page).to have_css("html.jt-mixed-direction .jt-card .topic-excerpt")
+    expect(page.evaluate_script(start)).to eq(0)
+    expect_no_theme_errors
+  end
+
   # Core floats "See 1 new or updated topic" over the list's header row on
   # wide screens; card lists have none, so it sat on the first card.
   it "keeps the new topics button above the first card, not on it" do
