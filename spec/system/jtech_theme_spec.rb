@@ -345,6 +345,25 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  # A dialog's body takes focus when the dialog opens (tabindex="-1"); after any
+  # keyboard use the theme's focus ring framed the dialog's whole content
+  it "draws no focus ring around a dialog's body" do
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-card")
+    find("body").send_keys("?") # the keyboard opens it, so focus counts as keyboard focus
+    expect(page).to have_css(".keyboard-shortcuts-modal .d-modal__body")
+    ring = page.evaluate_script(<<~JS)
+      (() => {
+        const body = document.querySelector(".keyboard-shortcuts-modal .d-modal__body");
+        body.focus();
+        return [body.matches(":focus-visible"), getComputedStyle(body).outlineStyle];
+      })()
+    JS
+    expect(ring).to eq([true, "none"])
+    expect_no_theme_errors
+  end
+
   # Core turns the outline off on buttons (.btn:focus-visible, and on desktop
   # .discourse-no-touch nav.post-controls .actions button:focus-visible) and
   # marks focus with the hover fill, which the theme's quiet buttons barely

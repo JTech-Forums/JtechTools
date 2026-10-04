@@ -113,6 +113,14 @@ h4 {
   outline: none;
 }
 
+// A dialog's body takes focus when the dialog opens (tabindex="-1", so the
+// arrow keys scroll it). After any keyboard use that drew the ring around the
+// dialog's whole content, which read as a stray frame; Tab moves on to the
+// controls inside, which keep theirs.
+.d-modal__body:focus-visible {
+  outline: none;
+}
+
 // Core turns the outline off on every kind of button (.btn, .btn-flat, the
 // primary and danger buttons, select boxes, the post menu's buttons) with
 // selectors up to five classes deep, and marks focus with the hover fill
