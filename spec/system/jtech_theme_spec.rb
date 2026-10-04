@@ -270,6 +270,20 @@ RSpec.describe "JTech theme" do
   # Core's /g: boxes with a faint border under a loose row of filters, and a
   # group's members table bare. The theme: cards under a toolbar of equal
   # controls, and the users directory's table card for the members.
+  # A grid item is as wide as its longest unbreakable word, so a long group
+  # handle pushed every group card past a phone's edge.
+  it "fits group cards with long handles on a phone", mobile: true do
+    Fabricate(:group, name: "filtering_specialist", full_name: "Filteringspecialistsandhelpers")
+    sign_in(member)
+    visit("/g")
+    expect(page).to have_css(".groups-boxes .group-box")
+    widths = page.evaluate_script(<<~JS)
+      ({ page: document.documentElement.scrollWidth, window: document.documentElement.clientWidth })
+    JS
+    expect(widths["page"]).to eq(widths["window"])
+    expect_no_theme_errors
+  end
+
   it "shows groups as cards, and a group's members in the directory's table card" do
     sign_in(admin)
     visit("/g")
