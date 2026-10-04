@@ -94,6 +94,7 @@ What changed for forums running Jtech Tools. Newest first.
 - JTech theme: the guidelines, FAQ, terms and privacy pages read like a post: a measured column at the post's text size and line height, headings with room above them, lists and links styled as in posts, and the staff "Edit this page" link quiet under the nav. Same on phones.
 - JTech theme: Discourse's icons are drawn with Lucide's thin outline set (as ChatGPT and Gemini use) instead of Font Awesome: the header, sidebar, post menu, composer, notifications and category icons. Liked and bookmarked keep a filled shape. Brand logos and icons without a Lucide match stay Font Awesome. Setting: `lucide_icons`.
 - JTech theme: the tags page redesigned. Each tag is a chip (# name, with its count in a small pill instead of "x 190"), lists wrap to fill the page rather than three floated columns, "Sort by" is a pair of pills, and the admin's create field and menu sit beside the title. Same on phones.
+- JTech theme: mixed Hebrew and English read the right way round. In a Hebrew interface the login gate's "Topics in … are for members." no longer comes out scrambled, and in the search and command menu a Hebrew title (or an English one in Hebrew) keeps its punctuation at its end.
 - JTech theme: a login gate for chosen categories and tags replaces the Gated Topics in Category component. Logged-out visitors see the topic's first lines fade into a card to log in or create an account, with a link to the open categories. Settings: `gated_categories`, `gated_tags`.
 
 **Fixed**

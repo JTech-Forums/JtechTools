@@ -571,9 +571,12 @@ export default class JtCommandMenu extends Component<JtCommandMenuSignature> {
                     {{dIcon item.icon}}
                   {{/if}}
                 </span>
-                <span class="jt-cmdk__label">{{item.label}}</span>
+                {{! a topic's title, a name or what was typed: its own direction,
+                  so Hebrew in an English menu (or the reverse) keeps its
+                  punctuation at its end }}
+                <span class="jt-cmdk__label" dir="auto">{{item.label}}</span>
                 {{#if item.hint}}
-                  <span class="jt-cmdk__hint">{{item.hint}}</span>
+                  <span class="jt-cmdk__hint" dir="auto">{{item.hint}}</span>
                 {{/if}}
                 {{#let (this.keysFor item) as |keys|}}
                   {{#if keys}}
