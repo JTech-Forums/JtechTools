@@ -481,6 +481,28 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core renders the location / website line and the bio even for someone who
+  # has neither: in the theme's column of lines under the name each took a
+  # gap, blank space under the name on most profiles
+  it "leaves no blank lines under a profile's name" do
+    sign_in(member)
+    blank = <<~JS
+      [...document.querySelector(".user-main .primary-textual").children]
+        .filter((line) => getComputedStyle(line).display !== "none")
+        .filter((line) => line.getBoundingClientRect().height === 0)
+        .map((line) => line.className || line.tagName)
+    JS
+    visit("/u/#{member.username}/summary")
+    expect(page).to have_css(".user-main .primary-textual .user-profile-names")
+    expect(page.evaluate_script(blank)).to eq([])
+
+    member.user_profile.update!(bio_raw: "I set up flip phones.")
+    visit("/u/#{member.username}/summary")
+    expect(page).to have_css(".user-main .primary-textual .bio", text: "I set up flip phones.")
+    expect(page.evaluate_script(blank)).to eq([])
+    expect_no_theme_errors
+  end
+
   # On a profile core makes a <button> 1rem, which outranked the theme's button
   # size, so a link styled as a button (Admin), the notification-level
   # dropdown and REQ-PM came out a size smaller and 2px shorter. On every tab

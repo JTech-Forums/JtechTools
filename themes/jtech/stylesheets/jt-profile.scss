@@ -115,6 +115,17 @@
     gap: var(--space-2);
     min-width: 0;
     padding: 0;
+
+    // Core renders the location / website line and the bio even for someone
+    // who has neither, and a plugin outlet as an empty <span>: each took a
+    // gap, so most profiles had up to 24px of blank space under the name
+    > :is(
+      .location-and-website:not(:has(a, svg, img)),
+      .bio:not(:has(> div > *)),
+      span:not(:has(*))
+    ) {
+      display: none;
+    }
   }
 
   .user-profile-names__primary {
