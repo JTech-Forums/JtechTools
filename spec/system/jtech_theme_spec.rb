@@ -267,6 +267,48 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # With the Modern Category + Group Boxes component (installed with the theme
+  # on the live forum) every span in a group card was big, bold and one clipped
+  # line: the @handle looked like a second name, and at 320px (a Qin F21) a
+  # long one made every card wider than the phone
+  it "keeps group cards in a 320px phone with the group boxes component", mobile: true do
+    Fabricate(:group, name: "filtering_specialist", full_name: "Filtering specialists")
+    sign_in(member)
+    resize_window(width: 320) do
+      visit("/g")
+      expect(page).to have_css(".groups-boxes .group-box .group-info-mention-name")
+      # the component's rules for the card's insides, as it ships them
+      page.execute_script(<<~JS)
+        document.head.insertAdjacentHTML(
+          "beforeend",
+          `<style>
+            .groups-boxes .group-box .group-box-inner { display: inline-grid; grid-auto-flow: row; }
+            .groups-boxes .group-box .group-box-inner .group-info-wrapper .group-info {
+              padding-right: 1em;
+            }
+            .groups-boxes .group-box .group-box-inner .group-info-wrapper .group-info span {
+              font-size: 1.125em;
+              font-weight: 600;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+          </style>`
+        );
+      JS
+      page_width, window_width, handle_weight = page.evaluate_script(<<~JS)
+        [
+          document.documentElement.scrollWidth,
+          document.documentElement.clientWidth,
+          getComputedStyle(document.querySelector(".group-info-mention-name")).fontWeight,
+        ]
+      JS
+      expect(page_width).to eq(window_width)
+      expect(handle_weight).to eq("400")
+      expect_no_theme_errors
+    end
+  end
+
   # Core's /g: boxes with a faint border under a loose row of filters, and a
   # group's members table bare. The theme: cards under a toolbar of equal
   # controls, and the users directory's table card for the members.
