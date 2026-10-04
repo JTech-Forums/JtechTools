@@ -49,7 +49,7 @@
   // not at all while everything fits (no scroll timeline then).
   @supports (animation-timeline: scroll()) {
     mask-image: linear-gradient(
-      to right,
+      var(--jt-tabs-fade-to),
       transparent,
       #000 var(--jt-tabs-fade-start),
       #000 calc(100% - var(--jt-tabs-fade-end)),

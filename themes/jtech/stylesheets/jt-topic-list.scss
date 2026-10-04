@@ -70,6 +70,19 @@
   initial-value: 0;
 }
 
+// The fades run from a strip's start edge to its end edge, and the scroll
+// timeline counts from the start: in a right-to-left interface (Hebrew, which
+// the forum offers) that's right to left. Core's right-to-left stylesheet
+// doesn't turn a gradient round, so the cut-off edge stayed hard and the
+// start faded: the direction is set here instead.
+:root {
+  --jt-tabs-fade-to: to right;
+}
+
+html.rtl {
+  --jt-tabs-fade-to: to left;
+}
+
 @keyframes jt-tabs-fade {
   0% {
     --jt-tabs-fade-start: 0px;
@@ -125,7 +138,7 @@ html.desktop-view .list-controls .navigation-container {
     // only while the tabs actually scroll (no scroll timeline otherwise)
     @supports (animation-timeline: scroll()) {
       mask-image: linear-gradient(
-        to right,
+        var(--jt-tabs-fade-to),
         transparent,
         #000 var(--jt-tabs-fade-start),
         #000 calc(100% - var(--jt-tabs-fade-end)),

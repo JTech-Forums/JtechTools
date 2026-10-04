@@ -1439,6 +1439,24 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # In a right-to-left interface (Hebrew) a strip of tabs starts at its right
+  # edge and is cut off on the left, but its fade still ran left to right as
+  # in English: the cut-off edge stayed hard and the start faded instead
+  it "fades the cut-off edge of a strip of tabs in a right-to-left interface" do
+    SiteSetting.allow_user_locale = true
+    SiteSetting.reqpm_enabled = true
+    member.update!(locale: "he")
+    sign_in(member)
+    resize_window(width: 320) do
+      visit("/reqpm")
+      expect(page).to have_css("html.rtl .reqpm-tabs .reqpm-tabs__tab", count: 4)
+      mask =
+        page.evaluate_script('getComputedStyle(document.querySelector(".reqpm-tabs")).maskImage')
+      expect(mask).to start_with("linear-gradient(to left")
+    end
+    expect_no_theme_errors
+  end
+
   it "puts the suggested topics under a topic on a card" do
     sign_in(member)
     visit(topic.relative_url)
