@@ -209,7 +209,7 @@ RSpec.describe "JTech theme" do
       page.evaluate_script(
         '[document.querySelector(".jt-cmdk__label").getAttribute("dir"), getComputedStyle(document.querySelector(".jt-cmdk__label")).textAlign]',
       )
-    expect(label).to eq(%w[auto left]) # match-parent, against the menu's left-to-right
+    expect(label).to eq(%w[auto left])
   end
 
   it "opens the command menu with Ctrl+K and finds a topic" do
@@ -879,6 +879,21 @@ RSpec.describe "JTech theme" do
 
   # At 320px (a Qin F21) a hero tile is narrower than "JTech Homepage", which
   # ended in "…"
+  # The hero's copy is admin-written, usually English. In a Hebrew interface it
+  # took the page's direction, so a sentence's full stop landed at its start;
+  # it reads in its own direction now, still aligned to the interface's side
+  it "reads the hero's English copy left to right in a Hebrew interface, aligned right" do
+    SiteSetting.default_locale = "he"
+    visit("/latest")
+    expect(page).to have_css("html.rtl .jt-hero__subtitle")
+    subtitle =
+      page.evaluate_script(
+        '(() => { const s = getComputedStyle(document.querySelector(".jt-hero__subtitle")); return [s.direction, s.textAlign]; })()',
+      )
+    expect(subtitle).to eq(%w[ltr right])
+    expect_no_theme_errors
+  end
+
   it "wraps the hero's link titles on a 320px phone", mobile: true do
     resize_window(width: 320) do
       visit("/latest")

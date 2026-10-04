@@ -171,14 +171,16 @@ html.keyboard-visible.mobile-view .d-modal.jt-cmdk .d-modal__container {
   }
 
   // Both read in their own direction (dir="auto"), but line up with the
-  // menu's: a Hebrew title in an English menu starts beside its icon
+  // menu's: a Hebrew title in an English menu starts beside its icon. A
+  // physical left, which core's right-to-left stylesheet turns into right
+  // (`start` would follow the text's own direction)
   &__label {
     flex: 1;
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    text-align: match-parent;
+    text-align: left;
   }
 
   &__hint {
@@ -187,7 +189,7 @@ html.keyboard-visible.mobile-view .d-modal.jt-cmdk .d-modal__container {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    text-align: match-parent;
+    text-align: left;
     font-size: var(--jt-text-xs);
     color: var(--jt-text-subtle);
   }

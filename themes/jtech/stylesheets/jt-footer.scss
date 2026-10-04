@@ -58,6 +58,9 @@
   }
 
   &__tagline {
+    // reads in its own direction (dir="auto"), lined up with the interface's
+    // (a physical left, flipped to right in the right-to-left stylesheet)
+    text-align: left;
     grid-column: 1 / -1;
     max-width: 34ch;
     margin: var(--space-1) 0 0;
