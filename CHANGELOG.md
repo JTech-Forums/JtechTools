@@ -109,6 +109,7 @@ What changed for forums running Jtech Tools. Newest first.
 - JTech theme: the command menu's commands (Latest, Top, Categories, Tags, Bookmarks, Messages, Notifications, Profile, Preferences, Admin, New topic) and the header icons' labels use Discourse's own words, so they're in Hebrew for Hebrew readers. Commands Discourse has no word for stay English.
 - JTech theme: mixed Hebrew and English read the right way round. In a Hebrew interface the welcome banner's and the footer's English text keep their full stop at the end (still on the right-hand side), the login gate's "Topics in … are for members." no longer comes out scrambled, and in the search and command menu a Hebrew title (or an English one in Hebrew) keeps its punctuation at its end.
 - JTech theme: on phones, the welcome banner's search field is as wide as the links under it, instead of stopping short of them on one side, and a placeholder too long for it ends in "…". In Hebrew it starts at its start ("Search phones, filters…") instead of losing its first letters.
+- JTech theme: in Hebrew, the welcome banner's soft glow and grid sit behind the headline on the right, as they do behind it on the left in English, instead of behind the links.
 - JTech theme: a login gate for chosen categories and tags replaces the Gated Topics in Category component. Logged-out visitors see the topic's first lines fade into a card to log in or create an account, with a link to the open categories. Settings: `gated_categories`, `gated_tags`.
 
 **Fixed**

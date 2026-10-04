@@ -980,6 +980,20 @@ RSpec.describe "JTech theme" do
 
   # At 320px (a Qin F21) a hero tile is narrower than "JTech Homepage", which
   # ended in "…"
+  # The hero's glow and grid sit over the headline's side; in Hebrew the
+  # headline is on the right, but they stayed on the left, behind the links
+  it "centres the hero's glow over the headline in a Hebrew interface" do
+    SiteSetting.default_locale = "he"
+    visit("/latest")
+    expect(page).to have_css("html.rtl .jt-hero")
+    glow =
+      page.evaluate_script(
+        'getComputedStyle(document.querySelector(".jt-hero"), "::before").backgroundImage',
+      )
+    expect(glow).to include("at 82% 0%")
+    expect_no_theme_errors
+  end
+
   it "wraps the hero's link titles on a 320px phone", mobile: true do
     resize_window(width: 320) do
       visit("/latest")
