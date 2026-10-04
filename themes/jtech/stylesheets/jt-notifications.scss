@@ -215,6 +215,13 @@
       background: var(--jt-active);
     }
 
+    // Core takes the ring off the row's link, and the tint alone barely
+    // changes: ring the row, inside it because the panel scrolls
+    a:focus-visible {
+      outline: 2px solid var(--jt-focus);
+      outline-offset: -2px;
+    }
+
     &.unread .relative-date,
     &.pending .relative-date,
     &:hover .relative-date,

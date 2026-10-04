@@ -82,4 +82,16 @@ html.mobile-view {
     padding-block: 0.375rem;
     margin-block: -0.375rem;
   }
+
+  // The name row and each name clip their overflow (core), so they need room
+  // for that taller link and its focus ring around it (jt-post-chrome leaves
+  // room for the ring alone)
+  .topic-post .topic-meta-data .names {
+    &,
+    > .first,
+    > .second {
+      padding: 0.625rem 0.25rem;
+      margin: -0.625rem -0.25rem;
+    }
+  }
 }
