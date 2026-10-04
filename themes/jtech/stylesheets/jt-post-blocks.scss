@@ -167,5 +167,6 @@ $jt-block-pad: 0.9rem;
 // A plain blockquote, as jt-posts draws it in a post: a bar, no grey box
 .ProseMirror blockquote {
   background: transparent;
-  border-left: 2px solid var(--jt-border-strong);
+  border-left: 0;
+  border-inline-start: 2px solid var(--jt-border-strong);
 }
