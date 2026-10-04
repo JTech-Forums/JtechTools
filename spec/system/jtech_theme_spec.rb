@@ -506,6 +506,32 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # On a 320px phone (a Qin F21) a result's category took up to 40% of its row
+  # and titles were cut to "How to Write th…"; it goes under the title
+  it "puts a command menu result's category under its title on a narrow phone", mobile: true do
+    SiteSetting.chat_enabled = false
+    SearchIndexer.enable
+    SearchIndexer.index(topic, force: true)
+    SearchIndexer.index(first_post, force: true)
+    sign_in(member)
+    resize_window(width: 320) do
+      visit("/latest")
+      expect(page).to have_css(".jt-card")
+      find(".jt-header-search__button").click
+      find(".jt-cmdk__input").fill_in(with: "flip phone")
+      expect(page).to have_css(".jt-cmdk__item .jt-cmdk__hint")
+      below = page.evaluate_script(<<~JS)
+        (() => {
+          const item = document.querySelector(".jt-cmdk__item:has(.jt-cmdk__hint)");
+          const title = item.querySelector(".jt-cmdk__label").getBoundingClientRect();
+          return item.querySelector(".jt-cmdk__hint").getBoundingClientRect().top >= title.bottom - 1;
+        })()
+      JS
+      expect(below).to eq(true)
+      expect_no_theme_errors
+    end
+  end
+
   it "leaves Ctrl+K to chat for people who can chat" do
     SiteSetting.chat_enabled = true
     SiteSetting.chat_allowed_groups = Group::AUTO_GROUPS[:everyone]
