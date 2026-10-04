@@ -50,7 +50,13 @@ $jt-block-pad: 0.9rem;
       // a fixed size: in the rich editor core pads this caret (it is the
       // click target there), and contain would scale the chevron with it
       mask: url($jt-chevron) center / 1em no-repeat;
-      transition: transform var(--jt-motion);
+      transition: rotate var(--jt-motion);
+    }
+
+    // A right-to-left section (Hebrew, in either interface) points its
+    // chevron the other way, towards its text
+    &:dir(rtl)::before {
+      scale: -1 1;
     }
 
     &:hover {
@@ -76,8 +82,15 @@ $jt-block-pad: 0.9rem;
       border-radius: calc(var(--jt-radius-md) - 1px)
         calc(var(--jt-radius-md) - 1px) 0 0;
 
+      // Down. The rotate property, not transform: core's right-to-left
+      // stylesheet negated rotate(90deg), so in a Hebrew interface an open
+      // section's chevron pointed up. A mirrored chevron turns the other way.
       &::before {
-        transform: rotate(90deg);
+        rotate: 90deg;
+      }
+
+      &:dir(rtl)::before {
+        rotate: -90deg;
       }
     }
   }
