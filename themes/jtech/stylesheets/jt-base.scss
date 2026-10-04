@@ -185,15 +185,25 @@ h4 {
 }
 
 // ── Print ─────────────────────────────────────────────────
-// Page chrome stays off paper, and dark mode prints dark text on white
-// (browsers drop the black background, which would leave white text).
+// Page chrome stays off paper, the sidebar (the posts take its column) and
+// the "Skip to main content" link included, and dark mode prints dark text
+// on white (browsers drop the black background, which would leave white
+// text; the palette's colours switch in color_definitions).
 @media print {
   .jt-progress,
   .jt-scrollbar,
   .jt-to-top,
   .jt-footer,
-  .jt-hero {
+  .jt-hero,
+  .sidebar-wrapper,
+  .skip-links {
     display: none !important;
+  }
+
+  // core's layout with the sidebar closed
+  body.has-sidebar-page #main-outlet-wrapper {
+    grid-template-columns: 0 minmax(0, 1fr);
+    gap: 0;
   }
 
   :root,

@@ -2138,6 +2138,29 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Printing drops a dark palette's black page but kept its white text (Chrome
+  # printed posts in a faint grey, others in white), and in both modes the
+  # sidebar printed in a column beside the posts
+  it "prints a topic in dark mode as black text on white, without the sidebar" do
+    sign_in(member)
+    visit(topic.relative_url)
+    expect(page).to have_css(".topic-post .cooked")
+    expect(page).to have_css(".sidebar-wrapper")
+    page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark", media: "print") }
+    text, sidebar, left = page.evaluate_script(<<~JS)
+      [
+        getComputedStyle(document.querySelector(".topic-post .cooked")).color,
+        getComputedStyle(document.querySelector(".sidebar-wrapper")).display,
+        Math.round(document.querySelector("#main-outlet").getBoundingClientRect().left),
+      ]
+    JS
+    page.driver.with_playwright_page { |pw| pw.emulate_media(media: "screen") }
+    expect(text).to eq("rgb(0, 0, 0)")
+    expect(sidebar).to eq("none")
+    expect(left).to be < 50
+    expect_no_theme_errors
+  end
+
   # Core's secondary text (timeline dates, "1 Reply", "view 1 hidden reply",
   # the topic's category in the header) used greys that read at 2.5:1 to
   # 3.4:1. Every grey core and the theme put text in reaches WCAG AA, on the
