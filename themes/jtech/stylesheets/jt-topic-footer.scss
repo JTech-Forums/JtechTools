@@ -93,7 +93,10 @@
 
 // ── Phone footer buttons ──────────────────────────────────
 html.mobile-view #topic-footer-buttons {
+  // wrap, or on a narrow phone (320px, like a Qin F21) with staff's extra
+  // button Reply ran off the screen and the page scrolled sideways
   .topic-footer-main-buttons {
+    flex-wrap: wrap;
     gap: var(--space-2);
     align-items: center;
   }
