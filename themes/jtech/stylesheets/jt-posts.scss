@@ -86,6 +86,18 @@
   }
 }
 
+// Highlighted text (==like this==). Core fills it with the palette's
+// highlight colour, a mid grey here: black text on #666 in light (3.7:1), and
+// in dark the browser's black text on a light grey slab. A soft band of the
+// text's own colour instead, the text unchanged.
+:is(.cooked, .d-editor-preview, .ProseMirror) mark {
+  padding-inline: 0.1em;
+  color: inherit;
+  background: color-mix(in srgb, currentcolor 16%, transparent);
+  border-radius: 4px;
+  box-decoration-break: clone;
+}
+
 .topic-map,
 .topic-map__stats {
   border-color: var(--jt-border);

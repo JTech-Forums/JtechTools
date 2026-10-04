@@ -562,6 +562,52 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  # Core fills highlighted text with the palette's highlight colour, a mid
+  # grey here: black text on #666 in light (3.7:1); in dark the browser's own
+  # black text on a light grey slab
+  it "highlights text with a soft band, the text in its usual colour" do
+    post = Fabricate(:post, topic: topic, user: admin, raw: "Read <mark>this part</mark> twice.")
+    highlight = <<~JS
+      (() => {
+        const mark = document.querySelector("#post_#{post.post_number} .cooked mark");
+        const canvas = Object.assign(document.createElement("canvas"), { width: 1, height: 1 });
+        const ctx = canvas.getContext("2d");
+        const paint = (...colors) => {
+          for (const color of colors) {
+            ctx.fillStyle = color;
+            ctx.fillRect(0, 0, 1, 1);
+          }
+          return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3);
+        };
+        const lum = ([r, g, b]) => {
+          const f = (v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+          return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+        };
+        const page = getComputedStyle(document.body).backgroundColor;
+        const text = paint(getComputedStyle(mark).color);
+        const band = paint(page, getComputedStyle(mark).backgroundColor);
+        const [hi, lo] = [lum(text), lum(band)].sort((a, b) => b - a);
+        return {
+          usual_colour: text.join() === paint(getComputedStyle(mark.parentElement).color).join(),
+          readable: (hi + 0.05) / (lo + 0.05) >= 4.5,
+          visible: band.join() !== paint(page).join(),
+        };
+      })()
+    JS
+    expected = { "usual_colour" => true, "readable" => true, "visible" => true }
+
+    sign_in(member)
+    visit(post.url)
+    expect(page).to have_css("#post_#{post.post_number} .cooked mark")
+    expect(page.evaluate_script(highlight)).to eq(expected)
+
+    page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
+    visit(post.url)
+    expect(page).to have_css("#post_#{post.post_number} .cooked mark")
+    expect(page.evaluate_script(highlight)).to eq(expected)
+    expect_no_theme_errors
+  end
+
   # Core's [details] is a grey bar with ► / ▼, a quote a grey title bar over a
   # barred blockquote, a onebox a 1px + 4px ring. The theme: one hairline card
   # for each, the section's chevron turning when it opens.
