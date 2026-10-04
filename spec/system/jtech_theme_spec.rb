@@ -449,6 +449,26 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # On phones core makes a dialog a fixed sheet with no left or right, so the
+  # command menu, narrower than the screen, sat against the left edge
+  it "centres the command menu on a phone", mobile: true do
+    SiteSetting.chat_enabled = false
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-card")
+    find(".jt-header-search__button").click
+    expect(page).to have_css(".jt-cmdk .d-modal__container")
+    left, right = page.evaluate_script(<<~JS)
+      (() => {
+        const menu = document.querySelector(".jt-cmdk .d-modal__container").getBoundingClientRect();
+        return [menu.left, document.documentElement.clientWidth - menu.right];
+      })()
+    JS
+    expect(left).to be > 0
+    expect(left).to be_within(1).of(right)
+    expect_no_theme_errors
+  end
+
   it "leaves Ctrl+K to chat for people who can chat" do
     SiteSetting.chat_enabled = true
     SiteSetting.chat_allowed_groups = Group::AUTO_GROUPS[:everyone]
