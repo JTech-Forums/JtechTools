@@ -111,6 +111,26 @@ $jt-block-pad: 0.9rem;
       border-left: none;
     }
 
+    // Expand, and jump to the quoted post: core's pale grey was 1.5:1 on the
+    // card, and the jump arrow (a link) came out smaller than the chevron (a
+    // button, which core sizes 1rem)
+    .quote-controls {
+      gap: 0.3em;
+
+      .btn {
+        margin: 0;
+        font-size: var(--font-0);
+      }
+
+      .d-icon {
+        color: var(--jt-text-subtle);
+      }
+
+      .btn:hover .d-icon {
+        color: var(--jt-text);
+      }
+    }
+
     blockquote {
       margin: 0;
       padding: 0.5rem $jt-block-pad 0.75rem;
