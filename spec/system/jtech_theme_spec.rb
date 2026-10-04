@@ -2121,6 +2121,19 @@ RSpec.describe "JTech theme" do
     expect(transform).to start_with("matrix(-1")
   end
 
+  # The card's pills were the theme's own English words, so a Hebrew list
+  # said "Pinned"; core's word comes translated
+  it "labels a card's pills in the interface's language" do
+    SiteSetting.default_locale = "he"
+    topic.update!(pinned_at: 1.hour.ago, pinned_globally: true)
+    visit("/latest")
+    expect(page).to have_css(
+      "html.rtl .jt-card .jt-pill",
+      text: I18n.t("js.topic_statuses.pinned.title", locale: :he),
+    )
+    expect(page).to have_no_css(".jt-card .jt-pill", text: "Pinned")
+  end
+
   # Core floats "See 1 new or updated topic" over the list's header row on
   # wide screens; card lists have none, so it sat on the first card.
   it "keeps the new topics button above the first card, not on it" do

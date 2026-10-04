@@ -180,23 +180,24 @@ export default class JtTopicCard extends Component<JtTopicCardSignature> {
           {{#if this.hasTags}}
             {{dDiscourseTags @topic mode="list" className="jt-card__tags"}}
           {{/if}}
+          {{! the words are core's (and the Solved plugin's), so they're translated }}
           <span class="jt-card__flags">
             {{#if this.hasSolved}}
               <span class="jt-pill --solved">
                 {{dIcon "check"}}
-                {{i18n (themePrefix "jt.solved")}}
+                {{i18n "solved.title"}}
               </span>
             {{/if}}
             {{#if @topic.pinned}}
               <span class="jt-pill">
                 {{dIcon "thumbtack"}}
-                {{i18n (themePrefix "jt.pinned")}}
+                {{i18n "topic_statuses.pinned.title"}}
               </span>
             {{/if}}
             {{#if @topic.is_hot}}
               <span class="jt-pill">
                 {{dIcon "fire"}}
-                {{i18n (themePrefix "jt.hot")}}
+                {{i18n "topic_statuses.hot.title"}}
               </span>
             {{/if}}
           </span>
