@@ -76,12 +76,14 @@
       pointer-events: none;
     }
 
+    // a logical side, from the way the block runs, which core's
+    // right-to-left stylesheet leaves alone (jt-extras' line numbers)
     > .codeblock-button-wrapper {
       top: 0;
       height: 2.25rem;
       display: flex;
       align-items: center;
-      padding-right: 0.25rem;
+      padding-inline-end: 0.25rem;
     }
   }
 

@@ -140,26 +140,44 @@
 
 // ── Code line numbers (api-initializers/jt-code-blocks) ───
 // The gutter and the code share one grid row, so the numbers stay put while a
-// long line scrolls sideways.
+// long line scrolls sideways. The gutter's sides are logical, taken from the
+// way the block runs: with mixed text direction on (as on jtechforums.org)
+// core runs a code block left to right in a Hebrew interface too, but its
+// right-to-left stylesheet flips every physical left and right, so the line
+// between the numbers and the code moved onto the block's outer edge and the
+// numbers lost their right alignment.
 .cooked pre.jt-numbered,
 .d-editor-preview pre.jt-numbered {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
 
   > .jt-lines {
-    padding: 12px 0.6em 12px 0.85em;
+    padding-block: 12px;
+    padding-inline: 0.85em 0.6em;
     font-family: var(--jt-font-mono);
     font-size: var(--font-down-1);
     line-height: inherit;
     color: var(--jt-text-subtle);
-    text-align: right;
+    text-align: end;
     white-space: pre;
     user-select: none;
-    border-right: 1px solid var(--jt-border);
+    border-inline-end: 1px solid var(--jt-border);
   }
 
   > code {
     overflow-x: auto;
+  }
+}
+
+// On phones core keeps 2.75em clear on the right of a block with a copy
+// button (always shown there), so the code doesn't start under it. In Hebrew
+// core's right-to-left stylesheet moved that room to the left, though a
+// left-to-right block keeps its button on the right: the code was pushed 26px
+// in from the left and still ran under the button. Logical sides, from the
+// way the block runs.
+@media (width < 40rem) {
+  .cooked pre.codeblock-buttons > code {
+    padding-inline: 12px 2.75em;
   }
 }
 
