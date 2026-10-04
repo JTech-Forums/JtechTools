@@ -244,14 +244,17 @@
     min-width: 0;
   }
 
+  // A title wraps rather than ending in "…". Beside the copy (the hero 940px
+  // and wider, most desktop windows) each tile leaves its title 107px, with
+  // room kept for the hover arrow, so "JTech Homepage" read "JTech Homep…";
+  // on a 320px phone (a Qin F21) a tile is narrower than it too.
   &__link-title {
     text-align: left;
     font-size: var(--jt-text-md);
     font-weight: 600;
+    line-height: 1.25;
     letter-spacing: var(--jt-tracking-ui);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: break-word;
   }
 
   &__link-desc {
@@ -335,12 +338,5 @@
 
   .jt-hero__link-desc {
     display: none;
-  }
-
-  // On a 320px phone (a Qin F21) a tile is narrower than "JTech Homepage":
-  // the title wraps instead of ending in "…"
-  .jt-hero__link-title {
-    line-height: 1.25;
-    white-space: normal;
   }
 }

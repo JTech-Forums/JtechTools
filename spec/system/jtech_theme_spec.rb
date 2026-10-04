@@ -929,6 +929,27 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Beside the copy (a wide window) each tile left its title 107px, with room
+  # for the hover arrow: "JTech Homepage" read "JTech Homep…"
+  it "shows the hero's link titles whole beside the copy" do
+    resize_window(width: 1440) do
+      visit("/latest")
+      expect(page).to have_css(".jt-hero__link-title")
+      # the arrow only shows on hover, but beside the copy it keeps its room
+      arrow, cut = page.evaluate_script(<<~JS)
+        [
+          getComputedStyle(document.querySelector(".jt-hero__link-arrow")).display,
+          [...document.querySelectorAll(".jt-hero__link-title")]
+            .filter((title) => title.scrollWidth > title.clientWidth + 1)
+            .map((title) => title.textContent.trim()),
+        ]
+      JS
+      expect(arrow).not_to eq("none")
+      expect(cut).to eq([])
+      expect_no_theme_errors
+    end
+  end
+
   # The hero's copy is admin-written, usually English. In a Hebrew interface it
   # took the page's direction, so a sentence's full stop landed at its start;
   # it reads in its own direction now, still aligned to the interface's side
