@@ -188,6 +188,30 @@ html.keyboard-visible.mobile-view .d-modal.jt-cmdk .d-modal__container {
     color: var(--jt-text-subtle);
   }
 
+  // Narrow phones: a result's hint (a topic's category) goes under its
+  // title. Beside it, it took up to 40% of a 320px row and titles were cut to
+  // "How to Write th…".
+  @media (width < 24rem) {
+    &__item:has(> .jt-cmdk__hint) {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.1rem 0.7rem;
+      height: auto;
+      min-height: 2.6rem;
+      padding-block: 0.45rem;
+
+      > .jt-cmdk__icon {
+        grid-row: 1 / 3;
+        align-self: center;
+      }
+
+      > .jt-cmdk__hint {
+        grid-column: 2;
+        max-width: none;
+      }
+    }
+  }
+
   // A command's keyboard shortcut (lib/jt-shortcuts)
   &__keys {
     display: inline-flex;
