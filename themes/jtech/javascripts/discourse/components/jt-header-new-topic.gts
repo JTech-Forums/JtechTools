@@ -2,7 +2,6 @@ import Component from "@glimmer/component";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import { service } from "@ember/service";
-import { themePrefix } from "virtual:theme";
 import type Category from "discourse/models/category";
 import type Site from "discourse/models/site";
 import type User from "discourse/models/user";
@@ -10,7 +9,7 @@ import type ComposerService from "discourse/services/composer";
 import type DiscoveryService from "discourse/services/discovery";
 import type SiteSettingsService from "discourse/services/site-settings";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
-import { i18n } from "discourse-i18n";
+import { jtLabel } from "../lib/jt-labels";
 
 type NewTopicUser = User & { can_create_topic?: boolean };
 
@@ -66,9 +65,9 @@ export default class JtHeaderNewTopic extends Component<JtHeaderNewTopicSignatur
     {{#if this.show}}
       <li class="header-dropdown-toggle jt-header-new-topic">
         <button
-          aria-label={{i18n (themePrefix "jt.cmdk.new_topic")}}
+          aria-label={{jtLabel "cmdk.new_topic"}}
           class="btn btn-flat no-text icon jt-header-icon"
-          title={{i18n (themePrefix "jt.cmdk.new_topic")}}
+          title={{jtLabel "cmdk.new_topic"}}
           type="button"
           {{on "click" this.newTopic}}
         >{{dIcon "plus"}}</button>

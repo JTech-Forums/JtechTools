@@ -6,7 +6,6 @@ import { action } from "@ember/object";
 import { cancel, type Timer } from "@ember/runloop";
 import { service } from "@ember/service";
 import { modifier } from "ember-modifier";
-import { themePrefix } from "virtual:theme";
 import KeyboardShortcutsHelp from "discourse/components/modal/keyboard-shortcuts-help";
 import { ajax } from "discourse/lib/ajax";
 import discourseDebounce from "discourse/lib/debounce";
@@ -24,10 +23,11 @@ import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import { colorToggleAvailable, toggleColorMode } from "../lib/jt-color-mode";
+import { jtLabel } from "../lib/jt-labels";
 import { CORE_SHORTCUTS, JT_SHORTCUTS } from "../lib/jt-shortcuts";
 
 const t = (key: string, opts?: Record<string, unknown>): string =>
-  i18n(themePrefix(`jt.cmdk.${key}`), opts);
+  jtLabel(`cmdk.${key}`, opts);
 
 const LIMITS = { commands: 5, categories: 4, topics: 6, users: 3 };
 
