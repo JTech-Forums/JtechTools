@@ -36,6 +36,7 @@ What changed for forums running Jtech Tools. Newest first.
 - JTech theme: the badges page redesigned. A display title, each badge group as a small label, each badge a card whose description stops at three lines (so a row of cards is no longer as tall as its longest one), and on a badge's own page the people who earned it are cards too. Gold, silver and bronze icons keep their colours. Same on phones.
 - JTech theme: on the search page, a result's title lines up with its category and excerpt when the topic has no status icon, instead of sitting 8px in.
 - JTech theme: on small phones, a topic found in the search and command menu shows its category under the title, so the title isn't cut short.
+- JTech theme: under search results, "No more results found." is a quiet line again instead of a big card, and while more results can load there's no empty card under the list.
 - JTech theme: on phones the search and command menu sits in the middle of the screen, with the same margin on both sides, instead of against the left edge.
 - JTech theme: in a post's edit history, the line under the revision's author and date is the same thin line as the rest of the dialog, instead of a thick grey bar. Same in dark mode.
 - JTech theme: on phones, a post's edit history shows its buttons' whole labels (Edit Post, Revert to revision 1, Hide revision) on two rows, instead of "Edit …", "Revert to rev…" and "Hide rev…" squeezed into one, and on 320px phones the arrows between revisions stay inside the dialog.

@@ -1980,6 +1980,28 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  # The footer under search results ("No more results found.", and empty while
+  # more can load) is an <h3> alone in its container, like the Users and
+  # Categories & tags tabs' "No results", and came out as that big card
+  it "keeps the footer under search results a quiet line, not a card" do
+    SearchIndexer.enable
+    SearchIndexer.index(topic, force: true)
+    SearchIndexer.index(first_post, force: true)
+    sign_in(member)
+    visit("/search?q=flip%20phone")
+    expect(page).to have_css(".search-footer", text: I18n.t("js.search.no_more_results"))
+    footer = page.evaluate_script(<<~JS)
+      (() => {
+        const style = getComputedStyle(document.querySelector(".search-footer"));
+        return [style.borderTopWidth, style.backgroundColor];
+      })()
+    JS
+    expect(footer).to eq(["0px", "rgba(0, 0, 0, 0)"])
+    expect_no_theme_errors
+  ensure
+    SearchIndexer.disable
+  end
+
   # Core marks the selected tab with a solid 2px bar. The theme: a 1px line
   # that glows, with a faint light behind the label.
   it "marks the selected tab with a thin glowing line" do

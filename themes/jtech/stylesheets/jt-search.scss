@@ -610,8 +610,17 @@ $jt-search-glyph: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' 
 }
 
 // ── Nothing found ─────────────────────────────────────────
+// The bare <h3> is the Categories & tags and Users tabs' "No results". The
+// footer under the results ("No more results found.", empty while more can
+// load) is an <h3> alone in its own container too, and came out as this
+// card: a big empty-state card under results, or an empty one. It keeps the
+// quiet line above (.search-footer).
 .search-container .no-results-container,
-.search-container .search-results > div > .loading-container > h3:only-child {
+.search-container
+  .search-results
+  > div
+  > .loading-container
+  > h3:only-child:not(.search-footer) {
   box-sizing: border-box;
   max-width: 32rem;
   margin: var(--space-6) auto;
@@ -623,7 +632,11 @@ $jt-search-glyph: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' 
 }
 
 .search-container .no-results-container h3,
-.search-container .search-results > div > .loading-container > h3:only-child {
+.search-container
+  .search-results
+  > div
+  > .loading-container
+  > h3:only-child:not(.search-footer) {
   margin: 0;
   font-size: var(--jt-text-lg);
   font-weight: 600;
