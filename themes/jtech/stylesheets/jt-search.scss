@@ -406,6 +406,13 @@ $jt-search-glyph: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' 
       font-size: 0.95em;
       color: var(--jt-text-subtle);
     }
+
+    // A topic with no status (pinned, closed, solved…) still has the empty
+    // statuses <span>, which took the row's gap: its title sat 8px in from
+    // the category line and excerpt under it
+    .topic-statuses:empty {
+      display: none;
+    }
   }
 
   .search-category {
