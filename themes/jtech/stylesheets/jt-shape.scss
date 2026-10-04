@@ -280,20 +280,25 @@ html.mobile-view #reply-control {
     background-color var(--jt-motion),
     border-color var(--jt-motion),
     color var(--jt-motion),
-    transform var(--jt-motion);
+    transform var(--jt-motion),
+    translate var(--jt-motion);
 }
 
 // Press feedback moves the content, never the button box: menus and popups
 // anchor to the trigger's box on mousedown, so moving it leaves them 1px off.
+// With `translate`, not `transform`: in Hebrew core mirrors arrow-like icons
+// (Reply, chevrons, arrows) with a transform, and a pressed button's
+// transform replaced it, so the icon flipped round for as long as it was
+// held. The two properties combine.
 .btn > :is(.d-icon, .d-button-label),
 .d-header-icons .icon > .d-icon {
-  transition: transform var(--jt-motion);
+  transition: translate var(--jt-motion);
 }
 
 .btn:active:not(:disabled, .disabled) > :is(.d-icon, .d-button-label),
 .d-header-icons .icon:active > .d-icon,
 .category-box:active {
-  transform: translateY(1px);
+  translate: 0 1px;
 }
 
 @media (prefers-reduced-motion: reduce) {

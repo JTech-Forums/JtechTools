@@ -2782,6 +2782,21 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # In Hebrew core mirrors arrow-like icons with a transform; a pressed
+  # button's 1px nudge was a transform too and replaced it, so Reply's arrow
+  # flipped round for as long as it was held
+  it "keeps a mirrored icon mirrored while its button is pressed" do
+    SiteSetting.default_locale = "he"
+    sign_in(member)
+    visit(topic.relative_url)
+    find("html.rtl #topic-footer-buttons .create .d-icon-reply", match: :first).hover
+    page.driver.with_playwright_page { |pw| pw.mouse.down }
+    transform = page.evaluate_script(<<~JS)
+      getComputedStyle(document.querySelector("#topic-footer-buttons .create .d-icon-reply")).transform
+    JS
+    expect(transform).to start_with("matrix(-1")
+  end
+
   it "shows the dark palette when the browser prefers dark" do
     page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
     sign_in(member)
