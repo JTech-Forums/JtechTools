@@ -1147,6 +1147,35 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # On phones core floated a suggested topic's reply count after its title and
+  # put the date at the end of the category line, so where they landed hung on
+  # the title's length: at 320px (a Qin F21) a long title pushed the count down
+  # beside the date
+  it "keeps suggested topics' counts above their dates on a 320px phone", mobile: true do
+    long =
+      Fabricate(
+        :topic,
+        category: category,
+        user: admin,
+        title: "A much longer topic title about flip phones that wraps onto several lines",
+      )
+    Fabricate(:post, topic: long, user: admin, raw: "Body of the long topic.")
+    sign_in(member)
+    resize_window(width: 320) do
+      visit(topic.relative_url)
+      expect(page).to have_css(".more-topics__container .topic-list-item .posts-map", minimum: 2)
+      rows = page.evaluate_script(<<~JS)
+        [...document.querySelectorAll(".more-topics__container .topic-list-item")].map((row) => {
+          const count = row.querySelector(".posts-map").getBoundingClientRect();
+          const date = row.querySelector(".num.activity").getBoundingClientRect();
+          return [date.top >= count.bottom - 2, Math.abs(date.right - count.right) <= 1];
+        })
+      JS
+      expect(rows.uniq).to eq([[true, true]])
+      expect_no_theme_errors
+    end
+  end
+
   # On phones core makes every footer button an icon, Reply included
   it "keeps the word on the phone's Reply button", mobile: true do
     sign_in(member)

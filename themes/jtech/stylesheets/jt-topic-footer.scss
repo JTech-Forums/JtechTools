@@ -91,6 +91,62 @@
   }
 }
 
+// ── Phone rows ────────────────────────────────────────────
+// Core floats a row's reply count after the title and puts the date at the
+// end of the category line, so where they landed depended on the title's
+// length: on a 320px phone (a Qin F21) most rows had the count down beside
+// the date, and at 240px every row ran 8px off the screen. A grid instead:
+// the title with the count beside it, then the category and tags with the
+// date at the end, under the count.
+html.mobile-view
+  .more-topics__container
+  .topic-list
+  .topic-item-metadata.right {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title count"
+    "stats stats";
+  column-gap: var(--space-3);
+
+  > .main-link {
+    grid-area: title;
+    min-width: 0;
+  }
+
+  > .pull-right {
+    grid-area: count;
+    float: none;
+
+    .posts-map {
+      padding-inline: 0;
+    }
+  }
+
+  > .topic-item-stats {
+    display: flex;
+    grid-area: stats;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-width: 0;
+
+    // core's clearfix: an empty item that would add a gap after the date
+    &::after {
+      display: none;
+    }
+
+    .topic-item-stats__category-tags {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .num.activity {
+      flex: none;
+      margin-left: auto;
+    }
+  }
+}
+
 // ── Phone footer buttons ──────────────────────────────────
 html.mobile-view #topic-footer-buttons {
   // wrap, or on a narrow phone (320px, like a Qin F21) with staff's extra
