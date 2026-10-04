@@ -25,6 +25,14 @@
   --avatar-margin: 0;
 }
 
+// jtech-tools' REQ-PM is a btn-small; on the card it sits under Message and
+// Follow, which core sizes from 1rem, so it came out a size smaller and 8px
+// shorter. It takes their text size and padding.
+.user-card .usercard-controls .reqpm-user-button.btn {
+  padding: 0.5em 0.65em;
+  font-size: var(--font-0);
+}
+
 // Full-height slide-in panels (phones, narrow windows) sit against the
 // screen edge: no rounded corners there.
 .menu-panel.slide-in {

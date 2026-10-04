@@ -1060,6 +1060,27 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # jtech-tools' REQ-PM is a btn-small; on the user card it sat under Message
+  # and Follow, which core sizes from 1rem, a size smaller and 8px shorter
+  it "gives REQ-PM on a user card the size of the buttons above it" do
+    SiteSetting.reqpm_enabled = true
+    sign_in(member)
+    visit(topic.relative_url)
+    find("#post_2 .topic-avatar a").click
+    expect(page).to have_css(".user-card.show .usercard-controls .reqpm-user-button")
+    sizes = page.evaluate_script(<<~JS)
+      [...document.querySelectorAll(".user-card.show .usercard-controls .btn")]
+        .filter((button) => button.getBoundingClientRect().width > 0)
+        .map((button) => [
+          getComputedStyle(button).fontSize,
+          Math.round(button.getBoundingClientRect().height),
+        ])
+    JS
+    expect(sizes.size).to be > 1
+    expect(sizes.uniq.size).to eq(1)
+    expect_no_theme_errors
+  end
+
   it "puts the suggested topics under a topic on a card" do
     sign_in(member)
     visit(topic.relative_url)
