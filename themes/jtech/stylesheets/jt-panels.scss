@@ -62,6 +62,26 @@ html.mobile-view .d-modal:not(.jt-cmdk) .d-modal__container {
   border-bottom: 1px solid var(--jt-border);
 }
 
+// Its buttons (Edit Post, Revert to revision N, Hide revision) share one row
+// and core cuts their labels short to fit it: on a phone they read "Edit …",
+// "Revert to rev…" and "Hide rev…". The row wraps instead, so each label is
+// whole; a button only shrinks with an ellipsis if a line is too narrow even
+// for it alone.
+.d-modal.history-modal #revision-footer-buttons {
+  flex-wrap: wrap;
+}
+
+// Over them, the arrows between revisions and the "4 ↔ 5 / 5" between them
+// fill the width on a narrow screen, but core keeps the numbers at least 7em
+// wide, so at 320px (a Qin F21) the last arrow ran 24px into the sheet's
+// padding, against the screen's edge. The numbers take their own width; a
+// long count wraps onto two lines instead of pushing the arrows out.
+@media (width < 48rem) {
+  .d-modal.history-modal #revision-numbers {
+    min-width: 0;
+  }
+}
+
 // Not while closed: core keeps a zero-height composer at the bottom of the
 // window, and its border drew a hairline along the bottom of every page.
 #reply-control {
