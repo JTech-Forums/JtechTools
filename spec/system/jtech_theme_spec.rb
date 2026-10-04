@@ -904,12 +904,17 @@ RSpec.describe "JTech theme" do
   it "shows the hero's link titles whole beside the copy" do
     resize_window(width: 1440) do
       visit("/latest")
-      expect(page).to have_css(".jt-hero__link-arrow")
-      cut = page.evaluate_script(<<~JS)
-        [...document.querySelectorAll(".jt-hero__link-title")]
-          .filter((title) => title.scrollWidth > title.clientWidth + 1)
-          .map((title) => title.textContent.trim())
+      expect(page).to have_css(".jt-hero__link-title")
+      # the arrow only shows on hover, but beside the copy it keeps its room
+      arrow, cut = page.evaluate_script(<<~JS)
+        [
+          getComputedStyle(document.querySelector(".jt-hero__link-arrow")).display,
+          [...document.querySelectorAll(".jt-hero__link-title")]
+            .filter((title) => title.scrollWidth > title.clientWidth + 1)
+            .map((title) => title.textContent.trim()),
+        ]
       JS
+      expect(arrow).not_to eq("none")
       expect(cut).to eq([])
       expect_no_theme_errors
     end
