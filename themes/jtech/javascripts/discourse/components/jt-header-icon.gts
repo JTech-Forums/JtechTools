@@ -3,13 +3,12 @@ import { on } from "@ember/modifier";
 import { action, get } from "@ember/object";
 import type RouterService from "@ember/routing/router-service";
 import { service } from "@ember/service";
-import { themePrefix } from "virtual:theme";
 import type User from "discourse/models/user";
 import type Header from "discourse/services/header";
 import type InterfaceColor from "discourse/services/interface-color";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
-import { i18n } from "discourse-i18n";
 import { toggleColorMode } from "../lib/jt-color-mode";
+import { jtLabel } from "../lib/jt-labels";
 import { needsFullPageLoad } from "../lib/jt-links";
 import { pickUserMenuTab } from "../lib/jt-user-menu";
 
@@ -45,7 +44,7 @@ export default class JtHeaderIcon extends Component<JtHeaderIconSignature> {
   }
 
   get label(): string {
-    return i18n(themePrefix(`jt.header.${this.kind}`));
+    return jtLabel(`header.${this.kind}`);
   }
 
   get icon(): string {

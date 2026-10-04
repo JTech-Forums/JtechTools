@@ -1,11 +1,12 @@
-import { settings, themePrefix } from "virtual:theme";
+import { settings } from "virtual:theme";
 import { apiInitializer } from "discourse/lib/api";
 import DiscourseURL from "discourse/lib/url";
 import type User from "discourse/models/user";
 import type InterfaceColor from "discourse/services/interface-color";
 import type SiteSettingsService from "discourse/services/site-settings";
-import I18n, { i18n } from "discourse-i18n";
+import I18n from "discourse-i18n";
 import { colorToggleAvailable, toggleColorMode } from "../lib/jt-color-mode";
+import { jtLabel } from "../lib/jt-labels";
 import { JT_SHORTCUTS } from "../lib/jt-shortcuts";
 
 type ShortcutName = keyof typeof JT_SHORTCUTS;
@@ -19,7 +20,7 @@ function addHelpLabels(names: ShortcutName[]) {
     return;
   }
   js.keyboard_shortcuts_help.jtech = Object.fromEntries(
-    names.map((name) => [name, i18n(themePrefix(`jt.cmdk.${name}`))])
+    names.map((name) => [name, jtLabel(`cmdk.${name}`)])
   );
 }
 

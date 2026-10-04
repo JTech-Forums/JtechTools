@@ -234,6 +234,22 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # The menu's commands were the theme's own English words, so in Hebrew it
+  # said "Latest", "Top"; where core has the same word it comes translated
+  it "names the command menu's commands in the interface's language" do
+    SiteSetting.chat_enabled = false # like the other command menu specs
+    SiteSetting.default_locale = "he"
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css("html.rtl .jt-header-search__keys")
+    send_keys([:control, "k"])
+    expect(page).to have_css(
+      ".jt-cmdk .jt-cmdk__label",
+      text: I18n.t("js.keyboard_shortcuts_help.jump_to.latest", locale: :he),
+    )
+    expect(page).to have_no_css(".jt-cmdk .jt-cmdk__label", text: "Latest")
+  end
+
   it "opens the command menu with Ctrl+K and finds a topic" do
     SiteSetting.chat_enabled = false
     SearchIndexer.enable
