@@ -334,3 +334,25 @@ html .custom-gated-topic-content {
 .loading-indicator-container {
   height: 2px;
 }
+
+// FormKit fields (core's newer forms: Insert link in the composer, invites,
+// Add to calendar, user notes, the admin's settings) come from core's own
+// input mixin: a solid grey border (!important) and, focused, a 2px ring in
+// the accent, black or white. The theme's fields elsewhere have a hairline
+// over a faint fill and, focused, a grey border with a soft glow. Core's
+// focus selectors are repeated so these match them and win by order.
+:is(.form-kit__control-input, .form-kit__control-textarea) {
+  color: var(--jt-text);
+  border-color: var(--jt-border-strong) !important;
+
+  &:focus,
+  &:focus-visible,
+  &:focus:focus-visible,
+  &:active {
+    &:not(:disabled) {
+      border-color: var(--jt-text-subtle) !important;
+      outline: none;
+      box-shadow: 0 0 0 3px var(--jt-glow);
+    }
+  }
+}
