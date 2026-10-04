@@ -161,12 +161,19 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
 
 @media (width >= 64rem) and (hover: hover) {
   .d-header:not(:has(.extra-info-wrapper)) {
+    // Centred between both edges rather than with left: 50% and a -50%
+    // shift: in a right-to-left interface (Hebrew, which the forum offers
+    // and picks from the browser's language) core's stylesheet flipping
+    // turns left into right but leaves the shift, which put the field 330px
+    // off centre, over Sign Up and Log In.
     .jt-header-search--centered {
       position: absolute;
       top: 50%;
-      left: 50%;
+      inset-inline: 0;
       display: block;
-      translate: -50% -50%;
+      width: fit-content;
+      margin-inline: auto;
+      translate: 0 -50%;
 
       .jt-header-search__button {
         width: clamp(16rem, 30vw, 28rem);

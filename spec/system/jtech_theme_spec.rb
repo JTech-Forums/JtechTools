@@ -2102,6 +2102,27 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Hebrew is offered, and picked from the browser's language. In a
+  # right-to-left interface core's stylesheet flipping turned the centred
+  # search field's left: 50% into right: 50% but kept its -50% shift, which put
+  # the field 330px off centre, over the header's buttons
+  it "centres the header's search field in a right-to-left interface" do
+    SiteSetting.allow_user_locale = true
+    member.update!(locale: "he")
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css("html.rtl .jt-header-search--centered .jt-header-search__button")
+    offset = page.evaluate_script(<<~JS)
+      (() => {
+        const field = document.querySelector(".jt-header-search--centered").getBoundingClientRect();
+        const bar = document.querySelector(".d-header .contents").getBoundingClientRect();
+        return Math.round((field.left + field.right) / 2 - (bar.left + bar.right) / 2);
+      })()
+    JS
+    expect(offset.abs).to be <= 1
+    expect_no_theme_errors
+  end
+
   describe "header icons" do
     # Every visible icon in the header row, the theme's and core's and chat's:
     # one glyph size, one vertical centre. The desktop search field has its

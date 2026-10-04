@@ -47,6 +47,7 @@ What changed for forums running Jtech Tools. Newest first.
 - JTech theme: printing a topic in dark mode gives black text on white paper, like light mode, instead of faint grey (or white) text. Same for the print view Ctrl+P opens. In both modes the sidebar no longer prints beside the posts.
 - JTech theme: videos in posts have the same rounded corners as the images around them, instead of a square black box. Uploaded videos (before and while they play) and YouTube and Vimeo videos alike.
 - JTech theme: on a 320px phone, the first and last post arrows in a topic's timeline (tap the post count) stay side by side, instead of the down arrow wrapping onto a line of its own.
+- JTech theme: in Hebrew (or any right-to-left language), the search field in the middle of the header is centred, instead of sitting off to the side on top of Sign Up and Log In.
 - JTech theme: every icon in the header is the same size, including chat's and core's ☰, and on phones the search icon no longer has a box around it.
 - JTech theme: on phones, writing a new message, the tags box sits under the title instead of running off the right edge of the screen.
 - JTech theme: on laptop-sized windows (about 925 to 1320px wide) the reply box ends where the posts end, instead of running past them and over the timeline's buttons beside them.
