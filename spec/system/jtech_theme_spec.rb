@@ -530,6 +530,21 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # The compact header (every profile tab but the summary) has no stats strip
+  # under the details, but kept core's line between them: a stray rule under
+  # the buttons, above the card's bottom edge
+  it "draws no line under the compact profile header's buttons" do
+    sign_in(member)
+    visit("/u/#{member.username}/activity")
+    expect(page).to have_css(".user-main .about.collapsed-info .details")
+    line =
+      page.evaluate_script(
+        'getComputedStyle(document.querySelector(".user-main .about.collapsed-info .details")).borderBottomWidth',
+      )
+    expect(line).to eq("0px")
+    expect_no_theme_errors
+  end
+
   it "shows groups as cards, and a group's members in the directory's table card" do
     sign_in(admin)
     visit("/g")
