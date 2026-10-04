@@ -57,6 +57,12 @@
     );
     animation: jt-tabs-fade linear both;
     animation-timeline: scroll(self inline);
+
+    // A scroll-driven animation's duration has to stay auto: a blanket
+    // `animation-duration: 0s !important` (reduce-motion user styles, the
+    // test suite's animation switch) pins the fade to its end, so the start
+    // of a strip that hasn't scrolled would fade instead of its cut end
+    animation-duration: auto !important;
   }
 
   &__tab {
