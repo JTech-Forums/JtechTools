@@ -120,6 +120,12 @@ body {
     );
     animation: jt-sidebar-fade linear both;
     animation-timeline: scroll(self);
+
+    // A scroll-driven animation's duration has to stay auto: a blanket
+    // `animation-duration: 0s !important` (reduce-motion user styles, the
+    // test suite's animation switch) pins the fade to its end, so the top of
+    // a sidebar that hasn't scrolled would fade instead of its cut bottom
+    animation-duration: auto !important;
   }
 }
 
