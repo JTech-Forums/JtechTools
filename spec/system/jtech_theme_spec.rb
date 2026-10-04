@@ -2494,6 +2494,29 @@ RSpec.describe "JTech theme" do
       expect_no_theme_errors
     end
 
+    # Code runs left to right in any interface, but core's right-to-left
+    # stylesheet flips left and right: in Hebrew the line between the numbers
+    # and the code moved onto the block's outer edge, and on a phone the room
+    # kept clear of the copy button moved to the left, away from the button
+    it "keeps a numbered code block's sides in a Hebrew interface", mobile: true do
+      SiteSetting.default_locale = "he"
+      visit(lonely_topic.relative_url)
+      expect(page).to have_css("html.rtl pre.jt-numbered.codeblock-buttons .jt-lines")
+      sides = page.evaluate_script(<<~JS)
+        (() => {
+          const gutter = getComputedStyle(document.querySelector("pre.jt-numbered .jt-lines"));
+          const code = getComputedStyle(document.querySelector("pre.jt-numbered > code"));
+          return [
+            gutter.borderRightWidth,
+            gutter.borderLeftWidth,
+            parseFloat(code.paddingRight) > parseFloat(code.paddingLeft),
+          ];
+        })()
+      JS
+      expect(sides).to eq(["1px", "0px", true])
+      expect_no_theme_errors
+    end
+
     it "doesn't prompt once someone has replied" do
       sign_in(member)
       visit(topic.relative_url)
