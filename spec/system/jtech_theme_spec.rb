@@ -200,6 +200,7 @@ RSpec.describe "JTech theme" do
   # English menu (or the reverse): read in its own direction, it keeps its
   # punctuation at its end, and still lines up with the menu
   it "reads each command menu result in its own direction, lined up with the menu" do
+    SiteSetting.chat_enabled = false # like the other command menu specs
     sign_in(member)
     visit("/latest")
     expect(page).to have_css(".jt-header-search__keys")
