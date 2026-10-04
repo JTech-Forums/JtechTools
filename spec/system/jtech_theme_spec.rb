@@ -2099,6 +2099,34 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Icons the map left out stayed Font Awesome's heavier solid ones beside the
+  # outlines: Account and Profile in a member's preferences, and the topics
+  # and active users on the About page, among others
+  it "draws the preferences tabs' and the About page's icons with Lucide too" do
+    sign_in(member)
+    icons = <<~JS
+      ((selectors) => selectors.map((selector) => {
+        const id = document.querySelector(`${selector} .d-icon use`).getAttribute("href").slice(1);
+        return [id, !!document.querySelector(`symbol#${id}`)];
+      }))
+    JS
+    visit("/u/#{member.username}/preferences/account")
+    expect(page).to have_css(".user-nav__preferences-profile .d-icon")
+    tabs =
+      page.evaluate_script(
+        "#{icons}(['.user-nav__preferences-account', '.user-nav__preferences-profile'])",
+      )
+    expect(tabs).to eq([["jt-circle-user", true], ["jt-id-card", true]])
+    visit("/about")
+    expect(page).to have_css(".about__activities-item.active-users .d-icon")
+    activities =
+      page.evaluate_script(
+        "#{icons}(['.about__activities-item.topics', '.about__activities-item.active-users'])",
+      )
+    expect(activities).to eq([["jt-scroll-text", true], ["jt-users", true]])
+    expect_no_theme_errors
+  end
+
   # Core draws a video as a black box with square corners, between images and
   # cards with rounded ones
   it "rounds videos like the images around them" do
