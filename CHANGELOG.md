@@ -18,6 +18,7 @@ What changed for forums running Jtech Tools. Newest first.
 - JTech theme: on the search page, the Posts, Categories & tags and Users tabs have the same weight as the forum's other tabs, and with the keyboard show their whole focus ring.
 - JTech theme: grey text is easier to read. Timeline dates, "1 Reply", "view 1 hidden reply", the topic's category in the header, the pinned post badge and other secondary text all reach WCAG AA contrast (4.5:1) in light, dark and Dim; in light mode the palette's medium grey is a shade darker, and in dark mode "view 1 hidden reply" is no longer dark grey on black.
 - JTech theme: in Hebrew (or any right-to-left language), a row of tabs that scrolls (the list's tabs, REQ-PM's) fades on the side where more tabs are hidden, instead of the side it starts from.
+- JTech theme: in Hebrew, an open collapsible section's arrow points down, not up, and a Hebrew section's arrow points towards its title when closed, in either language.
 - JTech theme: a softer dark mode, **JTech Dim** (soft grey instead of OLED black), that anyone can pick under Preferences → Interface → Color Palette → Dark mode. OLED black stays the default.
 - JTech theme: with the keyboard, the composer's resize handle (Tab to it, then the arrow keys resize the composer) shows a whole focus ring, instead of a single line across the top of the composer.
 - JTech theme: with the keyboard, the REQ-PM page's tabs show their whole focus ring instead of only its sides.

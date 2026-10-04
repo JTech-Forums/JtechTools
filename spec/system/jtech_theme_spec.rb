@@ -1129,6 +1129,35 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # In a Hebrew interface core's right-to-left stylesheet negated the open
+  # section's rotate(90deg), so its chevron pointed up; and a right-to-left
+  # section's chevron pointed away from its text
+  it "turns a section's chevron down when it opens, in either direction" do
+    SiteSetting.support_mixed_text_direction = true # each section in its own direction
+    SiteSetting.default_locale = "he"
+    post =
+      Fabricate(
+        :post,
+        topic: topic,
+        user: admin,
+        raw:
+          "[details=\"Steps\"]\nHold power.\n[/details]\n\n[details=\"שלבים\"]\nתוכן\n[/details]",
+      )
+    visit(post.url)
+    expect(page).to have_css("html.rtl #post_#{post.post_number} .cooked details summary", count: 2)
+    chevrons = page.evaluate_script(<<~JS)
+      [...document.querySelectorAll("#post_#{post.post_number} .cooked details")].map((details) => {
+        const closed = getComputedStyle(details.querySelector("summary"), "::before").scale;
+        details.open = true;
+        const open = getComputedStyle(details.querySelector("summary"), "::before");
+        return [closed, open.rotate, open.transform];
+      })
+    JS
+    # an English section, then a Hebrew one (right to left, like the page)
+    expect(chevrons).to eq([%w[none 90deg none], ["-1 1", "-90deg", "none"]])
+    expect_no_theme_errors
+  end
+
   # A Hebrew quote runs right to left, but its bar sat on the far left, away
   # from where its text starts
   it "puts a Hebrew blockquote's bar where its text starts" do
