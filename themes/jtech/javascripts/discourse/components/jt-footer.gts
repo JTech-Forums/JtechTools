@@ -53,7 +53,10 @@ export default class JtFooter extends Component<JtFooterSignature> {
           <span class="jt-footer__mark"><JtechMark /></span>
           <span class="jt-footer__name">JTech Forums</span>
           {{#if settings.footer_tagline}}
-            <p class="jt-footer__tagline">{{settings.footer_tagline}}</p>
+            <p
+              class="jt-footer__tagline"
+              dir="auto"
+            >{{settings.footer_tagline}}</p>
           {{/if}}
         </div>
 

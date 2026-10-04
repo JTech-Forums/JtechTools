@@ -196,6 +196,23 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # A result's title or category, or what was typed, may be Hebrew in an
+  # English menu (or the reverse): read in its own direction, it keeps its
+  # punctuation at its end, and still lines up with the menu
+  it "reads each command menu result in its own direction, lined up with the menu" do
+    SiteSetting.chat_enabled = false # like the other command menu specs
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-header-search__keys")
+    send_keys([:control, "k"])
+    expect(page).to have_css(".jt-cmdk .jt-cmdk__item .jt-cmdk__label")
+    label =
+      page.evaluate_script(
+        '[document.querySelector(".jt-cmdk__label").getAttribute("dir"), getComputedStyle(document.querySelector(".jt-cmdk__label")).textAlign]',
+      )
+    expect(label).to eq(%w[auto left])
+  end
+
   it "opens the command menu with Ctrl+K and finds a topic" do
     SiteSetting.chat_enabled = false
     SearchIndexer.enable
@@ -863,6 +880,21 @@ RSpec.describe "JTech theme" do
 
   # At 320px (a Qin F21) a hero tile is narrower than "JTech Homepage", which
   # ended in "…"
+  # The hero's copy is admin-written, usually English. In a Hebrew interface it
+  # took the page's direction, so a sentence's full stop landed at its start;
+  # it reads in its own direction now, still aligned to the interface's side
+  it "reads the hero's English copy left to right in a Hebrew interface, aligned right" do
+    SiteSetting.default_locale = "he"
+    visit("/latest")
+    expect(page).to have_css("html.rtl .jt-hero__subtitle")
+    subtitle =
+      page.evaluate_script(
+        '(() => { const s = getComputedStyle(document.querySelector(".jt-hero__subtitle")); return [s.direction, s.textAlign]; })()',
+      )
+    expect(subtitle).to eq(%w[ltr right])
+    expect_no_theme_errors
+  end
+
   it "wraps the hero's link titles on a 320px phone", mobile: true do
     resize_window(width: 320) do
       visit("/latest")
@@ -2440,6 +2472,20 @@ RSpec.describe "JTech theme" do
       expect(page).to have_css(".jt-gate .jt-gate__sign-up")
       shot("gate")
       expect_no_theme_errors
+    end
+
+    # The forum offers Hebrew and the theme's sentence around the category's
+    # name is English: read right to left, it came out scrambled
+    it "reads the prompt's sentence in its own direction in a Hebrew interface" do
+      SiteSetting.default_locale = "he"
+      gate(categories: category.id.to_s)
+      visit(topic.relative_url)
+      expect(page).to have_css("html.rtl .jt-gate__text", text: category.name)
+      direction =
+        page.evaluate_script(
+          '[document.querySelector(".jt-gate__text").getAttribute("dir"), getComputedStyle(document.querySelector(".jt-gate__text")).direction]',
+        )
+      expect(direction).to eq(%w[auto ltr])
     end
 
     it "gates topics with a gated tag" do

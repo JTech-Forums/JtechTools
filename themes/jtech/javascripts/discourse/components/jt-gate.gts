@@ -93,7 +93,9 @@ export default class JtGate extends Component<JtGateSignature> {
           <h2 class="jt-gate__title" id="jt-gate-title">
             {{i18n (themePrefix "jt.gate.title")}}
           </h2>
-          <p class="jt-gate__text">{{this.description}}</p>
+          {{! English around the category's name: read in its own direction,
+            or a Hebrew interface scrambles the sentence }}
+          <p class="jt-gate__text" dir="auto">{{this.description}}</p>
 
           <div class="jt-gate__actions">
             {{#if this.canSignUp}}

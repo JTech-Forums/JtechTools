@@ -111,10 +111,14 @@ export default class JtHero extends Component<JtHeroSignature> {
           <div class="jt-hero__copy">
             <h1
               class="jt-hero__title"
+              dir="auto"
               id="jt-hero-title"
             >{{settings.hero_title}}</h1>
             {{#if settings.hero_subtitle}}
-              <p class="jt-hero__subtitle">{{settings.hero_subtitle}}</p>
+              <p
+                class="jt-hero__subtitle"
+                dir="auto"
+              >{{settings.hero_subtitle}}</p>
             {{/if}}
 
             {{#if this.site.can_search}}
@@ -158,10 +162,14 @@ export default class JtHero extends Component<JtHeroSignature> {
                     <span class="jt-hero__link-icon">{{dIcon link.icon}}</span>
                   {{/if}}
                   <span class="jt-hero__link-text">
-                    <span class="jt-hero__link-title">{{link.title}}</span>
+                    <span
+                      class="jt-hero__link-title"
+                      dir="auto"
+                    >{{link.title}}</span>
                     {{#if link.description}}
                       <span
                         class="jt-hero__link-desc"
+                        dir="auto"
                       >{{link.description}}</span>
                     {{/if}}
                   </span>
