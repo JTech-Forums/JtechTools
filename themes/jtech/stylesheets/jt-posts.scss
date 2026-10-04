@@ -14,7 +14,12 @@
 
   blockquote {
     background: transparent;
-    border-left: 2px solid var(--jt-border-strong);
+
+    // The bar sits where the quote's text starts, so on the right of a
+    // Hebrew quote (core marks each block's direction when mixed text
+    // direction is on); border-left: 0 first takes away core's bar
+    border-left: 0;
+    border-inline-start: 2px solid var(--jt-border-strong);
   }
 
   pre code {

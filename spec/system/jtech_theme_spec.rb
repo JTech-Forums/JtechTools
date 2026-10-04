@@ -576,6 +576,30 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # A Hebrew quote runs right to left, but its bar sat on the far left, away
+  # from where its text starts
+  it "puts a Hebrew blockquote's bar where its text starts" do
+    SiteSetting.support_mixed_text_direction = true
+    post =
+      Fabricate(
+        :post,
+        topic: topic,
+        user: admin,
+        raw: "> שלום, זה ציטוט בעברית\n\n> And this one is in English",
+      )
+    sign_in(member)
+    visit(post.url)
+    expect(page).to have_css("#post_#{post.post_number} .cooked > blockquote[dir]", count: 2)
+    bars = page.evaluate_script(<<~JS)
+      [...document.querySelectorAll("#post_#{post.post_number} .cooked > blockquote")].map((quote) => {
+        const style = getComputedStyle(quote);
+        return [style.direction, style.borderLeftWidth, style.borderRightWidth];
+      })
+    JS
+    expect(bars).to eq([%w[rtl 0px 2px], %w[ltr 2px 0px]])
+    expect_no_theme_errors
+  end
+
   it "draws collapsible sections, quotes and link previews as hairline cards" do
     post =
       Fabricate(

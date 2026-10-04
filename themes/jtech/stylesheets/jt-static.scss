@@ -122,10 +122,12 @@
 
     blockquote {
       margin: 1em 0;
-      padding: 0.25em 0 0.25em 1em;
+      padding-block: 0.25em;
+      padding-inline: 1em 0;
       color: var(--jt-text-muted);
       background: transparent;
-      border-left: 2px solid var(--jt-border-strong);
+      border-left: 0;
+      border-inline-start: 2px solid var(--jt-border-strong);
     }
 
     hr {
