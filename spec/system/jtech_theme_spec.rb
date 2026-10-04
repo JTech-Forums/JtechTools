@@ -284,6 +284,25 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # On a 320px phone (a Qin F21's width) the footer's row didn't wrap: with
+  # staff's extra button Reply ran off the screen and the page scrolled sideways
+  it "wraps a topic's footer buttons on a narrow phone", mobile: true do
+    sign_in(admin)
+    resize_window(width: 320) do
+      visit(topic.relative_url)
+      reply = "#topic-footer-buttons .topic-footer-main-buttons > .create"
+      expect(page).to have_css(reply)
+      reply_right, window_width = page.evaluate_script(<<~JS)
+        [
+          document.querySelector("#{reply}").getBoundingClientRect().right,
+          document.documentElement.clientWidth,
+        ]
+      JS
+      expect(reply_right).to be <= window_width
+      expect_no_theme_errors
+    end
+  end
+
   # Core turns the outline off on buttons (.btn:focus-visible, and on desktop
   # .discourse-no-touch nav.post-controls .actions button:focus-visible) and
   # marks focus with the hover fill, which the theme's quiet buttons barely
