@@ -95,6 +95,20 @@ export default class JtTopicCard extends Component<JtTopicCardSignature> {
     return this.topic.tags?.length > 0;
   }
 
+  // The line over the title (category, tags, pills) is left out when it would
+  // be empty: in message lists (core hides the category there) and in a
+  // category's own list for a topic without tags or pills. Empty, it still
+  // took the card's gap, 8px more above the title than below the footer.
+  get hasMeta(): boolean {
+    return (
+      !this.args.hideCategory ||
+      this.hasTags ||
+      !!this.hasSolved ||
+      !!this.topic.pinned ||
+      !!this.topic.is_hot
+    );
+  }
+
   get hasExcerpt() {
     return this.topic.excerpt || this.topic.hasExcerpt;
   }
@@ -156,36 +170,38 @@ export default class JtTopicCard extends Component<JtTopicCardSignature> {
 
   <template>
     <td class="jt-card">
-      <div class="jt-card__meta">
-        {{#unless @hideCategory}}
-          <span class="jt-card__category">{{categoryLinkHTML
-              @topic.category
-            }}</span>
-        {{/unless}}
-        {{#if this.hasTags}}
-          {{dDiscourseTags @topic mode="list" className="jt-card__tags"}}
-        {{/if}}
-        <span class="jt-card__flags">
-          {{#if this.hasSolved}}
-            <span class="jt-pill --solved">
-              {{dIcon "check"}}
-              {{i18n (themePrefix "jt.solved")}}
-            </span>
+      {{#if this.hasMeta}}
+        <div class="jt-card__meta">
+          {{#unless @hideCategory}}
+            <span class="jt-card__category">{{categoryLinkHTML
+                @topic.category
+              }}</span>
+          {{/unless}}
+          {{#if this.hasTags}}
+            {{dDiscourseTags @topic mode="list" className="jt-card__tags"}}
           {{/if}}
-          {{#if @topic.pinned}}
-            <span class="jt-pill">
-              {{dIcon "thumbtack"}}
-              {{i18n (themePrefix "jt.pinned")}}
-            </span>
-          {{/if}}
-          {{#if @topic.is_hot}}
-            <span class="jt-pill">
-              {{dIcon "fire"}}
-              {{i18n (themePrefix "jt.hot")}}
-            </span>
-          {{/if}}
-        </span>
-      </div>
+          <span class="jt-card__flags">
+            {{#if this.hasSolved}}
+              <span class="jt-pill --solved">
+                {{dIcon "check"}}
+                {{i18n (themePrefix "jt.solved")}}
+              </span>
+            {{/if}}
+            {{#if @topic.pinned}}
+              <span class="jt-pill">
+                {{dIcon "thumbtack"}}
+                {{i18n (themePrefix "jt.pinned")}}
+              </span>
+            {{/if}}
+            {{#if @topic.is_hot}}
+              <span class="jt-pill">
+                {{dIcon "fire"}}
+                {{i18n (themePrefix "jt.hot")}}
+              </span>
+            {{/if}}
+          </span>
+        </div>
+      {{/if}}
 
       <div class="jt-card__body">
         <div class="jt-card__text">
