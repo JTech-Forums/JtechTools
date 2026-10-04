@@ -382,6 +382,27 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # The composer's resize handle takes focus from the keyboard (the arrow keys
+  # resize the composer), but it sits on the composer's clipped top edge: of
+  # the outer ring only the bottom line showed
+  it "draws the composer's resize handle's focus ring inside it" do
+    sign_in(member)
+    visit(topic.relative_url)
+    find("#topic-footer-buttons .create").click
+    expect(page).to have_css("#reply-control.open .grippie")
+    find("#reply-control .d-editor-input").send_keys("x") # keyboard use, so focus counts as keyboard focus
+    ring = page.evaluate_script(<<~JS)
+      (() => {
+        const grippie = document.querySelector("#reply-control .grippie");
+        grippie.focus();
+        const style = getComputedStyle(grippie);
+        return [grippie.matches(":focus-visible"), style.outlineStyle, parseFloat(style.outlineOffset) < 0];
+      })()
+    JS
+    expect(ring).to eq([true, "solid", true])
+    expect_no_theme_errors
+  end
+
   # A post's edit history: core underlined a revision's author and date with a
   # 3px grey bar, the only heavy line in the theme's dialogs
   it "draws the dialog's hairline under a revision in a post's history" do

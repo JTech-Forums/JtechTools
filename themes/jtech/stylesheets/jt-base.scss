@@ -157,6 +157,14 @@ h4 {
   outline-offset: -2px;
 }
 
+// The composer's resize handle (Tab reaches it: arrow keys resize) sits on
+// the composer's top edge, which clips: of an outer ring only the bottom line
+// showed, a stray rule across the composer. Drawn inside it, the whole ring
+// shows.
+#reply-control .grippie:focus-visible {
+  outline-offset: -2px;
+}
+
 ::selection {
   background: var(--jt-text);
   color: var(--jt-surface);
