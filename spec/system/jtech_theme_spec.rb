@@ -1862,6 +1862,28 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # A message has no category (core hides it in message lists) and often no
+  # tags or pills, but its card kept the empty line over the title, which took
+  # the card's gap: 8px more above the title than under the footer
+  it "leaves the empty line out of a message's card" do
+    pm = Fabricate(:private_message_topic, user: admin, recipient: member)
+    Fabricate(:post, topic: pm, user: admin, raw: "Which filter did you end up using?")
+    sign_in(member)
+    visit("/u/#{member.username}/messages")
+    expect(page).to have_css(".topic-list.jt-cards td.jt-card", text: pm.title)
+    card = page.evaluate_script(<<~JS)
+      (() => {
+        const card = document.querySelector(".topic-list.jt-cards td.jt-card");
+        const box = card.getBoundingClientRect();
+        const top = card.firstElementChild.getBoundingClientRect().top - box.top;
+        const bottom = box.bottom - card.lastElementChild.getBoundingClientRect().bottom;
+        return [!!card.querySelector(".jt-card__meta"), Math.round(top - bottom)];
+      })()
+    JS
+    expect(card).to eq([false, 0])
+    expect_no_theme_errors
+  end
+
   # Core floats "See 1 new or updated topic" over the list's header row on
   # wide screens; card lists have none, so it sat on the first card.
   it "keeps the new topics button above the first card, not on it" do
