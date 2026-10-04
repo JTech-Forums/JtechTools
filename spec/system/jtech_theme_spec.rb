@@ -273,7 +273,7 @@ RSpec.describe "JTech theme" do
   # A grid item is as wide as its longest unbreakable word, so a long group
   # handle pushed every group card past a phone's edge.
   it "fits group cards with long handles on a phone", mobile: true do
-    Fabricate(:group, name: "filtering_specialists_and_helpers", full_name: "Filtering helpers")
+    Fabricate(:group, name: "filtering_specialist", full_name: "Filteringspecialistsandhelpers")
     sign_in(member)
     visit("/g")
     expect(page).to have_css(".groups-boxes .group-box")
