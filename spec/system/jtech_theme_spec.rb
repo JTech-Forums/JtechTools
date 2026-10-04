@@ -1686,6 +1686,33 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core draws a key in a post as a grey 3px key with a thick bottom edge; the
+  # theme's other keycaps are a sunken chip with a hairline and 5px corners
+  it "draws keys in a post like the theme's other keycaps" do
+    post =
+      Fabricate(:post, topic: topic, user: admin, raw: "Press <kbd>Ctrl</kbd> and <kbd>K</kbd>.")
+    sign_in(member)
+    visit(post.url)
+    expect(page).to have_css("#post_#{post.post_number} .cooked kbd", count: 2)
+    key = page.evaluate_script(<<~JS)
+      (() => {
+        const style = getComputedStyle(document.querySelector("#post_#{post.post_number} .cooked kbd"));
+        const probe = document.createElement("div");
+        probe.style.backgroundColor = "var(--jt-surface-sunken)";
+        document.body.appendChild(probe);
+        const sunken = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return [
+          style.borderRadius,
+          style.borderBottomWidth === style.borderTopWidth,
+          style.backgroundColor === sunken,
+        ];
+      })()
+    JS
+    expect(key).to eq(["5px", true, true])
+    expect_no_theme_errors
+  end
+
   it "lets people pick JTech Dim instead of OLED black" do
     page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
     sign_in(member)

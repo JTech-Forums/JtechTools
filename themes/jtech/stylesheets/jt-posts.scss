@@ -80,6 +80,16 @@
     padding: 0.1em 0.35em;
   }
 
+  // Keys (<kbd>) as the theme's other keycaps (the header's search, ⌘K, the
+  // shortcuts help): a sunken chip with a hairline and 5px corners, not
+  // core's grey 3px key with a thick bottom edge
+  kbd {
+    background: var(--jt-surface-sunken);
+    border: 1px solid var(--jt-border-strong);
+    border-radius: 5px;
+    box-shadow: none;
+  }
+
   table th {
     color: var(--jt-text-muted);
     font-weight: 500;
