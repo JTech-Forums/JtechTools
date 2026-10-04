@@ -878,8 +878,11 @@
     padding-top: 1em;
   }
 
+  // The checklist filter goes under the name filter when they don't share a
+  // line: on a phone it ran past the dialog's edge
   .mod-checklist-log-controls {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 0.5em;
     margin: 0.5em 0 0.75em;
@@ -1065,6 +1068,16 @@
   .mod-checklist-row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  // Two fields shared a line: who must accept and the button's text in the
+  // first-post checklist, how often and to whom in a topic's prompt
+  // checklist. On a 320px phone (a Qin F21) each was 128px wide, so a
+  // choice like "Once per user per topic" took three lines and the button's
+  // text was cut off. One field to a line.
+  .mod-checklist-page .mod-checklist-field-grid,
+  .mod-topic-prompt-checklist-modal .mod-checklist-field-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .mod-checklist-modal .d-modal__container,
