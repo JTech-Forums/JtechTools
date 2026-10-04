@@ -2499,6 +2499,7 @@ RSpec.describe "JTech theme" do
     # and the code moved onto the block's outer edge, and on a phone the room
     # kept clear of the copy button moved to the left, away from the button
     it "keeps a numbered code block's sides in a Hebrew interface", mobile: true do
+      SiteSetting.support_mixed_text_direction = true # as on the forum: code runs left to right
       SiteSetting.default_locale = "he"
       visit(lonely_topic.relative_url)
       expect(page).to have_css("html.rtl pre.jt-numbered.codeblock-buttons .jt-lines")
