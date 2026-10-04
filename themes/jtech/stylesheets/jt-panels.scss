@@ -62,10 +62,14 @@ html.mobile-view .d-modal:not(.jt-cmdk) .d-modal__container {
 // page's gutter (it adds it on pages without a sidebar), so it started 0.67em
 // left of everything above it. The gutter goes back on the left and comes off
 // the width, so the left edge meets the content and the right one stays put.
+// On a topic it also ends where the posts do: between about 925px and 1320px
+// core's width ran past them and over the timeline's buttons (the posts'
+// width is kept in --jt-posts-width by api-initializers/jt-posts-width).
 body.has-sidebar-page #reply-control:not(.fullscreen).hide-preview {
   --jt-gutter: var(--d-wrap-padding-x, 0.67em);
-  max-width: calc(
-    var(--topic-width) + var(--topic-avatar-width) - var(--jt-gutter)
+  max-width: min(
+    calc(var(--topic-width) + var(--topic-avatar-width) - var(--jt-gutter)),
+    var(--jt-posts-width, 100vw)
   );
   margin-left: calc(
     var(--d-sidebar-width) + var(--layout-gap) + var(--jt-gutter)
