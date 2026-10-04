@@ -2782,6 +2782,19 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Windows' high contrast mode draws every button's border, and core gives
+  # the topic map's stats no padding: each number and word touched its frame
+  it "gives the topic map's stats room inside their frames in high contrast" do
+    visit(topic.relative_url)
+    stat = ".topic-map__stats :is(.fk-d-menu__trigger, .topic-map__stat)"
+    expect(page).to have_css(stat)
+    padding = "getComputedStyle(document.querySelector('#{stat}')).paddingLeft"
+    expect(page.evaluate_script(padding)).to eq("0px")
+
+    page.driver.with_playwright_page { |pw| pw.emulate_media(forcedColors: "active") }
+    expect(page.evaluate_script(padding)).not_to eq("0px")
+  end
+
   it "shows the dark palette when the browser prefers dark" do
     page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
     sign_in(member)

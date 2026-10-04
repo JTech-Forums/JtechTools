@@ -124,6 +124,19 @@
   border-color: var(--jt-border);
 }
 
+// Windows' high contrast (forced colours) draws every button's border, and
+// core gives the topic map's stats (views, likes, links, users) no padding,
+// so each number and its word sat pressed against a frame. A little room
+// inside it. (Core's own rule is four classes deep.)
+@media (forced-colors: active) {
+  .topic-map
+    .topic-map__contents
+    .topic-map__stats
+    :is(.fk-d-menu__trigger, .topic-map__stat) {
+    padding: 0.2em 0.45em;
+  }
+}
+
 // Core clips the topic map's row of avatars (overflow: hidden) at the first
 // one's left edge, which cut its focus ring off: room for it, balanced by a
 // negative margin.
