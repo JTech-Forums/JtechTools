@@ -234,8 +234,13 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
     color: currentcolor;
   }
 
+  // "Search…" is English (the theme's strings are), and read right to left
+  // in a Hebrew interface its "…" came first: "…Search". It reads in its own
+  // direction (dir="auto") and stays beside the magnifier (a physical left,
+  // which core's right-to-left stylesheet turns into right).
   .jt-header-search__label {
     flex: 1;
+    text-align: left;
   }
 
   .jt-header-search__keys {

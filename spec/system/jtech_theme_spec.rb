@@ -213,6 +213,27 @@ RSpec.describe "JTech theme" do
     expect(label).to eq(%w[auto left])
   end
 
+  # The theme's strings are English and the search field's and menu's end in
+  # "…": read right to left in a Hebrew interface, the "…" came first
+  # ("…Search"). They read left to right, still on the interface's side.
+  it "keeps the search placeholders' … at their end in a Hebrew interface" do
+    SiteSetting.chat_enabled = false # like the other command menu specs
+    SiteSetting.default_locale = "he"
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css("html.rtl .jt-header-search__keys")
+    send_keys([:control, "k"])
+    expect(page).to have_css(".jt-cmdk .jt-cmdk__input")
+    fields = page.evaluate_script(<<~JS)
+      [".jt-header-search--centered .jt-header-search__label", ".jt-cmdk__input"].map((selector) => {
+        const style = getComputedStyle(document.querySelector(selector));
+        return [style.direction, style.textAlign];
+      })
+    JS
+    expect(fields).to eq([%w[ltr right], %w[ltr right]])
+    expect_no_theme_errors
+  end
+
   it "opens the command menu with Ctrl+K and finds a topic" do
     SiteSetting.chat_enabled = false
     SearchIndexer.enable
