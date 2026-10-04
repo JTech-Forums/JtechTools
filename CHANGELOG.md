@@ -55,6 +55,7 @@ What changed for forums running Jtech Tools. Newest first.
 - JTech theme: on a 320px phone, the first and last post arrows in a topic's timeline (tap the post count) stay side by side, instead of the down arrow wrapping onto a line of its own.
 - JTech theme: in Hebrew (or any right-to-left language), the search field in the middle of the header is centred, instead of sitting off to the side on top of Sign Up and Log In.
 - JTech theme: in Hebrew, the header's "Search…" field and the command menu's prompts ("Search or jump to…", "Searching…") read "Search…" instead of "…Search", still on the right-hand side. What you type in the command menu runs in its own direction too: Hebrew right to left, English left to right.
+- JTech theme: the People page's periods (Today, Week, Month, Quarter, Year, All time) use Discourse's own words, so they're in Hebrew for Hebrew readers (they were always English). In English, "Day" now reads "Today", as in Discourse's own period menu.
 - JTech theme: every icon in the header is the same size, including chat's and core's ☰, and on phones the search icon no longer has a box around it.
 - JTech theme: on phones, writing a new message, the tags box sits under the title instead of running off the right edge of the screen.
 - JTech theme: on laptop-sized windows (about 925 to 1320px wide) the reply box ends where the posts end, instead of running past them and over the timeline's buttons beside them.

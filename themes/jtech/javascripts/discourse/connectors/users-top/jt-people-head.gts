@@ -8,7 +8,18 @@ import { themePrefix } from "virtual:theme";
 import type ResultSet from "discourse/models/result-set";
 import { i18n } from "discourse-i18n";
 
-const PERIODS = ["daily", "weekly", "monthly", "quarterly", "yearly", "all"];
+// The labels are core's own (its period chooser shows the same words), so
+// they come in every language the forum offers: the theme's English copies
+// left Hebrew readers a switch of English words.
+const PERIOD_TITLES: Record<string, string> = {
+  daily: "today",
+  weekly: "this_week",
+  monthly: "this_month",
+  quarterly: "this_quarter",
+  yearly: "this_year",
+  all: "all_time",
+};
+const PERIODS = Object.keys(PERIOD_TITLES);
 const count = new Intl.NumberFormat();
 
 interface PeriodOption {
@@ -38,7 +49,7 @@ export default class JtPeopleHead extends Component<JtPeopleHeadSignature> {
   get periods(): PeriodOption[] {
     return PERIODS.map((id) => ({
       id,
-      label: i18n(themePrefix(`jt.people.period_${id}`)),
+      label: i18n(`filters.top.${PERIOD_TITLES[id]}`),
       active: id === this.current,
     }));
   }

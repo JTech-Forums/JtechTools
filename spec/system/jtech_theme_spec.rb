@@ -274,6 +274,20 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  # The period switch had the theme's own English words, so a Hebrew page
+  # said "Week", "Month"; core's period words come translated
+  it "labels the People page's periods in the interface's language" do
+    SiteSetting.default_locale = "he"
+    sign_in(member)
+    visit("/u")
+    expect(page).to have_css("html.rtl .jt-seg .jt-seg__item", count: 6)
+    expect(page).to have_css(
+      ".jt-seg .jt-seg__item",
+      text: I18n.t("js.filters.top.this_week", locale: :he),
+    )
+    expect(page).to have_no_css(".jt-seg .jt-seg__item", text: "Week")
+  end
+
   # Core's /badges: boxes with a faint border under grey group headings. The
   # theme: cards under small labels, and a badge's own page on its big card.
   it "shows badges as cards under group labels" do
