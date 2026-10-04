@@ -232,6 +232,14 @@ img.avatar,
   border-radius: var(--jt-radius-sm);
 }
 
+// Videos, rounded like the images around them: core's black box for an
+// uploaded video (before and after it plays) and YouTube's and Vimeo's frame
+.cooked
+  :is(.video-placeholder-container, .video-container, .lazy-video-container) {
+  border-radius: var(--jt-radius-sm);
+  overflow: clip;
+}
+
 #reply-control {
   border-radius: var(--jt-radius-xl) var(--jt-radius-xl) 0 0;
   overflow: hidden;
