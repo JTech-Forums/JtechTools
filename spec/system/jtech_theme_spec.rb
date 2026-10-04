@@ -284,6 +284,33 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core turns the outline off on buttons (.btn:focus-visible, and on desktop
+  # .discourse-no-touch nav.post-controls .actions button:focus-visible) and
+  # marks focus with the hover fill, which the theme's quiet buttons barely
+  # have: keyboard focus vanished on most of them.
+  it "rings a button that has keyboard focus, inside the post menu too" do
+    sign_in(member)
+    visit("/t/#{topic.slug}/#{topic.id}")
+    expect(page).to have_css("#post_1 nav.post-controls .actions button.reply")
+    send_keys(:tab) # keyboard first, so the focus() calls below count as keyboard focus
+    rings = page.evaluate_script(<<~JS)
+      ["#toggle-current-user", "#post_1 nav.post-controls .actions button.reply"].map((selector) => {
+        const button = document.querySelector(selector);
+        button.focus();
+        const style = getComputedStyle(button);
+        return [
+          button.matches(":focus-visible"),
+          style.outlineStyle,
+          Math.sign(parseFloat(style.outlineOffset)),
+        ];
+      })
+    JS
+    expect(rings[0]).to eq([true, "solid", 1])
+    # the post menu scrolls sideways, so the ring is drawn inside the button
+    expect(rings[1]).to eq([true, "solid", -1])
+    expect_no_theme_errors
+  end
+
   it "shows groups as cards, and a group's members in the directory's table card" do
     sign_in(admin)
     visit("/g")
