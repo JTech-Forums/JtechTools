@@ -2427,6 +2427,21 @@ RSpec.describe "JTech theme" do
       expect(page).to have_css(".jt-gate")
     end
 
+    # In Hebrew core mirrors the "Browse open categories" arrow to point left,
+    # but its hover nudge still went right, against the arrow
+    it "nudges the browse arrow the way it points in a right-to-left interface" do
+      SiteSetting.default_locale = "he"
+      gate(categories: category.id.to_s)
+      visit(topic.relative_url)
+      expect(page).to have_css("html.rtl .jt-gate__browse .d-icon")
+      find(".jt-gate__browse").hover
+      nudge =
+        page.evaluate_script(
+          'getComputedStyle(document.querySelector(".jt-gate__browse .d-icon")).translate',
+        )
+      expect(nudge).to eq("-2px")
+    end
+
     it "only offers Log in when sign-ups are closed" do
       SiteSetting.invite_only = true
       gate(categories: category.id.to_s)
