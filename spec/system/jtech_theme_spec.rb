@@ -363,6 +363,24 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  # "Skip to main content", the first Tab on a page, was core's square chip
+  # jammed against the window's top edge, over the logo
+  it "rounds the skip link and keeps it off the window's edge" do
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-card")
+    find("body").send_keys(:tab)
+    expect(page).to have_css(".skip-link:focus")
+    sleep 0.3 # core slides it in from above
+    radius, top =
+      page.evaluate_script(
+        "[getComputedStyle(document.activeElement).borderTopLeftRadius, document.activeElement.getBoundingClientRect().top]",
+      )
+    expect(radius).not_to eq("0px")
+    expect(top).to be >= 4
+    expect_no_theme_errors
+  end
+
   # A dialog's body takes focus when the dialog opens (tabindex="-1"); after any
   # keyboard use the theme's focus ring framed the dialog's whole content
   it "draws no focus ring around a dialog's body" do
