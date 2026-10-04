@@ -472,6 +472,26 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # The search page's Posts / Categories & tags / Users tabs are buttons, not
+  # links: they missed the tabs' weight and their inner focus ring, so the row
+  # (which scrolls, and clips) cut the ring's top and bottom off
+  it "gives the search page's tabs the tabs' weight and an inner focus ring" do
+    sign_in(member)
+    visit("/search?q=filter")
+    expect(page).to have_css(".nav-pills.search-types button.search-types__type", minimum: 2)
+    find("body").send_keys(:tab) # keyboard use, so focus counts as keyboard focus
+    tab = page.evaluate_script(<<~JS)
+      (() => {
+        const tab = document.querySelector(".nav-pills button.search-types__type:not(.active)");
+        tab.focus();
+        const style = getComputedStyle(tab);
+        return [tab.matches(":focus-visible"), parseFloat(style.outlineOffset) < 0, style.fontWeight];
+      })()
+    JS
+    expect(tab).to eq([true, true, "500"])
+    expect_no_theme_errors
+  end
+
   # Core turns the outline off on buttons (.btn:focus-visible, and on desktop
   # .discourse-no-touch nav.post-controls .actions button:focus-visible) and
   # marks focus with the hover fill, which the theme's quiet buttons barely
