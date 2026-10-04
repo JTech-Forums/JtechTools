@@ -43,6 +43,22 @@
     display: none;
   }
 
+  // On a phone the four tabs don't fit and the strip scrolls; without a bar
+  // only a label cut at the edge said so. It fades at whichever edge is cut
+  // off, like the topic list's tabs (jt-tabs-fade is in jt-topic-list), and
+  // not at all while everything fits (no scroll timeline then).
+  @supports (animation-timeline: scroll()) {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--jt-tabs-fade-start),
+      #000 calc(100% - var(--jt-tabs-fade-end)),
+      transparent
+    );
+    animation: jt-tabs-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+
   &__tab {
     position: relative;
     margin-bottom: 0;

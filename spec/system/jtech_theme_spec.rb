@@ -1281,6 +1281,36 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # On a phone REQ-PM's four tabs don't fit and the strip scrolls, with no bar:
+  # only a label cut at the edge showed there was more
+  it "fades REQ-PM's tab strip at the edge that's cut off" do
+    SiteSetting.reqpm_enabled = true
+    sign_in(member)
+    fades = <<~JS
+      (() => {
+        const strip = document.querySelector(".reqpm-tabs");
+        const style = getComputedStyle(strip);
+        return [
+          strip.scrollWidth > strip.clientWidth,
+          parseFloat(style.getPropertyValue("--jt-tabs-fade-start")),
+          parseFloat(style.getPropertyValue("--jt-tabs-fade-end")),
+        ];
+      })()
+    JS
+    resize_window(width: 320) do
+      visit("/reqpm")
+      expect(page).to have_css(".reqpm-tabs .reqpm-tabs__tab", count: 4)
+      scrolls, start_fade, end_fade = page.evaluate_script(fades)
+      expect(scrolls).to eq(true)
+      expect(start_fade).to eq(0)
+      expect(end_fade).to be > 0
+    end
+    visit("/reqpm")
+    expect(page).to have_css(".reqpm-tabs .reqpm-tabs__tab", count: 4)
+    expect(page.evaluate_script(fades)).to eq([false, 0, 0])
+    expect_no_theme_errors
+  end
+
   it "puts the suggested topics under a topic on a card" do
     sign_in(member)
     visit(topic.relative_url)
