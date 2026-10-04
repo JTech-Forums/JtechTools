@@ -6,7 +6,8 @@
 .nav-pills > li > a.active,
 .nav-pills > li > button.active,
 .d-tabs__nav-item.--active,
-.user-navigation .nav-pills > li > a.active {
+.user-navigation .nav-pills > li > a.active,
+.reqpm-tabs__tab.active {
   background-image: radial-gradient(
     60% 90% at 50% 100%,
     color-mix(in srgb, var(--jt-text) 7%, transparent),
@@ -22,7 +23,54 @@
 @media (forced-colors: active) {
   .nav-pills > li > a.active,
   .nav-pills > li > button.active,
-  .d-tabs__nav-item.--active {
+  .d-tabs__nav-item.--active,
+  .reqpm-tabs__tab.active {
     background-image: none;
+  }
+}
+
+// jtech-tools' REQ-PM page draws its own tabs: grey labels at the regular
+// weight and a 2px grey bar under the chosen one, and on a phone a scrollbar
+// under the strip once the tabs don't fit. Here they take core's nav colours
+// and line (jt-tokens), so they read like every other row of tabs on the
+// forum, and the strip scrolls without a bar like core's own tab rows. The
+// line sits just above the strip's border: the tabs' -1px bottom margin would
+// put it in the pixel the scrolling strip clips.
+.reqpm-tabs {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &__tab {
+    position: relative;
+    margin-bottom: 0;
+    border-bottom: 0;
+    color: var(--d-nav-color);
+    font-weight: 500;
+
+    &:hover {
+      color: var(--d-nav-color--hover);
+    }
+
+    &.active {
+      color: var(--d-nav-color--active);
+
+      &::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: var(--d-nav-underline-height);
+        background: var(--d-nav-color--active);
+
+        @media (forced-colors: active) {
+          background: Highlight;
+          forced-color-adjust: none;
+        }
+      }
+    }
   }
 }

@@ -1216,6 +1216,49 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # jtech-tools' REQ-PM page draws its own tabs: grey labels at the regular
+  # weight, a 2px grey bar under the chosen one (half clipped by the scrolling
+  # strip) and a scrollbar under the strip on a phone
+  it "gives REQ-PM's tabs the look of the forum's other tabs" do
+    SiteSetting.reqpm_enabled = true
+    sign_in(member)
+    tab_style = <<~JS
+      ((active, other) => [
+        getComputedStyle(active, "::after").height,
+        getComputedStyle(active, "::after").backgroundColor,
+        getComputedStyle(active).color,
+        getComputedStyle(other).color,
+        getComputedStyle(other).fontWeight,
+      ])
+    JS
+    visit("/u/#{member.username}/preferences/account")
+    expect(page).to have_css(".user-nav__preferences-account a.active")
+    forum_tabs = page.evaluate_script(<<~JS)
+      (#{tab_style})(
+        document.querySelector(".user-nav__preferences-account a.active"),
+        document.querySelector(".user-nav__preferences-security a")
+      )
+    JS
+    visit("/reqpm")
+    expect(page).to have_css(".reqpm-tabs .reqpm-tabs__tab.active")
+    reqpm_tabs, bar, clipped = page.evaluate_script(<<~JS)
+      [
+        (#{tab_style})(
+          document.querySelector(".reqpm-tabs__tab.active"),
+          document.querySelector(".reqpm-tabs__tab:not(.active)")
+        ),
+        getComputedStyle(document.querySelector(".reqpm-tabs")).scrollbarWidth,
+        document.querySelector(".reqpm-tabs").scrollHeight >
+          document.querySelector(".reqpm-tabs").clientHeight,
+      ]
+    JS
+    expect(forum_tabs[0]).to eq("1px")
+    expect(reqpm_tabs).to eq(forum_tabs)
+    expect(bar).to eq("none")
+    expect(clipped).to eq(false)
+    expect_no_theme_errors
+  end
+
   it "puts the suggested topics under a topic on a card" do
     sign_in(member)
     visit(topic.relative_url)
