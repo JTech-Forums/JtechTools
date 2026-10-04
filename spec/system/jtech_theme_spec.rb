@@ -382,6 +382,28 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # A post's edit history: core underlined a revision's author and date with a
+  # 3px grey bar, the only heavy line in the theme's dialogs
+  it "draws the dialog's hairline under a revision in a post's history" do
+    PostRevisor.new(first_post).revise!(
+      member,
+      { raw: "#{first_post.raw}\n\nEdited to add a line." },
+      force_new_version: true,
+    )
+    sign_in(member)
+    visit(topic.relative_url)
+    find("#post_1 .post-info.edits .btn").click
+    expect(page).to have_css(".history-modal #revision")
+    revision, header = page.evaluate_script(<<~JS)
+      [".history-modal #revision", ".history-modal .d-modal__header"].map((selector) => {
+        const style = getComputedStyle(document.querySelector(selector));
+        return [style.borderBottomWidth, style.borderBottomColor];
+      })
+    JS
+    expect(revision).to eq(header)
+    expect_no_theme_errors
+  end
+
   # Core turns the outline off on buttons (.btn:focus-visible, and on desktop
   # .discourse-no-touch nav.post-controls .actions button:focus-visible) and
   # marks focus with the hover fill, which the theme's quiet buttons barely

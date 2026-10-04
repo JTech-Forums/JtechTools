@@ -55,6 +55,13 @@ html.mobile-view .d-modal:not(.jt-cmdk) .d-modal__container {
   border-color: var(--jt-border);
 }
 
+// A post's edit history: core underlines a revision's author and date with a
+// 3px grey bar, the only heavy line in any dialog. It's the dialog's hairline,
+// like the ones under its header and over its buttons.
+.d-modal.history-modal #revision {
+  border-bottom: 1px solid var(--jt-border);
+}
+
 // Not while closed: core keeps a zero-height composer at the bottom of the
 // window, and its border drew a hairline along the bottom of every page.
 #reply-control {
