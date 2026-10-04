@@ -523,6 +523,7 @@ export default class JtCommandMenu extends Component<JtCommandMenuSignature> {
           aria-label={{this.placeholder}}
           autocomplete="off"
           class="jt-cmdk__input"
+          dir="auto"
           placeholder={{this.placeholder}}
           role="combobox"
           spellcheck="false"
@@ -593,7 +594,7 @@ export default class JtCommandMenu extends Component<JtCommandMenuSignature> {
         {{/each}}
 
         {{#if this.showLoading}}
-          <div class="jt-cmdk__status">{{t "searching"}}</div>
+          <div class="jt-cmdk__status" dir="auto">{{t "searching"}}</div>
         {{/if}}
       </div>
 

@@ -35,7 +35,7 @@ const SearchButton: TemplateOnlyComponent<SearchButtonSignature> = <template>
     {{on "click" @open}}
   >
     {{dIcon "magnifying-glass"}}
-    <span class="jt-header-search__label">{{i18n
+    <span class="jt-header-search__label" dir="auto">{{i18n
         (themePrefix "jt.header.search")
       }}</span>
     {{#if @showKeys}}

@@ -84,7 +84,13 @@ html.keyboard-visible.mobile-view .d-modal.jt-cmdk .d-modal__container {
     }
   }
 
+  // The theme's strings are English, and the placeholders end in "…": in a
+  // Hebrew interface they read right to left, which put the "…" before
+  // them ("…Search or jump to"). The input reads in its own direction
+  // (dir="auto": the placeholder's, then whatever's typed) and lines up with
+  // the interface, as the results' labels do. So does "Searching…".
   &__input[type="text"] {
+    text-align: left;
     flex: 1;
     min-width: 0;
     height: 100%;
@@ -233,6 +239,7 @@ html.keyboard-visible.mobile-view .d-modal.jt-cmdk .d-modal__container {
   }
 
   &__status {
+    text-align: left;
     padding: 0.75rem 0.65rem;
     font-size: var(--jt-text-sm);
     color: var(--jt-text-subtle);
