@@ -126,6 +126,14 @@
   }
 }
 
+// On a phone the timeline opens as a sheet and core's own, more specific rule
+// makes this block a wrapping row of Jump to… and the arrows (reply and
+// notifications aren't there). Loose in that row, the arrows parted on a
+// narrow phone (320px): ↓ wrapped alone under ↑. They wrap as a pair.
+.timeline-container.timeline-fullscreen .jt-jump.--timeline {
+  display: flex;
+}
+
 #topic-progress-wrapper .before-topic-progress-outlet {
   display: flex;
 }
