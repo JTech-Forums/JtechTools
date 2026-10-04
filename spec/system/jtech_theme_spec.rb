@@ -404,6 +404,35 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core fits the history's buttons on one row by cutting their labels short
+  # (on a phone they read "Edit …", "Revert to rev…" and "Hide rev…"), and at
+  # 320px its arrows between revisions ran past the sheet's padding
+  it "fits a post's history's buttons and arrows on a 320px phone" do
+    PostRevisor.new(first_post).revise!(
+      admin,
+      { raw: "#{first_post.raw}\n\nEdited to add a line." },
+      force_new_version: true,
+    )
+    sign_in(admin)
+    resize_window(width: 320) do
+      visit(topic.relative_url)
+      find("#post_1 .post-info.edits .btn").click
+      expect(page).to have_css(".history-modal #revision-footer-buttons .btn", minimum: 3)
+      cut, arrows_overflow = page.evaluate_script(<<~JS)
+        [
+          [...document.querySelectorAll(".history-modal #revision-footer-buttons .d-button-label")]
+            .filter((label) => label.scrollWidth > label.clientWidth)
+            .map((label) => label.textContent.trim()),
+          document.querySelector(".history-modal #revision-controls").scrollWidth -
+            document.querySelector(".history-modal #revision-controls").clientWidth,
+        ]
+      JS
+      expect(cut).to eq([])
+      expect(arrows_overflow).to be <= 0
+    end
+    expect_no_theme_errors
+  end
+
   # Core turns the outline off on buttons (.btn:focus-visible, and on desktop
   # .discourse-no-touch nav.post-controls .actions button:focus-visible) and
   # marks focus with the hover fill, which the theme's quiet buttons barely
