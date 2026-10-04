@@ -131,6 +131,7 @@ export default class JtHero extends Component<JtHeroSignature> {
                 <input
                   aria-label={{settings.hero_search_placeholder}}
                   class="jt-hero__input"
+                  dir="auto"
                   placeholder={{settings.hero_search_placeholder}}
                   type="search"
                   value={{this.term}}
