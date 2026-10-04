@@ -1010,6 +1010,28 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Between about 925px and 1320px core's composer ran past the posts and over
+  # the timeline's buttons
+  it "ends the composer where the posts end when the timeline is beside them" do
+    member.user_option.update!(composition_mode: UserOption.composition_mode_types[:rich])
+    sign_in(member)
+    resize_window(width: 1200) do
+      visit(topic.relative_url)
+      expect(page).to have_css(".topic-navigation.with-timeline")
+      find(".topic-footer-main-buttons .create").click
+      expect(page).to have_css("#reply-control.open.hide-preview")
+      composer, posts, timeline = page.evaluate_script(<<~JS)
+        ["#reply-control", ".container.posts > .row", ".topic-navigation"].map((selector) => {
+          const rect = document.querySelector(selector).getBoundingClientRect();
+          return [rect.left, rect.right].map(Math.round);
+        })
+      JS
+      expect(composer[1]).to be_within(1).of(posts[1])
+      expect(composer[1]).to be <= timeline[0]
+      expect_no_theme_errors
+    end
+  end
+
   it "lines the footer up with the page above it" do
     sign_in(member)
     visit(topic.relative_url)
