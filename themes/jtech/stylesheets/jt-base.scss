@@ -113,6 +113,18 @@ h4 {
   outline: none;
 }
 
+// "Skip to main content" (the first Tab on any page) and a profile's "Skip
+// to profile content": core's square chip jammed against the window's top
+// edge, over the logo. The theme's control radius, and a gap above it.
+:is(a#skip-link, a#user-nav-skip-link, .skip-link) {
+  border-radius: var(--jt-radius-control);
+  font-weight: 500;
+
+  &:focus {
+    top: var(--space-2);
+  }
+}
+
 // A dialog's body takes focus when the dialog opens (tabindex="-1", so the
 // arrow keys scroll it). After any keyboard use that drew the ring around the
 // dialog's whole content, which read as a stray frame; Tab moves on to the
