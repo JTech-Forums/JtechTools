@@ -238,6 +238,30 @@ RSpec.describe "First-post checklist" do
     shot("61_checklist_acceptance_log")
   end
 
+  # The log's five columns are wider than a narrow window's modal; the table
+  # scrolls in its own box instead of the whole modal scrolling sideways
+  it "scrolls the acceptance log in its own box when the window is narrow" do
+    set_checklist(version: 2, max_tl: 2)
+    PluginStore.set(
+      NS,
+      LOG_KEY,
+      [{ "user_id" => user.id, "version" => 2, "at" => 1.hour.ago.iso8601 }],
+    )
+
+    sign_in(moderator)
+    open_checklist_modal
+    expect(page).to have_css(".mod-checklist-log-scroll .mod-checklist-log-table", wait: 10)
+    resize_window(width: 400) do
+      body_width, body_scroll_width = page.evaluate_script(<<~JS)
+        (() => {
+          const body = document.querySelector(".mod-checklist-modal .d-modal__body");
+          return [body.clientWidth, body.scrollWidth];
+        })()
+      JS
+      expect(body_scroll_width).to be <= body_width
+    end
+  end
+
   it "lets staff require a logged user to re-accept" do
     set_checklist(version: 1, max_tl: 2)
     user.upsert_custom_fields(VERSION_FIELD => 1)

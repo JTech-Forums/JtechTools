@@ -642,69 +642,72 @@ export default class ModChecklistEditor extends Component<ModChecklistEditorSign
           {{/if}}
         </div>
         {{#if this.filteredLog.length}}
-          <table class="mod-checklist-log-table">
-            <thead>
-              <tr>
-                <th>
-                  {{i18n
-                    "discourse_mod_categories.first_post_checklist.log_user"
-                  }}
-                </th>
-                <th>
-                  {{i18n
-                    "discourse_mod_categories.first_post_checklist.log_checklist"
-                  }}
-                </th>
-                <th>
-                  {{i18n
-                    "discourse_mod_categories.first_post_checklist.log_version"
-                  }}
-                </th>
-                <th>
-                  {{i18n
-                    "discourse_mod_categories.first_post_checklist.log_when"
-                  }}
-                </th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {{#each this.filteredLog as |entry|}}
+          {{! the table scrolls on its own when it's wider than the modal }}
+          <div class="mod-checklist-log-scroll">
+            <table class="mod-checklist-log-table">
+              <thead>
                 <tr>
-                  <td>
-                    <a
-                      class="mod-checklist-log-user"
-                      data-user-card={{entry.username}}
-                      href={{concat "/u/" entry.username}}
-                    >
-                      {{#if entry.avatar_template}}
-                        <img
-                          alt=""
-                          class="mod-checklist-log-avatar"
-                          src={{this.logAvatar entry}}
-                        />
-                      {{/if}}
-                      {{entry.username}}
-                    </a>
-                  </td>
-                  <td>
-                    <span class="mod-checklist-log-kind-chip">
-                      {{this.logKindLabel entry}}
-                    </span>
-                  </td>
-                  <td>{{entry.version}}</td>
-                  <td>{{ageWithTooltip entry.at}}</td>
-                  <td>
-                    <DButton
-                      class="btn-flat mod-checklist-require-reaccept"
-                      @action={{fn this.requireReaccept entry}}
-                      @label="discourse_mod_categories.first_post_checklist.require_reaccept"
-                    />
-                  </td>
+                  <th>
+                    {{i18n
+                      "discourse_mod_categories.first_post_checklist.log_user"
+                    }}
+                  </th>
+                  <th>
+                    {{i18n
+                      "discourse_mod_categories.first_post_checklist.log_checklist"
+                    }}
+                  </th>
+                  <th>
+                    {{i18n
+                      "discourse_mod_categories.first_post_checklist.log_version"
+                    }}
+                  </th>
+                  <th>
+                    {{i18n
+                      "discourse_mod_categories.first_post_checklist.log_when"
+                    }}
+                  </th>
+                  <th></th>
                 </tr>
-              {{/each}}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {{#each this.filteredLog as |entry|}}
+                  <tr>
+                    <td>
+                      <a
+                        class="mod-checklist-log-user"
+                        data-user-card={{entry.username}}
+                        href={{concat "/u/" entry.username}}
+                      >
+                        {{#if entry.avatar_template}}
+                          <img
+                            alt=""
+                            class="mod-checklist-log-avatar"
+                            src={{this.logAvatar entry}}
+                          />
+                        {{/if}}
+                        {{entry.username}}
+                      </a>
+                    </td>
+                    <td>
+                      <span class="mod-checklist-log-kind-chip">
+                        {{this.logKindLabel entry}}
+                      </span>
+                    </td>
+                    <td>{{entry.version}}</td>
+                    <td>{{ageWithTooltip entry.at}}</td>
+                    <td>
+                      <DButton
+                        class="btn-flat mod-checklist-require-reaccept"
+                        @action={{fn this.requireReaccept entry}}
+                        @label="discourse_mod_categories.first_post_checklist.require_reaccept"
+                      />
+                    </td>
+                  </tr>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
         {{else}}
           <p class="mod-checklist-log-empty">
             {{i18n "discourse_mod_categories.first_post_checklist.log_empty"}}
