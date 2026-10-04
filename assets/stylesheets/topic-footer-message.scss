@@ -913,6 +913,13 @@
     white-space: nowrap;
   }
 
+  // The log's five columns (name, checklist, version, when, Require
+  // re-accept) are wider than a narrow window's modal; the table scrolls in
+  // its own box rather than the whole modal sideways.
+  .mod-checklist-log-scroll {
+    overflow-x: auto;
+  }
+
   .mod-checklist-log-table {
     width: 100%;
     border-collapse: collapse;
