@@ -31,7 +31,10 @@
   background: var(--jt-accent);
 }
 
-.nav-pills > li > a {
+// Tabs are links, or buttons where they switch in place (the search page's
+// Posts / Categories & tags / Users): the buttons were at the regular weight
+// and lost the top and bottom of their focus ring.
+.nav-pills > li > :is(a, button) {
   font-weight: 500;
 
   // The tabs fill a row that scrolls sideways, which cut an outer focus ring
