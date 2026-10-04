@@ -11,7 +11,19 @@
   border: 1px solid var(--jt-border);
   border-radius: var(--jt-radius-xl);
 
-  // Grid + glow, dissolving toward the edges
+  // Grid + glow, dissolving toward the edges, centred over the headline's
+  // side: in Hebrew the headline is on the right, and core's right-to-left
+  // stylesheet doesn't move a gradient's centre, so the glow sat behind the
+  // links on the left. The x positions are custom properties, set again for
+  // right to left.
+  --jt-hero-glow-x: 18%;
+  --jt-hero-fade-x: 30%;
+
+  html.rtl & {
+    --jt-hero-glow-x: 82%;
+    --jt-hero-fade-x: 70%;
+  }
+
   &::before {
     content: "";
     position: absolute;
@@ -20,7 +32,7 @@
     pointer-events: none;
     background:
       radial-gradient(
-        ellipse 55% 70% at 18% 0%,
+        ellipse 55% 70% at var(--jt-hero-glow-x) 0%,
         var(--jt-glow),
         transparent 70%
       ),
@@ -28,7 +40,7 @@
       linear-gradient(90deg, var(--jt-grid) 1px, transparent 1px) 0 0 / 40px
         40px;
     mask-image: radial-gradient(
-      ellipse 90% 100% at 30% 0%,
+      ellipse 90% 100% at var(--jt-hero-fade-x) 0%,
       #000 20%,
       transparent 85%
     );
