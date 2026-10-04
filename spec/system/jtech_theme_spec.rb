@@ -899,6 +899,22 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Beside the copy (a wide window) each tile left its title 107px, with room
+  # for the hover arrow: "JTech Homepage" read "JTech Homep…"
+  it "shows the hero's link titles whole beside the copy" do
+    resize_window(width: 1440) do
+      visit("/latest")
+      expect(page).to have_css(".jt-hero__link-arrow")
+      cut = page.evaluate_script(<<~JS)
+        [...document.querySelectorAll(".jt-hero__link-title")]
+          .filter((title) => title.scrollWidth > title.clientWidth + 1)
+          .map((title) => title.textContent.trim())
+      JS
+      expect(cut).to eq([])
+      expect_no_theme_errors
+    end
+  end
+
   # The hero's copy is admin-written, usually English. In a Hebrew interface it
   # took the page's direction, so a sentence's full stop landed at its start;
   # it reads in its own direction now, still aligned to the interface's side
@@ -944,22 +960,6 @@ RSpec.describe "JTech theme" do
           .map((box) => [Math.round(box.left), Math.round(box.right)])
       JS
       expect(edges[0]).to eq(edges[1])
-      expect_no_theme_errors
-    end
-  end
-
-  # Beside the copy (a wide window) each tile left its title 107px, with room
-  # for the hover arrow: "JTech Homepage" read "JTech Homep…"
-  it "shows the hero's link titles whole beside the copy" do
-    resize_window(width: 1440) do
-      visit("/latest")
-      expect(page).to have_css(".jt-hero__link-arrow")
-      cut = page.evaluate_script(<<~JS)
-        [...document.querySelectorAll(".jt-hero__link-title")]
-          .filter((title) => title.scrollWidth > title.clientWidth + 1)
-          .map((title) => title.textContent.trim())
-      JS
-      expect(cut).to eq([])
       expect_no_theme_errors
     end
   end
