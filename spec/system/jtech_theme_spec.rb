@@ -610,6 +610,22 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # At 320px (a Qin F21) a hero tile is narrower than "JTech Homepage", which
+  # ended in "…"
+  it "wraps the hero's link titles on a 320px phone", mobile: true do
+    resize_window(width: 320) do
+      visit("/latest")
+      expect(page).to have_css(".jt-hero__link-title")
+      cut = page.evaluate_script(<<~JS)
+        [...document.querySelectorAll(".jt-hero__link-title")]
+          .filter((title) => title.scrollWidth > title.clientWidth + 1)
+          .map((title) => title.textContent.trim())
+      JS
+      expect(cut).to eq([])
+      expect_no_theme_errors
+    end
+  end
+
   it "keeps New Topic on the row of tabs when the window narrows" do
     sign_in(member)
     resize_window(width: 900) do

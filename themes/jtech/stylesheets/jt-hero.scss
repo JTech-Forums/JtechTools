@@ -303,4 +303,11 @@
   .jt-hero__link-desc {
     display: none;
   }
+
+  // On a 320px phone (a Qin F21) a tile is narrower than "JTech Homepage":
+  // the title wraps instead of ending in "…"
+  .jt-hero__link-title {
+    line-height: 1.25;
+    white-space: normal;
+  }
 }
