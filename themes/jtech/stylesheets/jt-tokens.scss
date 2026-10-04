@@ -44,8 +44,9 @@ body {
   --d-button-flat-icon-color: var(--jt-text-muted);
   --d-button-flat-icon-color--hover: var(--jt-text);
 
-  // Inputs
+  // Inputs (core's newer fields, FormKit and the filter boxes, read the token)
   --d-input-bg-color: var(--jt-fill);
+  --token-color-background-input: var(--jt-fill);
   --d-input-border: 1px solid var(--jt-border-strong);
   --d-input-focused-color: var(--jt-text-subtle);
 

@@ -2305,6 +2305,42 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Core draws FormKit's fields (the composer's Insert link, invites, user
+  # notes, the admin's settings) with its own solid grey border and, focused,
+  # a 2px ring in the accent; the theme's fields have a hairline over a faint
+  # fill and, focused, a soft glow
+  it "draws FormKit's fields like the theme's other fields" do
+    sign_in(member)
+    visit(topic.relative_url)
+    find("#topic-footer-buttons .create").click
+    expect(page).to have_css("#reply-control.open .d-editor-button-bar button.link")
+    find("#reply-control .d-editor-button-bar button.link").click
+    expect(page).to have_css(".upsert-hyperlink-modal .form-kit__control-input.link-text")
+    find(".upsert-hyperlink-modal .link-url").click
+    looks = page.evaluate_script(<<~JS)
+      (() => {
+        const modal = document.querySelector(".upsert-hyperlink-modal");
+        const probe = document.createElement("div");
+        probe.style.background = "var(--jt-fill)";
+        probe.style.border = "1px solid var(--jt-border-strong)";
+        modal.appendChild(probe);
+        const expected = getComputedStyle(probe);
+        const idle = getComputedStyle(modal.querySelector(".link-text"));
+        const focused = getComputedStyle(modal.querySelector(".link-url"));
+        const looks = [
+          idle.backgroundColor === expected.backgroundColor,
+          idle.borderTopColor === expected.borderTopColor,
+          focused.outlineStyle,
+          focused.boxShadow !== "none",
+        ];
+        probe.remove();
+        return looks;
+      })()
+    JS
+    expect(looks).to eq([true, true, "none", true])
+    expect_no_theme_errors
+  end
+
   it "shows the dark palette when the browser prefers dark" do
     page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
     sign_in(member)
