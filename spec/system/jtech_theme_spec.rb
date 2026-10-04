@@ -1010,12 +1010,13 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
-  # Between about 925px and 1320px core's composer ran past the posts and over
-  # the timeline's buttons
+  # On narrower desktop windows core's composer ran past the posts and over the
+  # timeline's buttons (from 925px up to about 1180px with core's columns, and
+  # to about 1320px with DiscoTOC's 75/25 split on the live forum)
   it "ends the composer where the posts end when the timeline is beside them" do
     member.user_option.update!(composition_mode: UserOption.composition_mode_types[:rich])
     sign_in(member)
-    resize_window(width: 1200) do
+    resize_window(width: 1024) do
       visit(topic.relative_url)
       expect(page).to have_css(".topic-navigation.with-timeline")
       find(".topic-footer-main-buttons .create").click
