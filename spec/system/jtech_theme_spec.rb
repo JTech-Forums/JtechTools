@@ -1232,9 +1232,9 @@ RSpec.describe "JTech theme" do
     expect(page).to have_css("#{selector} details[open]")
     turned =
       page.evaluate_script(
-        "getComputedStyle(document.querySelector('#{selector} details summary'), '::before').transform",
+        "getComputedStyle(document.querySelector('#{selector} details summary'), '::before').rotate",
       )
-    expect(turned).not_to eq("none")
+    expect(turned).to eq("90deg")
     shot("post-blocks")
     expect_no_theme_errors
   end
