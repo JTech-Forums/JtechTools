@@ -8,7 +8,9 @@ import { service } from "@ember/service";
 import { type TrustedHTML, trustHTML } from "@ember/template";
 import icon from "discourse/helpers/d-icon";
 import { cook } from "discourse/lib/text";
+import { setTextDirections } from "discourse/lib/text-direction";
 import type AppEventsService from "discourse/services/app-events";
+import type SiteSettings from "discourse/services/site-settings";
 import { i18n } from "discourse-i18n";
 import {
   type FooterMessageSiteSettings,
@@ -16,6 +18,10 @@ import {
   topicFooterFeatureActive,
   topicFooterMessage,
 } from "../../lib/topic-footer-message";
+
+type DirectionSiteSettings = SiteSettings & {
+  support_mixed_text_direction: boolean;
+};
 
 // DiscourseModCategories.serialized_pinned_post, or a post-stream post.
 interface PinnedPost {
@@ -70,6 +76,7 @@ export default class TopicFooterMessage extends Component<TopicFooterMessageSign
   }
 
   @service declare appEvents: AppEventsService;
+  @service declare siteSettings: DirectionSiteSettings;
 
   @tracked footerMessage = topicFooterMessage(this.topic);
   @tracked pinnedPostId = this.topic?.mod_topic_pinned_post_id || null;
@@ -159,6 +166,19 @@ export default class TopicFooterMessage extends Component<TopicFooterMessageSign
     this.readTopicState(topic);
   }
 
+  // With core's "support mixed text direction" on, each paragraph of a post
+  // reads in its own direction: core marks them as it renders the post
+  // stream. The pinned post's copy down here and the moderator's message are
+  // rendered outside the stream, so they kept the interface's direction: in
+  // Hebrew an English post's full stops came first, its bullets sat on the
+  // right and a poll read "voters 0". They're marked the same way.
+  @action
+  markDirections(element: HTMLElement) {
+    if (this.siteSettings.support_mixed_text_direction) {
+      setTextDirections(element);
+    }
+  }
+
   // Re-read all per-topic state from the current topic. Called on initial
   // insert and whenever the connector is reused for a different topic.
   @action
@@ -232,7 +252,11 @@ export default class TopicFooterMessage extends Component<TopicFooterMessageSign
                   </a>
                 {{/if}}
               </div>
-              <div class="cooked">{{this.pinnedPostHtml}}</div>
+              <div
+                class="cooked"
+                {{didInsert this.markDirections}}
+                {{didUpdate this.markDirections this.pinnedPostHtml}}
+              >{{this.pinnedPostHtml}}</div>
             </div>
           </article>
         </div>
@@ -246,7 +270,11 @@ export default class TopicFooterMessage extends Component<TopicFooterMessageSign
             <div class="topic-footer-message-label">
               {{i18n "discourse_mod_categories.footer_message.label"}}
             </div>
-            <div class="topic-footer-message-content cooked">
+            <div
+              class="topic-footer-message-content cooked"
+              {{didInsert this.markDirections}}
+              {{didUpdate this.markDirections this.messageHtml}}
+            >
               {{this.messageHtml}}
             </div>
           </div>

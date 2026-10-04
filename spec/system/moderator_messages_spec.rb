@@ -477,6 +477,29 @@ RSpec.describe "Moderator messages" do
       shot("27_footer_message_and_pinned_post_together")
     end
 
+    # With "support mixed text direction" on, core marks each paragraph of a
+    # post in the stream to read in its own direction. The copy at the bottom
+    # and the footer message are rendered outside the stream and weren't: in
+    # a Hebrew interface an English post's full stops came first
+    it "reads the bottom copy and the footer message in their own direction" do
+      SiteSetting.support_mixed_text_direction = true
+      SiteSetting.default_locale = "he"
+      topic.custom_fields["mod_topic_footer_message"] = footer_text
+      topic.custom_fields["mod_topic_pinned_post_id"] = third_to_last.id
+      topic.save_custom_fields(true)
+      sign_in(user)
+      visit_at(third_to_last)
+
+      expect(page).to have_css("html.rtl .topic-footer-pinned-post .cooked p", wait: 10)
+      expect(page).to have_css(".topic-footer-message-content p[dir='auto']")
+      directions = page.evaluate_script(<<~JS)
+        [".topic-footer-pinned-post .cooked > p", ".topic-footer-message-content > p"].map(
+          (selector) => getComputedStyle(document.querySelector(selector)).direction
+        )
+      JS
+      expect(directions).to eq(%w[ltr ltr])
+    end
+
     it "unpins a post from the post admin menu" do
       pin!(tenth_to_last)
       sign_in(moderator)
