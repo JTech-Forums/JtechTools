@@ -78,3 +78,9 @@
 .topic-navigation:has(.jt-toc) ~ .row .jt-toc-inline {
   display: none;
 }
+
+// behind the login gate the headings are faded out of reach, so the card's
+// links would go nowhere (the desktop panel has no timeline to sit in there)
+body.jt-gated .jt-toc-inline {
+  display: none;
+}

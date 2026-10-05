@@ -3085,6 +3085,17 @@ RSpec.describe "JTech theme" do
       page.driver.with_playwright_page { |pw| pw.set_viewport_size(width: 1400, height: 1400) }
     end
 
+    it "leaves the card out behind the login gate", mobile: true do
+      jtech_theme.update_setting(:gated_categories, category.id.to_s)
+      jtech_theme.save!
+      guide_post(
+        "Intro.\n\n## Setup\n\n#{section}\n\n## Install\n\n#{section}\n\n## Done\n\n#{section}",
+      )
+      visit(guide.relative_url)
+      expect(page).to have_css(".jt-gate")
+      expect(page).to have_no_css(".jt-toc-inline")
+    end
+
     it "keeps DiscoTOC's marker working outside the listed categories" do
       jtech_theme.update_setting(:table_of_contents_categories, "")
       jtech_theme.save!
