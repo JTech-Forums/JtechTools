@@ -8,7 +8,7 @@
     "discourse": "npm:@discourse/types@2026.10.0-a5125163",
     "esbuild": "0.25.11",
     "eslint": "10.6.0",
-    "espree": "10.4.0",
+    "espree": "11.2.0",
     "jiti": "^2.7.0",
     "lucide-static": "1.49.0",
     "playwright-core": "1.63.0",
