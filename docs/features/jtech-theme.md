@@ -51,6 +51,7 @@ Several components on the forum's Default theme are built into JTech, and some c
 | Hide Lock Badge Icon | `hide_lock_icons` | |
 | Last Seen User Card | `user_card_last_seen` | People who turn on "hide my public profile and presence" are left out. That preference also replaces the CSS that hides it for one user. |
 | Discourse Jump Buttons | `topic_jump_buttons` | Under the timeline, and beside the progress button on phones. |
+| Copy post button | `copy_post_button`, `copy_post_groups` | Copies the post's Markdown, beside Copy link. Trust level 1 and up by default, as on the forum. |
 | Unhide composer fullscreen toggle for tablets | — | Always on. |
 | Sidebar Theme Toggle | `color_mode_toggle` | Keep the component only if people should also be able to switch to another theme. |
 | Gated Topics in Category | `gated_categories`, `gated_tags` | Copy the component's categories and tags (General, Android Apps, Android ROMs, Android Guides and the `roms` tag on the forum today). Off until you list some. Like the component, it's for logged-out visitors only. |
@@ -58,7 +59,7 @@ Several components on the forum's Default theme are built into JTech, and some c
 
 **Clash with JTech (detach):** discourse-left-side-burger (JTech keeps the ☰ at the right), Discourse Avatar Component (JTech sets avatar shape), Full width (JTech sets the page width), Density Toggle (JTech's type scale), Topic List Item Click Animation (JTech's cards have their own press feedback), User Card Directory and Users Top Nav (JTech's People page).
 
-**Keep as they are:** Admin Warnings, Auto linkify words, Copy post button, DiscoTOC, Highlight to Search, Sidebar Menu Reorder, Wikipedia Lookup, Messages section for sidebar, Post Badges, Post Image Carousel, QR Code Shareables, Quick Profile Links Menu, Reader Mode, Reply Templates, Shared Draft Button, Topic PDF Download Button, Unanswered Filter, Voice Recorder. JTech's styles cover the ones that draw in the page.
+**Keep as they are:** Admin Warnings, Auto linkify words, DiscoTOC, Highlight to Search, Sidebar Menu Reorder, Wikipedia Lookup, Messages section for sidebar, Post Badges, Post Image Carousel, QR Code Shareables, Quick Profile Links Menu, Reader Mode, Reply Templates, Shared Draft Button, Topic PDF Download Button, Unanswered Filter, Voice Recorder. JTech's styles cover the ones that draw in the page.
 
 **Not real restrictions:** JTech's login gate (like "Gated Topics in Category" before it) and "Restricted reactions (like) by group" only hide things in the browser. The topics are still sent to logged-out visitors (`/t/….json` reads them), and the like API still accepts likes. If those need to hold, they belong on the server, in category permissions or the plugin.
 

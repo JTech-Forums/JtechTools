@@ -51,6 +51,10 @@ declare module "virtual:theme" {
     mobile_small_logo: boolean;
     gated_categories: string;
     gated_tags: string;
+    copy_post_button: boolean;
+    copy_post_groups: string;
+    // added by core for a group list with resolve_group_membership
+    user_in_copy_post_groups?: boolean;
   }
 
   export const settings: JtechThemeSettings;

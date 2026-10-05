@@ -2796,6 +2796,26 @@ RSpec.describe "JTech theme" do
       expect_no_theme_errors
     end
 
+    it "copies a post's Markdown from the post menu" do
+      sign_in(member)
+      visit(topic.relative_url)
+      cdp = PageObjects::CDP.new
+      cdp.allow_clipboard
+      find("#post_1 .post-action-menu__jt-copy-post").click
+      expect(page).to have_css(
+        "#post_1 .post-action-menu__jt-copy-post .post-action-feedback-alert",
+      )
+      cdp.clipboard_has_text?(first_post.raw)
+      expect_no_theme_errors
+    end
+
+    it "leaves the Copy button out for groups that aren't allowed it" do
+      sign_in(Fabricate(:user, trust_level: TrustLevel[0]))
+      visit(topic.relative_url)
+      expect(page).to have_css("#post_1 .post-action-menu__copy-link")
+      expect(page).to have_no_css(".post-action-menu__jt-copy-post")
+    end
+
     it "shows when someone was last seen on their user card" do
       member.update!(last_seen_at: 2.hours.ago)
       sign_in(admin)

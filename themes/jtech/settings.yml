@@ -173,3 +173,11 @@ gated_tags:
   type: list
   list_type: tag
   default: ""
+copy_post_button:
+  type: bool
+  default: true
+copy_post_groups:
+  type: list
+  list_type: group
+  default: "11" # trust_level_1
+  resolve_group_membership: true
