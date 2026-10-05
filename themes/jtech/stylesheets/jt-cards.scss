@@ -42,18 +42,53 @@
     background: var(--jt-surface-raised);
     border: 1px solid var(--jt-border);
     border-radius: var(--jt-radius-lg);
+
+    // The card's own press (below) stands in for the browser's tap flash, a
+    // blue box on Android drawn over the shrinking card.
+    -webkit-tap-highlight-color: transparent;
+
+    // Let go, the card springs back: a little past full size, then settles.
     transition:
       border-color var(--jt-motion),
       background-color var(--jt-motion),
-      transform var(--jt-motion);
+      scale 0.45s cubic-bezier(0.3, 1.8, 0.5, 1);
 
     &:hover {
       border-color: var(--jt-border-strong);
       background: var(--jt-hover);
     }
 
-    &:active {
-      transform: translateY(1px);
+    // Pressed, the card sinks in. A tap holds :active for about 150ms and a
+    // quick click less, so it goes in fast enough to get all the way.
+    // Not while a control inside is pressed (category, tags, Quick look, the
+    // bulk-select box): those do something other than open the topic.
+    $controls: ":is(a, button, input, label):not(.raw-topic-link, .topic-excerpt)";
+
+    &:active:not(:has(#{$controls}:active)) {
+      scale: 0.97;
+      background: var(--jt-active);
+      transition:
+        border-color var(--jt-motion),
+        background-color var(--jt-motion),
+        scale 0.1s cubic-bezier(0.2, 0, 0, 1);
+
+      // Shrunk, the card no longer covers the edge of where it was: a press
+      // there was let go beside it and opened nothing. An invisible layer
+      // under the content keeps that edge answering for the card.
+      &::after {
+        content: "";
+        position: absolute;
+        inset: -2%;
+        z-index: -1;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        scale: none;
+
+        &::after {
+          content: none;
+        }
+      }
     }
 
     &.selected,

@@ -1442,6 +1442,140 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # The forum's Topic List Item Click Animation component made a pressed topic
+  # bounce; the cards' 1px nudge went unnoticed. Pressed, a card sinks to 97%;
+  # let go, it springs back a little past full size. A press on a tag inside
+  # leaves it be. Pressed at its edge, which the shrunk card no longer covers,
+  # it still opens the topic.
+  it "presses a topic card in and springs it back" do
+    visit("/latest")
+    card_css = ".topic-list.jt-cards .topic-list-item[data-topic-id='#{topic.id}']"
+    expect(page).to have_css("#{card_css} .discourse-tag")
+    edge, tag = page.evaluate_script(<<~JS)
+      (() => {
+        const card = document.querySelector("#{card_css}");
+        card.scrollIntoView({ block: "center" });
+        window.jtRestHeight = card.offsetHeight;
+        const box = card.getBoundingClientRect();
+        const tag = card.querySelector(".discourse-tag").getBoundingClientRect();
+        return [
+          [box.left + 4, box.top + box.height / 2],
+          [tag.left + tag.width / 2, tag.top + tag.height / 2],
+        ];
+      })()
+    JS
+    stop_next_click = <<~JS
+      document.querySelector("#{card_css}").parentElement.addEventListener(
+        "click",
+        (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        },
+        { capture: true, once: true },
+      )
+    JS
+    pressed = <<~JS
+      (() => {
+        const card = document.querySelector("#{card_css}");
+        return {
+          active: card.matches(":active"),
+          scale: getComputedStyle(card).scale,
+          shrinking: card.getAnimations().some((a) => a.transitionProperty === "scale"),
+          same_height: card.offsetHeight === window.jtRestHeight,
+        };
+      })()
+    JS
+
+    page.execute_script(stop_next_click)
+    page.driver.with_playwright_page do |pw|
+      pw.mouse.move(tag[0], tag[1])
+      pw.mouse.down
+    end
+    expect(page.evaluate_script(pressed)).to include(
+      "active" => true,
+      "scale" => "none",
+      "shrinking" => false,
+    )
+    page.driver.with_playwright_page { |pw| pw.mouse.up }
+
+    page.driver.with_playwright_page do |pw|
+      pw.mouse.move(edge[0], edge[1])
+      pw.mouse.down
+    end
+    try_until_success do
+      expect(page.evaluate_script(pressed)).to include("scale" => "0.97", "same_height" => true)
+    end
+
+    # let go without opening the topic, noting the card's size every frame
+    page.execute_script(stop_next_click)
+    page.execute_script(<<~JS)
+      (() => {
+        const card = document.querySelector("#{card_css}");
+        const started = performance.now();
+        window.jtSizes = [];
+        const sample = () => {
+          const scale = getComputedStyle(card).scale;
+          window.jtSizes.push(scale === "none" ? 1 : parseFloat(scale));
+          if (performance.now() - started < 1500) {
+            requestAnimationFrame(sample);
+          } else {
+            window.jtSprung = true;
+          }
+        };
+        requestAnimationFrame(sample);
+      })()
+    JS
+    page.driver.with_playwright_page { |pw| pw.mouse.up }
+    try_until_success(timeout: 5) { expect(page.evaluate_script("window.jtSprung")).to eq(true) }
+    sizes = page.evaluate_script("window.jtSizes")
+    expect(sizes.min).to eq(0.97)
+    expect(sizes.max).to be > 1
+    expect(sizes.last).to eq(1)
+
+    page.driver.with_playwright_page { |pw| pw.mouse.down }
+    try_until_success { expect(page.evaluate_script(pressed)).to include("scale" => "0.97") }
+    page.driver.with_playwright_page { |pw| pw.mouse.up }
+    expect(page).to have_current_path(%r{/t/#{topic.slug}/#{topic.id}})
+    expect_no_theme_errors
+  end
+
+  # Reduced motion: a pressed card is tinted, and doesn't shrink
+  it "tints a pressed topic card instead of shrinking it for reduced motion", mobile: true do
+    page.driver.with_playwright_page { |pw| pw.emulate_media(reducedMotion: "reduce") }
+    visit("/latest")
+    card_css = ".topic-list.jt-cards .topic-list-item[data-topic-id='#{topic.id}']"
+    expect(page).to have_css(card_css)
+    at = page.evaluate_script(<<~JS)
+      (() => {
+        const card = document.querySelector("#{card_css}");
+        card.scrollIntoView({ block: "center" });
+        const box = card.getBoundingClientRect();
+        return [box.left + 4, box.top + box.height / 2];
+      })()
+    JS
+    looks = <<~JS
+      (() => {
+        const style = getComputedStyle(document.querySelector("#{card_css}"));
+        const tint = document.createElement("div");
+        tint.style.background = "var(--jt-active)";
+        document.body.append(tint);
+        const pressed = getComputedStyle(tint).backgroundColor;
+        tint.remove();
+        return { scale: style.scale, tinted: style.backgroundColor === pressed };
+      })()
+    JS
+    page.driver.with_playwright_page do |pw|
+      pw.mouse.move(at[0], at[1])
+      pw.mouse.down
+    end
+    try_until_success do
+      expect(page.evaluate_script(looks)).to eq("scale" => "none", "tinted" => true)
+    end
+    page.driver.with_playwright_page { |pw| pw.mouse.up }
+    expect(page).to have_current_path(%r{/t/#{topic.slug}/#{topic.id}})
+    expect_no_theme_errors
+  end
+
   # Core's static pages: a 700px column at the interface size. The theme: a
   # reading column at the post's size, with a post's heading and list rhythm.
   it "sets the guidelines page in a reading column" do

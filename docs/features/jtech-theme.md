@@ -68,7 +68,7 @@ JTech replaces the forum's theme components: each one it covers has a JTech sett
 | Gated Topics in Category | `gated_categories`, `gated_tags` | Copy the component's categories and tags (General, Android Apps, Android ROMs, Android Guides and the `roms` tag on the forum today). Off until you list some. Like the component, it's for logged-out visitors only. |
 | Modern Category + Group Boxes | — | Set the site setting `desktop_category_page_style` to **Boxes**: JTech styles core's category boxes, which already show each category's icon. |
 
-**Clash with JTech (detach):** discourse-left-side-burger (JTech keeps the ☰ at the right), Discourse Avatar Component (JTech sets avatar shape), Full width (JTech sets the page width), Density Toggle (JTech's type scale), Topic List Item Click Animation (JTech's cards have their own press feedback), User Card Directory and Users Top Nav (JTech's People page).
+**Clash with JTech (detach):** discourse-left-side-burger (JTech keeps the ☰ at the right), Discourse Avatar Component (JTech sets avatar shape), Full width (JTech sets the page width), Density Toggle (JTech's type scale), Topic List Item Click Animation (a pressed topic card sinks in and springs back when let go, with a finger or a mouse), User Card Directory and Users Top Nav (JTech's People page).
 
 **Not needed any more:**
 
