@@ -135,6 +135,7 @@ What changed for forums running Jtech Tools. Newest first.
 
 **Fixed**
 
+- Disteleplus: on the full-page conversation, a long message grows the typing box upward into the messages. The forum footer sat under the page, so the box grew downward and the page kept scrolling down as you typed.
 - JTech theme: switching to light works after a visit to Preferences → Interface. Trying a palette or a mode there (JTech Dim, say) kept that palette on the page until a reload, so switching to light from the sidebar's Color mode menu, the header or the command menu left the page dark (and switching to dark could leave it light). The palette you tried now shows only in its own mode.
 - REQ-PM: in Hebrew, contact details read the right way round: a phone number like +972 52 123 4517 showed as "4517 123 52 972+". REQ-PM's English sentences keep their full stop or question mark at the end ("How can people reach you?", not "?How can people reach you"), still on the right-hand side, and notes read in whichever language they're written in.
 - Moderator tools: in a narrow window, the first-post checklist's acceptance log scrolls in its own box instead of the whole dialog scrolling sideways.
