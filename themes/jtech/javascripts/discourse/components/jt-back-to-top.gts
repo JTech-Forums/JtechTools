@@ -28,8 +28,13 @@ export default class JtBackToTop extends Component<JtBackToTopSignature> {
       }
     };
     window.addEventListener("scroll", update, { passive: true });
-    update();
-    return () => window.removeEventListener("scroll", update);
+    // the first look waits for the next frame: reading the scroll position
+    // while the page is still rendering forces a layout of a half-built page
+    const frame = requestAnimationFrame(update);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", update);
+    };
   });
 
   get onTopic(): boolean {
