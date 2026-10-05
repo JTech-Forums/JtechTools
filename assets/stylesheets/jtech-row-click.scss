@@ -1,0 +1,28 @@
+// Topic list rows on the themes in jtech_row_click_theme_ids (the initializer
+// sets html.jtech-row-click): the whole row opens the topic, so it looks
+// pressable and bounces. Pressed, the row sinks in within 0.1s (a tap holds
+// :active for only about 150ms); let go, it springs back a little past full
+// size. Not while a control inside is pressed (category, tags, posters, bulk
+// select): those do something else.
+$jtech-row-controls: ":is(a, button, input, label):not(.raw-topic-link)";
+
+html.jtech-row-click .topic-list .topic-list-item {
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    scale 0.45s cubic-bezier(0.3, 1.8, 0.5, 1);
+
+  &:active:not(:has(#{$jtech-row-controls}:active)) {
+    scale: 0.98;
+    background-color: var(--d-hover);
+    transition:
+      background-color 0.15s,
+      scale 0.1s cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:active {
+      scale: none;
+    }
+  }
+}

@@ -72,6 +72,11 @@ en:
       sub-plugin also has its own enable switch on its tab for fine-grained
       control.
 
+    jtech_row_click_theme_ids: Theme ids whose topic list rows open the topic
+      from anywhere on the row (not just the title and the numbers) and bounce
+      when pressed. Core only does the whole row on phones. 1 is the "Default"
+      theme; empty turns it off everywhere.
+
     jtech_theme_install: Install the JTech theme that ships with this plugin,
       and update it when the plugin updates (on rebuild). It is never made the
       default or offered to users; do that under Customize → Themes. Turn this
