@@ -256,7 +256,9 @@ body {
   border-radius: 3px;
 }
 
-// Tags read as #tag instead of a column of identical tag icons
+// Tags read as #tag instead of a column of identical tag icons. The "#" is
+// in the link's own font: in the mono one, it alone downloaded Geist Mono
+// on every page with the sidebar open.
 .sidebar-section[data-section-name="tags"]
   .sidebar-section-link[href*="/tag/"]
   .sidebar-section-link-prefix {
@@ -266,7 +268,6 @@ body {
 
   &::before {
     content: "#";
-    font-family: var(--jt-font-mono);
     font-size: var(--jt-text-md);
     line-height: 1;
   }
