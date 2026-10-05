@@ -6,6 +6,7 @@ What changed for forums running Jtech Tools. Newest first.
 
 **New**
 
+- JTech theme: badges you choose (a phone maker's engineer, a distributor…) show after a poster's name on their posts, linking to the badge. It replaces the Post Badges component. Setting: `post_badges`.
 - JTech theme: record a voice message from the composer. The microphone in the toolbar opens a recorder: record, listen back, and add it to the post, where it plays as audio. It replaces the Voice Recorder component. Setting: `voice_recorder`.
 - JTech theme: contents for guides. A first post with three or more headings, in the categories you choose or with DiscoTOC's marker, lists its headings in the timeline's column on desktop, marking the section you're reading (Contents folds it away and brings the timeline back), and as a card at the top of the post on phones. The composer's options menu still adds the marker. It replaces DiscoTOC (put Android Guides in the setting to keep it there). Settings: `table_of_contents`, `table_of_contents_categories`.
 - JTech theme: in the categories you choose, a topic's first post has a Print button that prints that post on its own, or saves it as a PDF from the print dialog. It replaces the Topic PDF Download Button component (put Exclusive in the setting to keep it there). Setting: `print_button_categories`.

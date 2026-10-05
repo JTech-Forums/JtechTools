@@ -220,7 +220,11 @@
         320,
         320
       ]
-    ]
+    ],
+    "serialize_post_user_badges": {
+      "type": "setting",
+      "value": "post_badges"
+    }
   },
   "theme_site_settings": {
     "enable_welcome_banner": false,

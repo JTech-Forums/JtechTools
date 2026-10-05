@@ -204,3 +204,7 @@ table_of_contents_categories:
 voice_recorder:
   type: bool
   default: true
+post_badges:
+  type: list
+  list_type: compact
+  default: ""

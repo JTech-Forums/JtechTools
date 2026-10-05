@@ -62,6 +62,7 @@ declare module "virtual:theme" {
     table_of_contents: boolean;
     table_of_contents_categories: string;
     voice_recorder: boolean;
+    post_badges: string;
   }
 
   export const settings: JtechThemeSettings;

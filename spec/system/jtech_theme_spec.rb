@@ -2901,6 +2901,20 @@ RSpec.describe "JTech theme" do
       expect(page).to have_no_css(".post-action-menu__jt-print")
     end
 
+    it "shows the listed badges after a poster's name" do
+      badge = Fabricate(:badge, name: "Phone Distributor", icon: "certificate")
+      BadgeGranter.grant(badge, member)
+      jtech_theme.update_setting(:post_badges, "Sonim Engineer|Phone Distributor")
+      jtech_theme.save!
+      visit(topic.relative_url)
+      expect(page).to have_css(
+        "#post_1 .jt-post-badge[title='Phone Distributor'][href$='/badges/#{badge.id}/#{badge.slug}']",
+      )
+      expect(page).to have_css("#post_2 .topic-meta-data")
+      expect(page).to have_no_css("#post_2 .jt-post-badge")
+      expect_no_theme_errors
+    end
+
     it "shows when someone was last seen on their user card" do
       member.update!(last_seen_at: 2.hours.ago)
       sign_in(admin)

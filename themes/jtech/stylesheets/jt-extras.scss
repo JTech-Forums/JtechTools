@@ -325,3 +325,32 @@
     animation: none;
   }
 }
+
+// ── Badges after a poster's name (post_badges) ────────────
+.jt-post-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: 6px;
+  vertical-align: middle;
+}
+
+.jt-post-badge {
+  display: inline-flex;
+  color: var(--jt-text-subtle);
+
+  &:hover {
+    color: var(--primary);
+  }
+
+  img,
+  .d-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  img {
+    object-fit: contain;
+    border-radius: 3px;
+  }
+}
