@@ -117,6 +117,7 @@ en:
       table_of_contents_categories: "Categories (and their subcategories) whose first posts get contents without the marker."
       voice_recorder: "A microphone button in the composer to record a voice message and add it to the post as an audio file. Shown when the browser can record and the recording's file type (m4a, ogg or webm, depending on the browser) is in authorized_extensions. A recording stops by itself before it would pass max_attachment_size_kb."
       post_badges: "Badges to show after a poster's name on their posts, when they have them, in this order. Each links to its badge page. Use each badge's exact name from Admin → Badges (case doesn't matter, spaces do)."
+      image_carousels: "Show the pictures in posts written with the Post Image Carousel component ([wrap=Carousel]) as Discourse's own carousel, the one [grid mode=carousel] makes. The component's autoplay, loop and thumbnails aren't carried over."
       topic_jump_buttons: "First-post and last-post buttons under the topic timeline, and beside the progress button on phones."
       hide_lock_icons: "Hide the padlock on private categories' badges and links (everyone who sees the category already has access)."
       gated_categories: "Categories whose topics logged-out visitors can't read: the first post fades out under a prompt to log in or create an account. This only hides topics in the browser (they're still sent to the visitor); to really keep a category private, change its security settings."

@@ -208,3 +208,6 @@ post_badges:
   type: list
   list_type: compact
   default: ""
+image_carousels:
+  type: bool
+  default: true

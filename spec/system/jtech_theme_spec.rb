@@ -2915,6 +2915,23 @@ RSpec.describe "JTech theme" do
       expect_no_theme_errors
     end
 
+    it "shows a [wrap=Carousel] post's pictures as Discourse's carousel" do
+      one = Fabricate(:image_upload)
+      two = Fabricate(:image_upload)
+      Fabricate(
+        :post,
+        topic: topic,
+        user: member,
+        raw:
+          "[wrap=Carousel autoplay=false loop=true]\nThe phone, front and back.\n\n![front|690x460](#{one.short_url})\n![back|690x460](#{two.short_url})\n[/wrap]",
+      )
+      visit("#{topic.relative_url}/5")
+      wrap = "#post_5 .d-wrap[data-wrap='Carousel']"
+      expect(page).to have_css("#{wrap} .d-image-carousel .d-image-carousel__slide", count: 2)
+      expect(page).to have_css("#{wrap} > p", text: "The phone, front and back.", count: 1)
+      expect_no_theme_errors
+    end
+
     it "shows when someone was last seen on their user card" do
       member.update!(last_seen_at: 2.hours.ago)
       sign_in(admin)
