@@ -3166,6 +3166,41 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  describe "header and sidebar edges" do
+    it "keeps a topic's title clear of the logo, and the avatar on the page's right edge" do
+      Fabricate(:post, topic: topic, user: admin, raw: "A long reply.\n\n" * 60)
+      sign_in(member)
+      visit(topic.relative_url)
+      page.execute_script("window.scrollTo(0, 900)")
+      expect(page).to have_css(".d-header .extra-info-wrapper .topic-link")
+      gap, avatar_right, content_right = page.evaluate_script(<<~JS)
+        (() => {
+          const range = document.createRange();
+          range.selectNodeContents(document.querySelector(".d-header .topic-link"));
+          const logo = document.querySelector(".d-header .title").getBoundingClientRect();
+          const avatar = document.querySelector("#toggle-current-user img.avatar").getBoundingClientRect();
+          const content = document.querySelector("#main-outlet").getBoundingClientRect();
+          return [range.getBoundingClientRect().left - logo.right, avatar.right, content.right];
+        })()
+      JS
+      expect(gap).to be >= 14
+      expect(avatar_right).to be_within(1).of(content_right)
+      expect_no_theme_errors
+    end
+
+    it "opens a sidebar link to a page outside the forum as a page load" do
+      section = Fabricate(:sidebar_section, title: "Links", public: true, user: admin)
+      homepage = Fabricate(:sidebar_url, name: "Homepage", value: "/home")
+      Fabricate(:sidebar_section_link, sidebar_section: section, linkable: homepage, user: admin)
+      sign_in(member)
+      visit("/latest")
+      page.execute_script("window.jtSamePage = true")
+      find(".sidebar-section-link[href='/home']").click
+      try_until_success { expect(page.evaluate_script("window.jtSamePage")).to be_nil }
+      expect(page).to have_current_path("/home")
+    end
+  end
+
   describe "login gate" do
     def gate(categories: "", tags: "")
       jtech_theme.update_setting(:gated_categories, categories)

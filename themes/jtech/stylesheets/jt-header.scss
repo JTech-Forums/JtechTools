@@ -137,6 +137,13 @@ html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
     width: 2rem;
     height: 2rem;
   }
+
+  // The avatar fills its button, so it ends on the page's right edge like the
+  // content under it; centred in a 40px box it stopped 4px short.
+  #toggle-current-user {
+    width: 2rem;
+    height: 2rem;
+  }
 }
 
 // The icon row's selectors to beat core's header icon size; the centred copy
@@ -357,4 +364,10 @@ html.mobile-view {
 .extra-info-wrapper :is(.extra-info, .categories-wrapper) {
   padding: 0.25rem;
   margin: -0.25rem;
+}
+
+// Scrolled into a topic, its title takes the bar beside the logo: core's 8px
+// left it pressed against the mark.
+.d-header .extra-info-wrapper {
+  padding-inline-start: 1rem;
 }

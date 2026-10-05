@@ -6,6 +6,7 @@ What changed for forums running Jtech Tools. Newest first.
 
 **New**
 
+- JTech theme: a sidebar link to a page outside the forum (like the homepage at /home) opens that page, instead of the forum's "page not found". Scrolled into a topic, its title in the header has room beside the logo, and your avatar lines up with the right edge of the page below it.
 - JTech theme: QR code in the share options: share a topic or a post as a code to scan with your phone, or save it as an image. It replaces the QR Code Shareables component. Setting: `qr_code_share`.
 - JTech theme: reader mode. The book at the top of a topic's timeline (or Ctrl+Alt+R) hides the sidebar and fades the header and the posts' buttons back, and lets you make the text larger, the column narrower or wider, or switch to a serif; those choices are remembered. It replaces the Reader Mode component. Setting: `reader_mode`.
 - JTech theme: people in a group with a shared inbox (on the forum, staff) get an Inboxes section in the sidebar: their own messages and each group's inbox, with unread counts. It replaces the Messages section for sidebar component. Setting: `sidebar_inboxes`.
