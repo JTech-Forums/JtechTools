@@ -1,62 +1,343 @@
-// Layout follows the hero's own width, not the window's: with the sidebar
-// open, a 1000px window leaves the hero only ~750px.
+@use "sass:list";
+
+// The front-page hero (components/jt-hero): the headline, search and a way
+// in for visitors, beside a planet (lib/jt-planet) in a field of stars, with
+// a light running round the edge.
+// Everything is the theme's two colours. Layout follows the hero's own
+// width, not the window's: with the sidebar open, a 1000px window leaves
+// the hero only ~750px.
+
+// Two layers of stars, as percentages of the hero
+$jt-stars-far: (
+  32.7% 16.5%,
+  64.8% 9%,
+  53.5% 37.1%,
+  6.7% 50.7%,
+  7.8% 10.7%,
+  42.6% 81.4%,
+  13.1% 23.4%,
+  62.5% 93%,
+  96.7% 6.5%,
+  85.1% 29.8%,
+  31.2% 80.3%,
+  18.7% 57.8%,
+  63.6% 37.8%,
+  54.7% 8%,
+  31.8% 58.2%,
+  45.4% 30.8%,
+  78.8% 69.1%,
+  52.5% 86%,
+  72.5% 29.6%,
+  4.8% 66.1%,
+  75.9% 57%,
+  69.1% 59.1%,
+  83.3% 92.7%,
+  47.5% 65.8%,
+  38.8% 66.2%,
+  17.5% 13.2%,
+  28.3% 41.9%,
+  58.7% 27.2%,
+  1.4% 42.2%,
+  94.4% 68.3%,
+  89.2% 76.9%,
+  39.5% 40.3%,
+  11.1% 62.9%,
+  1% 16.5%,
+  10.9% 36.9%,
+  3.5% 85.9%,
+  46.7% 48.4%,
+  82.2% 17.5%,
+  17.4% 76.1%,
+  35.8% 4.8%,
+  3.7% 28.8%,
+  26.4% 68.5%,
+  94.7% 44.9%,
+  92.8% 96.9%,
+  22.6% 23.8%,
+  83.4% 48%
+);
+$jt-stars-near: (
+  65% 78.8%,
+  9.3% 65.4%,
+  90.2% 77.1%,
+  74.5% 47.9%,
+  33.6% 78.9%,
+  96.2% 40%,
+  72% 18.3%,
+  13.4% 16.5%,
+  35.3% 54.7%,
+  52.6% 91.6%,
+  25.7% 30.1%,
+  13.8% 89.4%,
+  50.2% 53.1%,
+  52.3% 3.8%
+);
+
+@function jt-starfield($positions, $size) {
+  $layers: ();
+
+  @each $position in $positions {
+    $layers: list.append(
+      $layers,
+      radial-gradient(
+        circle at $position,
+        var(--jt-hero-star) $size,
+        transparent $size * 2
+      ),
+      $separator: comma
+    );
+  }
+
+  @return $layers;
+}
+
 .jt-hero {
   container: jt-hero / inline-size;
   position: relative;
   isolation: isolate;
   overflow: hidden;
   margin: 0 0 var(--space-5);
-  padding: clamp(1.5rem, 3.5vw, 3rem);
+  padding: clamp(1.25rem, 3.6vw, 3rem);
   background: var(--jt-surface-raised);
   border: 1px solid var(--jt-border);
   border-radius: var(--jt-radius-xl);
 
-  // Grid + glow, dissolving toward the edges, centred over the headline's
-  // side: in Hebrew the headline is on the right, and core's right-to-left
-  // stylesheet doesn't move a gradient's centre, so the glow sat behind the
-  // links on the left. The x positions are custom properties, set again for
-  // right to left.
-  --jt-hero-glow-x: 18%;
-  --jt-hero-fade-x: 30%;
+  // The stars are strongest on the planet's side
+  --jt-hero-sky-fade: to left;
+
+  // its glass (the search) sits up off the sky
+  --jt-hero-lift:
+    inset 0 1px 0 var(--jt-hero-lift-edge), 0 1px 2px rgb(0 0 0 / 4%),
+    0 12px 32px -19px var(--jt-hero-lift-shade);
 
   html.rtl & {
-    --jt-hero-glow-x: 82%;
-    --jt-hero-fade-x: 70%;
+    --jt-hero-sky-fade: to right;
   }
 
-  &::before {
-    content: "";
+  // A light running round the edge, on screens with a mouse: a still
+  // gradient on a square wider than the hero, turning inside a ring cut out
+  // of the edge (only the ring shows). Phones skip it: there it costs more
+  // than it shows.
+  &__edge {
+    display: none;
+
+    @media (hover: hover) {
+      @supports (mask-composite: exclude) {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: block;
+        overflow: hidden;
+        padding: 1px;
+        pointer-events: none;
+        border-radius: inherit;
+        mask:
+          linear-gradient(#000 0 0) content-box,
+          linear-gradient(#000 0 0);
+        mask-composite: exclude;
+      }
+    }
+  }
+
+  &__comet {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 150%;
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    background: conic-gradient(
+      transparent 0deg 110deg,
+      color-mix(in srgb, var(--jt-text) 30%, transparent) 160deg,
+      transparent 172deg 210deg,
+      color-mix(in srgb, var(--jt-text) 18%, transparent) 280deg,
+      color-mix(in srgb, var(--jt-text) 95%, transparent) 336deg,
+      transparent 352deg
+    );
+    animation: jt-hero-comet 14s linear infinite;
+  }
+
+  &__sky {
     position: absolute;
     inset: 0;
     z-index: -1;
+    overflow: hidden;
     pointer-events: none;
+    border-radius: inherit;
+  }
+
+  &__stars {
+    position: absolute;
+    inset: 0;
+
+    // two layers of stars twinkling out of step, fading towards the copy
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      mask-image: linear-gradient(
+        var(--jt-hero-sky-fade),
+        #000 15%,
+        rgb(0 0 0 / 30%) 70%
+      );
+      will-change: opacity;
+      animation: jt-hero-twinkle 5s ease-in-out infinite alternate;
+    }
+
+    // and drifting with a mouse pointer, the near ones further: depth
+    &::before {
+      background: jt-starfield($jt-stars-far, 0.55px);
+      translate: calc(var(--jt-hero-px, 0) * -5px)
+        calc(var(--jt-hero-py, 0) * -4px);
+      transition: translate 1.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    &::after {
+      background: jt-starfield($jt-stars-near, 0.9px);
+      translate: calc(var(--jt-hero-px, 0) * -11px)
+        calc(var(--jt-hero-py, 0) * -8px);
+      transition: translate 1.6s cubic-bezier(0.16, 1, 0.3, 1);
+      animation-duration: 7s;
+      animation-delay: -4s;
+    }
+  }
+
+  // A few bright stars on the planet's side, out of sight until one flares
+  // (components/jt-hero animates them, one at a time)
+  &__sparkle {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    margin: -7px;
+    opacity: 0;
+
+    // a point of light and two arms tapering to their tips
     background:
-      radial-gradient(
-        ellipse 55% 70% at var(--jt-hero-glow-x) 0%,
-        var(--jt-glow),
-        transparent 70%
-      ),
-      linear-gradient(var(--jt-grid) 1px, transparent 1px) 0 0 / 40px 40px,
-      linear-gradient(90deg, var(--jt-grid) 1px, transparent 1px) 0 0 / 40px
-        40px;
-    mask-image: radial-gradient(
-      ellipse 90% 100% at var(--jt-hero-fade-x) 0%,
-      #000 20%,
-      transparent 85%
+      radial-gradient(circle, var(--jt-hero-glint) 1.2px, transparent 2.6px),
+      linear-gradient(90deg, transparent, var(--jt-hero-glint), transparent)
+        center / 100% 1px no-repeat,
+      linear-gradient(transparent, var(--jt-hero-glint), transparent) center /
+        1px 100% no-repeat;
+
+    &:nth-child(1) {
+      top: 13%;
+      inset-inline-start: 57%;
+    }
+
+    &:nth-child(2) {
+      top: 24%;
+      inset-inline-start: 94%;
+    }
+
+    &:nth-child(3) {
+      top: 84%;
+      inset-inline-start: 74%;
+    }
+
+    &:nth-child(4) {
+      top: 7%;
+      inset-inline-start: 82%;
+    }
+  }
+
+  // A soft light under a mouse pointer (api: components/jt-hero)
+  &__light {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background: radial-gradient(
+      36rem circle at var(--jt-hero-mx, 50%) var(--jt-hero-my, 0%),
+      color-mix(in srgb, var(--jt-text) 6%, transparent),
+      transparent 60%
     );
+    transition: opacity 0.8s ease;
+
+    .jt-hero:hover & {
+      opacity: 1;
+    }
+  }
+
+  // The planet's box. Logical sides, so it moves to the left in a
+  // right-to-left interface; it leans a little away from a mouse pointer.
+  // Where it sits changes with the width (the container queries below, which
+  // style what's inside the hero, never the hero itself): its size as a share
+  // of the hero's width, its distance from the end edge and from the top.
+  // Desktop: beside the copy.
+  &__planet {
+    --jt-planet-size: min(58cqw, 620px);
+    --jt-planet-end: -4cqw;
+    --jt-planet-top: 50%;
+    --jt-planet-shift: -50%;
+    position: absolute;
+    top: var(--jt-planet-top);
+    inset-inline-end: var(--jt-planet-end);
+    width: var(--jt-planet-size);
+    aspect-ratio: 1;
+    color: var(--jt-text); // the renderer's ink
+    translate: calc(var(--jt-hero-px, 0) * -14px)
+      calc(var(--jt-planet-shift) + var(--jt-hero-py, 0) * -10px);
+    transition: translate 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+    // where the globe sits in the box, read by the renderer
+    --jt-planet-x: 0.5;
+    --jt-planet-y: 0.5;
+    --jt-planet-r: 0.3;
+
+    // its light spilling across the hero, wider than the canvas can draw
+    &::before {
+      content: "";
+      position: absolute;
+      inset: -45%;
+      background: radial-gradient(
+        closest-side,
+        var(--jt-hero-bloom),
+        transparent
+      );
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    // the atmosphere's strength is its opacity, set by the renderer
+    canvas[data-layer="aura"] {
+      opacity: 0;
+    }
+  }
+
+  // Now and then a shooting star crosses the sky
+  &__meteor {
+    position: absolute;
+    top: 14%;
+    left: 34%;
+    width: 7rem;
+    height: 1px;
+    opacity: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--jt-text) 75%, transparent)
+    );
+    rotate: 16deg;
+    animation: jt-hero-meteor 13s ease-in 5s infinite;
   }
 
   &__body {
+    position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    align-items: center;
-    gap: var(--space-6) var(--space-8);
+    gap: var(--space-6);
   }
 
   &__close {
     position: absolute;
     top: var(--space-3);
     right: var(--space-3);
+    z-index: 3;
     color: var(--jt-text-subtle);
     border-radius: var(--jt-radius-control);
 
@@ -71,6 +352,7 @@
     flex-direction: column;
     gap: var(--space-4);
     min-width: 0;
+    max-width: 50cqw;
   }
 
   &__title {
@@ -80,18 +362,48 @@
     // would follow the text's own direction instead.
     text-align: left;
     margin: 0;
-    font-size: clamp(2rem, 4.2vw, 3.25rem);
+    padding-bottom: 0.06em; // room for descenders under the clipped fill
+    font-size: clamp(2.25rem, 1.1rem + 4.4cqw, 4.5rem);
     font-weight: 700;
-    line-height: 1.02;
-    letter-spacing: -0.045em;
+    line-height: 0.98;
+    letter-spacing: -0.05em;
     text-wrap: balance;
     color: var(--jt-text);
 
+    // The type fades a little towards its foot, and every so often a light
+    // passes over it (the sheen, out of sight between passes). Only where a
+    // fill clipped to the text works: elsewhere it's plain text.
+    @supports (background-clip: text) {
+      background-image:
+        linear-gradient(
+          105deg,
+          transparent 40%,
+          var(--jt-hero-sheen) 50%,
+          transparent 60%
+        ),
+        linear-gradient(
+          180deg,
+          var(--jt-hero-title-top) 38%,
+          var(--jt-hero-title-foot)
+        );
+      background-repeat: no-repeat;
+      background-size:
+        260% 100%,
+        100% 100%;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: jt-hero-sheen 12s ease-in-out 0.7s infinite;
+
+      // selected, the letters take the selection's colours
+      &::selection {
+        -webkit-text-fill-color: var(--jt-surface);
+      }
+    }
+
     // Keep a long headline clear of the close button. Only the headline: the
-    // button sits beside its first line, and room kept clear the whole way
-    // down left the search field on a phone 40px short of the links under
-    // it. A physical right (left in right-to-left), as the headline's own
-    // direction can differ from the interface's.
+    // button sits beside its first line. A physical right (left in
+    // right-to-left), as the headline's own direction can differ from the
+    // interface's.
     .jt-hero:has(.jt-hero__close) & {
       padding-right: 2.5rem;
     }
@@ -105,28 +417,38 @@
     line-height: 1.6;
     color: var(--jt-text-muted);
     text-wrap: pretty;
+    transition: opacity 0.4s ease;
   }
 
   &__search {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    max-width: 34rem;
-    height: 2.9rem;
-    padding: 0 0.3rem 0 1rem;
+    max-width: 36rem;
+    height: 3.25rem;
+    padding: 0 0.35rem 0 1.1rem;
     margin-top: var(--space-2);
-    background: var(--jt-fill);
+    background: color-mix(in srgb, var(--jt-surface-raised) 72%, transparent);
     border: 1px solid var(--jt-border-strong);
     border-radius: var(--jt-radius-control);
-    transition: border-color var(--jt-motion);
+    box-shadow: var(--jt-hero-lift);
+    backdrop-filter: blur(12px);
+    transition:
+      border-color var(--jt-motion),
+      box-shadow 0.4s ease;
 
     > .d-icon {
       color: var(--jt-text-subtle);
       flex-shrink: 0;
     }
 
+    // focused: the field glows, and the planet brightens with it
     &:focus-within {
       border-color: var(--jt-text-subtle);
+      box-shadow:
+        0 0 0 4px color-mix(in srgb, var(--jt-text) 7%, transparent),
+        0 14px 44px -14px color-mix(in srgb, var(--jt-text) 35%, transparent),
+        var(--jt-hero-lift);
     }
   }
 
@@ -167,176 +489,246 @@
     display: grid;
     place-items: center;
     flex-shrink: 0;
-    width: 2.2rem;
-    height: 2.2rem;
+    width: 2.5rem;
+    height: 2.5rem;
     color: var(--jt-surface);
     background: var(--jt-text);
     border: 0;
     border-radius: var(--jt-radius-control);
     cursor: pointer;
-    transition:
-      background-color var(--jt-motion),
-      transform var(--jt-motion);
+    transition: background-color var(--jt-motion);
+
+    .d-icon {
+      transition: translate var(--jt-motion);
+    }
 
     &:hover {
       background: var(--tertiary-hover);
-    }
 
-    &:active {
-      transform: translateY(1px);
-    }
-  }
+      // the arrow leans the way it points; core mirrors it in
+      // right-to-left with a transform, so this nudges with translate
+      .d-icon {
+        translate: 2px 0;
 
-  &__links {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-2);
-  }
-
-  &__link {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    min-width: 0;
-    padding: var(--space-3);
-    color: var(--jt-text);
-    background: var(--jt-surface);
-    border: 1px solid var(--jt-border);
-    border-radius: var(--jt-radius-lg);
-    transition:
-      border-color var(--jt-motion),
-      background-color var(--jt-motion),
-      transform var(--jt-motion);
-
-    &:hover,
-    &:focus-visible {
-      color: var(--jt-text);
-      background: var(--jt-hover);
-      border-color: var(--jt-border-strong);
-
-      .jt-hero__link-arrow {
-        opacity: 1;
-        transform: translateX(0);
+        html.rtl & {
+          translate: -2px 0;
+        }
       }
     }
+  }
 
-    &:active {
-      transform: translateY(1px);
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    transition: opacity 0.4s ease;
+
+    // the main way in glows (light on dark, a lift on light)
+    .btn-primary {
+      box-shadow: 0 8px 28px -10px var(--jt-hero-button-glow);
+      transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        box-shadow 0.4s ease;
+
+      &:hover,
+      &:focus-visible {
+        box-shadow: 0 10px 36px -8px var(--jt-hero-button-glow);
+      }
+    }
+  }
+}
+
+// Searching: the rest steps back a little
+.jt-hero.--searching .jt-hero__subtitle {
+  opacity: 0.45;
+}
+
+// ── Arriving: the first time in a tab ──────────────────────
+// The planet swells in, the stars come out, the copy rises into focus line by
+// line, and the first light passes over the headline. Later visits in the
+// same tab skip it. People who ask for reduced motion get the
+// end state (the theme's global rule).
+.jt-hero.--enter {
+  .jt-hero__planet {
+    animation: jt-hero-planet 2.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .jt-hero__stars {
+    animation: jt-hero-stars 2.4s ease both;
+  }
+
+  .jt-hero__copy > *,
+  .jt-hero__close {
+    animation: jt-hero-rise 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  // after the headline (always first), which has its own timing below
+  @for $i from 2 through 5 {
+    .jt-hero__copy > :nth-child(#{$i}) {
+      animation-delay: #{0.05 + ($i - 1) * 0.08}s;
     }
   }
 
-  &__link-icon {
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    width: 2.25rem;
-    height: 2.25rem;
-    color: var(--jt-text);
-    background: var(--jt-surface-sunken);
-    border: 1px solid var(--jt-border);
-    border-radius: var(--jt-radius-md);
+  // the sheen exactly as it runs later, so it carries on when this ends
+  @supports (background-clip: text) {
+    .jt-hero__title {
+      animation:
+        jt-hero-rise 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both,
+        jt-hero-sheen 12s ease-in-out 0.7s infinite;
+    }
   }
+}
 
-  &__link-text {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 0;
-  }
-
-  // A title wraps rather than ending in "…". Beside the copy (the hero 940px
-  // and wider, most desktop windows) each tile leaves its title 107px, with
-  // room kept for the hover arrow, so "JTech Homepage" read "JTech Homep…";
-  // on a 320px phone (a Qin F21) a tile is narrower than it too.
-  &__link-title {
-    text-align: left;
-    font-size: var(--jt-text-md);
-    font-weight: 600;
-    line-height: 1.25;
-    letter-spacing: var(--jt-tracking-ui);
-    overflow-wrap: break-word;
-  }
-
-  &__link-desc {
-    text-align: left;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: var(--jt-text-xs);
-    line-height: 1.4;
-    color: var(--jt-text-muted);
-  }
-
-  &__link-arrow {
-    flex-shrink: 0;
-    color: var(--jt-text-subtle);
+@keyframes jt-hero-rise {
+  from {
     opacity: 0;
-    transform: translateX(-4px);
-    transition:
-      opacity var(--jt-motion),
-      transform var(--jt-motion);
+    translate: 0 18px;
+    filter: blur(10px);
   }
 }
 
-// Too narrow to sit beside the copy without clipping the link titles:
-// stack, with the links as one row of four.
+@keyframes jt-hero-planet {
+  from {
+    opacity: 0;
+    scale: 0.86;
+  }
+}
+
+@keyframes jt-hero-stars {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes jt-hero-twinkle {
+  from {
+    opacity: 0.35;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes jt-hero-sheen {
+  0% {
+    background-position:
+      130% 0,
+      0 0;
+  }
+
+  22%,
+  100% {
+    background-position:
+      -30% 0,
+      0 0;
+  }
+}
+
+@keyframes jt-hero-meteor {
+  0% {
+    opacity: 0;
+    translate: 0 0;
+  }
+
+  1.5% {
+    opacity: 1;
+  }
+
+  6% {
+    opacity: 0;
+    translate: 16rem 4.6rem;
+  }
+
+  100% {
+    opacity: 0;
+    translate: 16rem 4.6rem;
+  }
+}
+
+@keyframes jt-hero-comet {
+  to {
+    rotate: 360deg;
+  }
+}
+
+// Reduced motion: no light parked on the edge
+@media (prefers-reduced-motion: reduce) {
+  .jt-hero__edge {
+    display: none;
+  }
+}
+
+// ── Widths ─────────────────────────────────────────────────
+// Narrower: the copy takes a little more of the width and the planet, a
+// little smaller, stays whole in what's left
 @container jt-hero (width < 940px) {
-  .jt-hero__body {
-    grid-template-columns: minmax(0, 1fr);
+  .jt-hero__copy {
+    max-width: 60cqw;
   }
 
-  .jt-hero__links {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  // Four across: tiles, icon above the text
-  .jt-hero__link {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-2);
-  }
-
-  .jt-hero__link-text {
-    width: 100%;
-  }
-
-  .jt-hero__link-arrow {
-    display: none;
+  .jt-hero__planet {
+    --jt-planet-size: 62cqw;
+    --jt-planet-end: -8cqw;
   }
 }
 
-@container jt-hero (width < 720px) {
-  .jt-hero__links {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .jt-hero__link {
-    flex-direction: row;
-    align-items: center;
-    gap: var(--space-3);
-  }
-}
-
-// Phones: compact 2×2 tiles, titles only
+// Phones: the planet whole in a band of sky over the headline, which takes
+// the width
 @container jt-hero (width < 460px) {
-  .jt-hero__link {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
+  .jt-hero__copy {
+    max-width: none;
   }
 
-  .jt-hero__link-text {
-    width: 100%;
+  .jt-hero__planet {
+    --jt-planet-size: 66cqw;
+    --jt-planet-end: -6cqw;
+    --jt-planet-top: -13cqw;
+    --jt-planet-shift: 0%;
   }
 
-  .jt-hero__link-icon {
-    width: 1.9rem;
-    height: 1.9rem;
+  .jt-hero__body {
+    padding-top: 25cqw;
   }
 
-  .jt-hero__link-desc {
+  // the close button is up in the sky, clear of the headline
+  .jt-hero:has(.jt-hero__close) .jt-hero__title {
+    padding-right: 0;
+  }
+}
+
+// Touch screens: no pointer to follow, and glass costs a phone more than it
+// shows
+@media (hover: none) {
+  .jt-hero__search {
+    background: color-mix(in srgb, var(--jt-surface-raised) 88%, transparent);
+    backdrop-filter: none;
+  }
+}
+
+// Windows high contrast: no planet, stars or moving light; the text and a
+// plain border carry it
+@media (forced-colors: active) {
+  .jt-hero {
+    border-color: CanvasText;
+  }
+
+  .jt-hero__edge {
     display: none;
+  }
+
+  .jt-hero__sky {
+    display: none;
+  }
+
+  .jt-hero__title {
+    background: none;
+    -webkit-text-fill-color: currentcolor;
+  }
+
+  .jt-hero__search {
+    backdrop-filter: none;
   }
 }

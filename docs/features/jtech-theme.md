@@ -5,7 +5,7 @@ The forum's own theme ships with the plugin: AMOLED black and pure white, monoch
 What it adds on top of a restyle:
 
 - **Topic cards** instead of table rows, with the first image beside the title and a Quick look preview.
-- **A front-page hero** with search and quick links, **category and tag banners**, and a **footer** with link columns.
+- **A front-page hero**: the headline, search and a way in for visitors beside a turning planet of dots (setting `hero_planet`), with **category and tag banners** and a **footer** with link columns.
 - The **about page** with its counts as tiles and the staff as cards.
 - **⌘K / Ctrl+K command menu** to jump to pages, categories, topics and people. The header's search field opens it. For people who can use chat, ⌘K stays chat's channel switcher (core binds it) and the menu opens from the search field only; "/" still opens Discourse's own search.
 - **Header**: search (in the middle of the bar on wide screens), JTech homepage, messages and notifications (with unread counts), light/dark, new topic. The avatar opens your profile menu (account, preferences, log out); staff keep core's review-queue badge on it, and while that shows, the avatar opens the review queue.
@@ -44,8 +44,8 @@ Several components on the forum's Default theme are built into JTech, and some c
 | Component | JTech setting | Notes |
 | --- | --- | --- |
 | Header Glass Fork JUNIV | — | JTech's own header. |
-| Welcome Link Banner | `hero_*` | The hero; its four links are the hero's defaults. |
-| Landing page links (leave the forum) | — | Header, hero, footer and links in posts all open non-forum pages as a page load. |
+| Welcome Link Banner | `hero_*` | The hero takes its place, without the four links. |
+| Landing page links (leave the forum) | — | Header, footer and links in posts all open non-forum pages as a page load. |
 | Be the first to reply | `first_reply_prompt` | Copy the component's hidden categories into `first_reply_prompt_hidden_categories` (13, 15, 22, 25, 28, 29, 30, 31, 34, 49 on the forum today). |
 | Discourse Code Block Line Numbers | `code_line_numbers` | A gutter beside the code, so copying a block copies only the code. |
 | Hide Lock Badge Icon | `hide_lock_icons` | |
@@ -68,7 +68,7 @@ Several components on the forum's Default theme are built into JTech, and some c
 | --- | --- | --- |
 | `jtech_theme_install` | on | Install the bundled theme and update it when the plugin updates. Never made the default. Turning it on installs now and brings back a deleted theme. |
 
-The look itself is configured in the theme's own settings (corner style, cards, hero text and links, footer links, header home link and the other switches).
+The look itself is configured in the theme's own settings (corner style, cards, hero text, footer links, header home link and the other switches).
 
 The theme brings three palettes: **JTech Light** and **JTech Dark** (OLED black) are its light and dark defaults, and **JTech Dim** is offered to users as a softer dark mode. The plugin marks JTech Dim "users can select" once when it first installs it; turn that off under Customize → Colors and it stays off. Being user-selectable, it's also offered with other themes that let people pick any palette.
 
@@ -76,7 +76,7 @@ The theme brings three palettes: **JTech Light** and **JTech Dark** (OLED black)
 
 - **Brand assets.** The JTech mark, app icon and favicon are in [`docs/theme/brand/`](../theme/brand/). They're site settings (`logo_small`, `favicon`, `apple_touch_icon`…), so they apply to every theme; upload them yourself if you want them. On phones the header shows `logo_small` (the square mark) instead of the wide logo, unless a `mobile_logo` is uploaded; theme setting `mobile_small_logo`. Setting `base_font` and `heading_font` to `system` stops browsers downloading Roboto, which JTech doesn't use.
 - **Card thumbnails.** The theme asks Discourse for 320 px topic thumbnails, so after it's installed Sidekiq makes them for listed topics once, a few at a time.
-- **Links to the landing site** (`/home`, `/dumb`, `/terms`…): the header, hero, footer and links inside posts open any same-site link that isn't a forum page as a normal page load, so they reach the landing site instead of the forum's 404 page.
+- **Links to the landing site** (`/home`, `/dumb`, `/terms`…): the header, footer and links inside posts open any same-site link that isn't a forum page as a normal page load, so they reach the landing site instead of the forum's 404 page.
 
 ## Before updating Discourse
 
