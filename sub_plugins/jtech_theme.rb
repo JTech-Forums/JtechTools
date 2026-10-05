@@ -43,6 +43,10 @@ end
 
 require_relative "../lib/discourse_jtech_theme/installer"
 
+# Whole-row click + press bounce on other themes' topic lists
+# (jtech_row_click_theme_ids); scoped by html.jtech-row-click.
+register_asset "stylesheets/jtech-row-click.scss"
+
 after_initialize do
   # db/fixtures run on every db:migrate (each rebuild, each site), which is when
   # core installs its own themes too. Registered here rather than at load time:
