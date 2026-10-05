@@ -33,6 +33,7 @@ declare module "virtual:theme" {
     external_link_icon: boolean;
     header_home_url: string;
     color_mode_toggle: boolean;
+    header_color_toggle: boolean;
     overlay_scrollbar: boolean;
     back_to_top: boolean;
     command_menu: boolean;

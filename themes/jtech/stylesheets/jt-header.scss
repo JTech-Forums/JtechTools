@@ -77,7 +77,8 @@
 // ── Right side: search field · new topic · avatar ─────────
 // One height (2.5rem, 40px) and one gap for everything. While the search field
 // shows, core's magnifier stays in the DOM, hidden, so its "/" shortcut still
-// has an anchor; core's colour selector gives way to the theme's switch.
+// has an anchor; core's colour selector gives way to the theme's switch
+// (header_color_toggle).
 html.jt-has-header-search .d-header-icons .search-dropdown,
 html.jt-has-color-toggle .d-header-icons .header-color-scheme-toggle {
   display: none;

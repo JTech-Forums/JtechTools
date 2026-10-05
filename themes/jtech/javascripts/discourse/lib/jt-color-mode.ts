@@ -1,9 +1,10 @@
 import { settings } from "virtual:theme";
 import type InterfaceColor from "discourse/services/interface-color";
 
-// The header's and command menu's light/dark switch (setting
-// color_mode_toggle). It stands in for core's header colour selector, which
-// jt-header.scss hides so there's only one.
+// The command menu's light/dark switch (setting color_mode_toggle), and the
+// header's when header_color_toggle is on too. The header's stands in for
+// core's header colour selector, which jt-header.scss hides while it shows,
+// so there's only one.
 export function colorToggleAvailable(
   interfaceColor: InterfaceColor | undefined
 ): boolean {

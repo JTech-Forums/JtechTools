@@ -19,9 +19,9 @@ interface JtCenteredSignature {
 }
 
 // Header right, in order: search field (command menu) · JTech home ·
-// messages · notifications · light/dark · new topic · avatar. Core's
-// magnifier stays in the DOM, hidden while the search field shows
-// (jt-header.scss), so "/" still opens core's search.
+// messages · notifications · light/dark (header_color_toggle) · new topic ·
+// avatar. Core's magnifier stays in the DOM, hidden while the search field
+// shows (jt-header.scss), so "/" still opens core's search.
 // The same field for the middle of the header on wide screens. It goes in
 // before-header-panel, outside core's icon panel, which core's menus are
 // positioned against, so it can be centred on the whole bar.
@@ -69,7 +69,10 @@ export default apiInitializer((api) => {
   if (user) {
     add("jt-notifications", icon("notifications"));
   }
-  if (colorToggleAvailable(interfaceColor)) {
+  // Off unless asked for (header_color_toggle): the sidebar's Color mode menu
+  // and the command menu already switch, and the bar is full enough. Without
+  // the icon, core's header selector is left alone if a site turns it on.
+  if (settings.header_color_toggle && colorToggleAvailable(interfaceColor)) {
     document.documentElement.classList.add("jt-has-color-toggle");
     add("jt-theme", icon("theme"));
   }

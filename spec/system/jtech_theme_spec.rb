@@ -2746,7 +2746,10 @@ RSpec.describe "JTech theme" do
     end
 
     it "are all one size" do
+      jtech_theme.update_setting(:header_color_toggle, true) # light/dark is measured too
+      jtech_theme.save!
       visit("/latest")
+      expect(page).to have_css(".jt-header-theme .d-icon")
       expect(page).to have_css(".chat-header-icon .d-icon")
       glyphs = header_glyphs(skip: ".current-user, .jt-header-search")
       expect(glyphs.size).to be >= 5
@@ -3736,6 +3739,31 @@ RSpec.describe "JTech theme" do
     find(".interface-color-selector").click
     find(".interface-color-selector__dark-option").click
     try_until_success { expect(page.evaluate_script(background)).to eq("rgb(22, 22, 22)") }
+    expect_no_theme_errors
+  end
+
+  # The header's light/dark icon is off unless header_color_toggle is on; the
+  # sidebar's Color mode menu (Discourse's) and the command menu switch either
+  # way
+  it "switches light / dark from the sidebar, and from the header only when asked" do
+    SiteSetting.interface_color_selector = "sidebar_footer"
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-header-notifications")
+    expect(page).to have_css(".sidebar-footer-actions .interface-color-selector")
+    expect(page).to have_no_css(".jt-header-theme")
+    find(".jt-header-search__button").click
+    find(".jt-cmdk__input").fill_in(with: "light")
+    expect(page).to have_css(".jt-cmdk__item", text: "Switch light / dark")
+    shot("color-mode-sidebar")
+
+    jtech_theme.update_setting(:header_color_toggle, true)
+    jtech_theme.save!
+    visit("/latest")
+    expect(page).to have_css(".sidebar-footer-actions .interface-color-selector")
+    find(".jt-header-theme button").click
+    background = "getComputedStyle(document.body).backgroundColor"
+    try_until_success { expect(page.evaluate_script(background)).to eq("rgb(0, 0, 0)") }
     expect_no_theme_errors
   end
 end

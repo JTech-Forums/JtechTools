@@ -8,7 +8,7 @@ What it adds on top of a restyle:
 - **A front-page hero**: the headline, search and a way in for visitors beside a turning planet of dots (setting `hero_planet`), with **category and tag banners** and a **footer** with link columns.
 - The **about page** with its counts as tiles and the staff as cards.
 - **⌘K / Ctrl+K command menu** to jump to pages, categories, topics and people. The header's search field opens it. For people who can use chat, ⌘K stays chat's channel switcher (core binds it) and the menu opens from the search field only; "/" still opens Discourse's own search.
-- **Header**: search (in the middle of the bar on wide screens), JTech homepage, messages and notifications (with unread counts), light/dark, new topic. The avatar opens your profile menu (account, preferences, log out); staff keep core's review-queue badge on it, and while that shows, the avatar opens the review queue.
+- **Header**: search (in the middle of the bar on wide screens), JTech homepage, messages and notifications (with unread counts), new topic. Light/dark is in the sidebar's Color mode menu and the command menu; setting `header_color_toggle` puts an icon for it in the header too. The avatar opens your profile menu (account, preferences, log out); staff keep core's review-queue badge on it, and while that shows, the avatar opens the review queue.
 - **Sidebar**, **profiles**, **users directory**, **full-page search** and **empty pages** redesigned; site notices get a dismiss button.
 - A **login gate** for chosen categories and tags: logged-out visitors see a topic's first lines fade into a card to log in or create an account.
 - **Lucide icons**: Discourse's icons in Lucide's thin outline style (lucide.dev) instead of Font Awesome, as ChatGPT and Gemini use.
@@ -97,6 +97,7 @@ The theme brings three palettes: **JTech Light** and **JTech Dark** (OLED black)
 
 - **Brand assets.** The JTech mark, app icon and favicon are in [`docs/theme/brand/`](../theme/brand/). They're site settings (`logo_small`, `favicon`, `apple_touch_icon`…), so they apply to every theme; upload them yourself if you want them. On phones the header shows `logo_small` (the square mark) instead of the wide logo, unless a `mobile_logo` is uploaded; theme setting `mobile_small_logo`. Setting `base_font` and `heading_font` to `system` stops browsers downloading Roboto, which JTech doesn't use.
 - **Card thumbnails.** The theme asks Discourse for 320 px topic thumbnails, so after it's installed Sidekiq makes them for listed topics once, a few at a time.
+- **Color mode menu.** The sidebar's light / dark / auto menu is Discourse's own: site setting `interface_color_selector` set to **Sidebar footer** (the forum's today). With JTech's header icon off (the default), it and the command menu are where people switch.
 - **Links to the landing site** (`/home`, `/dumb`, `/terms`…): the header, footer and links inside posts open any same-site link that isn't a forum page as a normal page load, so they reach the landing site instead of the forum's 404 page.
 
 ## Before updating Discourse

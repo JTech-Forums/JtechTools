@@ -113,7 +113,8 @@ en:
     description: "JTech: Vercel-style AMOLED black and pure white, hairline borders, Geist type."
     settings:
       header_home_url: "Where the header's house icon goes (the JTech homepage). Leave blank to hide it."
-      color_mode_toggle: "Light / dark switch in the header and the command menu. It replaces core's header colour selector; clicking back to the mode your device uses returns to following the device."
+      color_mode_toggle: "Light / dark switch in the command menu (and its g o shortcut), and in the header when header_color_toggle is on. Clicking back to the mode your device uses returns to following the device."
+      header_color_toggle: "Light / dark icon in the header, beside the bell (needs color_mode_toggle). Off: people switch from the sidebar's Color mode menu or the command menu. The sidebar menu is Discourse's own; it shows while the site setting interface color selector is set to sidebar footer. While the icon shows, it replaces Discourse's header colour selector."
       overlay_scrollbar: "Thin overlay scrollbar for the page (macOS style) on mouse/trackpad devices, instead of the browser's wide classic one."
       back_to_top: "Floating back-to-top button on long pages (not on topics, which have their own)."
       command_menu: "⌘K / Ctrl+K command menu: jump to pages, categories, topics and people, or run an action."

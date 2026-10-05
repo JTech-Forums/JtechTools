@@ -118,6 +118,9 @@ header_home_url:
 color_mode_toggle:
   type: bool
   default: true
+header_color_toggle:
+  type: bool
+  default: false
 overlay_scrollbar:
   type: bool
   default: true
