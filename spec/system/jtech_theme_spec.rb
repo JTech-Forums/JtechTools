@@ -2966,6 +2966,7 @@ RSpec.describe "JTech theme" do
   describe "table of contents" do
     # long sections, so a heading near the end can still scroll to the top
     let(:section) { "A line of the guide. " * 120 }
+
     fab!(:guide) do
       Fabricate(:topic, category: category, user: member, title: "A guide with a few sections")
     end
