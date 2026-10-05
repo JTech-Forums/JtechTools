@@ -12,7 +12,8 @@
 // four stacked canvases: the parts that don't move (the atmosphere; the far
 // side of the orbits and the globe's disc; the near side of the orbits and
 // the lit rim) are drawn once per size or colour, and only the dots and the
-// satellites are drawn again each frame, 24 times a second.
+// satellites are drawn again each frame, 24 times a second (60 while
+// someone is turning it by hand, lib/jt-hero-quirks).
 
 const TAU = Math.PI * 2;
 const SEED = 17.17;
@@ -34,6 +35,11 @@ const STEPS = 12;
 // 24 frames a second: the globe turns slowly, and fewer frames is less work
 // for a phone
 const FRAME_MS = 1000 / 24;
+const HAND_FRAME_MS = 1000 / 60;
+
+// A ping (a tap on the globe): two rings running out from the rim
+const PING_S = 1.5;
+const PING_LAG = 0.22;
 
 // Orbits, in globe radii: width, height, lean
 const ORBITS = [
@@ -203,6 +209,12 @@ export default class JtPlanet {
   #pointY = 0;
   #aimX = 0;
   #aimY = 0;
+  #held = false;
+  #drift = 0;
+  #throw = 0;
+  #lastDrag = 0;
+  #pings: number[] = [];
+  #nightLights: number;
   #sinceCheck = 0;
   #poll: ReturnType<typeof setInterval> | null = null;
   #resizer: ResizeObserver;
@@ -229,7 +241,10 @@ export default class JtPlanet {
   #tick = (now: number) => {
     this.#frame = requestAnimationFrame(this.#tick);
     const elapsed = now - this.#last;
-    if (elapsed < FRAME_MS - 2) {
+    // smooth while it's held, coasting or pinging; otherwise 24 a second
+    const busy =
+      this.#held || Math.abs(this.#drift) > 0.3 || this.#pings.length > 0;
+    if (elapsed < (busy ? HAND_FRAME_MS : FRAME_MS) - 2) {
       return;
     }
     this.#last = now;
@@ -260,6 +275,10 @@ export default class JtPlanet {
     this.#ctx = this.#canvas.getContext("2d") as CanvasRenderingContext2D;
     this.#still = options.still;
     this.#introAt = options.intro && !options.still ? 0 : -1e9;
+    // night owls (10pm to 5am where the reader is) see more lights on the
+    // night side
+    const hour = new Date().getHours();
+    this.#nightLights = hour >= 22 || hour < 5 ? 0.95 : 0.985;
 
     this.#resizer = new ResizeObserver(() => this.#layout());
     this.#resizer.observe(box);
@@ -298,6 +317,73 @@ export default class JtPlanet {
     this.#aimY = y;
   }
 
+  // Whether a point on the page (client coordinates) is on the globe
+  hit(x: number, y: number): boolean {
+    if (!this.#width) {
+      return false;
+    }
+    const box = this.#box.getBoundingClientRect();
+    const scale = box.width / this.#width;
+    const dx = x - (box.left + this.#cx * scale);
+    const dy = y - (box.top + this.#cy * scale);
+    const r = this.#r * scale;
+    return dx * dx + dy * dy <= r * r;
+  }
+
+  // Held: it stops coasting and turns only by hand
+  grab() {
+    this.#held = true;
+    this.#drift = 0;
+    this.#throw = 0;
+    this.#lastDrag = performance.now();
+  }
+
+  // Dragged across by dx (CSS pixels): the surface under the pointer
+  // follows it
+  drag(dx: number) {
+    const box = this.#box.getBoundingClientRect();
+    const r = this.#width ? (this.#r / this.#width) * box.width : 0;
+    if (!r) {
+      return;
+    }
+    const turn = dx / r;
+    this.#spin += turn;
+    const now = performance.now();
+    const dt = Math.max(4, now - this.#lastDrag) / 1000;
+    this.#lastDrag = now;
+    // how fast it's being turned, smoothed, for the throw
+    this.#throw = this.#throw * 0.5 + (turn / dt) * 0.5;
+    if (this.#still) {
+      this.#draw();
+    }
+  }
+
+  // Let go: it coasts at the speed it was thrown, slowing back to its own
+  // pace (a hand that stopped before letting go doesn't throw it)
+  release() {
+    this.#held = false;
+    const resting = performance.now() - this.#lastDrag > 120;
+    this.#drift =
+      this.#still || resting ? 0 : Math.max(-14, Math.min(14, this.#throw));
+  }
+
+  // Tapped: a ping rings out, the atmosphere flares and the satellites
+  // hurry
+  ping() {
+    if (this.#still) {
+      return;
+    }
+    this.#pings.push(this.#time);
+    this.#pulse = 1.6;
+  }
+
+  // Sent spinning (the meteor shower), radians a second
+  whirl(speed: number) {
+    if (!this.#still) {
+      this.#drift = speed;
+    }
+  }
+
   destroy() {
     this.#stop();
     this.#resizer.disconnect();
@@ -323,8 +409,12 @@ export default class JtPlanet {
     const settle = 1 + 7 * Math.exp(-Math.max(0, intro) / 0.9);
     this.#boost += (this.#boostTo - this.#boost) * Math.min(1, dt * 4);
     this.#pulse *= Math.exp(-dt * 3);
-    this.#spin += dt * SPIN * settle * (1 + 3 * this.#boost);
-    this.#orbitTime += dt * (1 + 1.5 * this.#boost);
+    if (!this.#held) {
+      this.#spin +=
+        dt * SPIN * settle * (1 + 3 * this.#boost) + this.#drift * dt;
+    }
+    this.#drift *= Math.exp(-dt / 1.4);
+    this.#orbitTime += dt * (1 + 1.5 * this.#boost + 2.5 * this.#pulse);
     this.#pointX += (this.#aimX - this.#pointX) * Math.min(1, dt * 2.5);
     this.#pointY += (this.#aimY - this.#pointY) * Math.min(1, dt * 2.5);
   }
@@ -609,6 +699,7 @@ export default class JtPlanet {
     this.#ctx.clearRect(0, 0, this.#width, this.#height);
     this.#drawDots(easeOut((intro - 0.25) / 1.4));
     this.#drawSatellites(easeOut((intro - 0.9) / 1.2));
+    this.#drawPings();
   }
 
   #drawDots(level: number) {
@@ -659,7 +750,7 @@ export default class JtPlanet {
       if (land) {
         // the night side keeps a few lights on
         alpha =
-          lit < 0.08 && dots.glint[i] > 0.985
+          lit < 0.08 && dots.glint[i] > this.#nightLights
             ? 0.8 * limb
             : (0.08 + 0.92 * Math.pow(lit, 0.8)) * limb * dots.glint[i];
       } else {
@@ -750,10 +841,41 @@ export default class JtPlanet {
         continue;
       }
       const twinkle = 0.85 + 0.15 * Math.sin(this.#time * 3 + satellite.phase);
-      const size = this.#halo.width * (near ? 1 : 0.6) * twinkle;
+      const size =
+        this.#halo.width * (near ? 1 : 0.6) * twinkle * (1 + 0.3 * this.#pulse);
       ctx.globalAlpha = level * dim;
       ctx.drawImage(this.#halo, x - size / 2, y - size / 2, size, size);
       ctx.globalAlpha = 1;
+    }
+  }
+
+  // A ping's two rings, running out from the rim and fading
+  #drawPings() {
+    if (!this.#pings.length) {
+      return;
+    }
+    this.#pings = this.#pings.filter(
+      (at) => this.#time - at < PING_S + PING_LAG
+    );
+    const ctx = this.#ctx;
+    ctx.lineWidth = Math.max(1, this.#ratio);
+    for (const at of this.#pings) {
+      for (const lag of [0, PING_LAG]) {
+        const t = (this.#time - at - lag) / PING_S;
+        if (t <= 0 || t >= 1) {
+          continue;
+        }
+        ctx.strokeStyle = this.#rgba(0.55 * (1 - t));
+        ctx.beginPath();
+        ctx.arc(
+          this.#cx,
+          this.#cy,
+          this.#r * (1.02 + 0.6 * easeOut(t)),
+          0,
+          TAU
+        );
+        ctx.stroke();
+      }
     }
   }
 }

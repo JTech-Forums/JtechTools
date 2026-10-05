@@ -16,17 +16,11 @@ import type SiteSettings from "discourse/services/site-settings";
 import DButton from "discourse/ui-kit/d-button";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
+import JtHeroQuirks, { FLARE } from "../lib/jt-hero-quirks";
 import JtPlanet from "../lib/jt-planet";
 
 const DISMISS_KEY = "jt-hero-dismissed";
 const SEEN_KEY = "jt-hero-seen";
-
-// One of the bright stars flaring: it swells, turns a quarter and fades
-const FLARE: Keyframe[] = [
-  { opacity: 0, scale: "0.2", rotate: "0deg" },
-  { opacity: 1, scale: "1", rotate: "45deg", offset: 0.5 },
-  { opacity: 0, scale: "0.4", rotate: "90deg" },
-];
 
 type HeroSite = Site & { can_search: boolean };
 
@@ -145,6 +139,15 @@ export default class JtHero extends Component<JtHeroSignature> {
     };
   });
 
+  // The things it does that nobody is told about (lib/jt-hero-quirks)
+  quirks = modifier((hero: HTMLElement) => {
+    const quirks = new JtHeroQuirks(hero, {
+      planet: () => this.#planet,
+      calm: reducedMotion(),
+    });
+    return () => quirks.destroy();
+  });
+
   // Every few seconds one of the bright stars flares, in turn, while the
   // hero is on screen. A short animation each time rather than four that
   // never stop: in between, nothing runs.
@@ -236,15 +239,56 @@ export default class JtHero extends Component<JtHeroSignature> {
     });
   }
 
+  // Closed: the planet flies off and the hero folds away, then it's gone
   @action
-  dismiss() {
-    this.dismissed = true;
+  dismiss(event: MouseEvent) {
     try {
       // Keyed on the title: changing the headline shows the hero again.
       window.localStorage.setItem(DISMISS_KEY, settings.hero_title);
     } catch {
       // storage unavailable: dismissal lasts for this page view
     }
+    const hero = (event.currentTarget as HTMLElement).closest<HTMLElement>(
+      ".jt-hero"
+    );
+    if (!hero || reducedMotion()) {
+      this.dismissed = true;
+      return;
+    }
+    hero
+      .querySelector(".jt-hero__planet")
+      ?.animate([{ translate: "35% -75%", scale: "0.25", opacity: 0 }], {
+        duration: 650,
+        easing: "cubic-bezier(0.5, 0, 0.75, 0)",
+        fill: "forwards",
+      });
+    // measured with its padding and border, which fold away with it
+    hero.style.boxSizing = "border-box";
+    const fold = hero.animate(
+      [
+        { height: `${hero.offsetHeight}px`, opacity: 1 },
+        {
+          height: "0px",
+          opacity: 0,
+          paddingTop: "0px",
+          paddingBottom: "0px",
+          marginBottom: "0px",
+          borderWidth: "0px",
+        },
+      ],
+      {
+        duration: 520,
+        delay: 200,
+        easing: "cubic-bezier(0.65, 0, 0.35, 1)",
+        fill: "forwards",
+      }
+    );
+    const gone = () => {
+      if (!this.isDestroying) {
+        this.dismissed = true;
+      }
+    };
+    fold.finished.then(gone, gone);
   }
 
   #readDismissed(): boolean {
@@ -264,6 +308,7 @@ export default class JtHero extends Component<JtHeroSignature> {
         aria-labelledby="jt-hero-title"
         class={{this.heroClass}}
         {{this.arrive}}
+        {{this.quirks}}
       >
         <div aria-hidden="true" class="jt-hero__sky">
           <span class="jt-hero__stars" {{this.flare}}>

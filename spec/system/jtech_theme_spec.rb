@@ -1074,6 +1074,55 @@ RSpec.describe "JTech theme" do
     expect(page).to have_no_css(".jt-hero.--searching")
   end
 
+  # Closed, the hero folds away (the planet flying off), and it stays closed
+  # on the next visit
+  it "folds the hero away when it's closed, and keeps it closed" do
+    visit("/latest")
+    find(".jt-hero__close").click
+    expect(page).to have_no_css(".jt-hero")
+
+    visit("/latest")
+    expect(page).to have_css("#navigation-bar")
+    expect(page).to have_no_css(".jt-hero")
+  end
+
+  # Hidden touches: the planet turns by hand (held while it's dragged, and
+  # the click that ends a drag sends nothing), a tap on the empty sky sends
+  # a shooting star, and the Konami code a shower of them
+  it "lets the hero's planet be turned by hand and its sky be played with" do
+    visit("/latest")
+    expect(page).to have_css(".jt-hero__planet[data-jt-planet='running']")
+    globe = page.evaluate_script(<<~JS)
+      (() => {
+        const planet = document.querySelector(".jt-hero__planet");
+        const box = planet.getBoundingClientRect();
+        const style = getComputedStyle(planet);
+        const at = (name) => parseFloat(style.getPropertyValue(name)) * box.width;
+        return [box.left + at("--jt-planet-x"), box.top + at("--jt-planet-y")];
+      })()
+    JS
+    page.driver.with_playwright_page do |pw|
+      pw.mouse.move(globe[0], globe[1])
+      pw.mouse.down
+      pw.mouse.move(globe[0] + 60, globe[1], steps: 6)
+    end
+    expect(page).to have_css(".jt-hero.--grabbing")
+    page.driver.with_playwright_page { |pw| pw.mouse.up }
+    expect(page).to have_no_css(".jt-hero.--grabbing")
+    expect(page).to have_no_css(".jt-hero__shoot")
+
+    corner =
+      page.evaluate_script(
+        "(() => { const box = document.querySelector('.jt-hero').getBoundingClientRect(); return [box.left + 12, box.bottom - 12]; })()",
+      )
+    page.driver.with_playwright_page { |pw| pw.mouse.click(corner[0], corner[1]) }
+    expect(page).to have_css(".jt-hero__shoot")
+
+    find("body").send_keys(:up, :up, :down, :down, :left, :right, :left, :right, "b", "a")
+    expect(page).to have_css(".jt-hero__shoot", minimum: 5)
+    expect_no_theme_errors
+  end
+
   # Windows high contrast: no planet, stars or moving light; a plain border
   it "leaves the hero's planet and light out of high contrast mode" do
     page.driver.with_playwright_page { |pw| pw.emulate_media(forcedColors: "active") }
