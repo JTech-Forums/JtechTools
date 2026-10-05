@@ -152,6 +152,7 @@ export const JT_ICON_MAP: Record<string, string> = {
   plus: "plus",
   print: "printer",
   "puzzle-piece": "puzzle",
+  qrcode: "qr-code",
   question: "circle-question-mark",
   "quote-left": "quote",
   "quote-right": "quote",

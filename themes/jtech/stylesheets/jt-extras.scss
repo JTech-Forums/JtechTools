@@ -354,3 +354,29 @@
     border-radius: 3px;
   }
 }
+
+// ── QR code in the share options (qr_code_share) ──────────
+// Black on white in both modes (scanners expect it), on a white tile.
+.jt-qr {
+  &__code {
+    width: min(18rem, 100%);
+    margin: 0 auto;
+    padding: 8px;
+    border-radius: var(--jt-radius, 12px);
+    background: #fff;
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  &__url {
+    margin: var(--space-3) 0 0;
+    color: var(--jt-text-subtle);
+    font-size: var(--font-down-1);
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+}

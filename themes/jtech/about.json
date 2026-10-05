@@ -218,7 +218,9 @@
       "minus",
       "down-left-and-up-right-to-center",
       "left-right",
-      "font"
+      "font",
+      "qrcode",
+      "download"
     ],
     "topic_thumbnail_sizes": [
       [

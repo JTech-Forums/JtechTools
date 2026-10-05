@@ -2973,6 +2973,17 @@ RSpec.describe "JTech theme" do
       expect_no_theme_errors
     end
 
+    it "offers a topic's link as a QR code among the share options" do
+      sign_in(member)
+      visit(topic.relative_url)
+      find("#topic-footer-buttons .share-and-invite").click
+      find(".share-topic-modal button[title='QR code']").click
+      expect(page).to have_css(".d-modal.jt-qr .jt-qr__code svg path")
+      expect(page).to have_css(".jt-qr__url", text: topic.relative_url)
+      shot("qr-code")
+      expect_no_theme_errors
+    end
+
     it "shows when someone was last seen on their user card" do
       member.update!(last_seen_at: 2.hours.ago)
       sign_in(admin)

@@ -66,6 +66,7 @@ declare module "virtual:theme" {
     image_carousels: boolean;
     sidebar_inboxes: boolean;
     reader_mode: boolean;
+    qr_code_share: boolean;
   }
 
   export const settings: JtechThemeSettings;

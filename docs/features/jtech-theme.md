@@ -62,6 +62,7 @@ Several components on the forum's Default theme are built into JTech, and some c
 | Post Image Carousel | `image_carousels` | Posts written with its `[wrap=Carousel]` show their pictures in Discourse's own carousel, the one `[grid mode=carousel]` makes (use that for new posts); any text in the wrap stays. Its autoplay, loop and thumbnails aren't carried over (four of the forum's five carousels had them off), and nothing is loaded from a CDN any more. |
 | Messages section for sidebar | `sidebar_inboxes` | An Inboxes section for people in a group with a shared inbox (moderators and admins on the forum): My messages and each group's inbox, with unread counts and a + for a new message. Everyone else has Discourse's My Messages link, which the section would only repeat. |
 | Reader Mode | `reader_mode` | The switch at the top of the timeline, and Ctrl+Alt+R, as before: the sidebar goes, the header and the posts' buttons fade until pointed at, and the text can be made larger, the column narrower or wider, or the type a serif (kept per browser). The component's sepia and dark colours aren't carried over: the forum's own light and dark (and Dim) cover them. |
+| QR Code Shareables | `qr_code_share` | QR code among the share options (a topic, a post, the buttons over a quote): the link as a code to scan with a phone, black on white in both colour modes, with Save image. Made in the browser by the theme (Discourse only makes QR codes on the server, for two-factor setup); the component's colour, dot-style and logo settings aren't carried over. |
 | Unhide composer fullscreen toggle for tablets | — | Always on. |
 | Sidebar Theme Toggle | `color_mode_toggle` | Keep the component only if people should also be able to switch to another theme. |
 | Gated Topics in Category | `gated_categories`, `gated_tags` | Copy the component's categories and tags (General, Android Apps, Android ROMs, Android Guides and the `roms` tag on the forum today). Off until you list some. Like the component, it's for logged-out visitors only. |
@@ -69,7 +70,7 @@ Several components on the forum's Default theme are built into JTech, and some c
 
 **Clash with JTech (detach):** discourse-left-side-burger (JTech keeps the ☰ at the right), Discourse Avatar Component (JTech sets avatar shape), Full width (JTech sets the page width), Density Toggle (JTech's type scale), Topic List Item Click Animation (JTech's cards have their own press feedback), User Card Directory and Users Top Nav (JTech's People page).
 
-**Keep as they are:** Auto linkify words, Sidebar Menu Reorder, Wikipedia Lookup, QR Code Shareables, Quick Profile Links Menu, Reply Templates, Shared Draft Button. JTech's styles cover the ones that draw in the page.
+**Keep as they are:** Auto linkify words, Sidebar Menu Reorder, Wikipedia Lookup, Quick Profile Links Menu, Reply Templates, Shared Draft Button. JTech's styles cover the ones that draw in the page.
 
 **Not real restrictions:** JTech's login gate (like "Gated Topics in Category" before it) and "Restricted reactions (like) by group" only hide things in the browser. The topics are still sent to logged-out visitors (`/t/….json` reads them), and the like API still accepts likes. If those need to hold, they belong on the server, in category permissions or the plugin.
 
