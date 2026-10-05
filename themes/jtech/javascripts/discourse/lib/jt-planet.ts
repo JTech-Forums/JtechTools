@@ -157,6 +157,18 @@ function makeDots(spacing: number): Dots {
   };
 }
 
+// The last spacing's dots, kept for the next visit to the front page: the
+// same size gives the same spacing, and working out the land is most of
+// setting the planet up
+let lastDots: { spacing: number; dots: Dots } | null = null;
+
+function dotsFor(spacing: number): Dots {
+  if (lastDots?.spacing !== spacing) {
+    lastDots = { spacing, dots: makeDots(spacing) };
+  }
+  return lastDots.dots;
+}
+
 function easeOut(t: number): number {
   const c = Math.min(1, Math.max(0, t));
   return 1 - Math.pow(1 - c, 3);
@@ -291,6 +303,9 @@ export default class JtPlanet {
     const hour = new Date().getHours();
     this.#nightLights = hour >= 22 || hour < 5 ? 0.95 : 0.985;
 
+    // Its first report lays the planet out and draws it, after the page's own
+    // layout and before the box is painted. Measuring the box here, in the
+    // middle of rendering the page, forced an extra layout.
     this.#resizer = new ResizeObserver(() => this.#layout());
     this.#resizer.observe(box);
     this.#watcher = new IntersectionObserver(([entry]) => {
@@ -304,7 +319,6 @@ export default class JtPlanet {
       // a still frame still follows a switch between light and dark
       this.#poll = setInterval(this.#recolor, 1500);
     }
-    this.#layout();
   }
 
   // Search has focus: the atmosphere brightens and the globe turns faster
@@ -528,7 +542,7 @@ export default class JtPlanet {
     // the globe's size really changes
     if (!this.#dots || Math.abs(this.#r - this.#dotsRadius) > this.#r * 0.15) {
       const gap = (modest ? 8.5 : 7) * this.#ratio;
-      this.#dots = makeDots(Math.max(gap / this.#r, 0.016));
+      this.#dots = dotsFor(Math.max(gap / this.#r, 0.016));
       this.#dotsRadius = this.#r;
       const n = this.#dots.count;
       this.#px = new Float32Array(n);
