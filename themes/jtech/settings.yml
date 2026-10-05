@@ -201,3 +201,6 @@ table_of_contents_categories:
   type: list
   list_type: category
   default: ""
+voice_recorder:
+  type: bool
+  default: true

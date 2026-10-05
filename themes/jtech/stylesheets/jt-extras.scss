@@ -267,3 +267,61 @@
     padding: 0;
   }
 }
+
+// ── Voice message (voice_recorder) ────────────────────────
+// The recorder's dialog: a clock (a red dot while recording) or the
+// recording to listen back to.
+.jt-voice {
+  &__meter {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.5em;
+    margin: var(--space-4) 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__clock {
+    font-size: var(--font-up-4);
+    font-weight: 600;
+  }
+
+  &__limit {
+    color: var(--jt-text-subtle);
+  }
+
+  &__dot {
+    width: 0.6em;
+    height: 0.6em;
+    border-radius: 50%;
+    background: var(--jt-border-strong);
+    align-self: center;
+  }
+
+  &__meter.--recording &__dot {
+    background: var(--danger);
+    animation: jt-voice-pulse 1.2s ease-in-out infinite;
+  }
+
+  &__preview {
+    display: block;
+    width: 100%;
+    margin: var(--space-2) 0;
+  }
+
+  &__error {
+    color: var(--danger);
+  }
+}
+
+@keyframes jt-voice-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jt-voice__meter.--recording .jt-voice__dot {
+    animation: none;
+  }
+}

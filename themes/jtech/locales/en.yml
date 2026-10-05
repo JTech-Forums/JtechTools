@@ -56,6 +56,15 @@ en:
     toc:
       title: "Contents"
       insert: "Table of contents"
+    voice:
+      button: "Record a voice message"
+      title: "Voice message"
+      record: "Record"
+      stop: "Stop"
+      add: "Add to post"
+      again: "Record again"
+      blocked: "Microphone access is blocked. Allow it for this site in your browser's settings, then try again."
+      no_microphone: "No microphone was found. Connect one and try again."
     jump:
       top: "Jump to the first post"
       bottom: "Jump to the last post"
@@ -106,6 +115,7 @@ en:
       print_button_categories: "Categories (and their subcategories) whose topics get a Print button on the first post. It prints the first post on its own, or saves it as a PDF. Discourse's own print view (Ctrl+P on a topic) prints the whole topic."
       table_of_contents: "Contents for a topic's first post, listing its headings: in the timeline's column on desktop, with the section being read marked, and as a card at the top of the post on phones. For first posts in table_of_contents_categories, and any first post with DiscoTOC's marker (the composer's + menu → Table of contents adds it). At least 3 headings."
       table_of_contents_categories: "Categories (and their subcategories) whose first posts get contents without the marker."
+      voice_recorder: "A microphone button in the composer to record a voice message and add it to the post as an audio file. Shown when the browser can record and the recording's file type (m4a, ogg or webm, depending on the browser) is in authorized_extensions. A recording stops by itself before it would pass max_attachment_size_kb."
       topic_jump_buttons: "First-post and last-post buttons under the topic timeline, and beside the progress button on phones."
       hide_lock_icons: "Hide the padlock on private categories' badges and links (everyone who sees the category already has access)."
       gated_categories: "Categories whose topics logged-out visitors can't read: the first post fades out under a prompt to log in or create an account. This only hides topics in the browser (they're still sent to the visitor); to really keep a category private, change its security settings."

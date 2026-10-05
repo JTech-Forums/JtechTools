@@ -3006,6 +3006,57 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  describe "voice messages" do
+    before { SiteSetting.authorized_extensions = "jpg|png|m4a|ogg|webm" }
+
+    # headless Chrome has no microphone: a tone stands in for one
+    def fake_microphone
+      page.execute_script(<<~JS)
+        navigator.mediaDevices.getUserMedia = async () => {
+          const context = new AudioContext();
+          const tone = context.createOscillator();
+          const out = context.createMediaStreamDestination();
+          tone.connect(out);
+          tone.start();
+          return out.stream;
+        };
+      JS
+    end
+
+    def open_composer
+      visit("/latest")
+      find("#create-topic").click
+      expect(page).to have_css("#reply-control.open .d-editor-button-bar")
+    end
+
+    it "records a voice message and adds it to the post as audio" do
+      sign_in(admin)
+      open_composer
+      fake_microphone
+      find(".d-editor-button-bar .jt-voice").click
+      find(".jt-voice__record").click
+      expect(page).to have_css(".jt-voice__meter.--recording .jt-voice__clock", text: "0:01")
+      find(".jt-voice__stop").click
+      expect(page).to have_css("audio.jt-voice__preview")
+      shot("voice-message")
+      find(".jt-voice__add").click
+      expect(page).to have_no_css(".d-modal.jt-voice")
+      try_until_success(timeout: 10) do
+        expect(find("#reply-control .d-editor-input").value).to match(
+          %r{!\[voice-message\|(audio|video)\]\(upload://\w+\.(m4a|ogg|webm)\)},
+        )
+      end
+      expect_no_theme_errors
+    end
+
+    it "leaves the microphone out when the forum doesn't take audio files" do
+      SiteSetting.authorized_extensions = "jpg|png"
+      sign_in(admin)
+      open_composer
+      expect(page).to have_no_css(".d-editor-button-bar .jt-voice")
+    end
+  end
+
   describe "login gate" do
     def gate(categories: "", tags: "")
       jtech_theme.update_setting(:gated_categories, categories)

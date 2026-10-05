@@ -6,6 +6,7 @@ What changed for forums running Jtech Tools. Newest first.
 
 **New**
 
+- JTech theme: record a voice message from the composer. The microphone in the toolbar opens a recorder: record, listen back, and add it to the post, where it plays as audio. It replaces the Voice Recorder component. Setting: `voice_recorder`.
 - JTech theme: contents for guides. A first post with three or more headings, in the categories you choose or with DiscoTOC's marker, lists its headings in the timeline's column on desktop, marking the section you're reading (Contents folds it away and brings the timeline back), and as a card at the top of the post on phones. The composer's options menu still adds the marker. It replaces DiscoTOC (put Android Guides in the setting to keep it there). Settings: `table_of_contents`, `table_of_contents_categories`.
 - JTech theme: in the categories you choose, a topic's first post has a Print button that prints that post on its own, or saves it as a PDF from the print dialog. It replaces the Topic PDF Download Button component (put Exclusive in the setting to keep it there). Setting: `print_button_categories`.
 - JTech theme: over a topic list, a dropdown beside categories and tags shows all topics, only those with replies, or only those nobody has replied to yet. It replaces the Unanswered Filter component. Setting: `replies_filter`.

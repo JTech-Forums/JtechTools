@@ -169,6 +169,7 @@ export const JT_ICON_MAP: Record<string, string> = {
   "square-full": "square",
   "square-root-variable": "radical",
   star: "star",
+  stop: "square",
   strikethrough: "strikethrough",
   sun: "sun",
   table: "table",

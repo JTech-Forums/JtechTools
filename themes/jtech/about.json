@@ -210,7 +210,10 @@
       "house",
       "arrow-down",
       "lock",
-      "print"
+      "print",
+      "microphone",
+      "stop",
+      "rotate"
     ],
     "topic_thumbnail_sizes": [
       [
