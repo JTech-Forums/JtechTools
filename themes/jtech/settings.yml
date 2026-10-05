@@ -32,7 +32,7 @@ hero_title:
   default: "Welcome to JTech Forums"
 hero_subtitle:
   type: string
-  default: "The most precise, accurate and up-to-date tech and filtering information for the Jewish community. Join a conversation, and remember to be kind and helpful."
+  default: "The most precise, accurate and up-to-date tech and filtering information for the Orthodox community. Join a conversation, and remember to be kind and helpful."
 hero_search_placeholder:
   type: string
   default: "Search phones, filters, guides…"
@@ -47,7 +47,7 @@ footer_enabled:
   default: true
 footer_tagline:
   type: string
-  default: "Precise, up-to-date tech and filtering information for the Jewish community."
+  default: "Precise, up-to-date tech and filtering information for the Orthodox community."
 footer_links:
   type: objects
   default:
