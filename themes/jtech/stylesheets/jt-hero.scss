@@ -617,6 +617,20 @@ $jt-stars-near: (
   }
 }
 
+// ── Away: scrolled out of sight ────────────────────────────
+// The endless animations (the edge light, the twinkle, the meteor, the
+// headline's light) hold still while the hero is off screen
+// (components/jt-hero), and carry on from the same point when it's back.
+// The arrival's rules above are more specific, so it plays out regardless
+// and can't be left half done.
+.jt-hero[data-jt-away] {
+  *,
+  *::before,
+  *::after {
+    animation-play-state: paused;
+  }
+}
+
 @keyframes jt-hero-rise {
   from {
     opacity: 0;

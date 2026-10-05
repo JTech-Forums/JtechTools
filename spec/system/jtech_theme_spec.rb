@@ -1034,6 +1034,28 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # Scrolled out of sight, the hero's endless animations (the meteor, the
+  # stars' twinkle, the headline's light) hold still, and carry on when it's
+  # back
+  it "pauses the hero's animations while it's scrolled out of sight" do
+    visit("/latest")
+    expect(page).to have_css(".jt-hero__meteor")
+    play_state = "getComputedStyle(document.querySelector('.jt-hero__meteor')).animationPlayState"
+    expect(page.evaluate_script(play_state)).to eq("running")
+
+    page.execute_script(<<~JS)
+      document.querySelector("#main-outlet").style.paddingBottom = "300vh";
+      window.scrollTo(0, document.documentElement.scrollHeight);
+    JS
+    expect(page).to have_css(".jt-hero[data-jt-away]")
+    expect(page.evaluate_script(play_state)).to eq("paused")
+
+    page.execute_script("window.scrollTo(0, 0)")
+    expect(page).to have_no_css(".jt-hero[data-jt-away]")
+    expect(page.evaluate_script(play_state)).to eq("running")
+    expect_no_theme_errors
+  end
+
   # Visitors get a way in under the search, in core's own (translated) words;
   # with sign-ups closed only Log In, as the main button; members get neither
   it "offers visitors a way in from the hero" do

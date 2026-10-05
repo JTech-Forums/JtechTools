@@ -125,6 +125,18 @@ export default class JtHero extends Component<JtHeroSignature> {
     };
   });
 
+  // Off screen, the sky's endless animations hold still (jt-hero.scss), as
+  // the planet does. The whole hero is watched, not the planet: on a phone
+  // the planet scrolls away while the headline and the stars are still in
+  // view. An attribute, as the class list is the template's.
+  away = modifier((hero: HTMLElement) => {
+    const watcher = new IntersectionObserver(([entry]) =>
+      hero.toggleAttribute("data-jt-away", !entry.isIntersecting)
+    );
+    watcher.observe(hero);
+    return () => watcher.disconnect();
+  });
+
   planet = modifier((box: HTMLElement) => {
     const planet = new JtPlanet(box, {
       still: reducedMotion(),
@@ -308,6 +320,7 @@ export default class JtHero extends Component<JtHeroSignature> {
         aria-labelledby="jt-hero-title"
         class={{this.heroClass}}
         {{this.arrive}}
+        {{this.away}}
         {{this.quirks}}
       >
         <div aria-hidden="true" class="jt-hero__sky">
