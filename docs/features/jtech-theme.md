@@ -83,7 +83,7 @@ The theme brings three palettes: **JTech Light** and **JTech Dark** (OLED black)
 
 ## Things outside the theme
 
-- **Brand assets.** The JTech mark, app icon and favicon are in [`docs/theme/brand/`](../theme/brand/). They're site settings (`logo_small`, `favicon`, `apple_touch_icon`…), so they apply to every theme; upload them yourself if you want them. On phones the header shows `logo_small` (the square mark) instead of the wide logo, unless a `mobile_logo` is uploaded; theme setting `mobile_small_logo`. Setting `base_font` and `heading_font` to `system` stops browsers downloading Roboto, which JTech doesn't use.
+- **Brand assets.** The JTech mark, app icon and favicon are in [`docs/theme/brand/`](../theme/brand/). They're site settings (`logo_small`, `favicon`, `apple_touch_icon`…), so they apply to every theme; upload them yourself if you want them. The installed app's icon is the exception: the plugin's web manifest serves the app icon (the mark on a solid square) instead of `manifest_icon`, so it shows on a light taskbar too; setting `jtech_app_icon`. On phones the header shows `logo_small` (the square mark) instead of the wide logo, unless a `mobile_logo` is uploaded; theme setting `mobile_small_logo`. Setting `base_font` and `heading_font` to `system` stops browsers downloading Roboto, which JTech doesn't use.
 - **Card thumbnails.** The theme asks Discourse for 320 px topic thumbnails, so after it's installed Sidekiq makes them for listed topics once, a few at a time.
 - **Links to the landing site** (`/home`, `/dumb`, `/terms`…): the header, footer and links inside posts open any same-site link that isn't a forum page as a normal page load, so they reach the landing site instead of the forum's 404 page.
 
