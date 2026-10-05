@@ -37,9 +37,9 @@ Your choices there stay put: the default and user-selectable choice, attached co
 
 ## Your current components
 
-Several components on the forum's Default theme are built into JTech, and some clash with it. Detach those when you switch; the rest keep working as they are.
+JTech replaces the forum's theme components: each one it covers has a JTech setting, and the rest either clash with it or aren't needed any more (below). The forum runs without components since October 2026.
 
-**Built in (detach the component; the JTech setting is on by default):**
+**Built in (the JTech setting is on by default unless the notes say otherwise):**
 
 | Component | JTech setting | Notes |
 | --- | --- | --- |
@@ -70,9 +70,18 @@ Several components on the forum's Default theme are built into JTech, and some c
 
 **Clash with JTech (detach):** discourse-left-side-burger (JTech keeps the ☰ at the right), Discourse Avatar Component (JTech sets avatar shape), Full width (JTech sets the page width), Density Toggle (JTech's type scale), Topic List Item Click Animation (JTech's cards have their own press feedback), User Card Directory and Users Top Nav (JTech's People page).
 
-**Keep as they are:** Auto linkify words, Sidebar Menu Reorder, Wikipedia Lookup, Quick Profile Links Menu, Reply Templates, Shared Draft Button. JTech's styles cover the ones that draw in the page.
+**Not needed any more:**
 
-**Not real restrictions:** JTech's login gate (like "Gated Topics in Category" before it) and "Restricted reactions (like) by group" only hide things in the browser. The topics are still sent to logged-out visitors (`/t/….json` reads them), and the like API still accepts likes. If those need to hold, they belong on the server, in category permissions or the plugin.
+- **Auto linkify words**: Discourse does this itself. Admin → Customize → Watched Words → Link turns a word into a link when a post is saved (new and edited posts; rebake older ones), so it also works in emails and excerpts. The forum's list: JTech Forums, JTech Phone Finder, JTech Apps Page, JTech Guides Page, JTech ROMs Page, JTech Resources Page, eGate, Contact JTech Forums, WebADB, zemer.
+- **Reply Templates**: Discourse's bundled Templates plugin is on. No post used the component's `[wrap=template]`.
+- **Sidebar Menu Reorder**: the forum kept its default order, which is Discourse's own.
+- **Quick Profile Links Menu**: JTech's avatar menu and Discourse's profile tab cover it.
+- **Shared Draft Button**: shared drafts aren't set up (`shared_drafts_category` is empty), so it did nothing.
+- **Wikipedia Lookup**: used once, in a test message.
+- **Restricted reactions (like) by group**: it never restricted anyone (it compared the setting's group IDs with group names), and hiding a button wouldn't stop the like API anyway. A real restriction belongs on the server, in the plugin.
+- **chat-bubbles**: it wasn't attached to any theme.
+
+**Not a real restriction:** JTech's login gate (like "Gated Topics in Category" before it) only hides topics in the browser. They're still sent to logged-out visitors (`/t/….json` reads them). If that needs to hold, it belongs in category permissions.
 
 ## Settings
 
