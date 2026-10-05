@@ -52,6 +52,9 @@ RSpec.describe "JTech theme" do
 
   before do
     SiteSetting.jtech_enabled = true
+    # The row bounce is for the Default theme; here the JTech theme can be
+    # theme 1, the setting's default, and its cards press on their own.
+    SiteSetting.jtech_row_click_theme_ids = ""
     jtech_theme.set_default!
     DirectoryItem.refresh!
   end
@@ -1039,7 +1042,7 @@ RSpec.describe "JTech theme" do
   # back
   it "pauses the hero's animations while it's scrolled out of sight" do
     visit("/latest")
-    expect(page).to have_css(".jt-hero__meteor")
+    expect(page).to have_css(".jt-hero__meteor", visible: :all) # see-through between passes
     play_state = "getComputedStyle(document.querySelector('.jt-hero__meteor')).animationPlayState"
     expect(page.evaluate_script(play_state)).to eq("running")
 
