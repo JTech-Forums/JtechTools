@@ -217,7 +217,9 @@ export function processCooked(cooked: string | null | undefined): Processed {
     img.setAttribute("src", absolute(src));
     // The post's own pictures, for the viewer: the full-size original is
     // the lightbox link around a resized picture. Link previews' thumbnails
-    // aren't the post's pictures.
+    // aren't the post's pictures. Tapping one opens the viewer on it (the
+    // topic view's "view-picture" action; elsewhere the link works as before).
+    let picture = "";
     if (!closest(img, ".onebox")) {
       const parent = img.parentNode as Element | null;
       const lightbox =
@@ -227,6 +229,10 @@ export function processCooked(cooked: string | null | undefined): Processed {
           ? parent
           : null;
       const full = absolute((lightbox && lightbox.getAttribute("href")) || src);
+      picture = String(pictures.length);
+      const tapped = lightbox || img;
+      tapped.setAttribute("data-act", "view-picture");
+      tapped.setAttribute("data-pic", picture);
       pictures.push({
         src: absolute(src),
         full,
@@ -247,6 +253,7 @@ export function processCooked(cooked: string | null | undefined): Processed {
     btn.setAttribute("class", "img-placeholder");
     btn.setAttribute("data-act", "load-image");
     btn.setAttribute("data-src", absolute(src));
+    if (picture) btn.setAttribute("data-pic", picture);
     if (w) btn.setAttribute("data-w", w);
     if (h) btn.setAttribute("data-h", h);
     btn.textContent =

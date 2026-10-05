@@ -34,7 +34,7 @@ import { isStaff, user } from "../session.ts";
 import { category, categoryBadge, topicPath, userPath } from "../site.ts";
 import type { Post, Topic } from "../types.ts";
 import { hiddenParts, hiddenState, showHidden } from "../ui/hidden-text.ts";
-import { showPictures } from "../ui/pictures.ts";
+import { showPictures, viewPicture } from "../ui/pictures.ts";
 import { icon } from "../ui/icons.ts";
 import {
   actionSheet,
@@ -936,6 +936,19 @@ function wireTopic(
 
   // Tap-to-load images.
   s.act("load-image", (el) => loadImage(el));
+
+  // Tapping a picture in a post opens the viewer on it, not the bare file.
+  // A picture this view can't place (a small action's) opens as before.
+  s.act("view-picture", (el) => {
+    const p = postFrom(el);
+    const list = (p && state.pictures[p.id]) || [];
+    const i = parseInt(el.getAttribute("data-pic") || "", 10);
+    if (list[i]) viewPicture(list, i);
+    else {
+      const href = el.getAttribute("href");
+      if (href) window.open(href, "_blank", "noopener");
+    }
+  });
   s.act("spoiler", (el) => el.classList.toggle("revealed"));
 
   // ── Topic menu ──────────────────────────────────────────────────────
@@ -1325,6 +1338,12 @@ function loadImage(el: HTMLElement): void {
   if (w) img.setAttribute("width", w);
   if (h) img.setAttribute("height", h);
   img.className = "loaded-image";
+  // A post's picture: tapping it once it's shown opens the viewer on it.
+  const pic = el.getAttribute("data-pic");
+  if (pic) {
+    img.setAttribute("data-act", "view-picture");
+    img.setAttribute("data-pic", pic);
+  }
   if (el.parentNode) el.parentNode.replaceChild(img, el);
   else removeNode(el);
 }

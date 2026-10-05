@@ -230,6 +230,22 @@ RSpec.describe "Dumbcourse" do
       post.update_columns(cooked: cooked)
     end
 
+    # The viewer's position, as it reads: "‹ 2 / 2" is the counter with only
+    # the ‹ (previous) arrow showing.
+    def expect_position(text)
+      expect(page).to have_css(".picture-layer .pv-count", exact_text: text.delete("‹›").strip)
+      if text.start_with?("‹")
+        expect(page).to have_css(".picture-layer .pv-prev")
+      else
+        expect(page).to have_no_css(".picture-layer .pv-prev")
+      end
+      if text.end_with?("›")
+        expect(page).to have_css(".picture-layer .pv-next")
+      else
+        expect(page).to have_no_css(".picture-layer .pv-next")
+      end
+    end
+
     def open_post_menu(number)
       visit "/dumb/t/#{topic.slug}/#{topic.id}"
       # Its timestamp, not its middle, which may be a link or a picture.
@@ -254,6 +270,7 @@ RSpec.describe "Dumbcourse" do
         expect(page).to have_css(".picture-layer .pv-stage[data-zoom='1']:focus")
         expect(page).to have_css(".picture-layer .pv-name", text: "My phone")
         expect(page).to have_no_css(".picture-layer .pv-count", text: /\S/)
+        expect(page).to have_no_css(".picture-layer .pv-pos")
         # The labels appear once the picture has loaded.
         expect(page).to have_css("#softkeys .sk-left", text: /close/i)
         expect(page).to have_css("#softkeys .sk-center", text: /zoom/i)
@@ -294,24 +311,63 @@ RSpec.describe "Dumbcourse" do
         expect(page).to have_css("#softkeys .sk-center", text: /zoom/i)
         # Not forum uploads: nothing to download.
         expect(page).to have_no_css("#softkeys .sk-right", text: /\S/)
-        expect(page).to have_css(".picture-layer .pv-count", exact_text: "‹ 2 / 2")
+        expect_position("‹ 2 / 2")
         press(:left)
-        expect(page).to have_css(".picture-layer .pv-count", exact_text: "1 / 2 ›")
+        expect_position("1 / 2 ›")
 
         # Zoomed, the D-pad moves the picture; 6 still goes to the next one.
         press(:enter)
         expect(page).to have_css(".pv-stage[data-zoom='2']")
         press("6")
-        expect(page).to have_css(".picture-layer .pv-count", exact_text: "‹ 2 / 2")
+        expect_position("‹ 2 / 2")
         expect(page).to have_css(".pv-stage[data-zoom='1']")
         press("4")
-        expect(page).to have_css(".picture-layer .pv-count", exact_text: "1 / 2 ›")
+        expect_position("1 / 2 ›")
 
         press(:backspace)
         expect(page).to have_no_css(".picture-layer")
         expect(page).to have_css(".pictures-layer .pg-cell[data-i='1']:focus")
         press(:backspace)
         expect(page).to have_no_css(".pictures-layer")
+      end
+    end
+
+    it "opens a picture tapped in a post in the viewer, and taps through them" do
+      wide = png_uri(600, 400, [200, 40, 40])
+      tall = png_uri(300, 500, [40, 80, 200])
+      picture_post(<<~HTML)
+        <div class="lightbox-wrapper"><a class="lightbox" href="#{wide}" data-download-href="/uploads/default/0123abcd" title="My phone"><img src="#{wide}" alt="My phone" width="300" height="200"></a></div>
+        <p><img src="#{tall}" alt="image"></p>
+      HTML
+      phone do
+        visit "/dumb/t/#{topic.slug}/#{topic.id}"
+        topic_path = page.current_path
+
+        # The second picture: the viewer opens on it, not the bare file.
+        find(".post[data-n='3'] img[data-pic='1']").click
+        expect(page).to have_css(".picture-layer .pv-stage[data-zoom='1']:focus")
+        expect_position("‹ 2 / 2")
+
+        # The arrows beside the counter are tapped to go through them.
+        find(".picture-layer .pv-prev").click
+        expect_position("1 / 2 ›")
+        expect(page).to have_css(".picture-layer .pv-name", text: "My phone")
+        expect(page).to have_css(".picture-layer .pv-stage:focus")
+        find(".picture-layer .pv-next").click
+        expect_position("‹ 2 / 2")
+
+        # Tapping the picture zooms; the soft-key bar's Close closes.
+        find(".picture-layer .pv-stage").click
+        expect(page).to have_css(".pv-stage[data-zoom='2']")
+        find("#softkeys .sk-left").click
+        expect(page).to have_no_css(".picture-layer")
+
+        # The first picture is inside its lightbox link: the viewer, not the link.
+        find(".post[data-n='3'] a.lightbox").click
+        expect_position("1 / 2 ›")
+        expect(page).to have_css("#softkeys .sk-right", text: /save/i)
+        expect(page.windows.size).to eq(1)
+        expect(page).to have_current_path(topic_path)
       end
     end
 
