@@ -1550,6 +1550,8 @@ RSpec.describe "JTech theme" do
         requestAnimationFrame(sample);
       })()
     JS
+    # the first samples are taken while it's still held, so the press is in them
+    try_until_success { expect(page.evaluate_script("window.jtSizes.length")).to be >= 3 }
     page.driver.with_playwright_page { |pw| pw.mouse.up }
     try_until_success(timeout: 5) { expect(page.evaluate_script("window.jtSprung")).to eq(true) }
     sizes = page.evaluate_script("window.jtSizes")
