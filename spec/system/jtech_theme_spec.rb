@@ -3710,4 +3710,32 @@ RSpec.describe "JTech theme" do
     shot("dim-latest")
     expect_no_theme_errors
   end
+
+  # Picking a palette in preferences previews it with a stylesheet core leaves
+  # in the page until a reload, after the head's palette links; switching to
+  # light flipped only those, so the page stayed dark
+  it "switches to light after a dark palette was previewed in preferences" do
+    SiteSetting.interface_color_selector = "sidebar_footer"
+    member.user_option.update!(interface_color_mode: UserOption::DARK_MODE)
+    page.driver.with_playwright_page { |pw| pw.emulate_media(colorScheme: "dark") }
+    sign_in(member)
+    PageObjects::Pages::UserPreferencesInterface.new.visit(member)
+    dark = PageObjects::Components::SelectKit.new(".dark-color-scheme .select-kit")
+    dark.expand
+    dark.select_row_by_name("JTech Dim")
+    # the preview waits on the server compiling JTech Dim's stylesheet
+    expect(page).to have_css("link#cs-preview-dark[href*='jtech-dim']", visible: :all, wait: 10)
+    background = "getComputedStyle(document.body).backgroundColor"
+    try_until_success { expect(page.evaluate_script(background)).to eq("rgb(22, 22, 22)") }
+
+    find(".interface-color-selector").click
+    find(".interface-color-selector__light-option").click
+    try_until_success { expect(page.evaluate_script(background)).to eq("rgb(255, 255, 255)") }
+
+    # and back to dark: the previewed palette, not the one the page loaded with
+    find(".interface-color-selector").click
+    find(".interface-color-selector__dark-option").click
+    try_until_success { expect(page.evaluate_script(background)).to eq("rgb(22, 22, 22)") }
+    expect_no_theme_errors
+  end
 end
