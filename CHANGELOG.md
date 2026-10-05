@@ -127,6 +127,10 @@ What changed for forums running Jtech Tools. Newest first.
 - JTech theme: in Hebrew, the welcome banner's soft glow and grid sit behind the headline on the right, as they do behind it on the left in English, instead of behind the links.
 - JTech theme: a login gate for chosen categories and tags replaces the Gated Topics in Category component. Logged-out visitors see the topic's first lines fade into a card to log in or create an account, with a link to the open categories. Settings: `gated_categories`, `gated_tags`.
 
+**Permissions**
+
+- Mini-mod: a category moderator could still make their private category public, hand its moderation to any group, or move it under a category they don't moderate, by sending the change to the category's slug instead of its id (`/categories/<slug>.json`). Closed: the staff-only fields are stripped and the move is checked however the category is addressed. Reported by the-curious-2025.
+
 **Fixed**
 
 - REQ-PM: in Hebrew, contact details read the right way round: a phone number like +972 52 123 4517 showed as "4517 123 52 972+". REQ-PM's English sentences keep their full stop or question mark at the end ("How can people reach you?", not "?How can people reach you"), still on the right-hand side, and notes read in whichever language they're written in.

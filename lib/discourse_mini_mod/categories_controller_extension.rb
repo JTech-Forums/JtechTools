@@ -67,11 +67,14 @@ module DiscourseMiniMod
 
     def mini_mod_narrow_update
       return if !mini_mod_request?
-      category = Category.find_by(id: params[:id])
-      return if category.nil?
 
       mini_mod_strip_staff_params
-      return if !params.key?(:parent_category_id)
+      # Core's fetch_category (which runs first) finds the category by its
+      # slug as well as its id. Looking it up by id alone missed
+      # PUT /categories/<slug>.json and skipped the stripping above.
+      category =
+        @category || Category.find_by_slug(params[:id]) || Category.find_by(id: params[:id].to_i)
+      return if category.nil? || !params.key?(:parent_category_id)
 
       new_parent_id = params[:parent_category_id].presence&.to_i
       return if new_parent_id == category.parent_category_id

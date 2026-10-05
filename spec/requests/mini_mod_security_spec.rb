@@ -68,6 +68,37 @@ RSpec.describe "Mini-mod limits" do
       delete "/categories/#{moderated.id}.json"
       expect(response.status).to eq(403)
     end
+
+    # Core also finds a category by its slug (CategoriesController#fetch_category).
+    describe "when the category is addressed by its slug" do
+      def update_by_slug(category, params)
+        put "/categories/#{category.slug}.json",
+            params: {
+              name: category.name,
+              color: category.color,
+              text_color: category.text_color,
+            }.merge(params)
+      end
+
+      it "ignores changes to who can see the category" do
+        update_by_slug(moderated, permissions: { "everyone" => 1 })
+        expect(response.status).to eq(200)
+        expect(moderated.reload.read_restricted).to eq(true)
+        expect(moderated.permissions_params).to eq(private_group.name => 1)
+      end
+
+      it "ignores changes to who moderates it" do
+        update_by_slug(moderated, moderating_group_ids: [Group::AUTO_GROUPS[:trust_level_0]])
+        expect(response.status).to eq(200)
+        expect(moderated.reload.moderating_group_ids).to eq([mod_group.id])
+      end
+
+      it "refuses moving the category under one they don't moderate" do
+        update_by_slug(moderated, parent_category_id: other.id)
+        expect(response.status).to eq(403)
+        expect(moderated.reload.parent_category_id).to be_nil
+      end
+    end
   end
 
   describe "new subcategories" do
