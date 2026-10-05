@@ -128,15 +128,18 @@ export default class JtTopicCard extends Component<JtTopicCardSignature> {
   }
 
   // The topic's first image: the smallest generated size that is still sharp
-  // at 2x (about.json asks core for 320px), else the original.
+  // at 2x (about.json asks core for 320px), else the original. Measured by
+  // its longer side, as core fits the image inside 320×320: a tall image's
+  // is 160×320, and by its width alone the card loaded the original.
   get thumbnail(): string | null {
     if (!settings.card_thumbnails) {
       return null;
     }
+    const side = (t: CardThumbnail) => Math.max(t.width, t.height);
     const sizes = [...(this.topic.thumbnails || [])].sort(
-      (a, b) => a.width - b.width
+      (a, b) => side(a) - side(b)
     );
-    const pick = sizes.find((t) => t.width >= 240) || sizes.at(-1);
+    const pick = sizes.find((t) => side(t) >= 240) || sizes.at(-1);
     return pick?.url || this.topic.image_url || null;
   }
 
