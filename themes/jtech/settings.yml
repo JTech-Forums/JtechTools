@@ -184,3 +184,6 @@ copy_post_groups:
 closed_reply_warning:
   type: bool
   default: true
+selection_search:
+  type: bool
+  default: true

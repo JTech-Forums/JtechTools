@@ -2837,6 +2837,15 @@ RSpec.describe "JTech theme" do
       expect(page).to have_no_css(".jt-closed-reply-popup")
     end
 
+    it "searches the forum for text selected in a post" do
+      sign_in(member)
+      visit(topic.relative_url)
+      select_text_range("#post_1 .cooked p", 4, 7) # "setting"
+      find(".jt-selection-search").click
+      expect(page).to have_current_path("/search?q=setting")
+      expect_no_theme_errors
+    end
+
     it "shows when someone was last seen on their user card" do
       member.update!(last_seen_at: 2.hours.ago)
       sign_in(admin)

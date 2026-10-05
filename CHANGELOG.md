@@ -6,6 +6,7 @@ What changed for forums running Jtech Tools. Newest first.
 
 **New**
 
+- JTech theme: select some text in a post and the buttons over it (Quote, Edit, Copy) include Search, which opens the search page for it. It replaces the Highlight to Search component. Setting: `selection_search`.
 - JTech theme: replying to a closed or archived topic (which only staff and the category's moderators can) shows a note in the composer that most people can't reply there, with buttons to reopen or unarchive it. It replaces the forum's Admin Warnings component. Setting: `closed_reply_warning`.
 - JTech theme: a Copy button in each post's menu copies the post's text as Markdown, beside Copy link, with the same "copied" confirmation. It replaces the Copy post button component; trust level 1 and up get it by default. Settings: `copy_post_button`, `copy_post_groups`.
 - JTech theme: the forum's own theme now ships with the plugin and is installed and kept up to date on every rebuild. It is never made the default; turn it on under Customize → Themes. Switch: `jtech_theme_install`. See [docs/features/jtech-theme.md](docs/features/jtech-theme.md).
