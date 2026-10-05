@@ -33,9 +33,11 @@ const ROLL = -0.32;
 const STEPS = 12;
 
 // 24 frames a second: the globe turns slowly, and fewer frames is less work
-// for a phone
+// for a phone. Between them it sleeps on a timer that wakes it a little
+// before the next is due, so the screen's frames in between cost nothing.
 const FRAME_MS = 1000 / 24;
 const HAND_FRAME_MS = 1000 / 60;
+const WAKE_EARLY_MS = 6;
 
 // A ping (a tap on the globe): two rings running out from the rim
 const PING_S = 1.5;
@@ -197,6 +199,7 @@ export default class JtPlanet {
   #still: boolean;
   #visible = true;
   #frame: number | null = null;
+  #timer: ReturnType<typeof setTimeout> | null = null;
   #last = 0;
   #time = 0;
   #introAt: number;
@@ -230,7 +233,7 @@ export default class JtPlanet {
       : go
         ? "running"
         : "paused";
-    if (go && this.#frame === null) {
+    if (go && this.#frame === null && this.#timer === null) {
       this.#last = performance.now();
       this.#frame = requestAnimationFrame(this.#tick);
     } else if (!go) {
@@ -239,21 +242,29 @@ export default class JtPlanet {
   };
 
   #tick = (now: number) => {
-    this.#frame = requestAnimationFrame(this.#tick);
+    this.#frame = null;
     const elapsed = now - this.#last;
     // smooth while it's held, coasting or pinging; otherwise 24 a second
-    const busy =
-      this.#held || Math.abs(this.#drift) > 0.3 || this.#pings.length > 0;
-    if (elapsed < (busy ? HAND_FRAME_MS : FRAME_MS) - 2) {
-      return;
+    if (elapsed >= (this.#busy() ? HAND_FRAME_MS : FRAME_MS) - 2) {
+      this.#last = now;
+      this.#step(Math.min(0.1, elapsed / 1000));
+      this.#draw();
+      this.#sinceCheck += elapsed;
+      if (this.#sinceCheck > 1500) {
+        this.#sinceCheck = 0;
+        this.#recolor();
+      }
     }
-    this.#last = now;
-    this.#step(Math.min(0.1, elapsed / 1000));
-    this.#draw();
-    this.#sinceCheck += elapsed;
-    if (this.#sinceCheck > 1500) {
-      this.#sinceCheck = 0;
-      this.#recolor();
+    // busy, the screen's next frame; otherwise a timer until just before
+    // the next is due, then the screen's frame after it
+    const wait = this.#last + FRAME_MS - 2 - WAKE_EARLY_MS - performance.now();
+    if (this.#busy() || wait <= 0) {
+      this.#frame = requestAnimationFrame(this.#tick);
+    } else {
+      this.#timer = setTimeout(() => {
+        this.#timer = null;
+        this.#frame = requestAnimationFrame(this.#tick);
+      }, wait);
     }
   };
 
@@ -336,6 +347,7 @@ export default class JtPlanet {
     this.#drift = 0;
     this.#throw = 0;
     this.#lastDrag = performance.now();
+    this.#wake();
   }
 
   // Dragged across by dx (CSS pixels): the surface under the pointer
@@ -375,12 +387,14 @@ export default class JtPlanet {
     }
     this.#pings.push(this.#time);
     this.#pulse = 1.6;
+    this.#wake();
   }
 
   // Sent spinning (the meteor shower), radians a second
   whirl(speed: number) {
     if (!this.#still) {
       this.#drift = speed;
+      this.#wake();
     }
   }
 
@@ -399,6 +413,24 @@ export default class JtPlanet {
     if (this.#frame !== null) {
       cancelAnimationFrame(this.#frame);
       this.#frame = null;
+    }
+    if (this.#timer !== null) {
+      clearTimeout(this.#timer);
+      this.#timer = null;
+    }
+  }
+
+  // Held, coasting or pinging: drawn on every frame it can be
+  #busy(): boolean {
+    return this.#held || Math.abs(this.#drift) > 0.3 || this.#pings.length > 0;
+  }
+
+  // Just made busy: on the screen's next frame, not after the timer
+  #wake() {
+    if (this.#timer !== null) {
+      clearTimeout(this.#timer);
+      this.#timer = null;
+      this.#frame = requestAnimationFrame(this.#tick);
     }
   }
 
