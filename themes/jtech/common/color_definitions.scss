@@ -61,6 +61,45 @@
     )};
   --jt-grid: #{dark-light-choose(rgb(0 0 0 / 5%), rgb(255 255 255 / 5%))};
   --jt-glow: #{dark-light-choose(rgb(0 0 0 / 4%), rgb(255 255 255 / 9%))};
+
+  // The hero's stars (graphite specks on white, starlight on black) and the
+  // light that passes over its headline
+  --jt-hero-star: #{dark-light-choose(rgb(0 0 0 / 26%), rgb(255 255 255 / 78%))};
+  --jt-hero-sheen: #{dark-light-choose(
+      rgb(255 255 255 / 75%),
+      rgb(255 255 255 / 95%)
+    )};
+
+  // How strongly the planet's atmosphere glows (lib/jt-planet): ink on
+  // white glows less than light on black
+  --jt-planet-glow: #{dark-light-choose(0.38, 1)};
+  --jt-hero-bloom: #{dark-light-choose(
+      rgb(0 0 0 / 3.5%),
+      rgb(255 255 255 / 7%)
+    )};
+
+  // The hero's headline and numbers fade a little towards their foot. On a
+  // dark palette they rest just under full white, so the light that passes
+  // over the headline shows.
+  --jt-hero-title-top: #{dark-light-choose($primary, rgba($primary, 0.9))};
+  --jt-hero-title-foot: #{dark-light-choose(
+      rgba($primary, 0.72),
+      rgba($primary, 0.6)
+    )};
+
+  // The bright stars that flare in the hero's sky, the glow under its main
+  // button, and its glass (search, tiles): a soft lift on white, a lit top
+  // edge on black
+  --jt-hero-glint: #{dark-light-choose(rgb(0 0 0 / 55%), #fff)};
+  --jt-hero-button-glow: #{dark-light-choose(
+      rgb(0 0 0 / 38%),
+      rgb(255 255 255 / 40%)
+    )};
+  --jt-hero-lift-edge: #{dark-light-choose(
+      rgb(255 255 255 / 0%),
+      rgb(255 255 255 / 7%)
+    )};
+  --jt-hero-lift-shade: #{dark-light-choose(rgb(0 0 0 / 22%), rgb(0 0 0 / 55%))};
   --jt-header-blur-bg: #{dark-light-choose(
       rgba($secondary, 0.8),
       rgba($secondary, 0.75)

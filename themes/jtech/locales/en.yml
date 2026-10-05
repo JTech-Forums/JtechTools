@@ -41,7 +41,6 @@ en:
       bottom: "Jump to the last post"
     hero:
       search: "Search"
-      quick_links: "Quick links"
     footer:
       label: "Footer"
     header:
@@ -93,12 +92,12 @@ en:
       footer_enabled: "Show the JTech footer once a page has fully loaded."
       footer_tagline: "Line under the footer logo. Leave blank to hide."
       footer_links: "Footer links. Links sharing a section form one column, in the order sections first appear."
-      hero_enabled: "Show the front-page hero (headline, search, quick links) on the homepage, Latest and Categories."
+      hero_enabled: "Show the front-page hero (headline, search, and Sign Up / Log In for visitors) on the homepage, Latest and Categories."
       hero_title: "Hero headline."
       hero_subtitle: "Hero supporting line. Leave blank to hide."
       hero_search_placeholder: "Placeholder text in the hero search box."
       hero_dismissible: "Let people close the hero. It comes back if the headline changes."
-      hero_links: "Quick-link cards next to the headline. Icons are Font Awesome names; new icons may need adding to the svg icon subset."
+      hero_planet: "Draw the turning planet behind the hero. It pauses while it's off screen, stays still for people who ask their device for reduced motion, and is left out of Windows high contrast mode."
       topic_cards: "Show discovery topic lists (latest, new, top, categories, tags) as cards."
       corner_style: "Corner shape: squircle (smooth superellipse corners), sharp (Vercel), soft, or round (pill buttons)."
       monochrome_categories: "Show category colors in grayscale (badges and sidebar icons)."

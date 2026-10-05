@@ -929,27 +929,6 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
-  # Beside the copy (a wide window) each tile left its title 107px, with room
-  # for the hover arrow: "JTech Homepage" read "JTech Homep…"
-  it "shows the hero's link titles whole beside the copy" do
-    resize_window(width: 1440) do
-      visit("/latest")
-      expect(page).to have_css(".jt-hero__link-title")
-      # the arrow only shows on hover, but beside the copy it keeps its room
-      arrow, cut = page.evaluate_script(<<~JS)
-        [
-          getComputedStyle(document.querySelector(".jt-hero__link-arrow")).display,
-          [...document.querySelectorAll(".jt-hero__link-title")]
-            .filter((title) => title.scrollWidth > title.clientWidth + 1)
-            .map((title) => title.textContent.trim()),
-        ]
-      JS
-      expect(arrow).not_to eq("none")
-      expect(cut).to eq([])
-      expect_no_theme_errors
-    end
-  end
-
   # The hero's copy is admin-written, usually English. In a Hebrew interface it
   # took the page's direction, so a sentence's full stop landed at its start;
   # it reads in its own direction now, still aligned to the interface's side
@@ -984,47 +963,144 @@ RSpec.describe "JTech theme" do
   end
 
   # The room kept clear of the close button ran down the whole column, so on
-  # a phone the search field stopped 40px short of the links under it
-  it "keeps the hero's search field as wide as its links on a phone", mobile: true do
+  # a phone the search field stopped 40px short of the card's edge
+  it "keeps the hero's search field the card's full width on a phone", mobile: true do
     resize_window(width: 375) do
       visit("/latest")
       expect(page).to have_css(".jt-hero__close")
       edges = page.evaluate_script(<<~JS)
-        [".jt-hero__search", ".jt-hero__links"]
-          .map((selector) => document.querySelector(selector).getBoundingClientRect())
-          .map((box) => [Math.round(box.left), Math.round(box.right)])
+        (() => {
+          const hero = document.querySelector(".jt-hero");
+          const style = getComputedStyle(hero);
+          const box = hero.getBoundingClientRect();
+          const inset = (side) =>
+            parseFloat(style[`padding${side}`]) + parseFloat(style[`border${side}Width`]);
+          const search = document.querySelector(".jt-hero__search").getBoundingClientRect();
+          return [
+            [Math.round(box.left + inset("Left")), Math.round(box.right - inset("Right"))],
+            [Math.round(search.left), Math.round(search.right)],
+          ];
+        })()
       JS
-      expect(edges[0]).to eq(edges[1])
+      expect(edges[1]).to eq(edges[0])
       expect_no_theme_errors
     end
   end
 
-  # At 320px (a Qin F21) a hero tile is narrower than "JTech Homepage", which
-  # ended in "…"
-  # The hero's glow and grid sit over the headline's side; in Hebrew the
-  # headline is on the right, but they stayed on the left, behind the links
-  it "centres the hero's glow over the headline in a Hebrew interface" do
+  # The planet sits opposite the headline: on the left in a Hebrew interface,
+  # where the headline is on the right
+  it "puts the hero's planet opposite the headline in a Hebrew interface" do
     SiteSetting.default_locale = "he"
     visit("/latest")
-    expect(page).to have_css("html.rtl .jt-hero")
-    glow =
-      page.evaluate_script(
-        'getComputedStyle(document.querySelector(".jt-hero"), "::before").backgroundImage',
-      )
-    expect(glow).to include("at 82% 0%")
+    expect(page).to have_css("html.rtl .jt-hero__planet canvas")
+    sides = page.evaluate_script(<<~JS)
+      (() => {
+        const centre = (selector) => {
+          const box = document.querySelector(selector).getBoundingClientRect();
+          return box.left + box.width / 2;
+        };
+        const hero = centre(".jt-hero");
+        return [centre(".jt-hero__planet") < hero, centre(".jt-hero__title") > hero];
+      })()
+    JS
+    expect(sides).to eq([true, true])
     expect_no_theme_errors
   end
 
-  it "wraps the hero's link titles on a 320px phone", mobile: true do
+  # The planet turns while it's on screen, stays still for people who ask
+  # for reduced motion, and an admin can leave it out
+  it "turns the hero's planet, holds it still for reduced motion, and can leave it out" do
+    visit("/latest")
+    expect(page).to have_css(".jt-hero__planet[data-jt-planet='running']")
+    # the dots fade in as the hero arrives
+    drawn = <<~JS
+      (() => {
+        const canvas = document.querySelector('.jt-hero__planet canvas[data-layer="dots"]');
+        const pixels = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
+        return pixels.data.some((value, i) => i % 4 === 3 && value > 0);
+      })()
+    JS
+    try_until_success { expect(page.evaluate_script(drawn)).to eq(true) }
+
+    page.driver.with_playwright_page { |pw| pw.emulate_media(reducedMotion: "reduce") }
+    visit("/latest")
+    expect(page).to have_css(".jt-hero__planet[data-jt-planet='still']")
+
+    jtech_theme.update_setting(:hero_planet, false)
+    jtech_theme.save!
+    visit("/latest")
+    expect(page).to have_css(".jt-hero__title")
+    expect(page).to have_no_css(".jt-hero__planet")
+    expect_no_theme_errors
+  end
+
+  # Visitors get a way in under the search, in core's own (translated) words;
+  # with sign-ups closed only Log In, as the main button; members get neither
+  it "offers visitors a way in from the hero" do
+    visit("/latest")
+    expect(page).to have_css(".jt-hero__actions .jt-hero__sign-up.btn-primary", text: "Sign Up")
+    expect(page).to have_css(".jt-hero__actions .jt-hero__log-in.btn-default", text: "Log In")
+
+    SiteSetting.invite_only = true
+    visit("/latest")
+    expect(page).to have_css(".jt-hero__actions .jt-hero__log-in.btn-primary")
+    expect(page).to have_no_css(".jt-hero__sign-up")
+
+    sign_in(member)
+    visit("/latest")
+    expect(page).to have_css(".jt-hero__title")
+    expect(page).to have_no_css(".jt-hero__actions")
+    expect_no_theme_errors
+  end
+
+  # The hero arrives (its entrance) the first time in a tab, not on every
+  # visit to the front page
+  it "plays the hero's entrance once in a tab" do
+    visit("/latest")
+    expect(page).to have_css(".jt-hero")
+    expect(page).to have_css(".jt-hero.--enter", wait: 0)
+
+    visit("/latest")
+    expect(page).to have_css(".jt-hero")
+    expect(page).to have_no_css(".jt-hero.--enter", wait: 0)
+  end
+
+  # While the search has focus the planet brightens and the rest steps back
+  it "lights the hero up while its search has focus" do
+    visit("/latest")
+    find(".jt-hero__input").click
+    expect(page).to have_css(".jt-hero.--searching")
+    find(".jt-hero__title").click
+    expect(page).to have_no_css(".jt-hero.--searching")
+  end
+
+  # Windows high contrast: no planet, stars or moving light; a plain border
+  it "leaves the hero's planet and light out of high contrast mode" do
+    page.driver.with_playwright_page { |pw| pw.emulate_media(forcedColors: "active") }
+    visit("/latest")
+    expect(page).to have_css(".jt-hero__title")
+    hidden =
+      page.evaluate_script(
+        '[".jt-hero__sky", ".jt-hero__edge"].map((s) => getComputedStyle(document.querySelector(s)).display)',
+      )
+    expect(hidden).to eq(%w[none none])
+  end
+
+  # On a 320px phone (a Qin F21) the headline, search and buttons all fit
+  # inside the card
+  it "fits the hero's copy on a 320px phone", mobile: true do
     resize_window(width: 320) do
       visit("/latest")
-      expect(page).to have_css(".jt-hero__link-title")
-      cut = page.evaluate_script(<<~JS)
-        [...document.querySelectorAll(".jt-hero__link-title")]
-          .filter((title) => title.scrollWidth > title.clientWidth + 1)
-          .map((title) => title.textContent.trim())
+      expect(page).to have_css(".jt-hero__actions")
+      over = page.evaluate_script(<<~JS)
+        (() => {
+          const edge = document.querySelector(".jt-hero__copy").getBoundingClientRect().right;
+          return [...document.querySelectorAll(".jt-hero__copy > *, .jt-hero__actions > *")]
+            .filter((element) => element.getBoundingClientRect().right > edge + 1)
+            .map((element) => element.className);
+        })()
       JS
-      expect(cut).to eq([])
+      expect(over).to eq([])
       expect_no_theme_errors
     end
   end

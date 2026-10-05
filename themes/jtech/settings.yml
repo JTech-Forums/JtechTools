@@ -39,49 +39,9 @@ hero_search_placeholder:
 hero_dismissible:
   type: bool
   default: true
-hero_links:
-  type: objects
-  default:
-    - title: JTech Homepage
-      description: Guides, tools and downloads
-      url: https://jtechforums.org/home
-      icon: desktop
-    - title: Contact us
-      description: Reach the JTech team
-      url: https://jtechforums.org/home/contact
-      icon: address-book
-    - title: eGate filter
-      description: Set up and manage eGate
-      url: https://jtechforums.org/home/egate
-      icon: robot
-    - title: Dumbcourse
-      description: Android on a dumbphone
-      url: https://jtechforums.org/dumb
-      icon: fab-android
-  schema:
-    name: link
-    identifier: title
-    properties:
-      title:
-        type: string
-        required: true
-        validations:
-          min_length: 1
-          max_length: 80
-      description:
-        type: string
-        validations:
-          max_length: 160
-      url:
-        type: string
-        required: true
-        validations:
-          min_length: 1
-          max_length: 2048
-      icon:
-        type: string
-        validations:
-          max_length: 100
+hero_planet:
+  type: bool
+  default: true
 footer_enabled:
   type: bool
   default: true

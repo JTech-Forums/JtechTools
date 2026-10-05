@@ -2,16 +2,9 @@
 // (themes/jtech): that theme's settings and its translation-key prefix.
 // @discourse/types doesn't describe it. Keep JtechThemeSettings in step with
 // themes/jtech/settings.yml; files take the setting types from here too
-// (`import type { JtechThemeLink } from "virtual:theme"`).
+// (`import type { JtechThemeFooterLink } from "virtual:theme"`).
 
 declare module "virtual:theme" {
-  export interface JtechThemeLink {
-    title: string;
-    description?: string;
-    url: string;
-    icon?: string;
-  }
-
   export interface JtechThemeFooterLink {
     section: string;
     title: string;
@@ -31,7 +24,7 @@ declare module "virtual:theme" {
     hero_subtitle: string;
     hero_search_placeholder: string;
     hero_dismissible: boolean;
-    hero_links: JtechThemeLink[];
+    hero_planet: boolean;
     footer_enabled: boolean;
     footer_tagline: string;
     footer_links: JtechThemeFooterLink[];
