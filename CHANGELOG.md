@@ -6,6 +6,7 @@ What changed for forums running Jtech Tools. Newest first.
 
 **New**
 
+- JTech theme: over a topic list, a dropdown beside categories and tags shows all topics, only those with replies, or only those nobody has replied to yet. It replaces the Unanswered Filter component. Setting: `replies_filter`.
 - JTech theme: select some text in a post and the buttons over it (Quote, Edit, Copy) include Search, which opens the search page for it. It replaces the Highlight to Search component. Setting: `selection_search`.
 - JTech theme: replying to a closed or archived topic (which only staff and the category's moderators can) shows a note in the composer that most people can't reply there, with buttons to reopen or unarchive it. It replaces the forum's Admin Warnings component. Setting: `closed_reply_warning`.
 - JTech theme: a Copy button in each post's menu copies the post's text as Markdown, beside Copy link, with the same "copied" confirmation. It replaces the Copy post button component; trust level 1 and up get it by default. Settings: `copy_post_button`, `copy_post_groups`.

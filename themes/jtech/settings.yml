@@ -187,3 +187,6 @@ closed_reply_warning:
 selection_search:
   type: bool
   default: true
+replies_filter:
+  type: bool
+  default: true

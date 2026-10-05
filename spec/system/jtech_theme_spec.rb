@@ -2846,6 +2846,22 @@ RSpec.describe "JTech theme" do
       expect_no_theme_errors
     end
 
+    it "filters a topic list to the topics nobody has replied to" do
+      visit("/latest")
+      filter = PageObjects::Components::SelectKit.new(".jt-replies-filter")
+      filter.expand
+      filter.select_row_by_value("none")
+      expect(page).to have_current_path("/latest?max_posts=1")
+      expect(page).to have_css(".topic-list-item[data-topic-id='#{lonely_topic.id}']")
+      expect(page).to have_no_css(".topic-list-item[data-topic-id='#{topic.id}']")
+      filter.expand
+      filter.select_row_by_value("with")
+      expect(page).to have_current_path("/latest?min_posts=2")
+      expect(page).to have_css(".topic-list-item[data-topic-id='#{topic.id}']")
+      expect(page).to have_no_css(".topic-list-item[data-topic-id='#{lonely_topic.id}']")
+      expect_no_theme_errors
+    end
+
     it "shows when someone was last seen on their user card" do
       member.update!(last_seen_at: 2.hours.ago)
       sign_in(admin)

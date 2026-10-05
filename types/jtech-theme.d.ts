@@ -57,6 +57,7 @@ declare module "virtual:theme" {
     user_in_copy_post_groups?: boolean;
     closed_reply_warning: boolean;
     selection_search: boolean;
+    replies_filter: boolean;
   }
 
   export const settings: JtechThemeSettings;
