@@ -3071,6 +3071,20 @@ RSpec.describe "JTech theme" do
       expect_no_theme_errors
     end
 
+    it "shows the card in the post instead where the timeline's column is slim" do
+      guide_post(
+        "Intro.\n\n## Setup\n\n#{section}\n\n## Install\n\n#{section}\n\n## Done\n\n#{section}",
+      )
+      # about 1000px wide, the timeline's column is under 100px
+      page.driver.with_playwright_page { |pw| pw.set_viewport_size(width: 1000, height: 900) }
+      visit(guide.relative_url)
+      expect(page).to have_css("#post_1 .cooked details.jt-toc-inline")
+      expect(page).to have_css(".topic-navigation .timeline-scrollarea-wrapper")
+      expect(page).to have_no_css(".jt-toc")
+    ensure
+      page.driver.with_playwright_page { |pw| pw.set_viewport_size(width: 1400, height: 1400) }
+    end
+
     it "keeps DiscoTOC's marker working outside the listed categories" do
       jtech_theme.update_setting(:table_of_contents_categories, "")
       jtech_theme.save!

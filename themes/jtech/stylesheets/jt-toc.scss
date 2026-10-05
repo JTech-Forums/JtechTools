@@ -54,6 +54,7 @@
   font-size: var(--font-down-1);
   line-height: 1.35;
   text-decoration: none;
+  overflow-wrap: anywhere;
 
   &:hover {
     color: var(--primary);

@@ -12,6 +12,7 @@ import type KeyValueStore from "discourse/lib/key-value-store";
 import { headerOffset } from "discourse/lib/offset-calculator";
 import DiscourseURL from "discourse/lib/url";
 import type KeyValueStoreService from "discourse/services/key-value-store";
+import { and } from "discourse/truth-helpers";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import {
@@ -42,6 +43,8 @@ type KeyValueStoreProxy = KeyValueStoreService &
   Pick<KeyValueStore, "getItem" | "setItem" | "removeItem">;
 
 const COLLAPSED_KEY = "jt-toc-collapsed";
+// narrowest timeline column the contents are shown in
+const MIN_COLUMN = 160;
 
 // The first post's contents in the timeline's column on desktop (setting
 // table_of_contents; it replaces DiscoTOC). Open, it takes the place of the
@@ -54,11 +57,29 @@ export default class JtToc extends Component<JtTocSignature> {
 
   @tracked collapsed: boolean;
   @tracked current: string | null = null;
+  @tracked roomy = true;
 
   // template helpers: arrow functions, so they keep `this`
   isCurrent = (heading: TocHeading) => heading.anchor === this.current;
   indent = (heading: TocHeading): TrustedHTML =>
     trustHTML(`--jt-toc-depth: ${depth(heading, this.headings)}`);
+
+  // Under a narrow window the timeline's column gets too slim for headings
+  // (about 110px at 1000px): the post's own card shows instead.
+  measure = modifier((probe: HTMLElement) => {
+    const column = probe.closest(".topic-navigation");
+    if (!column) {
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => {
+      const roomy = entry.contentRect.width >= MIN_COLUMN;
+      if (roomy !== this.roomy) {
+        this.roomy = roomy;
+      }
+    });
+    observer.observe(column);
+    return () => observer.disconnect();
+  });
 
   trackReading = modifier(() => {
     let frame = 0;
@@ -134,6 +155,9 @@ export default class JtToc extends Component<JtTocSignature> {
 
   <template>
     {{#if this.headings.length}}
+      <div class="jt-toc-probe" {{this.measure}}></div>
+    {{/if}}
+    {{#if (and this.headings.length this.roomy)}}
       <nav
         aria-label={{i18n (themePrefix "jt.toc.title")}}
         class="jt-toc {{unless this.collapsed 'jt-toc--open'}}"
