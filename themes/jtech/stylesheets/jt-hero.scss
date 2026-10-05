@@ -102,6 +102,10 @@ $jt-stars-near: (
   border: 1px solid var(--jt-border);
   border-radius: var(--jt-radius-xl);
 
+  // a sideways swipe on the planet turns it (lib/jt-hero-quirks); the page
+  // still scrolls up and down and zooms
+  touch-action: pan-y pinch-zoom;
+
   // The stars are strongest on the planet's side
   --jt-hero-sky-fade: to left;
 
@@ -239,6 +243,27 @@ $jt-stars-near: (
       top: 7%;
       inset-inline-start: 82%;
     }
+  }
+
+  // A shooting star sent from a tap on the sky, and the comet that crosses
+  // once when the hero is left alone (lib/jt-hero-quirks, which places,
+  // turns and paints them, so the right-to-left stylesheet can't mirror
+  // them)
+  &__shoot,
+  &__visitor {
+    position: absolute;
+    pointer-events: none;
+    color: var(--jt-text);
+  }
+
+  &__shoot {
+    height: 6px;
+    margin-top: -3px;
+  }
+
+  &__visitor {
+    height: 10px;
+    margin-top: -5px;
   }
 
   // A soft light under a mouse pointer (api: components/jt-hero)
@@ -538,6 +563,17 @@ $jt-stars-near: (
       }
     }
   }
+}
+
+// Over the planet a mouse pointer becomes a hand: it can be turned
+// (lib/jt-hero-quirks)
+.jt-hero.--on-planet {
+  cursor: grab;
+}
+
+.jt-hero.--grabbing {
+  cursor: grabbing;
+  user-select: none;
 }
 
 // Searching: the rest steps back a little
