@@ -40,6 +40,9 @@ en:
       label: "Copy"
       title: "Copy this post's text (Markdown)"
       copied: "Post copied!"
+    closed_reply:
+      closed: "This topic is closed, so most people can't reply. You can because you moderate it."
+      archived: "This topic is archived, so most people can't reply. You can because you moderate it."
     jump:
       top: "Jump to the first post"
       bottom: "Jump to the last post"
@@ -84,6 +87,7 @@ en:
       user_card_last_seen: "Show when someone was last seen on their user card. People who hide their profile and presence are left out."
       copy_post_button: "A Copy button in each post's menu that copies the post's text as Markdown, beside Copy link. Only for the groups in copy_post_groups."
       copy_post_groups: "Groups that get the Copy button (copy_post_button). Trust level 1 by default."
+      closed_reply_warning: "When someone replies to a closed or archived topic (only staff and the category's moderators can), say so in the composer, with buttons to reopen or unarchive the topic."
       topic_jump_buttons: "First-post and last-post buttons under the topic timeline, and beside the progress button on phones."
       hide_lock_icons: "Hide the padlock on private categories' badges and links (everyone who sees the category already has access)."
       gated_categories: "Categories whose topics logged-out visitors can't read: the first post fades out under a prompt to log in or create an account. This only hides topics in the browser (they're still sent to the visitor); to really keep a category private, change its security settings."

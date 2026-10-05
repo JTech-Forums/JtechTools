@@ -204,3 +204,17 @@
     display: flex;
   }
 }
+
+// ── Replying to a closed or archived topic (closed_reply_warning) ─
+// The note on its own line, its buttons (reopen, unarchive) in a row under it.
+.jt-closed-reply {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+
+  p {
+    flex-basis: 100%;
+    margin: 0;
+  }
+}

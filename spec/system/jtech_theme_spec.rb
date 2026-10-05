@@ -2816,6 +2816,27 @@ RSpec.describe "JTech theme" do
       expect(page).to have_no_css(".post-action-menu__jt-copy-post")
     end
 
+    it "warns when replying to a closed topic, and reopens it from the composer" do
+      topic.update!(closed: true)
+      sign_in(admin)
+      visit(topic.relative_url)
+      PageObjects::Pages::Topic.new.click_reply_button
+      expect(page).to have_css(".composer-popup.jt-closed-reply-popup .jt-closed-reply p")
+      shot("closed-reply-warning")
+      find(".jt-closed-reply__open").click
+      expect(page).to have_no_css(".jt-closed-reply-popup")
+      expect(topic.reload.closed).to eq(false)
+      expect_no_theme_errors
+    end
+
+    it "doesn't warn when replying to an open topic" do
+      sign_in(admin)
+      visit(topic.relative_url)
+      PageObjects::Pages::Topic.new.click_reply_button
+      expect(page).to have_css("#reply-control.open")
+      expect(page).to have_no_css(".jt-closed-reply-popup")
+    end
+
     it "shows when someone was last seen on their user card" do
       member.update!(last_seen_at: 2.hours.ago)
       sign_in(admin)

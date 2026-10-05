@@ -181,3 +181,6 @@ copy_post_groups:
   list_type: group
   default: "11" # trust_level_1
   resolve_group_membership: true
+closed_reply_warning:
+  type: bool
+  default: true
