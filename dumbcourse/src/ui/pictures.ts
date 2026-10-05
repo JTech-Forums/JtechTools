@@ -5,12 +5,16 @@
 // Viewer keys: OK zooms (fit, 2x, 3x, fit), the D-pad moves a zoomed picture
 // around or, at fit, goes to the previous / next picture, 4 / 6 go to the
 // previous / next picture at any zoom, the right soft key saves it, Back or
-// the left soft key closes. The soft-key bar says so, and the counter's ‹ ›
-// show which way there are more pictures.
+// the left soft key closes. The soft-key bar says so, and the ‹ › beside the
+// counter show which way there are more pictures.
+//
+// On a touch screen the ‹ › are tapped to go there and tapping the picture
+// zooms. A touch phone has no soft-key bar, so the head then shows its own
+// Save and ✕ (styles: html:not(.with-softkeys)).
 
 import type { Picture } from "../content/cooked.ts";
-import { $, $$, show } from "../dom.ts";
-import { html } from "../html.ts";
+import { $, $$, show, toggleClass } from "../dom.ts";
+import { html, type SafeHtml } from "../html.ts";
 import { keyOf } from "../keys.ts";
 import { openLayer, setLayerKeys, type Layer } from "./layers.ts";
 import {
@@ -33,7 +37,9 @@ export function pictureGallery(list: Picture[]): Layer {
     label: "Pictures",
     className: "pictures-layer",
     body: html`<div class="pg">
-      <div class="pg-head">${list.length} pictures</div>
+      <div class="pg-head">
+        <span>${list.length} pictures</span>${closeButton()}
+      </div>
       <div class="pg-grid scroll" data-grid>
         ${list.map(
           (p, i) =>
@@ -51,6 +57,7 @@ export function pictureGallery(list: Picture[]): Layer {
     softkeys: { left: "Close", center: "View", right: "" },
     focusSelector: ".pg-cell",
   });
+  wireClose(layer);
   $$("[data-i]", layer.el).forEach((cell) =>
     cell.addEventListener("click", () =>
       viewPicture(list, parseInt(cell.getAttribute("data-i") || "0", 10))
@@ -75,7 +82,28 @@ export function viewPicture(list: Picture[], start: number): Layer {
     className: "picture-layer",
     body: html`<div class="pv">
       <div class="pv-head">
-        <span class="pv-count"></span><span class="pv-name"></span>
+        <span class="pv-pos"
+          ><button
+            type="button"
+            class="pv-prev"
+            tabindex="-1"
+            aria-label="Previous picture"
+          >
+            ‹</button
+          ><span class="pv-count"></span
+          ><button
+            type="button"
+            class="pv-next"
+            tabindex="-1"
+            aria-label="Next picture"
+          >
+            ›
+          </button></span
+        ><span class="pv-name"></span
+        ><span class="pv-tools"
+          ><a class="pv-save-tap" download hidden tabindex="-1">Save</a
+          >${closeButton()}</span
+        >
       </div>
       <div class="pv-stage" tabindex="0" data-own-arrows data-zoom="1">
         <img class="pv-img" alt="" />
@@ -91,9 +119,14 @@ export function viewPicture(list: Picture[], start: number): Layer {
   const stage = $(".pv-stage", el) as HTMLElement;
   const img = $(".pv-img", el) as HTMLImageElement;
   const msg = $(".pv-msg", el) as HTMLElement;
+  const head = $(".pv-head", el) as HTMLElement;
   const count = $(".pv-count", el) as HTMLElement;
+  const prev = $(".pv-prev", el) as HTMLElement;
+  const next = $(".pv-next", el) as HTMLElement;
   const name = $(".pv-name", el) as HTMLElement;
   const save = $(".pv-save", el) as HTMLAnchorElement;
+  const saveTap = $(".pv-save-tap", el) as HTMLAnchorElement;
+  wireClose(layer);
 
   const updateKeys = (): void => {
     setLayerKeys(layer, {
@@ -161,12 +194,11 @@ export function viewPicture(list: Picture[], start: number): Layer {
     zoom = 1;
     loaded = false;
     const p = list[i];
-    count.textContent =
-      list.length > 1
-        ? (i > 0 ? "‹ " : "") +
-          `${i + 1} / ${list.length}` +
-          (i < list.length - 1 ? " ›" : "")
-        : "";
+    // One picture: no "1 / 1", and no arrows.
+    toggleClass(head, "pv-one", list.length < 2);
+    count.textContent = list.length > 1 ? `${i + 1} / ${list.length}` : "";
+    show(prev, i > 0);
+    show(next, i < list.length - 1);
     name.textContent = p.name;
     stage.setAttribute(
       "aria-label",
@@ -179,11 +211,14 @@ export function viewPicture(list: Picture[], start: number): Layer {
     stage.setAttribute("data-zoom", "1");
     if (p.save) {
       save.setAttribute("href", p.save);
+      saveTap.setAttribute("href", p.save);
       el.setAttribute("data-softright", ".pv-save");
     } else {
       save.removeAttribute("href");
+      saveTap.removeAttribute("href");
       el.removeAttribute("data-softright");
     }
+    saveTap.hidden = !p.save;
     img.onload = () => shown(i);
     img.onerror = () => failed(i);
     img.src = p.full;
@@ -199,6 +234,15 @@ export function viewPicture(list: Picture[], start: number): Layer {
     layout(true);
     updateKeys();
   });
+
+  // Touch: the arrows beside the counter. Focus goes back to the picture so
+  // a phone with keys as well keeps working the picture with them.
+  const step = (to: number): void => {
+    if (to >= 0 && to < list.length && to !== index) open(to);
+    stage.focus();
+  };
+  prev.addEventListener("click", () => step(index - 1));
+  next.addEventListener("click", () => step(index + 1));
 
   // The stage owns its arrows (data-own-arrows): the page leaves them alone,
   // and number keys inside a layer too.
@@ -228,4 +272,21 @@ export function viewPicture(list: Picture[], start: number): Layer {
   window.addEventListener("resize", onResize);
   open(start);
   return layer;
+}
+
+// Touch screens' Close: what the Close soft key and Back do.
+function closeButton(): SafeHtml {
+  return html`<button
+    type="button"
+    class="pv-close"
+    tabindex="-1"
+    aria-label="Close"
+  >
+    ✕
+  </button>`;
+}
+
+function wireClose(layer: Layer): void {
+  const btn = $(".pv-close", layer.el);
+  if (btn) btn.addEventListener("click", () => layer.requestClose());
 }
