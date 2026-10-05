@@ -54,7 +54,9 @@ after_initialize do
   # silently dropped the path, so the installer never ran on a rebuild.
   register_seedfu_fixtures(File.expand_path("../db/fixtures", __dir__))
 
-  reloadable_patch { ::MetadataController.prepend(DiscourseJtechTheme::MetadataControllerExtension) }
+  reloadable_patch do
+    ::MetadataController.prepend(DiscourseJtechTheme::MetadataControllerExtension)
+  end
 
   register_user_custom_field_type(DiscourseJtechTheme::ICON_STYLE_FIELD, :string)
   register_editable_user_custom_field(DiscourseJtechTheme::ICON_STYLE_FIELD)

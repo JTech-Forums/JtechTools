@@ -15,7 +15,8 @@ RSpec.describe "JTech app icon" do
   def icons
     get "/manifest.webmanifest"
     expect(response.status).to eq(200)
-    response.parsed_body["icons"]
+    # served as application/manifest+json, which parsed_body leaves as a string
+    JSON.parse(response.body)["icons"]
   end
 
   it "serves the plugin's icon, plain and maskable" do
