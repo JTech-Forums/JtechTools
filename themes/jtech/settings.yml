@@ -211,3 +211,6 @@ post_badges:
 image_carousels:
   type: bool
   default: true
+sidebar_inboxes:
+  type: bool
+  default: true

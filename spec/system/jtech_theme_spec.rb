@@ -2932,6 +2932,28 @@ RSpec.describe "JTech theme" do
       expect_no_theme_errors
     end
 
+    it "lists the group inboxes someone has in the sidebar" do
+      group = Fabricate(:group, name: "helpers", has_messages: true)
+      group.add(admin)
+      sign_in(admin)
+      visit("/latest")
+      inboxes = "[data-section-name='jt-inboxes']"
+      expect(page).to have_css(
+        "#{inboxes} .sidebar-section-link[href='/u/#{admin.username}/messages/group/helpers']",
+      )
+      expect(page).to have_css(
+        "#{inboxes} .sidebar-section-link[href='/u/#{admin.username}/messages']",
+      )
+      expect_no_theme_errors
+    end
+
+    it "leaves the Inboxes section out for people without a group inbox" do
+      sign_in(member)
+      visit("/latest")
+      expect(page).to have_css(".sidebar-sections")
+      expect(page).to have_no_css("[data-section-name='jt-inboxes']")
+    end
+
     it "shows when someone was last seen on their user card" do
       member.update!(last_seen_at: 2.hours.ago)
       sign_in(admin)

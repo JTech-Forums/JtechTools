@@ -6,6 +6,7 @@ What changed for forums running Jtech Tools. Newest first.
 
 **New**
 
+- JTech theme: people in a group with a shared inbox (on the forum, staff) get an Inboxes section in the sidebar: their own messages and each group's inbox, with unread counts. It replaces the Messages section for sidebar component. Setting: `sidebar_inboxes`.
 - JTech theme: posts written with the Post Image Carousel component show their pictures in Discourse's own carousel (the one `[grid mode=carousel]` makes), without the component's scripts from a CDN. Setting: `image_carousels`.
 - JTech theme: badges you choose (a phone maker's engineer, a distributor…) show after a poster's name on their posts, linking to the badge. It replaces the Post Badges component. Setting: `post_badges`.
 - JTech theme: record a voice message from the composer. The microphone in the toolbar opens a recorder: record, listen back, and add it to the post, where it plays as audio. It replaces the Voice Recorder component. Setting: `voice_recorder`.

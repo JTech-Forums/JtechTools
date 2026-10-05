@@ -64,6 +64,7 @@ declare module "virtual:theme" {
     voice_recorder: boolean;
     post_badges: string;
     image_carousels: boolean;
+    sidebar_inboxes: boolean;
   }
 
   export const settings: JtechThemeSettings;
