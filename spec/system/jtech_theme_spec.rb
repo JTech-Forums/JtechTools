@@ -2954,6 +2954,25 @@ RSpec.describe "JTech theme" do
       expect(page).to have_no_css("[data-section-name='jt-inboxes']")
     end
 
+    it "switches a topic to reader mode from the timeline" do
+      sign_in(member)
+      visit(topic.relative_url)
+      size = "parseFloat(getComputedStyle(document.querySelector('#post_1 .cooked')).fontSize)"
+      normal = page.evaluate_script(size)
+      find(".jt-reader-toggle").click
+      expect(page).to have_css("html.jt-reader")
+      expect(page).to have_no_css(".sidebar-wrapper")
+      find(".jt-reader-larger").click
+      try_until_success { expect(page.evaluate_script(size)).to be > normal }
+      find(".jt-reader-serif").click
+      expect(page).to have_css("html.jt-reader--serif")
+      shot("reader-mode")
+      find(".jt-reader-toggle").click
+      expect(page).to have_no_css("html.jt-reader")
+      expect(page).to have_css(".sidebar-wrapper")
+      expect_no_theme_errors
+    end
+
     it "shows when someone was last seen on their user card" do
       member.update!(last_seen_at: 2.hours.ago)
       sign_in(admin)

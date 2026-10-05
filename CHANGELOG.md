@@ -6,6 +6,7 @@ What changed for forums running Jtech Tools. Newest first.
 
 **New**
 
+- JTech theme: reader mode. The book at the top of a topic's timeline (or Ctrl+Alt+R) hides the sidebar and fades the header and the posts' buttons back, and lets you make the text larger, the column narrower or wider, or switch to a serif; those choices are remembered. It replaces the Reader Mode component. Setting: `reader_mode`.
 - JTech theme: people in a group with a shared inbox (on the forum, staff) get an Inboxes section in the sidebar: their own messages and each group's inbox, with unread counts. It replaces the Messages section for sidebar component. Setting: `sidebar_inboxes`.
 - JTech theme: posts written with the Post Image Carousel component show their pictures in Discourse's own carousel (the one `[grid mode=carousel]` makes), without the component's scripts from a CDN. Setting: `image_carousels`.
 - JTech theme: badges you choose (a phone maker's engineer, a distributor…) show after a poster's name on their posts, linking to the badge. It replaces the Post Badges component. Setting: `post_badges`.

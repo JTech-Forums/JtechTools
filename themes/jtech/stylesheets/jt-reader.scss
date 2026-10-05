@@ -1,0 +1,87 @@
+// Reader mode (setting reader_mode, lib/jt-reader): on a topic page, the
+// sidebar goes, the header and the posts' chrome fade back until pointed at,
+// and the posts' text takes the chosen size, width and type. Topic pages
+// only: the class stays on <html> while browsing elsewhere.
+html.jt-reader body[class*="archetype-"] {
+  .sidebar-wrapper {
+    display: none;
+  }
+
+  &.has-sidebar-page #main-outlet-wrapper {
+    grid-template-columns: 0 minmax(0, 1fr);
+    column-gap: 0;
+  }
+
+  // the posts' column takes the chosen width, the timeline stays beside it
+  #main-outlet {
+    --topic-body-width: var(--jt-reader-width, 40rem);
+  }
+
+  .d-header-wrap,
+  .topic-avatar,
+  .post-controls,
+  .topic-map,
+  .post-links-container,
+  .timeline-container {
+    transition: opacity 0.2s ease;
+  }
+
+  .d-header-wrap,
+  .timeline-container {
+    opacity: 0.35;
+  }
+
+  .topic-avatar,
+  .post-controls,
+  .topic-map,
+  .post-links-container {
+    opacity: 0.4;
+  }
+
+  .d-header-wrap:is(:hover, :focus-within),
+  .timeline-container:is(:hover, :focus-within),
+  .topic-post:is(:hover, :focus-within)
+    :is(.topic-avatar, .post-controls, .topic-map, .post-links-container) {
+    opacity: 1;
+  }
+
+  .topic-post .cooked {
+    font-size: calc(var(--jt-text-reading) * var(--jt-reader-scale, 1));
+    line-height: 1.75;
+  }
+}
+
+html.jt-reader--serif body[class*="archetype-"] .topic-post .cooked {
+  font-family: Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+
+  code,
+  pre {
+    font-family: var(--d-font-family--monospace);
+  }
+}
+
+// the switch and its options, at the top of the timeline
+.jt-reader-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.jt-reader-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.jt-reader-toggle.--on,
+.jt-reader-serif.--on {
+  color: var(--primary);
+  background: var(--jt-surface-sunken, var(--primary-very-low));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.jt-reader body[class*="archetype-"] * {
+    transition: none;
+  }
+}

@@ -213,7 +213,12 @@
       "print",
       "microphone",
       "stop",
-      "rotate"
+      "rotate",
+      "book-open",
+      "minus",
+      "down-left-and-up-right-to-center",
+      "left-right",
+      "font"
     ],
     "topic_thumbnail_sizes": [
       [

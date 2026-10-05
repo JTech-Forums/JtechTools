@@ -69,6 +69,13 @@ en:
       title: "Inboxes"
       personal: "My messages"
       new_message: "New message"
+    reader:
+      toggle: "Reader mode (Ctrl+Alt+R)"
+      smaller: "Smaller text"
+      larger: "Larger text"
+      narrower: "Narrower column"
+      wider: "Wider column"
+      serif: "Serif type"
     jump:
       top: "Jump to the first post"
       bottom: "Jump to the last post"
@@ -123,6 +130,7 @@ en:
       post_badges: "Badges to show after a poster's name on their posts, when they have them, in this order. Each links to its badge page. Use each badge's exact name from Admin → Badges (case doesn't matter, spaces do)."
       image_carousels: "Show the pictures in posts written with the Post Image Carousel component ([wrap=Carousel]) as Discourse's own carousel, the one [grid mode=carousel] makes. The component's autoplay, loop and thumbnails aren't carried over."
       sidebar_inboxes: "For people in groups with a shared inbox (on the forum, staff): an Inboxes section in the sidebar with their own messages and each group's, with unread counts. Everyone else keeps Discourse's My Messages link."
+      reader_mode: "A reader mode switch at the top of a topic's timeline (and Ctrl+Alt+R): the sidebar goes, the header and the posts' buttons fade back until pointed at, and the posts' text can be made larger, narrower or wider, or set in a serif. Text settings are kept per browser."
       topic_jump_buttons: "First-post and last-post buttons under the topic timeline, and beside the progress button on phones."
       hide_lock_icons: "Hide the padlock on private categories' badges and links (everyone who sees the category already has access)."
       gated_categories: "Categories whose topics logged-out visitors can't read: the first post fades out under a prompt to log in or create an account. This only hides topics in the browser (they're still sent to the visitor); to really keep a category private, change its security settings."

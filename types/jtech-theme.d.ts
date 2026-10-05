@@ -65,6 +65,7 @@ declare module "virtual:theme" {
     post_badges: string;
     image_carousels: boolean;
     sidebar_inboxes: boolean;
+    reader_mode: boolean;
   }
 
   export const settings: JtechThemeSettings;
