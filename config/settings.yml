@@ -22,6 +22,11 @@ jtech:
   jtech_theme_install:
     default: true
     client: false
+  # The installed app's icon (web manifest): the JTech mark on a solid square
+  # instead of the uploaded manifest_icon, which is see-through.
+  jtech_app_icon:
+    default: true
+    client: false
 
 # ───────────────────────────────────────────────────────────────────────────
 # Jtech — Dislike (phantom reactions in restricted categories)

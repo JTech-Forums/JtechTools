@@ -16,6 +16,29 @@ module ::DiscourseJtechTheme
   # "classic" (core's Font Awesome). Absent means lucide.
   ICON_STYLE_FIELD = "jtech_icon_style"
   ICON_STYLES = %w[lucide classic].freeze
+
+  # The installed app's icon. Core lists the manifest_icon upload twice (plain
+  # and maskable) with no hook to change it; the uploaded mark is white on
+  # transparent, so on a light Windows taskbar the app showed no icon at all.
+  # public/jtech-app-icon.png is docs/theme/brand/jtech-icon-512.png: the mark
+  # on a solid square, inside the maskable safe zone.
+  APP_ICON_PATH = "/plugins/jtech-tools/jtech-app-icon.png"
+
+  module MetadataControllerExtension
+    private
+
+    def default_manifest
+      manifest = super
+      return manifest unless SiteSetting.jtech_enabled && SiteSetting.jtech_app_icon
+
+      src = UrlHelper.absolute("#{Discourse.base_path}#{APP_ICON_PATH}")
+      manifest[:icons] = [
+        { src:, sizes: "512x512", type: "image/png" },
+        { src:, sizes: "512x512", type: "image/png", purpose: "maskable" },
+      ]
+      manifest
+    end
+  end
 end
 
 require_relative "../lib/discourse_jtech_theme/installer"
@@ -26,6 +49,8 @@ after_initialize do
   # seed-fu's railtie resets SeedFu.fixture_paths after plugins load, which
   # silently dropped the path, so the installer never ran on a rebuild.
   register_seedfu_fixtures(File.expand_path("../db/fixtures", __dir__))
+
+  reloadable_patch { ::MetadataController.prepend(DiscourseJtechTheme::MetadataControllerExtension) }
 
   register_user_custom_field_type(DiscourseJtechTheme::ICON_STYLE_FIELD, :string)
   register_editable_user_custom_field(DiscourseJtechTheme::ICON_STYLE_FIELD)

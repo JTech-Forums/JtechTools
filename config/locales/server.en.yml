@@ -78,6 +78,12 @@ en:
       off to stop installs and updates; turning it on installs straight away and
       brings back a theme an admin deleted (which otherwise stays deleted).
 
+    jtech_app_icon: Give the installed app (Install app / Add to Home screen)
+      the JTech mark on a solid black square, so its taskbar and home-screen
+      icon shows on light and dark backgrounds alike. It replaces the manifest
+      icon site setting in the web manifest only; turn this off to use that
+      upload instead. Reinstall the app to pick up a change.
+
     # ── Jtech — Dislike ────────────────────────────────────────────────────
     discourse_no_likes_enabled: Turn on phantom reactions. When off, likes and
       reactions behave exactly as Discourse ships them in every category and
