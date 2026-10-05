@@ -58,6 +58,7 @@ declare module "virtual:theme" {
     closed_reply_warning: boolean;
     selection_search: boolean;
     replies_filter: boolean;
+    print_button_categories: string;
   }
 
   export const settings: JtechThemeSettings;

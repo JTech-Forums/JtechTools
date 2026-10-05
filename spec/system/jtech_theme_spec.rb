@@ -2862,6 +2862,45 @@ RSpec.describe "JTech theme" do
       expect_no_theme_errors
     end
 
+    it "prints a topic's first post on its own in the chosen categories" do
+      jtech_theme.update_setting(:print_button_categories, category.id.to_s)
+      jtech_theme.save!
+      sign_in(member)
+      visit(topic.relative_url)
+      expect(page).to have_css("#post_1 .post-action-menu__jt-print")
+      expect(page).to have_css("#post_2 .post-action-menu__copy-link")
+      expect(page).to have_no_css("#post_2 .post-action-menu__jt-print")
+      # the browser's print dialog can't be driven: the frame's print() is
+      # swapped for a marker as soon as the frame is added
+      page.execute_script(<<~JS)
+        new MutationObserver(() => {
+          const frame = document.querySelector(".jt-print-frame");
+          if (frame && !frame.dataset.stubbed) {
+            frame.dataset.stubbed = "true";
+            frame.contentWindow.print = () => (document.body.dataset.jtPrinted = "true");
+          }
+        }).observe(document.body, { childList: true });
+      JS
+      find("#post_1 .post-action-menu__jt-print").click
+      expect(page).to have_css("body[data-jt-printed='true']")
+      printed = page.evaluate_script(<<~JS)
+        (() => {
+          const doc = document.querySelector(".jt-print-frame").contentDocument;
+          return [doc.compatMode, doc.querySelector(".jt-print__title").textContent,
+            doc.querySelector(".jt-print .cooked").textContent.includes("blocks the browser")];
+        })()
+      JS
+      expect(printed).to eq(["CSS1Compat", topic.title, true])
+      expect_no_theme_errors
+    end
+
+    it "leaves Print out of categories that aren't chosen" do
+      sign_in(member)
+      visit(topic.relative_url)
+      expect(page).to have_css("#post_1 .post-action-menu__copy-link")
+      expect(page).to have_no_css(".post-action-menu__jt-print")
+    end
+
     it "shows when someone was last seen on their user card" do
       member.update!(last_seen_at: 2.hours.ago)
       sign_in(admin)

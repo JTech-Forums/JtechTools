@@ -50,6 +50,9 @@ en:
       all: "all topics"
       with: "with replies"
       none: "no replies"
+    print:
+      label: "Print"
+      title: "Print the first post, or save it as a PDF"
     jump:
       top: "Jump to the first post"
       bottom: "Jump to the last post"
@@ -97,6 +100,7 @@ en:
       closed_reply_warning: "When someone replies to a closed or archived topic (only staff and the category's moderators can), say so in the composer, with buttons to reopen or unarchive the topic."
       selection_search: "Add Search to the buttons over text selected in a post (Quote, Edit, Copy). It opens the search page for the selection, up to 100 characters. Hidden from visitors who can't search."
       replies_filter: "Add a dropdown beside categories and tags over topic lists to show all topics, only those with replies, or only those nobody has replied to yet."
+      print_button_categories: "Categories (and their subcategories) whose topics get a Print button on the first post. It prints the first post on its own, or saves it as a PDF. Discourse's own print view (Ctrl+P on a topic) prints the whole topic."
       topic_jump_buttons: "First-post and last-post buttons under the topic timeline, and beside the progress button on phones."
       hide_lock_icons: "Hide the padlock on private categories' badges and links (everyone who sees the category already has access)."
       gated_categories: "Categories whose topics logged-out visitors can't read: the first post fades out under a prompt to log in or create an account. This only hides topics in the browser (they're still sent to the visitor); to really keep a category private, change its security settings."

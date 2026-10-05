@@ -190,3 +190,7 @@ selection_search:
 replies_filter:
   type: bool
   default: true
+print_button_categories:
+  type: list
+  list_type: category
+  default: ""

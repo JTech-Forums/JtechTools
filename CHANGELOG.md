@@ -6,6 +6,7 @@ What changed for forums running Jtech Tools. Newest first.
 
 **New**
 
+- JTech theme: in the categories you choose, a topic's first post has a Print button that prints that post on its own, or saves it as a PDF from the print dialog. It replaces the Topic PDF Download Button component (put Exclusive in the setting to keep it there). Setting: `print_button_categories`.
 - JTech theme: over a topic list, a dropdown beside categories and tags shows all topics, only those with replies, or only those nobody has replied to yet. It replaces the Unanswered Filter component. Setting: `replies_filter`.
 - JTech theme: select some text in a post and the buttons over it (Quote, Edit, Copy) include Search, which opens the search page for it. It replaces the Highlight to Search component. Setting: `selection_search`.
 - JTech theme: replying to a closed or archived topic (which only staff and the category's moderators can) shows a note in the composer that most people can't reply there, with buttons to reopen or unarchive it. It replaces the forum's Admin Warnings component. Setting: `closed_reply_warning`.

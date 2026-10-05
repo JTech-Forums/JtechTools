@@ -146,6 +146,7 @@ export const JT_ICON_MAP: Record<string, string> = {
   pencil: "pencil",
   play: "play",
   plus: "plus",
+  print: "printer",
   "puzzle-piece": "puzzle",
   question: "circle-question-mark",
   "quote-left": "quote",
