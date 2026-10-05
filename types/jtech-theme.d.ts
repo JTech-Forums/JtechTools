@@ -59,6 +59,8 @@ declare module "virtual:theme" {
     selection_search: boolean;
     replies_filter: boolean;
     print_button_categories: string;
+    table_of_contents: boolean;
+    table_of_contents_categories: string;
   }
 
   export const settings: JtechThemeSettings;

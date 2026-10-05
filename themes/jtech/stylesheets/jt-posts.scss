@@ -1,6 +1,13 @@
 .topic-post .cooked,
 .cooked {
-  a:not(.mention, .hashtag-cooked, .lightbox, .badge-category__wrapper, .btn) {
+  a:not(
+    .mention,
+    .hashtag-cooked,
+    .lightbox,
+    .badge-category__wrapper,
+    .btn,
+    .jt-toc__link
+  ) {
     color: var(--jt-text);
     text-decoration: underline;
     text-decoration-color: var(--jt-border-strong);

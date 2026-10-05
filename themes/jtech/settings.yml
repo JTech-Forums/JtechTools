@@ -194,3 +194,10 @@ print_button_categories:
   type: list
   list_type: category
   default: ""
+table_of_contents:
+  type: bool
+  default: true
+table_of_contents_categories:
+  type: list
+  list_type: category
+  default: ""

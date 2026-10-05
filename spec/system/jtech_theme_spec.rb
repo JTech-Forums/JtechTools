@@ -2932,6 +2932,80 @@ RSpec.describe "JTech theme" do
     end
   end
 
+  describe "table of contents" do
+    # long sections, so a heading near the end can still scroll to the top
+    let(:section) { "A line of the guide. " * 120 }
+    fab!(:guide) do
+      Fabricate(:topic, category: category, user: member, title: "A guide with a few sections")
+    end
+
+    def guide_post(raw)
+      Fabricate(:post, topic: guide, user: member, raw: raw)
+    end
+
+    def location_hash
+      page.evaluate_script("location.hash")
+    end
+
+    before do
+      jtech_theme.update_setting(:table_of_contents_categories, category.id.to_s)
+      jtech_theme.save!
+    end
+
+    it "lists the first post's headings in the timeline's column and jumps to them" do
+      guide_post(
+        "Intro.\n\n## Setup\n\n#{section}\n\n## Install\n\n#{section}\n\n### Check\n\n#{section}\n\n## Done\n\n#{section}",
+      )
+      visit(guide.relative_url)
+      expect(page).to have_css(".jt-toc--open .jt-toc__link", count: 4)
+      expect(page).to have_css(".topic-navigation .timeline-footer-controls")
+      expect(page).to have_no_css(".timeline-scrollarea-wrapper")
+      expect(page).to have_no_css(".jt-toc-inline")
+      shot("table-of-contents")
+      find(".jt-toc__link", text: "Install").click
+      try_until_success { expect(location_hash).to match(/install/) }
+      expect(page).to have_css(".jt-toc__link[aria-current='location']", text: "Install")
+
+      # folded away, the timeline comes back
+      find(".jt-toc__toggle").click
+      expect(page).to have_css(".timeline-scrollarea-wrapper")
+      expect(page).to have_no_css(".jt-toc__list")
+      expect_no_theme_errors
+    end
+
+    it "shows a first post's contents as a card in the post on phones", mobile: true do
+      guide_post(
+        "Intro.\n\n## Setup\n\n#{section}\n\n## Install\n\n#{section}\n\n## Done\n\n#{section}",
+      )
+      visit(guide.relative_url)
+      expect(page).to have_css("#post_1 .cooked details.jt-toc-inline")
+      expect(page).to have_no_css(".jt-toc")
+      find(".jt-toc-inline summary").click
+      find(".jt-toc-inline .jt-toc__link", text: "Done").click
+      try_until_success { expect(location_hash).to match(/done/) }
+      shot("table-of-contents-card")
+      expect_no_theme_errors
+    end
+
+    it "keeps DiscoTOC's marker working outside the listed categories" do
+      jtech_theme.update_setting(:table_of_contents_categories, "")
+      jtech_theme.save!
+      guide_post(
+        "<div data-theme-toc=\"true\"> </div>\n\n## One\n\nA.\n\n## Two\n\nB.\n\n## Three\n\nC.",
+      )
+      visit(guide.relative_url)
+      expect(page).to have_css(".jt-toc .jt-toc__link", count: 3)
+    end
+
+    it "leaves out a first post with too few headings" do
+      guide_post("Intro.\n\n## One\n\nA.\n\n## Two\n\nB.")
+      visit(guide.relative_url)
+      expect(page).to have_css("#post_1 .cooked h2")
+      expect(page).to have_no_css(".jt-toc")
+      expect(page).to have_no_css(".jt-toc-inline")
+    end
+  end
+
   describe "login gate" do
     def gate(categories: "", tags: "")
       jtech_theme.update_setting(:gated_categories, categories)

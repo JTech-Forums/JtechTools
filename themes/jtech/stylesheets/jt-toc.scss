@@ -1,0 +1,79 @@
+// Table of contents (setting table_of_contents): the panel in the timeline's
+// column on desktop (connectors/topic-navigation/jt-toc) and the card in the
+// first post elsewhere (api-initializers/jt-toc).
+.jt-toc {
+  // the column is as wide as the timeline; long headings wrap in it instead
+  // of widening it (which narrowed the posts)
+  contain: inline-size;
+  margin-bottom: var(--space-2);
+
+  &__toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.45em;
+    width: 100%;
+    padding: 4px 0;
+    color: var(--primary-high);
+    font-size: var(--font-down-1);
+
+    .d-icon:last-child {
+      margin-inline-start: auto;
+    }
+  }
+}
+
+// Open, the list stands in for the timeline's scroller: the column has no
+// room for both. The timeline's buttons stay under it.
+.topic-navigation:has(.jt-toc--open) .timeline-scrollarea-wrapper {
+  display: none;
+}
+
+.jt-toc__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  .jt-toc & {
+    // keeps the timeline's buttons on screen under a long list
+    max-height: calc(100vh - var(--header-offset, 4rem) - 14rem);
+    overflow-y: auto;
+  }
+}
+
+.jt-toc__item {
+  margin: 0;
+  padding-inline-start: calc(var(--jt-toc-depth, 0) * 0.75rem);
+}
+
+.jt-toc__link,
+.cooked .jt-toc__link {
+  display: block;
+  padding: 3px 0 3px 10px;
+  border-inline-start: 1px solid var(--jt-border);
+  color: var(--jt-text-subtle);
+  font-size: var(--font-down-1);
+  line-height: 1.35;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--primary);
+  }
+
+  &[aria-current] {
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+  }
+}
+
+// The card, a collapsible block like the post's own [details]
+.cooked .jt-toc-inline {
+  .jt-toc__list {
+    margin-top: var(--space-2);
+  }
+}
+
+// where the desktop panel is showing, the card would only repeat it
+.topic-navigation:has(.jt-toc) ~ .row .jt-toc-inline {
+  display: none;
+}
