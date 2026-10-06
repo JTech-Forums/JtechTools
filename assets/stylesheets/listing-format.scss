@@ -1,3 +1,5 @@
+@use "lib/viewport";
+
 // Listing format — the reply composer's section form. Compact, because it
 // shares the composer's height with the editor: labels above the boxes,
 // two columns where there's room, boxes that grow as people type.
@@ -65,5 +67,110 @@
 @media (width <= 600px) {
   .listing-format-form {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// Create listing, centered under the posts, in place of Reply.
+// Centered under the posts, not the whole row the timeline shares.
+.listing-format-create {
+  display: flex;
+  justify-content: center;
+  max-width: calc(
+    var(--topic-avatar-width) + var(--topic-body-width) +
+      var(--topic-body-width-padding) * 2
+  );
+  margin: 1em 0;
+}
+
+body:has(.listing-format-create) {
+  #topic-footer-buttons .topic-footer-main-buttons .create,
+  .timeline-footer-controls .reply-to-post,
+  .topic-timeline .reply-to-post {
+    display: none;
+  }
+}
+
+// On phones core slides a focused editor up over everything above it, the
+// form included, and a reply focuses the editor as it opens: the form was
+// hidden until the editor was dragged back down. Keep the editor below the
+// form instead; it scrolls with it like any other box.
+@include viewport.until(sm) {
+  #reply-control.has-composer-fields:has(.listing-format-form)
+    .d-editor-textarea-wrapper {
+    &:focus,
+    &:focus-within,
+    &.in-focus {
+      margin-top: 0;
+      z-index: auto;
+      box-shadow: none;
+      border-radius: 0;
+      padding-top: 0;
+
+      &::before {
+        content: none;
+      }
+    }
+  }
+}
+
+// A listing post as a card: the item as its title, the rest as labelled
+// facts, the pictures underneath.
+.listing-card {
+  margin: 0 0 1em;
+  border: 1px solid var(--primary-low);
+  border-radius: var(--d-border-radius-large, 8px);
+  background: var(--primary-very-low);
+  overflow: hidden;
+}
+
+.listing-card__title {
+  padding: 0.75em 1em;
+  border-bottom: 1px solid var(--primary-low);
+  background: var(--secondary);
+  font-size: var(--font-up-2);
+  font-weight: bold;
+  line-height: var(--line-height-medium);
+
+  p {
+    margin: 0;
+  }
+}
+
+// Lines drawn by each fact, so a row left short has no grey gap at its end.
+.listing-card__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11em, 1fr));
+}
+
+.listing-card__fact {
+  min-width: 0;
+  padding: 0.6em 1em;
+  box-shadow:
+    inset -1px 0 0 var(--primary-low),
+    inset 0 -1px 0 var(--primary-low);
+}
+
+.listing-card__fact--wide {
+  grid-column: 1 / -1;
+}
+
+.listing-card__label {
+  margin-bottom: 0.2em;
+  color: var(--primary-medium);
+  font-size: var(--font-down-2);
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.listing-card__value {
+  overflow-wrap: anywhere;
+
+  > :first-child {
+    margin-top: 0;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
   }
 }

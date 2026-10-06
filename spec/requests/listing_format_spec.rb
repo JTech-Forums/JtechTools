@@ -201,6 +201,21 @@ RSpec.describe "Listing format" do
       expect(response.parsed_body["listing_format_topic"]).to eq(true)
     end
 
+    it "tells everyone the card layout" do
+      get "/t/#{sale_topic.id}.json"
+      expect(response.parsed_body["listing_format_card"]).to eq(
+        "sections" => [
+          "ITEM",
+          "QUANTITY",
+          "CONDITION",
+          "SPECS",
+          "IMAGES",
+          "PICKUP LOCATION OR SHIPPING AVAILABLE",
+        ],
+        "images" => "IMAGES",
+      )
+    end
+
     it "leaves other topics unmarked" do
       get "/t/#{other_topic.id}.json"
       expect(response.parsed_body).not_to have_key("listing_format_topic")

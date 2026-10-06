@@ -5,6 +5,7 @@ require "rails_helper"
 RSpec.describe "Listing topics" do
   fab!(:seller) { Fabricate(:user, trust_level: TrustLevel[2], refresh_auto_groups: true) }
   fab!(:buyer) { Fabricate(:user, trust_level: TrustLevel[2], refresh_auto_groups: true) }
+  fab!(:moderator) { Fabricate(:moderator, refresh_auto_groups: true) }
   fab!(:topic) { Fabricate(:topic, title: "Phones and computers for sale") }
   fab!(:first_post) do
     Fabricate(:post, topic: topic, raw: "Post your listings here, one per post.")
@@ -35,7 +36,7 @@ RSpec.describe "Listing topics" do
 
   def open_reply
     visit_topic
-    find("#topic-footer-buttons .create", match: :first).click
+    find(".listing-format-create__button").click
     find(".listing-format-form")
   end
 
@@ -65,6 +66,52 @@ RSpec.describe "Listing topics" do
       within("#post_2") { find(".listing-format-reqpm").click }
       expect(page).to have_css(".reqpm-user-modal", text: seller.username)
     end
+  end
+
+  it "shows each listing as a card, and leaves other posts alone" do
+    Fabricate(:post, topic: topic, user: moderator, raw: "Reminder: one listing per post.")
+    sign_in(buyer)
+    visit_topic
+    within("#post_2") do
+      expect(page).to have_css(".listing-card__title", text: "Qin F21 Pro")
+      expect(page).to have_css(".listing-card__fact .listing-card__label", text: "CONDITION")
+      expect(page).to have_css(".listing-card__fact", text: "Like new")
+      expect(page).to have_no_css(".cooked > h3")
+    end
+    expect(page).to have_no_css("#post_3 .listing-card")
+  end
+
+  it "has Create listing in place of Reply for members" do
+    sign_in(buyer)
+    visit_topic
+    expect(page).to have_css(".listing-format-create__button", text: "Create listing")
+    expect(page).to have_no_css("#topic-footer-buttons .topic-footer-main-buttons .create")
+    expect(page).to have_no_css("#post_1 .post-action-menu__reply")
+  end
+
+  it "keeps Reply for staff" do
+    sign_in(moderator)
+    visit_topic
+    expect(page).to have_css("#topic-footer-buttons .topic-footer-main-buttons .create")
+    expect(page).to have_no_css(".listing-format-create")
+  end
+
+  it "keeps the form in view on a phone while the editor has focus", mobile: true do
+    sign_in(buyer)
+    open_reply
+    find(".d-editor-input").click
+    item = find("#listing-format-item")
+    editor_top =
+      page.evaluate_script(
+        "document.querySelector('.d-editor-textarea-wrapper').getBoundingClientRect().top",
+      )
+    item_bottom =
+      page.evaluate_script(
+        "document.querySelector('#listing-format-item').getBoundingClientRect().bottom",
+      )
+    expect(editor_top).to be >= item_bottom
+    item.fill_in(with: "Galaxy S10")
+    expect(item.value).to eq("Galaxy S10")
   end
 
   it "leaves out REQ-PM on your own listing" do
@@ -106,7 +153,7 @@ RSpec.describe "Listing topics" do
 
       find("#listing-format-item").fill_in(with: "Galaxy S10")
       find(".save-or-cancel .create").click
-      expect(page).to have_css("#post_3 .cooked h3", text: "ITEM")
+      expect(page).to have_css("#post_3 .listing-card__title", text: "Galaxy S10")
       expect(Post.last.raw).to eq(<<~MD.strip)
         ### ITEM
         Galaxy S10

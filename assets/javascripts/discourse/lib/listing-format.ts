@@ -1,5 +1,6 @@
 import { get } from "@ember/object";
 import type Composer from "discourse/models/composer";
+import type { ListingCardFormat } from "./listing-card";
 
 export interface ListingChoice {
   multiple: boolean;
@@ -8,6 +9,7 @@ export interface ListingChoice {
 
 export interface ListingTopicFields {
   listing_format_topic?: boolean;
+  listing_format_card?: ListingCardFormat;
   listing_format_fields?: string[];
   listing_format_choices?: Record<string, ListingChoice>;
   listing_format_editor_field?: string;

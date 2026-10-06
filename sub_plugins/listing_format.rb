@@ -62,6 +62,22 @@ after_initialize do
     end,
   ) { true }
 
+  # The sections and the pictures section, so listings show as cards for
+  # everyone, staff and visitors included. The format itself, nothing more.
+  add_to_serializer(
+    :topic_view,
+    :listing_format_card,
+    include_condition: -> do
+      DiscourseListingFormat.enabled? &&
+        DiscourseListingFormat::Checker.topic_ids.include?(object.topic.id)
+    end,
+  ) do
+    {
+      sections: DiscourseListingFormat::Checker.fields,
+      images: DiscourseListingFormat::Checker.editor_field,
+    }
+  end
+
   # The fields for the reply composer's form. Only sent where the format
   # applies to the person viewing.
   add_to_serializer(

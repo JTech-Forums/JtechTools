@@ -3,6 +3,7 @@ import { withPluginApi } from "discourse/lib/plugin-api";
 import type Post from "discourse/models/post";
 import { i18n } from "discourse-i18n";
 import ListingFormatReqpmButton from "../components/listing-format-reqpm-button";
+import { buildListingCard } from "../lib/listing-card";
 import {
   assemble,
   type ListingComposer,
@@ -50,13 +51,16 @@ export default {
           context: PostMenuContext;
         }) => {
           const topic = post.topic;
-          if (!topic?.listing_format_topic || post.post_number === 1) {
+          if (!topic?.listing_format_topic) {
             return;
           }
-          // Only for people who have to post listings; staff keep Reply to
-          // answer someone in the thread.
+          // Only for people who have to post listings, who add one with
+          // Create listing instead; staff keep Reply to answer someone.
           if (topic.listing_format_fields?.length) {
             dag.delete(buttonKeys.REPLY);
+          }
+          if (post.post_number === 1) {
+            return;
           }
           const reqpm = api.container.lookup("service:reqpm") as
             | ReqpmService
@@ -71,6 +75,23 @@ export default {
             });
           }
         }
+      );
+
+      api.decorateCookedElement(
+        (
+          element: HTMLElement,
+          helper:
+            | { getModel?: () => PostMenuContext["post"] | null }
+            | undefined
+        ) => {
+          const post = helper?.getModel?.();
+          const card = post?.topic?.listing_format_card;
+          if (!card || post.post_number === 1) {
+            return;
+          }
+          buildListingCard(element, card);
+        },
+        { onlyStream: true }
       );
 
       const composerModel = (): ListingComposer | null | undefined =>
