@@ -177,6 +177,30 @@ RSpec.describe "Listing topics" do
       MD
     end
 
+    it "posts a listing without pictures, leaving the section out" do
+      open_reply
+      expect(page).to have_css(".listing-format-form__optional", text: "optional")
+      fill_listing
+      find(".save-or-cancel .create").click
+      expect(page).to have_css("#post_3 .listing-card__title", text: "Galaxy S10")
+      expect(Post.last.raw).not_to include("IMAGES")
+    end
+
+    it "asks where when Pickup is ticked without a location" do
+      open_reply
+      fill_listing
+      find("#listing-format-pickup-location-or-shipping-available").fill_in(with: "")
+      expect(find("#listing-format-pickup-location-or-shipping-available")["placeholder"]).to eq(
+        "Required for Pickup",
+      )
+      find(".save-or-cancel .create").click
+      expect(page).to have_css(
+        ".dialog-body",
+        text: "Pickup under PICKUP LOCATION OR SHIPPING AVAILABLE needs details",
+      )
+      expect(page).to have_no_css(".popup-tip.bad, .composer-popup-tip")
+    end
+
     it "keeps the editor's text as written when the server turns the post away" do
       open_reply
       fill_listing

@@ -163,11 +163,14 @@ RSpec.describe "Listing format" do
       expect(body["listing_format_choices"]["CONDITION"]).to eq(
         "multiple" => false,
         "options" => ["New", "Like new", "Used", "For parts"],
+        "details" => [],
       )
       expect(body["listing_format_choices"]["PICKUP LOCATION OR SHIPPING AVAILABLE"]).to eq(
         "multiple" => true,
         "options" => ["Pickup", "Shipping available"],
+        "details" => ["Pickup"],
       )
+      expect(body["listing_format_optional_fields"]).to eq(["IMAGES"])
       expect(body["listing_format_editor_field"]).to eq("IMAGES")
     end
 

@@ -23,6 +23,7 @@ RSpec.describe DiscourseListingFormat::Checker do
 
       ### PICKUP LOCATION OR SHIPPING AVAILABLE
       Pickup, Shipping available
+      Brooklyn, NY
     MD
 
   def problems(raw, previous: nil)
@@ -45,15 +46,17 @@ RSpec.describe DiscourseListingFormat::Checker do
     it "reads the options for sections that are fields, matching any case" do
       SiteSetting.listing_format_single_choice = "condition: New, Used|COLOR: Red, Blue"
       SiteSetting.listing_format_multiple_choice =
-        "PICKUP LOCATION OR SHIPPING AVAILABLE: Pickup, Shipping available"
+        "PICKUP LOCATION OR SHIPPING AVAILABLE: Pickup*, Shipping available"
       expect(described_class.choices).to eq(
         "CONDITION" => {
           multiple: false,
           options: %w[New Used],
+          details: [],
         },
         "PICKUP LOCATION OR SHIPPING AVAILABLE" => {
           multiple: true,
           options: ["Pickup", "Shipping available"],
+          details: ["Pickup"],
         },
       )
     end
@@ -103,14 +106,50 @@ RSpec.describe DiscourseListingFormat::Checker do
 
     it "doesn't count sections inside a quote" do
       raw = "[quote=\"seller, post:2, topic:1\"]\n#{listing}\n[/quote]\nStill available?"
-      expect(missing(raw).size).to eq(6)
+      expect(missing(raw).size).to eq(5)
 
       quoted = listing.lines.map { |line| "> #{line}" }.join
-      expect(missing("#{quoted}\n\nInterested").size).to eq(6)
+      expect(missing("#{quoted}\n\nInterested").size).to eq(5)
     end
 
     it "turns away a comment" do
       expect(problems("Is this still available?").first).to include("missing: ITEM")
+    end
+  end
+
+  describe "optional sections" do
+    it "takes a listing without pictures" do
+      expect(problems(listing.sub(/### IMAGES.*?\n\n/m, ""))).to be_empty
+      expect(
+        problems(listing.sub("![phone](/uploads/default/original/1X/abc.png)\n", "")),
+      ).to be_empty
+    end
+
+    it "still wants the other sections" do
+      SiteSetting.listing_format_optional_fields = ""
+      expect(missing(listing.sub(/### IMAGES.*?\n\n/m, ""))).to eq(%w[IMAGES])
+    end
+  end
+
+  describe "options that need details" do
+    def with_pickup(text)
+      listing.sub("Pickup, Shipping available\nBrooklyn, NY\n", text)
+    end
+
+    it "wants details with Pickup" do
+      expect(problems(with_pickup("Pickup\n")).join).to include("Pickup needs details")
+      expect(problems(with_pickup("Pickup, Shipping available\n")).join).to include("Pickup")
+    end
+
+    it "takes Pickup with a location, and shipping on its own" do
+      expect(problems(with_pickup("Pickup\nBrooklyn, NY\n"))).to be_empty
+      expect(problems(with_pickup("Pickup in Lakewood\n"))).to be_empty
+      expect(problems(with_pickup("Shipping available\n"))).to be_empty
+    end
+
+    it "lets an older post without a location be edited" do
+      old = with_pickup("Pickup\n")
+      expect(problems("#{old}\nSold!", previous: old)).to be_empty
     end
   end
 

@@ -5,6 +5,8 @@ For threads like *Hardware: phones and computers for sale*, where every post is 
 - **Listings as cards.** Each listing shows as a card: the item as its title, the other sections as labelled boxes, the pictures underneath. Posts that aren't listings look as before.
 - **Create listing.** Members get a centered **Create listing** button at the bottom of the topic in place of Reply, and the posts lose their Reply buttons. Staff keep Reply.
 - **A form for the sections.** Create listing opens the composer with a box for each section (ITEM, QUANTITY, CONDITION, SPECS, PICKUP LOCATION OR SHIPPING AVAILABLE) above the editor. The section names can't be changed. Pictures go in the editor, which fills the IMAGES section. The post comes out in the thread's layout: `### ITEM` with the item under it, and so on. On phones the form stays in view while typing in the editor.
+- **Optional sections.** IMAGES may be left empty, for a listing without pictures; it's marked optional in the form and left out of the post (`listing_format_optional_fields`).
+- **Pickup needs a location.** Ticking Pickup makes the box under it required, and a post that just says "Pickup" is turned away. An option ending in `*` in the setting works this way.
 - **Options to pick.** CONDITION has New, Like new, Used and For parts to pick one of; PICKUP LOCATION OR SHIPPING AVAILABLE has Pickup and Shipping available to tick either or both. Each still has a box for anything else, like where to pick up.
 - **REQ-PM, not replies.** Each listing has the seller's REQ-PM button where Reply used to be. Buyers request the seller's contact details there instead of commenting in the thread. It's the same REQ-PM window as on a user card, so it's only there for people who can use REQ-PM (`reqpm_allowed_groups`), and the seller chooses what to send. A comment such as "still available?" isn't a listing, so it's turned away.
 - **Sections.** Posts written by hand (editing, Dumbcourse, the API) need every section with something under it. A heading of any size, a bold name or `ITEM: …` on one line all count, in any case. Sections inside a quote don't count.
@@ -29,7 +31,8 @@ Admin → Plugins → Jtech Tools → **Listing format**. The full text of each 
 | `listing_format_topics` | (none) | Topics where the format applies. |
 | `listing_format_fields` | `ITEM\|QUANTITY\|CONDITION\|SPECS\|IMAGES\|PICKUP LOCATION OR SHIPPING AVAILABLE` | Sections each listing needs. |
 | `listing_format_single_choice` | `CONDITION: New, Like new, Used, For parts` | Sections where the reply form offers options to pick one of. |
-| `listing_format_multiple_choice` | `PICKUP LOCATION OR SHIPPING AVAILABLE: Pickup, Shipping available` | Sections where the reply form offers options to tick any of. |
+| `listing_format_optional_fields` | `IMAGES` | Sections from the list above that may be left empty. |
+| `listing_format_multiple_choice` | `PICKUP LOCATION OR SHIPPING AVAILABLE: Pickup*, Shipping available` | Sections where the reply form offers options to tick any of. |
 | `listing_format_editor_field` | `IMAGES` | The section filled from the composer's editor, where pictures are uploaded. |
 | `listing_format_block_links` | `true` | Turns away posts in these topics that link to other sites, typed or as a link. |
 | `listing_format_exempt_groups` | `3` | Groups who can post in these topics without following the format, for reminders and staff notes. |

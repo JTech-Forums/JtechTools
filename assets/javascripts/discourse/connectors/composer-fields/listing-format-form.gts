@@ -1,4 +1,5 @@
 import Component from "@glimmer/component";
+import { tracked } from "@glimmer/tracking";
 import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
@@ -21,6 +22,7 @@ interface Row {
   id: string;
   choice: ListingChoice | null;
   editor: boolean;
+  optional: boolean;
 }
 
 // Room the editor, its toolbar and the composer's header and footer need
@@ -60,6 +62,25 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
     next(() => element.querySelector<HTMLElement>("textarea, input")?.focus());
   });
 
+  // Ticks aren't tracked (they live on the composer), so a pick bumps this
+  // to update the box's hint.
+  @tracked picks = 0;
+
+  placeholder = (row: Row): string => {
+    void this.picks;
+    const needs = this.composer
+      ? (row.choice?.details ?? []).filter((option) =>
+          this.composer?.listingPicked?.[row.field]?.includes(option)
+        )
+      : [];
+    if (needs.length) {
+      return i18n("listing_format.composer.details_needed", {
+        options: needs.join(", "),
+      });
+    }
+    return row.choice ? i18n("listing_format.composer.other_details") : "";
+  };
+
   get composer(): ListingComposer | null | undefined {
     return this.args.outletArgs?.model;
   }
@@ -78,6 +99,7 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
       id: `listing-format-${field.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       choice: setup.choices[field] ?? null,
       editor: field === setup.editorField,
+      optional: setup.optional.includes(field),
     }));
   }
 
@@ -106,6 +128,7 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
     }
     const on = (event.target as HTMLInputElement).checked;
     const current = picked[row.field] ?? [];
+    this.picks++;
     if (!row.choice?.multiple) {
       picked[row.field] = on ? [option] : [];
     } else if (on) {
@@ -122,6 +145,11 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
           {{#if row.editor}}
             <p class="listing-format-form__editor-note">
               <span class="listing-format-form__label">{{row.field}}</span>
+              {{#if row.optional}}
+                <span class="listing-format-form__optional">{{i18n
+                    "listing_format.composer.optional"
+                  }}</span>
+              {{/if}}
               {{i18n "listing_format.composer.in_editor"}}
             </p>
           {{else}}
@@ -129,7 +157,13 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
               <label
                 class="listing-format-form__label"
                 for={{row.id}}
-              >{{row.field}}</label>
+              >{{row.field}}
+                {{#if row.optional}}
+                  <span class="listing-format-form__optional">{{i18n
+                      "listing_format.composer.optional"
+                    }}</span>
+                {{/if}}
+              </label>
               {{#if row.choice}}
                 <div
                   class="listing-format-form__options"
@@ -157,10 +191,7 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
                 id={{row.id}}
                 class="listing-format-form__input"
                 rows="1"
-                placeholder={{if
-                  row.choice
-                  (i18n "listing_format.composer.other_details")
-                }}
+                placeholder={{this.placeholder row}}
                 value={{this.value row.field}}
                 {{on "input" (fn this.update row.field)}}
               ></textarea>
