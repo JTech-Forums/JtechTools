@@ -1474,6 +1474,12 @@ RSpec.describe "JTech theme" do
   # it still opens the topic.
   it "presses a topic card in and springs it back" do
     visit("/latest")
+    # Capybara's no-animations style turns transitions off, and the spring is one
+    page.execute_script(<<~JS)
+      for (const style of document.querySelectorAll("style")) {
+        if (style.textContent.includes("transition: none !important")) style.remove();
+      }
+    JS
     card_css = ".topic-list.jt-cards .topic-list-item[data-topic-id='#{topic.id}']"
     expect(page).to have_css("#{card_css} .discourse-tag")
     edge, tag = page.evaluate_script(<<~JS)
