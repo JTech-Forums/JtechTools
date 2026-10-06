@@ -21,6 +21,7 @@ We built these tools for our own forum as the need came up. Some help moderators
 
 - **[Moderator tools](docs/features/moderator-tools.md).** Whispers to specific people inside a topic, private staff notes, alerts when another moderator acts, checklists before posting, and small topic tools like footer messages and reply approval.
 - **[Mini-mod](docs/features/mini-mod.md).** A few extra rights for people who moderate a single category: managing their categories, moving topics, tags. None of it reaches past what they can see.
+- **[Listing format](docs/features/listing-format.md).** Sale threads where every post is a listing in a set format, with no links to other sites. Buyers reach the seller with REQ-PM instead of replying.
 - **[Dislike](docs/features/dislike.md).** In the categories you choose, likes stop counting: no notifications, no history, no leaderboard.
 
 **For members**

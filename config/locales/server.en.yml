@@ -926,6 +926,48 @@ en:
     reqpm_request_expiry_days: Unanswered requests close after this many
       days.
 
+    # ── Jtech — Listing format ─────────────────────────────────────────────
+    listing_format_enabled: Makes posts in the topics below follow a set
+      format, for sale threads where every post is a listing. Replying opens
+      a form with a box per field. A post that doesn't follow the format is
+      turned away with the reason before it's saved. Each listing gets the
+      seller's REQ-PM button in place of Reply, for people who can use
+      REQ-PM. Posts from before a topic was added are never hidden or
+      deleted.
+    listing_format_topics: 'Topics where the format applies. Use the topic''s
+      number or paste its address (like
+      https://jtechforums.org/t/hardware-phones-computers-for-sale-thread/32).
+      New posts must have every field; edits to older posts only have to keep
+      the fields they already had, and can''t add outside links.'
+    listing_format_fields: 'Sections each listing needs. The reply form posts
+      them in this order, each as a heading with the details under it
+      ("### ITEM", then the item). Posts written by hand (edits, Dumbcourse)
+      may also use a bold name or "ITEM: …" on one line, in any case. A
+      section with nothing under it, or inside a quote, doesn''t count.'
+    listing_format_single_choice: 'Sections where the reply form offers
+      options to pick one of, written as "CONDITION: New, Like new, Used, For
+      parts". The section still has a box for anything else ("small scratch
+      on the back"). Only the form uses these; posts aren''t checked against
+      the options.'
+    listing_format_multiple_choice: 'Sections where the reply form offers
+      options to tick any of, written as "PICKUP LOCATION OR SHIPPING
+      AVAILABLE: Pickup, Shipping available". The section still has a box for
+      anything else (where to pick up). Only the form uses these; posts
+      aren''t checked against the options.'
+    listing_format_editor_field: The section filled from the composer's
+      editor, where pictures are uploaded; the others get a box each in the
+      reply form. Leave blank, or name a section that isn't in the list
+      above, to give every section a box and put the editor's text after
+      them.
+    listing_format_block_links: Turns away posts in these topics that link
+      to other sites, typed or as a link. Email addresses, phone numbers and
+      links to this forum and its uploads are allowed. Plain-text addresses
+      like ebay.com are caught for common endings (.com, .net, .org, .co,
+      .il and some others).
+    listing_format_exempt_groups: Groups who can post in these topics
+      without following the format, for reminders and staff notes. They also
+      keep the Reply button on listings and use the plain composer.
+
     placeholder:
       discourse_another_email_smtp_address: smtp.example.com
       discourse_another_email_smtp_username: username@example.com
@@ -989,6 +1031,11 @@ en:
     post_rejected_notification_alert: '%{username} rejected a queued post'
     user_note_notification_alert: '%{username} added a note on %{target}'
     flag_note_notification_alert: '%{username} added a note on a flag for %{target}'
+
+  listing_format:
+    errors:
+      missing_fields: "This topic is for listings, and your post is missing: %{fields}. Add each as a heading with the details under it, like \"%{example}\"."
+      outside_links: "Links to other sites aren't allowed here (%{links}). Remove them and give an email address or phone number instead."
 
   reqpm:
     notifications:
