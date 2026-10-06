@@ -55,11 +55,46 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
     root.style.setProperty("--composer-height", height);
   });
 
-  // Start in the form rather than the editor. On phones a focused editor
-  // slides up over everything above it, the form included, so focusing it
-  // on open (core's default for replies) hid the form.
-  focusFirst = modifier((element: HTMLElement) => {
-    next(() => element.querySelector<HTMLElement>("textarea, input")?.focus());
+  // Opening the composer mustn't bring up the keyboard: on a phone it covers
+  // the form, and the editor (the pictures section) isn't where a listing
+  // starts. Core focuses the editor as a reply opens, so until the person
+  // taps or types in the composer, focus landing in it is dropped. With a
+  // mouse there's no keyboard to pop up, so the first box takes focus.
+  holdFocus = modifier(() => {
+    const control = document.getElementById("reply-control");
+    if (!control) {
+      return;
+    }
+    const drop = (event: FocusEvent) => {
+      (event.target as HTMLElement | null)?.blur?.();
+    };
+    const release = () => {
+      control.removeEventListener("focusin", drop, true);
+      control.removeEventListener("pointerdown", release, true);
+      control.removeEventListener("keydown", release, true);
+    };
+    control.addEventListener("focusin", drop, true);
+    control.addEventListener("pointerdown", release, true);
+    control.addEventListener("keydown", release, true);
+
+    next(() => {
+      const focused = document.activeElement as HTMLElement | null;
+      if (focused && control.contains(focused)) {
+        focused.blur();
+      }
+      if (window.matchMedia("(pointer: fine)").matches) {
+        release();
+        control
+          .querySelector<HTMLElement>(".listing-format-form__input")
+          ?.focus();
+      }
+    });
+    // Core's focus comes as the composer opens; after that, leave it be.
+    const timer = setTimeout(release, 1500);
+    return () => {
+      clearTimeout(timer);
+      release();
+    };
   });
 
   // Ticks aren't tracked (they live on the composer), so a pick bumps this
@@ -140,7 +175,7 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
 
   <template>
     {{#if this.rows.length}}
-      <div class="listing-format-form" {{this.fitComposer}} {{this.focusFirst}}>
+      <div class="listing-format-form" {{this.fitComposer}} {{this.holdFocus}}>
         {{#each this.rows as |row|}}
           {{#if row.editor}}
             <p class="listing-format-form__editor-note">

@@ -96,6 +96,17 @@ RSpec.describe "Listing topics" do
     expect(page).to have_no_css(".listing-format-create")
   end
 
+  it "opens Create listing on a phone without focusing anything", mobile: true do
+    sign_in(buyer)
+    open_reply
+    sleep 0.5
+    focused =
+      page.evaluate_script(
+        "document.getElementById('reply-control').contains(document.activeElement)",
+      )
+    expect(focused).to eq(false)
+  end
+
   it "keeps the form in view on a phone while the editor has focus", mobile: true do
     sign_in(buyer)
     open_reply

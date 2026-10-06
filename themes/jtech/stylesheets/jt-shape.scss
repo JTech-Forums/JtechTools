@@ -219,6 +219,13 @@ aside.onebox,
   border-radius: var(--jt-radius-control);
 }
 
+// The composer's writing box. Core's redesigned composer squares it off
+// ("core overrule"); it had only matched the controls by chance. Core's own
+// rounded top for the focused box on phones is more specific and still wins.
+#reply-control .d-editor-textarea-wrapper {
+  border-radius: var(--jt-radius-control);
+}
+
 // Avatars: a rounded box like the rest of the theme's shapes (a squircle
 // where corner-shape works), a circle only with corner_style "round"
 img.avatar,
