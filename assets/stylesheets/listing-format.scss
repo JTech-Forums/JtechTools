@@ -1,32 +1,35 @@
-// Listing format — the reply composer's field form.
+// Listing format — the reply composer's section form. Compact, because it
+// shares the composer's height with the editor: labels above the boxes,
+// two columns where there's room, boxes that grow as people type.
 .listing-format-form {
   display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 0.5em 0.75em;
-  align-items: start;
-  margin-bottom: 0.5em;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5em 1em;
+  padding: 0.5em 0.75em;
+  border-bottom: 1px solid var(--primary-low);
 }
 
-.listing-format-form__row {
-  display: contents;
+.listing-format-form__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  min-width: 0;
 }
 
 .listing-format-form__label {
-  font-weight: bold;
   margin: 0;
-  padding-top: 0.3em;
+  color: var(--primary-high);
+  font-size: var(--font-down-1);
+  font-weight: bold;
 }
 
 .listing-format-form__input {
   width: 100%;
+  min-height: 2.25em;
+  max-height: 8em;
   margin: 0;
   resize: vertical;
-}
-
-.listing-format-form__value {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25em;
+  field-sizing: content;
 }
 
 .listing-format-form__options {
@@ -46,7 +49,21 @@
   }
 }
 
+// Last, just above the editor it points to.
 .listing-format-form__editor-note {
+  grid-column: 1 / -1;
+  order: 1;
+  margin: 0;
   color: var(--primary-medium);
   font-size: var(--font-down-1);
+
+  .listing-format-form__label {
+    margin-right: 0.35em;
+  }
+}
+
+@media (width <= 600px) {
+  .listing-format-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
