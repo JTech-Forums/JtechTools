@@ -131,6 +131,10 @@ en:
         download: Download
         fullscreen: Full screen
         unavailable: This audio could not be loaded.
+    listing_format:
+      composer:
+        details: Pictures and anything else go below.
+        missing: "Fill in %{fields} before posting."
     reqpm:
       title: REQ-PM
       button:
@@ -582,6 +586,7 @@ en:
           popups: Pop-ups
           disteleplus: Disteleplus
           reqpm: REQ-PM
+          listing_format: Listing format
           all_settings: All settings
   admin_js:
     admin:
@@ -644,6 +649,7 @@ en:
           jtech_mod_topic_tools: "Jtech — Mod: Topic tools"
           jtech_mod_checklists: "Jtech — Mod: Checklists"
           jtech_reqpm: Jtech — REQ-PM
+          jtech_listing_format: Jtech — Listing format
         # Dropdown labels for the plugin's translatable enum settings.
         reqpm:
           setup_prompt:

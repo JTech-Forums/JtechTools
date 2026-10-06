@@ -1321,3 +1321,41 @@ jtech_reqpm:
     max: 365
     depends_on:
       - "reqpm_enabled"
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Listing format (sale threads where every reply is a listing)
+# ───────────────────────────────────────────────────────────────────────────
+jtech_listing_format:
+  listing_format_enabled:
+    default: true
+    client: false
+  # Topic numbers or addresses. Empty = the module does nothing.
+  listing_format_topics:
+    default: ""
+    client: false
+    type: list
+    list_type: compact
+    depends_on:
+      - "listing_format_enabled"
+  # Each must start a line of its own, followed by a value. No Contact field:
+  # buyers use the Contact seller (REQ-PM) button on the listing.
+  listing_format_fields:
+    default: "Item|Condition|Price"
+    client: false
+    type: list
+    list_type: simple
+    depends_on:
+      - "listing_format_enabled"
+  listing_format_block_links:
+    default: true
+    client: false
+    depends_on:
+      - "listing_format_enabled"
+  # 3 = staff, so moderators can post reminders and fix listings.
+  listing_format_exempt_groups:
+    default: "3"
+    client: false
+    type: group_list
+    allow_any: false
+    depends_on:
+      - "listing_format_enabled"

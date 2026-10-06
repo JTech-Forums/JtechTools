@@ -1,0 +1,29 @@
+// Listing format — the reply composer's field form.
+.listing-format-form {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5em 0.75em;
+  align-items: center;
+  margin-bottom: 0.5em;
+}
+
+.listing-format-form__row {
+  display: contents;
+}
+
+.listing-format-form__label {
+  font-weight: bold;
+  margin: 0;
+}
+
+.listing-format-form__input {
+  width: 100%;
+  margin: 0;
+}
+
+.listing-format-form__hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--primary-medium);
+  font-size: var(--font-down-1);
+}

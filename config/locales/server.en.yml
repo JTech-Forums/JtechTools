@@ -926,6 +926,32 @@ en:
     reqpm_request_expiry_days: Unanswered requests close after this many
       days.
 
+    # ── Jtech — Listing format ─────────────────────────────────────────────
+    listing_format_enabled: Makes posts in the topics below follow a set
+      format, for sale threads where every post is a listing. Replying opens
+      a form with a box per field. A post that doesn't follow the format is
+      turned away with the reason before it's saved. Each listing gets the
+      seller's REQ-PM button in place of Reply, for people who can use
+      REQ-PM. Posts from before a topic was added are never hidden or
+      deleted.
+    listing_format_topics: 'Topics where the format applies. Use the topic''s
+      number or paste its address (like
+      https://jtechforums.org/t/hardware-phones-computers-for-sale-thread/32).
+      New posts must have every field; edits to older posts only have to keep
+      the fields they already had, and can''t add outside links.'
+    listing_format_fields: 'Lines each listing needs, in any order. Each one
+      starts a line, followed by a colon or dash and a value: "Price: $120".
+      Upper or lower case, bold, bullets and headings are all fine. Lines
+      inside a quote don''t count.'
+    listing_format_block_links: Turns away posts in these topics that link
+      to other sites, typed or as a link. Email addresses, phone numbers and
+      links to this forum and its uploads are allowed. Plain-text addresses
+      like ebay.com are caught for common endings (.com, .net, .org, .co,
+      .il and some others).
+    listing_format_exempt_groups: Groups who can post in these topics
+      without following the format, for reminders and staff notes. They also
+      keep the Reply button on listings and use the plain composer.
+
     placeholder:
       discourse_another_email_smtp_address: smtp.example.com
       discourse_another_email_smtp_username: username@example.com
@@ -989,6 +1015,11 @@ en:
     post_rejected_notification_alert: '%{username} rejected a queued post'
     user_note_notification_alert: '%{username} added a note on %{target}'
     flag_note_notification_alert: '%{username} added a note on a flag for %{target}'
+
+  listing_format:
+    errors:
+      missing_fields: "This topic is for listings, and your post is missing: %{fields}. Put each on its own line, like \"%{example}\"."
+      outside_links: "Links to other sites aren't allowed here (%{links}). Remove them and give an email address or phone number instead."
 
   reqpm:
     notifications:

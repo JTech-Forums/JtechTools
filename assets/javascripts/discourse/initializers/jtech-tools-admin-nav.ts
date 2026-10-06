@@ -66,6 +66,10 @@ const LINKS: AdminNavLink[] = [
     route: "adminPlugins.show.jtech-tools-reqpm",
   },
   {
+    label: "jtech_tools.admin.tabs.listing_format",
+    route: "adminPlugins.show.jtech-tools-listing-format",
+  },
+  {
     label: "jtech_tools.admin.tabs.all_settings",
     route: "adminPlugins.show.settings",
   },
