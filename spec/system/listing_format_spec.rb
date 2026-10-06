@@ -68,6 +68,19 @@ RSpec.describe "Listing topics" do
     end
   end
 
+  it "shows each listing as a card, and leaves other posts alone" do
+    Fabricate(:post, topic: topic, user: moderator, raw: "Reminder: one listing per post.")
+    sign_in(buyer)
+    visit_topic
+    within("#post_2") do
+      expect(page).to have_css(".listing-card__title", text: "Qin F21 Pro")
+      expect(page).to have_css(".listing-card__fact .listing-card__label", text: "CONDITION")
+      expect(page).to have_css(".listing-card__fact", text: "Like new")
+      expect(page).to have_no_css(".cooked > h3")
+    end
+    expect(page).to have_no_css("#post_3 .listing-card")
+  end
+
   it "has Create listing in place of Reply for members" do
     sign_in(buyer)
     visit_topic

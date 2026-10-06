@@ -2,6 +2,7 @@
 
 For threads like *Hardware: phones and computers for sale*, where every post is a listing. In the topics you choose, a post has to follow the thread's format, or it's turned away with the reason before it's saved.
 
+- **Listings as cards.** Each listing shows as a card: the item as its title, the other sections as labelled boxes, the pictures underneath. Posts that aren't listings look as before.
 - **Create listing.** Members get a centered **Create listing** button at the bottom of the topic in place of Reply, and the posts lose their Reply buttons. Staff keep Reply.
 - **A form for the sections.** Create listing opens the composer with a box for each section (ITEM, QUANTITY, CONDITION, SPECS, PICKUP LOCATION OR SHIPPING AVAILABLE) above the editor. The section names can't be changed. Pictures go in the editor, which fills the IMAGES section. The post comes out in the thread's layout: `### ITEM` with the item under it, and so on. On phones the form stays in view while typing in the editor.
 - **Options to pick.** CONDITION has New, Like new, Used and For parts to pick one of; PICKUP LOCATION OR SHIPPING AVAILABLE has Pickup and Shipping available to tick either or both. Each still has a box for anything else, like where to pick up.
