@@ -939,10 +939,26 @@ en:
       https://jtechforums.org/t/hardware-phones-computers-for-sale-thread/32).
       New posts must have every field; edits to older posts only have to keep
       the fields they already had, and can''t add outside links.'
-    listing_format_fields: 'Lines each listing needs, in any order. Each one
-      starts a line, followed by a colon or dash and a value: "Price: $120".
-      Upper or lower case, bold, bullets and headings are all fine. Lines
-      inside a quote don''t count.'
+    listing_format_fields: 'Sections each listing needs. The reply form posts
+      them in this order, each as a heading with the details under it
+      ("### ITEM", then the item). Posts written by hand (edits, Dumbcourse)
+      may also use a bold name or "ITEM: …" on one line, in any case. A
+      section with nothing under it, or inside a quote, doesn''t count.'
+    listing_format_single_choice: 'Sections where the reply form offers
+      options to pick one of, written as "CONDITION: New, Like new, Used, For
+      parts". The section still has a box for anything else ("small scratch
+      on the back"). Only the form uses these; posts aren''t checked against
+      the options.'
+    listing_format_multiple_choice: 'Sections where the reply form offers
+      options to tick any of, written as "PICKUP LOCATION OR SHIPPING
+      AVAILABLE: Pickup, Shipping available". The section still has a box for
+      anything else (where to pick up). Only the form uses these; posts
+      aren''t checked against the options.'
+    listing_format_editor_field: The section filled from the composer's
+      editor, where pictures are uploaded; the others get a box each in the
+      reply form. Leave blank, or name a section that isn't in the list
+      above, to give every section a box and put the editor's text after
+      them.
     listing_format_block_links: Turns away posts in these topics that link
       to other sites, typed or as a link. Email addresses, phone numbers and
       links to this forum and its uploads are allowed. Plain-text addresses
@@ -1018,7 +1034,7 @@ en:
 
   listing_format:
     errors:
-      missing_fields: "This topic is for listings, and your post is missing: %{fields}. Put each on its own line, like \"%{example}\"."
+      missing_fields: "This topic is for listings, and your post is missing: %{fields}. Add each as a heading with the details under it, like \"%{example}\"."
       outside_links: "Links to other sites aren't allowed here (%{links}). Remove them and give an email address or phone number instead."
 
   reqpm:

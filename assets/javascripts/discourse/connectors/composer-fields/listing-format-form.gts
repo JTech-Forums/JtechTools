@@ -3,61 +3,138 @@ import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import { i18n } from "discourse-i18n";
-import { type ListingComposer, listingFields } from "../../lib/listing-format";
+import {
+  type ListingChoice,
+  type ListingComposer,
+  type ListingSetup,
+  listingSetup,
+} from "../../lib/listing-format";
 
 interface ListingFormatFormSignature {
   Args: { outletArgs: { model?: ListingComposer | null } };
 }
 
-// One input per field above the editor when replying in a listing topic.
-// The labels are fixed text, so the format can't be broken by editing it;
-// the editor below stays free for pictures and details.
+interface Row {
+  field: string;
+  id: string;
+  choice: ListingChoice | null;
+  editor: boolean;
+}
+
+// A box per section above the editor when replying in a listing topic, with
+// options to pick for sections that have them (condition, pickup/shipping).
+// The section names are fixed text, so the format can't be broken by
+// editing it; the editor below fills the pictures section.
 export default class ListingFormatForm extends Component<ListingFormatFormSignature> {
   get composer(): ListingComposer | null | undefined {
     return this.args.outletArgs?.model;
   }
 
-  get fields(): string[] {
-    return this.composer ? listingFields(this.composer) : [];
+  get setup(): ListingSetup | null {
+    return this.composer ? listingSetup(this.composer) : null;
+  }
+
+  get rows(): Row[] {
+    const setup = this.setup;
+    if (!setup) {
+      return [];
+    }
+    return setup.fields.map((field) => ({
+      field,
+      id: `listing-format-${field.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      choice: setup.choices[field] ?? null,
+      editor: field === setup.editorField,
+    }));
   }
 
   value = (field: string): string =>
     this.composer?.listingValues?.[field] ?? "";
 
-  inputId = (field: string): string =>
-    `listing-format-${field.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  isPicked = (field: string, option: string): boolean =>
+    this.composer?.listingPicked?.[field]?.includes(option) ?? false;
+
+  optionId = (row: Row, option: string): string =>
+    `${row.id}-${option.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
   @action
   update(field: string, event: Event) {
-    const composer = this.composer;
-    if (!composer?.listingValues) {
+    const values = this.composer?.listingValues;
+    if (values) {
+      values[field] = (event.target as HTMLTextAreaElement).value;
+    }
+  }
+
+  @action
+  pick(row: Row, option: string, event: Event) {
+    const picked = this.composer?.listingPicked;
+    if (!picked) {
       return;
     }
-    composer.listingValues[field] = (event.target as HTMLInputElement).value;
+    const on = (event.target as HTMLInputElement).checked;
+    const current = picked[row.field] ?? [];
+    if (!row.choice?.multiple) {
+      picked[row.field] = on ? [option] : [];
+    } else if (on) {
+      picked[row.field] = [...current, option];
+    } else {
+      picked[row.field] = current.filter((o) => o !== option);
+    }
   }
 
   <template>
-    {{#if this.fields.length}}
+    {{#if this.rows.length}}
       <div class="listing-format-form">
-        {{#each this.fields as |field|}}
+        {{#each this.rows as |row|}}
           <div class="listing-format-form__row">
-            <label
-              class="listing-format-form__label"
-              for={{this.inputId field}}
-            >{{field}}</label>
-            <input
-              id={{this.inputId field}}
-              class="listing-format-form__input"
-              type="text"
-              value={{this.value field}}
-              aria-required="true"
-              {{on "input" (fn this.update field)}}
-            />
+            {{#if row.editor}}
+              <span class="listing-format-form__label">{{row.field}}</span>
+              <span class="listing-format-form__editor-note">
+                {{i18n "listing_format.composer.in_editor"}}
+              </span>
+            {{else}}
+              <label
+                class="listing-format-form__label"
+                for={{row.id}}
+              >{{row.field}}</label>
+              <div class="listing-format-form__value">
+                {{#if row.choice}}
+                  <div
+                    class="listing-format-form__options"
+                    role={{if row.choice.multiple "group" "radiogroup"}}
+                    aria-label={{row.field}}
+                  >
+                    {{#each row.choice.options as |option|}}
+                      <label
+                        class="listing-format-form__option"
+                        for={{this.optionId row option}}
+                      >
+                        <input
+                          id={{this.optionId row option}}
+                          type={{if row.choice.multiple "checkbox" "radio"}}
+                          name={{row.id}}
+                          checked={{this.isPicked row.field option}}
+                          {{on "change" (fn this.pick row option)}}
+                        />
+                        {{option}}
+                      </label>
+                    {{/each}}
+                  </div>
+                {{/if}}
+                <textarea
+                  id={{row.id}}
+                  class="listing-format-form__input"
+                  rows={{if row.choice "1" "2"}}
+                  placeholder={{if
+                    row.choice
+                    (i18n "listing_format.composer.other_details")
+                  }}
+                  value={{this.value row.field}}
+                  {{on "input" (fn this.update row.field)}}
+                ></textarea>
+              </div>
+            {{/if}}
           </div>
         {{/each}}
-        <p class="listing-format-form__hint">
-          {{i18n "listing_format.composer.details"}}
-        </p>
       </div>
     {{/if}}
   </template>

@@ -3,12 +3,34 @@
 require "rails_helper"
 
 RSpec.describe DiscourseListingFormat::Checker do
-  let(:listing) { "Item: Qin F21 Pro\nCondition: Like new\nPrice: $80\nContact: 646-555-0134" }
+  # The sale thread's own layout.
+  let(:listing) { <<~MD }
+      ### ITEM
+      Qin F21 Pro
 
-  before { SiteSetting.listing_format_fields = "Item|Condition|Price|Contact" }
+      ### QUANTITY
+      1
+
+      ### CONDITION
+      Like new
+
+      ### SPECS
+      4GB RAM
+      64GB storage
+
+      ### IMAGES
+      ![phone](/uploads/default/original/1X/abc.png)
+
+      ### PICKUP LOCATION OR SHIPPING AVAILABLE
+      Pickup, Shipping available
+    MD
 
   def problems(raw, previous: nil)
     described_class.new(raw, previous: previous).problems
+  end
+
+  def missing(raw)
+    described_class.missing_fields_in(raw)
   end
 
   describe ".topic_ids" do
@@ -19,28 +41,76 @@ RSpec.describe DiscourseListingFormat::Checker do
     end
   end
 
-  describe "fields" do
-    it "accepts a listing with every field" do
+  describe ".choices" do
+    it "reads the options for sections that are fields, matching any case" do
+      SiteSetting.listing_format_single_choice = "condition: New, Used|COLOR: Red, Blue"
+      SiteSetting.listing_format_multiple_choice =
+        "PICKUP LOCATION OR SHIPPING AVAILABLE: Pickup, Shipping available"
+      expect(described_class.choices).to eq(
+        "CONDITION" => {
+          multiple: false,
+          options: %w[New Used],
+        },
+        "PICKUP LOCATION OR SHIPPING AVAILABLE" => {
+          multiple: true,
+          options: ["Pickup", "Shipping available"],
+        },
+      )
+    end
+  end
+
+  describe ".editor_field" do
+    it "is the matching field, or nil when it isn't one" do
+      SiteSetting.listing_format_editor_field = "images"
+      expect(described_class.editor_field).to eq("IMAGES")
+
+      SiteSetting.listing_format_editor_field = "PHOTOS"
+      expect(described_class.editor_field).to be_nil
+    end
+  end
+
+  describe "sections" do
+    it "accepts a listing in the thread's layout" do
       expect(problems(listing)).to be_empty
     end
 
-    it "accepts bold, bullets, headings, any case and a dash" do
-      raw = "**Item:** Qin F21\n- condition - good\n### PRICE: $50\n__Contact__: 646-555-0134"
-      expect(problems(raw)).to be_empty
+    it "accepts other headings, bold names and one-line sections, in any case" do
+      raw = <<~MD
+        ## Item
+        Qin F21
+        **Quantity:** 2
+        - condition - good
+        __SPECS__
+        4GB
+        # images
+        none yet
+        Pickup location or shipping available: pickup in Brooklyn
+      MD
+      expect(missing(raw)).to be_empty
     end
 
-    it "names the fields that are missing or left empty" do
-      raw = "Item: Qin F21\nCondition: good\nPrice:\n"
-      expect(described_class.new(raw).missing_fields).to eq(%w[Price Contact])
-      expect(problems(raw).first).to include("Price, Contact")
+    it "names the sections that are missing or have nothing under them" do
+      raw = listing.sub("Like new\n", "").sub(/### SPECS.*?\n\n/m, "")
+      expect(missing(raw)).to eq(%w[CONDITION SPECS])
+      expect(problems(raw).first).to include("CONDITION, SPECS")
+      expect(problems(raw).first).to include("### CONDITION")
     end
 
-    it "doesn't count fields inside a quote" do
+    it "doesn't take a sentence that starts with a section's name for it" do
+      raw = listing.sub("### ITEM\nQin F21 Pro\n", "Item is a Qin F21 Pro\n")
+      expect(missing(raw)).to eq(%w[ITEM])
+    end
+
+    it "doesn't count sections inside a quote" do
       raw = "[quote=\"seller, post:2, topic:1\"]\n#{listing}\n[/quote]\nStill available?"
-      expect(described_class.new(raw).missing_fields).to eq(%w[Item Condition Price Contact])
+      expect(missing(raw).size).to eq(6)
 
       quoted = listing.lines.map { |line| "> #{line}" }.join
-      expect(described_class.new("#{quoted}\n\nInterested").missing_fields.size).to eq(4)
+      expect(missing("#{quoted}\n\nInterested").size).to eq(6)
+    end
+
+    it "turns away a comment" do
+      expect(problems("Is this still available?").first).to include("missing: ITEM")
     end
   end
 
@@ -53,7 +123,7 @@ RSpec.describe DiscourseListingFormat::Checker do
         "see ebay.com/itm/123",
         "on www.yad2.co.il",
       ].each do |link|
-        expect(problems("#{listing}\n\n#{link}").last).to include("Links to other sites"), link
+        expect(problems("#{listing}\n#{link}").last).to include("Links to other sites"), link
       end
     end
 
@@ -65,8 +135,7 @@ RSpec.describe DiscourseListingFormat::Checker do
       raw = <<~MD
         #{listing}
         Email me at seller@gmail.com or [here](mailto:seller@gmail.com), call [646-555-0134](tel:+16465550134).
-        Pictures: #{Discourse.base_url}/t/photos/123 and [this](/t/photos/123), version 2.0, @someone
-        ![phone](/uploads/default/original/1X/abc.png)
+        More at #{Discourse.base_url}/t/photos/123 and [this](/t/photos/123), version 2.0
       MD
       expect(problems(raw)).to be_empty
     end
@@ -80,7 +149,7 @@ RSpec.describe DiscourseListingFormat::Checker do
   describe "edits" do
     let(:old_post) { "Anyone selling a Qin?\nhttps://www.ebay.com/itm/123" }
 
-    it "lets an older post be edited without adding the fields" do
+    it "lets an older post be edited without adding the sections" do
       expect(problems("Anyone selling a Qin? (sold)", previous: old_post)).to be_empty
     end
 
@@ -94,9 +163,9 @@ RSpec.describe DiscourseListingFormat::Checker do
       expect(problems(edited, previous: old_post).join).not_to include("www.ebay.com")
     end
 
-    it "turns away an edit that takes out a field the post had" do
-      edited = listing.sub("Price: $80\n", "")
-      expect(problems(edited, previous: listing).join).to include("Price")
+    it "turns away an edit that empties a section the post had" do
+      edited = listing.sub("Like new\n", "")
+      expect(problems(edited, previous: listing).join).to include("CONDITION")
     end
   end
 end

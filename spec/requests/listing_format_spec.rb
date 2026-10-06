@@ -22,12 +22,28 @@ RSpec.describe "Listing format" do
     )
   end
 
-  let(:listing) { "Item: Qin F21 Pro\nCondition: Like new\nPrice: $80\nContact: 646-555-0134" }
+  # The default sections, in the sale thread's own layout.
+  let(:listing) { <<~MD }
+      ### ITEM
+      Qin F21 Pro
 
-  before do
-    SiteSetting.listing_format_fields = "Item|Condition|Price|Contact"
-    SiteSetting.listing_format_topics = sale_topic.id.to_s
-  end
+      ### QUANTITY
+      1
+
+      ### CONDITION
+      Like new
+
+      ### SPECS
+      4GB RAM, 64GB storage
+
+      ### IMAGES
+      ![phone](/uploads/default/original/1X/abc.png)
+
+      ### PICKUP LOCATION OR SHIPPING AVAILABLE
+      Pickup in Brooklyn
+    MD
+
+  before { SiteSetting.listing_format_topics = sale_topic.id.to_s }
 
   def reply(raw, topic: sale_topic)
     post "/posts.json", params: { raw: raw, topic_id: topic.id }
@@ -41,10 +57,15 @@ RSpec.describe "Listing format" do
       expect(response.status).to eq(200)
     end
 
-    it "turns away a reply missing a field, saying which" do
-      expect { reply(listing.sub("Price: $80\n", "")) }.not_to change { sale_topic.posts.count }
+    it "turns away a reply with an empty section, saying which" do
+      expect { reply(listing.sub("Like new\n", "")) }.not_to change { sale_topic.posts.count }
       expect(response.status).to eq(422)
-      expect(response.parsed_body["errors"].join).to include("missing: Price")
+      expect(response.parsed_body["errors"].join).to include("missing: CONDITION")
+    end
+
+    it "turns away a comment" do
+      expect { reply("Is this still available?") }.not_to change { sale_topic.posts.count }
+      expect(response.status).to eq(422)
     end
 
     it "turns away a reply with a link to another site" do
@@ -56,14 +77,14 @@ RSpec.describe "Listing format" do
     end
 
     it "takes email and phone links" do
-      raw = "#{listing.sub("646-555-0134", "[call](tel:+16465550134)")}\n[email](mailto:a@b.com)"
+      raw = "#{listing}[call](tel:+16465550134) or [email](mailto:a@b.com)"
       expect { reply(raw) }.to change { sale_topic.posts.count }.by(1)
     end
 
     it "leaves other topics alone" do
-      expect { reply("Anyone have one? https://www.ebay.com/itm/123", topic: other_topic) }.to change {
-        other_topic.posts.count
-      }.by(1)
+      expect {
+        reply("Anyone have one? https://www.ebay.com/itm/123", topic: other_topic)
+      }.to change { other_topic.posts.count }.by(1)
     end
 
     it "leaves the topic alone once the module is off" do
@@ -90,7 +111,7 @@ RSpec.describe "Listing format" do
       expect(older_post.hidden).to eq(false)
     end
 
-    it "lets them be edited without adding the fields" do
+    it "lets them be edited without adding the sections" do
       put "/posts/#{older_post.id}.json",
           params: {
             post: {
@@ -114,27 +135,50 @@ RSpec.describe "Listing format" do
     end
   end
 
-  it "doesn't let an edit take a field out of a listing" do
+  it "doesn't let an edit empty a section of a listing" do
     sign_in(seller)
     reply(listing)
     listed = Post.find(response.parsed_body["id"])
 
-    put "/posts/#{listed.id}.json", params: { post: { raw: listing.sub("Price: $80\n", "") } }
+    put "/posts/#{listed.id}.json", params: { post: { raw: listing.sub("Like new\n", "") } }
     expect(response.status).to eq(422)
-    expect(listed.reload.raw).to include("Price: $80")
+    expect(listed.reload.raw).to include("Like new")
   end
 
-  describe "the composer's starting text" do
-    it "lists the fields for someone who has to follow them" do
+  describe "the reply form" do
+    it "gets the sections, options and editor section for someone who has to follow them" do
       sign_in(seller)
       get "/t/#{sale_topic.id}.json"
-      expect(response.parsed_body["listing_format_fields"]).to eq(%w[Item Condition Price Contact])
+      body = response.parsed_body
+      expect(body["listing_format_fields"]).to eq(
+        [
+          "ITEM",
+          "QUANTITY",
+          "CONDITION",
+          "SPECS",
+          "IMAGES",
+          "PICKUP LOCATION OR SHIPPING AVAILABLE",
+        ],
+      )
+      expect(body["listing_format_choices"]["CONDITION"]).to eq(
+        "multiple" => false,
+        "options" => ["New", "Like new", "Used", "For parts"],
+      )
+      expect(body["listing_format_choices"]["PICKUP LOCATION OR SHIPPING AVAILABLE"]).to eq(
+        "multiple" => true,
+        "options" => ["Pickup", "Shipping available"],
+      )
+      expect(body["listing_format_editor_field"]).to eq("IMAGES")
     end
 
     it "is left out for staff, visitors and other topics" do
       sign_in(moderator)
       get "/t/#{sale_topic.id}.json"
-      expect(response.parsed_body).not_to have_key("listing_format_fields")
+      expect(response.parsed_body.keys).not_to include(
+        "listing_format_fields",
+        "listing_format_choices",
+        "listing_format_editor_field",
+      )
 
       sign_in(seller)
       get "/t/#{other_topic.id}.json"

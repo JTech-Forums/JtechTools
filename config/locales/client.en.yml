@@ -133,7 +133,8 @@ en:
         unavailable: This audio could not be loaded.
     listing_format:
       composer:
-        details: Pictures and anything else go below.
+        in_editor: Add them in the editor below.
+        other_details: Anything else
         missing: "Fill in %{fields} before posting."
     reqpm:
       title: REQ-PM

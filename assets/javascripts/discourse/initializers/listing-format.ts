@@ -6,6 +6,7 @@ import ListingFormatReqpmButton from "../components/listing-format-reqpm-button"
 import {
   assemble,
   type ListingComposer,
+  listingSetup,
   type ListingTopicFields,
   missingValues,
 } from "../lib/listing-format";
@@ -31,7 +32,7 @@ interface ComposerServiceWithModel {
 
 // Listing topics (see sub_plugins/listing_format.rb): each listing gets the
 // seller's REQ-PM button and loses its Reply button, and replying opens a
-// form with a fixed label per field above the editor.
+// form with a fixed label per section above the editor.
 export default {
   name: "jtech-listing-format",
 
@@ -81,16 +82,22 @@ export default {
 
       api.onAppEvent("composer:opened", () => {
         const model = composerModel();
-        if (!model || model.get("listingFields")) {
+        if (!model || listingSetup(model)) {
           return;
         }
-        const fields = model.topic?.listing_format_fields;
+        const topic = model.topic;
+        const fields = topic?.listing_format_fields;
         if (model.action !== "reply" || !fields?.length) {
           return;
         }
         model.set("listingValues", {});
+        model.set("listingPicked", {});
         model.set("listingBody", null);
-        model.set("listingFields", fields);
+        model.set("listing", {
+          fields,
+          choices: topic?.listing_format_choices ?? {},
+          editorField: topic?.listing_format_editor_field ?? null,
+        });
       });
 
       // Core runs this just before saving, so the form's lines go to the
@@ -105,7 +112,7 @@ export default {
           value: boolean;
           context: { model?: ListingComposer | null };
         }) => {
-          if (!model?.get("listingFields") || model.listingBody != null) {
+          if (!model || !listingSetup(model) || model.listingBody != null) {
             return value;
           }
           const missing = missingValues(model);

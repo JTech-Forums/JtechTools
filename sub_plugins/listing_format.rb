@@ -3,13 +3,12 @@
 # listing, and buyers reach the seller through REQ-PM instead of replying.
 #
 # In the topics listed in listing_format_topics, a new post must have each
-# field from listing_format_fields on its own line ("Price: $120"), and may
-# not link to other sites: only email addresses, phone numbers and the
-# forum itself. A post that breaks either rule is turned away with the
+# section from listing_format_fields ("### ITEM" with the item under it),
+# and may not link to other sites: only email addresses, phone numbers and
+# the forum itself. A post that breaks either rule is turned away with the
 # reason, before it's saved, so nothing is hidden or deleted afterwards.
-# That also turns away comments ("still available?"): each listing has a
-# Contact seller button that opens the seller's REQ-PM window instead, and
-# its Reply button is gone.
+# That also turns away comments ("still available?"): each listing has the
+# seller's REQ-PM button instead, and its Reply button is gone.
 #
 # Posts written before a topic was listed are left alone. Editing one is
 # checked against what it already had: an edit can't add an outside link
@@ -52,7 +51,7 @@ after_initialize do
       .each { |message| errors.add(:base, message) }
   end
 
-  # Tells the client to show Contact seller on posts and leave out their
+  # Tells the client to show REQ-PM on posts and leave out their
   # Reply buttons. Says nothing the topic page doesn't already show.
   add_to_serializer(
     :topic_view,
@@ -70,4 +69,22 @@ after_initialize do
     :listing_format_fields,
     include_condition: -> { DiscourseListingFormat.applies?(object.topic.id, scope.user) },
   ) { DiscourseListingFormat::Checker.fields }
+
+  # Options to pick from for some sections (condition, pickup/shipping).
+  add_to_serializer(
+    :topic_view,
+    :listing_format_choices,
+    include_condition: -> { DiscourseListingFormat.applies?(object.topic.id, scope.user) },
+  ) { DiscourseListingFormat::Checker.choices }
+
+  # Which of those the editor fills (pictures), so it gets no box of its
+  # own. Left out when it isn't one of the fields.
+  add_to_serializer(
+    :topic_view,
+    :listing_format_editor_field,
+    include_condition: -> do
+      DiscourseListingFormat.applies?(object.topic.id, scope.user) &&
+        DiscourseListingFormat::Checker.editor_field.present?
+    end,
+  ) { DiscourseListingFormat::Checker.editor_field }
 end
