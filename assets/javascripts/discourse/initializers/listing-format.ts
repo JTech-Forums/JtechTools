@@ -50,13 +50,16 @@ export default {
           context: PostMenuContext;
         }) => {
           const topic = post.topic;
-          if (!topic?.listing_format_topic || post.post_number === 1) {
+          if (!topic?.listing_format_topic) {
             return;
           }
-          // Only for people who have to post listings; staff keep Reply to
-          // answer someone in the thread.
+          // Only for people who have to post listings, who add one with
+          // Create listing instead; staff keep Reply to answer someone.
           if (topic.listing_format_fields?.length) {
             dag.delete(buttonKeys.REPLY);
+          }
+          if (post.post_number === 1) {
+            return;
           }
           const reqpm = api.container.lookup("service:reqpm") as
             | ReqpmService

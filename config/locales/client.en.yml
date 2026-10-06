@@ -132,6 +132,8 @@ en:
         fullscreen: Full screen
         unavailable: This audio could not be loaded.
     listing_format:
+      create:
+        label: Create listing
       composer:
         in_editor: Add them in the editor below.
         other_details: Anything else
