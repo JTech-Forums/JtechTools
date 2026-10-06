@@ -153,7 +153,7 @@ RSpec.describe "Listing topics" do
 
       find("#listing-format-item").fill_in(with: "Galaxy S10")
       find(".save-or-cancel .create").click
-      expect(page).to have_css("#post_3 .cooked h3", text: "ITEM")
+      expect(page).to have_css("#post_3 .listing-card__title", text: "Galaxy S10")
       expect(Post.last.raw).to eq(<<~MD.strip)
         ### ITEM
         Galaxy S10
