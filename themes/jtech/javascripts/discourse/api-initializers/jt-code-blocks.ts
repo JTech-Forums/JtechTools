@@ -34,6 +34,20 @@ function addLineNumbers(pre: HTMLElement, code: HTMLElement): void {
   );
   pre.classList.add("jt-numbered");
   pre.insertBefore(gutter, code);
+  // core scrolls a tall <code> inside its box: the numbers follow, and stop
+  // above its horizontal scrollbar, as the lines do
+  code.addEventListener("scroll", () => (gutter.scrollTop = code.scrollTop), {
+    passive: true,
+  });
+  new ResizeObserver(() => {
+    const box = getComputedStyle(code);
+    const bar =
+      code.offsetHeight -
+      code.clientHeight -
+      parseFloat(box.borderTopWidth) -
+      parseFloat(box.borderBottomWidth);
+    gutter.style.setProperty("--jt-hbar", `${bar}px`);
+  }).observe(code);
 }
 
 export default apiInitializer((api) => {

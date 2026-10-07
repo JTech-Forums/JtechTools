@@ -2922,6 +2922,32 @@ RSpec.describe "JTech theme" do
       expect_no_theme_errors
     end
 
+    # Core scrolls <code> past 500px; the gutter used to keep every line's height
+    # and stay put while the code scrolled
+    it "scrolls a tall code block's line numbers with it, inside the box" do
+      lines = (1..60).map { |i| "echo #{i}" }
+      lines[0] += " #{"x" * 400}" # a long line, so the code has a horizontal scrollbar
+      raw = "```bash\n#{lines.join("\n")}\n```"
+      tall = Fabricate(:topic, category: category, user: admin)
+      Fabricate(:post, topic: tall, user: admin, raw: raw)
+      visit(tall.relative_url)
+      expect(page).to have_css("pre.jt-numbered .jt-lines")
+      sizes = page.evaluate_async_script(<<~JS)
+        const [pre] = document.getElementsByClassName("jt-numbered");
+        const code = pre.querySelector(":scope > code");
+        const gutter = pre.querySelector(":scope > .jt-lines");
+        code.scrollTop = code.scrollHeight;
+        requestAnimationFrame(() => requestAnimationFrame(() => arguments[0]([
+          code.clientHeight, gutter.offsetHeight, pre.offsetHeight, code.scrollTop, gutter.scrollTop,
+        ])));
+      JS
+      code_height, gutter_height, pre_height, code_top, gutter_top = sizes
+      expect(gutter_height).to be_within(1).of(code_height) # ends above the code's scrollbar
+      expect(pre_height).to be <= code_height + 40 # the box's border and the scrollbar
+      expect(code_top).to be > 0
+      expect(gutter_top).to be_within(1).of(code_top)
+    end
+
     # Code runs left to right in any interface, but core's right-to-left
     # stylesheet flips left and right: in Hebrew the line between the numbers
     # and the code moved onto the block's outer edge, and on a phone the room
