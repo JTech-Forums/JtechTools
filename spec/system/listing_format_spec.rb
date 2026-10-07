@@ -107,6 +107,26 @@ RSpec.describe "Listing topics" do
     expect(focused).to eq(false)
   end
 
+  it "keeps the editor in view and typeable on a phone with the keyboard up", mobile: true do
+    sign_in(buyer)
+    open_reply
+    # The keyboard leaves a strip of the screen.
+    page.current_window.resize_to(390, 420)
+    find(".d-editor-input").click
+    page.driver.with_playwright_page { |pw| pw.keyboard.type("Best offer takes it") }
+    expect(find(".d-editor-input").value).to eq("Best offer takes it")
+    sleep 0.3 # the editor is scrolled up a frame after it takes focus
+    # The box starts on screen with room to see a few lines above the
+    # editor's toolbar.
+    top, toolbar_top =
+      page.evaluate_script(
+        "[document.querySelector('.d-editor-input').getBoundingClientRect().top, " \
+          "document.querySelector('.d-editor-button-bar').getBoundingClientRect().top]",
+      )
+    expect(top).to be >= 0
+    expect(toolbar_top - top).to be > 50
+  end
+
   it "keeps the form in view on a phone while the editor has focus", mobile: true do
     sign_in(buyer)
     open_reply

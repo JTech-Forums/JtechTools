@@ -111,6 +111,27 @@ body:has(.listing-format-create) {
       }
     }
   }
+
+  // With the keyboard up only a strip of the composer shows, and the form
+  // filled it: the editor (the pictures section) was squeezed to nothing,
+  // its toolbar drew over the form, and typing went into a box nobody could
+  // see. Form and editor scroll together instead, the editor keeps room to
+  // type in, and the browser keeps the focused box in view.
+  #reply-control:has(.listing-format-form) {
+    .wmd-controls,
+    .d-editor {
+      min-height: 0;
+    }
+
+    // Core's grid gives the editor's row what's left after the form ("1fr"),
+    // which with the keyboard up is nothing; the row itself keeps room.
+    .d-editor-container {
+      grid-template-rows: min-content minmax(8em, 1fr);
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+  }
 }
 
 // A listing post as a card: the item as its title, the rest as labelled

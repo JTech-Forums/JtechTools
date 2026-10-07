@@ -97,6 +97,38 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
     };
   });
 
+  // On a phone the form and the editor scroll together (see the stylesheet).
+  // The browser scrolls only the line being typed into view, which can leave
+  // a sliver of the editor above its toolbar. While the editor has focus,
+  // and as the keyboard resizes the screen, keep the whole box in view.
+  revealEditor = modifier(() => {
+    const control = document.getElementById("reply-control");
+    const phone = window.matchMedia("(width < 40rem)");
+    if (!control) {
+      return;
+    }
+    const reveal = () => {
+      const focused = document.activeElement as HTMLElement | null;
+      if (!phone.matches || !focused || !control.contains(focused)) {
+        return;
+      }
+      const editor = focused.closest(".d-editor-textarea-wrapper");
+      if (editor) {
+        requestAnimationFrame(() =>
+          editor.scrollIntoView({ block: "nearest" })
+        );
+      }
+    };
+    control.addEventListener("focusin", reveal);
+    control.addEventListener("input", reveal);
+    window.visualViewport?.addEventListener("resize", reveal);
+    return () => {
+      control.removeEventListener("focusin", reveal);
+      control.removeEventListener("input", reveal);
+      window.visualViewport?.removeEventListener("resize", reveal);
+    };
+  });
+
   // Ticks aren't tracked (they live on the composer), so a pick bumps this
   // to update the box's hint.
   @tracked picks = 0;
@@ -175,7 +207,12 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
 
   <template>
     {{#if this.rows.length}}
-      <div class="listing-format-form" {{this.fitComposer}} {{this.holdFocus}}>
+      <div
+        class="listing-format-form"
+        {{this.fitComposer}}
+        {{this.holdFocus}}
+        {{this.revealEditor}}
+      >
         {{#each this.rows as |row|}}
           {{#if row.editor}}
             <p class="listing-format-form__editor-note">
