@@ -36,8 +36,8 @@ importers:
         specifier: ^2.7.0
         version: 2.7.0
       lucide-static:
-        specifier: 1.49.0
-        version: 1.49.0
+        specifier: 1.51.0
+        version: 1.51.0
       playwright-core:
         specifier: 1.63.0
         version: 1.63.0
@@ -1798,8 +1798,8 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
-  lucide-static@1.49.0:
-    resolution: {integrity: sha512-gSjtl7bR2v26oDInh2Wua1PrF2BRRXl9inhnLWcFfnRqRShmgZvlFRisPHqTfU7kxsuZU8ThNjAFotbInrzKow==}
+  lucide-static@1.51.0:
+    resolution: {integrity: sha512-ts58ApMc5w5SHHUJBtGO+mgf9lo79FApQ1LttKQoJiMrWNZt8zxWA7R6owK6DoGA3XLjJXc/7rDJh1feonl79g==}
 
   mathml-tag-names@4.0.0:
     resolution: {integrity: sha512-aa6AU2Pcx0VP/XWnh8IGL0SYSgQHDT6Ucror2j2mXeFAlN3ahaNs8EZtG1YiticMkSLj3Gt6VPFfZogt7G5iFQ==}
@@ -3999,7 +3999,7 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  lucide-static@1.49.0: {}
+  lucide-static@1.51.0: {}
 
   mathml-tag-names@4.0.0: {}
 
