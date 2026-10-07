@@ -135,12 +135,17 @@ en:
       create:
         label: Create listing
       composer:
-        in_editor: Add them in the editor below.
+        in_editor: Add pictures in the editor below, and anything else buyers should know.
         optional: optional
         details_needed: "Required for %{options}"
         missing_details: "%{option} under %{field} needs details: write them in the box under the options."
         other_details: Anything else
         missing: "Fill in %{fields} before posting."
+      status:
+        available: Available
+        sold: Sold
+        mark_sold: Mark as sold
+        mark_available: Mark as available
     reqpm:
       title: REQ-PM
       button:

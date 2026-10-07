@@ -2,7 +2,8 @@
 
 For threads like *Hardware: phones and computers for sale*, where every post is a listing. In the topics you choose, a post has to follow the thread's format, or it's turned away with the reason before it's saved.
 
-- **Listings as cards.** Each listing shows as a card: the item as its title, the other sections as labelled boxes, the pictures underneath. Posts that aren't listings look as before.
+- **Listings as cards.** Each listing shows as a card: the item as its title, the other sections as labelled boxes, the pictures underneath. Anything else written in the editor with the pictures ("for best offer") shows under the boxes as the seller's own words, not as pictures. Posts that aren't listings look as before.
+- **Available or sold.** The foot of each listing's card says whether it's still available. The seller, admins and moderators get a button there to mark it sold, or available again. A sold listing's card is faded and its item crossed out.
 - **Create listing.** Members get a centered **Create listing** button at the bottom of the topic in place of Reply, and the posts lose their Reply buttons. Staff keep Reply.
 - **A form for the sections.** Create listing opens the composer with a box for each section (ITEM, QUANTITY, CONDITION, SPECS, PICKUP LOCATION OR SHIPPING AVAILABLE) above the editor. The section names can't be changed. Pictures go in the editor, which fills the IMAGES section. The post comes out in the thread's layout: `### ITEM` with the item under it, and so on. On phones the form stays in view while typing in the editor.
 - **Optional sections.** IMAGES may be left empty, for a listing without pictures; it's marked optional in the form and left out of the post (`listing_format_optional_fields`).

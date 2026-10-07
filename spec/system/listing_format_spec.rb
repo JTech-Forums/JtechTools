@@ -81,6 +81,29 @@ RSpec.describe "Listing topics" do
     expect(page).to have_no_css("#post_3 .listing-card")
   end
 
+  it "shows notes written with the pictures under the facts, not as pictures" do
+    Fabricate(
+      :post,
+      topic: topic,
+      user: buyer,
+      raw:
+        "### ITEM\nUnihertz Titan\n\n### QUANTITY\n1\n\n### CONDITION\nNew\n\n" \
+          "### SPECS\n6/128\n\n### IMAGES\nFor best offer.\n\n![titan](/images/avatar.png)\n\n" \
+          "### PICKUP LOCATION OR SHIPPING AVAILABLE\nShipping available",
+    )
+    sign_in(seller)
+    visit_topic
+    within("#post_3 .listing-card") do
+      expect(page).to have_css(".listing-card__notes", text: "For best offer.")
+      expect(page).to have_css(".listing-card__fact--pictures img")
+      expect(page).to have_no_css(".listing-card__fact--pictures", text: "For best offer.")
+    end
+    within("#post_2 .listing-card") do
+      expect(page).to have_css(".listing-card__notes", text: "none")
+      expect(page).to have_no_css(".listing-card__fact--pictures")
+    end
+  end
+
   it "has Create listing in place of Reply for members" do
     sign_in(buyer)
     visit_topic
@@ -143,6 +166,43 @@ RSpec.describe "Listing topics" do
     expect(editor_top).to be >= item_bottom
     item.fill_in(with: "Galaxy S10")
     expect(item.value).to eq("Galaxy S10")
+  end
+
+  describe "available or sold" do
+    it "lets the seller mark a listing sold, and back" do
+      sign_in(seller)
+      visit_topic
+      within("#post_2 .listing-card") do
+        expect(page).to have_css(".listing-status__label", text: "Available")
+        find(".listing-status__toggle", text: "Mark as sold").click
+        expect(page).to have_css(".listing-status--sold .listing-status__label", text: "Sold")
+      end
+
+      visit_topic
+      within("#post_2 .listing-card") do
+        expect(page).to have_css(".listing-status--sold")
+        find(".listing-status__toggle", text: "Mark as available").click
+        expect(page).to have_css(".listing-status__label", text: "Available")
+      end
+      expect(listing.reload.custom_fields[DiscourseListingFormat::SOLD_FIELD]).to eq(false)
+    end
+
+    it "shows a buyer whether it's sold, without the button" do
+      listing.custom_fields[DiscourseListingFormat::SOLD_FIELD] = true
+      listing.save_custom_fields
+      sign_in(buyer)
+      visit_topic
+      within("#post_2 .listing-card") do
+        expect(page).to have_css(".listing-status--sold .listing-status__label", text: "Sold")
+        expect(page).to have_no_css(".listing-status__toggle")
+      end
+    end
+
+    it "gives moderators the button" do
+      sign_in(moderator)
+      visit_topic
+      expect(page).to have_css("#post_2 .listing-status__toggle", text: "Mark as sold")
+    end
   end
 
   it "leaves out REQ-PM on your own listing" do

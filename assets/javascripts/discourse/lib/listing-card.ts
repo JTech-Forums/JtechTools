@@ -11,6 +11,7 @@ export interface ListingCardFormat {
 const HEADING = /^H[1-6]$/;
 // Short enough to sit beside the others in the facts grid.
 const SHORT_TEXT = 40;
+const MEDIA = "img:not(.emoji), video, audio, .lightbox-wrapper";
 
 function sectionName(element: Element, sections: string[]): string | undefined {
   if (!HEADING.test(element.tagName)) {
@@ -21,6 +22,14 @@ function sectionName(element: Element, sections: string[]): string | undefined {
     .trim()
     .toLowerCase();
   return sections.find((s) => s.toLowerCase() === text);
+}
+
+// A picture, video or sound, or a paragraph holding one. Emoji are text.
+function isPicture(node: Node): boolean {
+  return (
+    node instanceof Element &&
+    (node.matches(MEDIA) || !!node.querySelector(MEDIA))
+  );
 }
 
 function div(className: string, children: Node[] = []): HTMLDivElement {
@@ -66,19 +75,33 @@ export function buildListingCard(
 
   const facts = div("listing-card__facts");
   let pictures: HTMLDivElement | undefined;
+  let notes: HTMLDivElement | undefined;
   rest.forEach((name) => {
     const nodes = found.get(name) ?? [];
-    const label = div("listing-card__label");
-    label.textContent = name.toLowerCase();
-    const section = div("listing-card__fact", [
-      label,
-      div("listing-card__value", nodes),
-    ]);
+    const fact = (values: Node[]) => {
+      const label = div("listing-card__label");
+      label.textContent = name.toLowerCase();
+      return div("listing-card__fact", [
+        label,
+        div("listing-card__value", values),
+      ]);
+    };
     if (name === format.images) {
-      section.classList.add("listing-card__fact--pictures");
-      pictures = section;
+      // The editor fills this section, so sellers write notes there too
+      // ("for best offer"). Those read as the listing's own words, not as
+      // pictures, so they go under the facts without a label.
+      const shown = nodes.filter(isPicture);
+      const words = nodes.filter((n) => !isPicture(n));
+      if (words.some((n) => (n.textContent ?? "").trim())) {
+        notes = div("listing-card__notes", words);
+      }
+      if (shown.length) {
+        pictures = fact(shown);
+        pictures.classList.add("listing-card__fact--pictures");
+      }
       return;
     }
+    const section = fact(nodes);
     const text = nodes.map((n) => n.textContent ?? "").join(" ");
     if (nodes.length > 1 || text.trim().length > SHORT_TEXT) {
       section.classList.add("listing-card__fact--wide");
@@ -86,6 +109,9 @@ export function buildListingCard(
     facts.appendChild(section);
   });
   card.appendChild(facts);
+  if (notes) {
+    card.appendChild(notes);
+  }
   if (pictures) {
     card.appendChild(pictures);
   }

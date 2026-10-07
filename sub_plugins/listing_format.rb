@@ -13,6 +13,9 @@
 # Posts written before a topic was listed are left alone. Editing one is
 # checked against what it already had: an edit can't add an outside link
 # or take out a field the post had, but it doesn't have to add the rest.
+#
+# A listing shows whether it's still available; the seller and staff can
+# mark it sold (see ListingsController).
 
 register_asset "stylesheets/listing-format.scss"
 
@@ -30,11 +33,41 @@ module ::DiscourseListingFormat
     return true if user.nil? || user.is_system_user?
     user.in_any_groups?(SiteSetting.listing_format_exempt_groups_map)
   end
+
+  SOLD_FIELD = "listing_sold"
+
+  # A post in a listing topic other than the topic's own opening post.
+  def self.listing?(post)
+    enabled? && post.post_number > 1 && Checker.topic_ids.include?(post.topic_id)
+  end
+
+  def self.can_mark_sold?(post, guardian)
+    guardian.user.present? && (post.user_id == guardian.user.id || guardian.is_staff?)
+  end
 end
 
 require_relative "../lib/discourse_listing_format/checker"
 
 after_initialize do
+  register_post_custom_field_type(DiscourseListingFormat::SOLD_FIELD, :boolean)
+
+  # Loaded with the topic's posts in one query, for the sold mark below.
+  topic_view_post_custom_fields_allowlister do |_user, topic|
+    if DiscourseListingFormat.enabled? &&
+         DiscourseListingFormat::Checker.topic_ids.include?(topic&.id)
+      [DiscourseListingFormat::SOLD_FIELD]
+    else
+      []
+    end
+  end
+
+  # Whether a listing is sold, for everyone who can see it.
+  add_to_serializer(
+    :post,
+    :listing_sold,
+    include_condition: -> { DiscourseListingFormat.listing?(object) },
+  ) { post_custom_fields[DiscourseListingFormat::SOLD_FIELD] == true }
+
   # Runs on create and on every revision; core's own validators run
   # alongside. Skipped when nothing changed in the text (rebakes, moves,
   # hiding, locking) and when the caller asked to skip validations.
