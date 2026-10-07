@@ -145,6 +145,43 @@ RSpec.describe "Listing topics" do
     expect(item.value).to eq("Galaxy S10")
   end
 
+  describe "available or sold" do
+    it "lets the seller mark a listing sold, and back" do
+      sign_in(seller)
+      visit_topic
+      within("#post_2 .listing-card") do
+        expect(page).to have_css(".listing-status__label", text: "Available")
+        find(".listing-status__toggle", text: "Mark as sold").click
+        expect(page).to have_css(".listing-status--sold .listing-status__label", text: "Sold")
+      end
+
+      visit_topic
+      within("#post_2 .listing-card") do
+        expect(page).to have_css(".listing-status--sold")
+        find(".listing-status__toggle", text: "Mark as available").click
+        expect(page).to have_css(".listing-status__label", text: "Available")
+      end
+      expect(listing.reload.custom_fields[DiscourseListingFormat::SOLD_FIELD]).to eq(false)
+    end
+
+    it "shows a buyer whether it's sold, without the button" do
+      listing.custom_fields[DiscourseListingFormat::SOLD_FIELD] = true
+      listing.save_custom_fields
+      sign_in(buyer)
+      visit_topic
+      within("#post_2 .listing-card") do
+        expect(page).to have_css(".listing-status--sold .listing-status__label", text: "Sold")
+        expect(page).to have_no_css(".listing-status__toggle")
+      end
+    end
+
+    it "gives moderators the button" do
+      sign_in(moderator)
+      visit_topic
+      expect(page).to have_css("#post_2 .listing-status__toggle", text: "Mark as sold")
+    end
+  end
+
   it "leaves out REQ-PM on your own listing" do
     sign_in(seller)
     visit_topic

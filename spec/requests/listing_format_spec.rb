@@ -224,4 +224,90 @@ RSpec.describe "Listing format" do
       expect(response.parsed_body).not_to have_key("listing_format_topic")
     end
   end
+
+  describe "marking a listing sold" do
+    fab!(:buyer) { Fabricate(:user, trust_level: TrustLevel[2], refresh_auto_groups: true) }
+    fab!(:admin)
+    fab!(:sold_listing) { Fabricate(:post, topic: sale_topic, user: seller) }
+
+    def mark(post, sold)
+      put "/jtech-listing-format/posts/#{post.id}/sold.json", params: { sold: sold }
+    end
+
+    def sold?(post)
+      post.reload.custom_fields[DiscourseListingFormat::SOLD_FIELD] == true
+    end
+
+    it "lets the seller mark it sold and available again" do
+      sign_in(seller)
+      mark(sold_listing, true)
+      expect(response.status).to eq(200)
+      expect(response.parsed_body["sold"]).to eq(true)
+      expect(sold?(sold_listing)).to eq(true)
+
+      mark(sold_listing, false)
+      expect(response.status).to eq(200)
+      expect(sold?(sold_listing)).to eq(false)
+    end
+
+    it "lets moderators and admins mark it" do
+      sign_in(moderator)
+      mark(sold_listing, true)
+      expect(response.status).to eq(200)
+
+      sign_in(admin)
+      mark(sold_listing, false)
+      expect(response.status).to eq(200)
+      expect(sold?(sold_listing)).to eq(false)
+    end
+
+    it "doesn't let anyone else mark it" do
+      sign_in(buyer)
+      mark(sold_listing, true)
+      expect(response.status).to eq(403)
+      expect(sold?(sold_listing)).to eq(false)
+
+      sign_out
+      mark(sold_listing, true)
+      expect(response.status).to eq(403)
+    end
+
+    it "only marks listings: not the opening post, not other topics" do
+      sign_in(moderator)
+      mark(opening_post, true)
+      expect(response.status).to eq(404)
+      mark(other_opening_post, true)
+      expect(response.status).to eq(404)
+    end
+
+    it "doesn't reach a post the person can't see" do
+      private_category = Fabricate(:private_category, group: Fabricate(:group))
+      sale_topic.update!(category: private_category)
+      sign_in(seller)
+      mark(sold_listing, true)
+      expect(response.status).to eq(403)
+      expect(sold?(sold_listing)).to eq(false)
+    end
+
+    it "is gone once the module is off" do
+      SiteSetting.listing_format_enabled = false
+      sign_in(seller)
+      mark(sold_listing, true)
+      expect(response.status).to eq(404)
+    end
+
+    it "shows everyone whether each listing is sold" do
+      sold_listing.custom_fields[DiscourseListingFormat::SOLD_FIELD] = true
+      sold_listing.save_custom_fields
+
+      get "/t/#{sale_topic.id}.json"
+      posts = response.parsed_body["post_stream"]["posts"].index_by { |p| p["id"] }
+      expect(posts[sold_listing.id]["listing_sold"]).to eq(true)
+      expect(posts[older_post.id]["listing_sold"]).to eq(false)
+      expect(posts[opening_post.id]).not_to have_key("listing_sold")
+
+      get "/t/#{other_topic.id}.json"
+      expect(response.parsed_body["post_stream"]["posts"].first).not_to have_key("listing_sold")
+    end
+  end
 end

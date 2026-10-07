@@ -119,6 +119,18 @@ Discourse::Application.routes.append do
   get "/reqpm" => "discourse_reqpm/card#page"
 end
 
+# ── Listing format ──────────────────────────────────────────────────────────
+Discourse::Application.routes.append do
+  scope "/jtech-listing-format",
+        module: "discourse_listing_format",
+        as: :listing_format,
+        defaults: {
+          format: :json,
+        } do
+    put "/posts/:id/sold" => "listings#sold"
+  end
+end
+
 # ── Jtech admin maintenance actions (buttons on the plugin tabs) ───────────
 Discourse::Application.routes.append do
   post "/admin/plugins/jtech-tools/actions/:id" => "jtech/admin_actions#run",

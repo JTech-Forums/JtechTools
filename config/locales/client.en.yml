@@ -141,6 +141,11 @@ en:
         missing_details: "%{option} under %{field} needs details: write them in the box under the options."
         other_details: Anything else
         missing: "Fill in %{fields} before posting."
+      status:
+        available: Available
+        sold: Sold
+        mark_sold: Mark as sold
+        mark_available: Mark as available
     reqpm:
       title: REQ-PM
       button:

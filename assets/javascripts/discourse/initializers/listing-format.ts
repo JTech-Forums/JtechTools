@@ -4,6 +4,7 @@ import { withPluginApi } from "discourse/lib/plugin-api";
 import type Post from "discourse/models/post";
 import { i18n } from "discourse-i18n";
 import ListingFormatReqpmButton from "../components/listing-format-reqpm-button";
+import ListingFormatStatus from "../components/listing-format-status";
 import { buildListingCard } from "../lib/listing-card";
 import {
   assemble,
@@ -83,7 +84,14 @@ export default {
         (
           element: HTMLElement,
           helper:
-            | { getModel?: () => PostMenuContext["post"] | null }
+            | {
+                getModel?: () => PostMenuContext["post"] | null;
+                renderGlimmer?: (
+                  element: HTMLElement,
+                  component: unknown,
+                  data: unknown
+                ) => void;
+              }
             | undefined
         ) => {
           const post = helper?.getModel?.();
@@ -91,7 +99,21 @@ export default {
           if (!card || post.post_number === 1) {
             return;
           }
-          buildListingCard(element, card);
+          // Only a post that is a listing gets the sold mark.
+          if (!buildListingCard(element, card)) {
+            return;
+          }
+          const cardElement =
+            element.querySelector<HTMLElement>(".listing-card");
+          if (
+            cardElement &&
+            !cardElement.querySelector(".listing-card__status")
+          ) {
+            const holder = document.createElement("div");
+            holder.className = "listing-card__status";
+            cardElement.appendChild(holder);
+            helper?.renderGlimmer?.(holder, ListingFormatStatus, { post });
+          }
         },
         { onlyStream: true }
       );
