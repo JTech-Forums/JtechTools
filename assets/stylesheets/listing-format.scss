@@ -174,3 +174,9 @@ body:has(.listing-format-create) {
     margin-bottom: 0;
   }
 }
+
+.listing-format-form__optional {
+  margin-left: 0.35em;
+  color: var(--primary-medium);
+  font-weight: normal;
+}

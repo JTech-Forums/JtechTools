@@ -1346,6 +1346,14 @@ jtech_listing_format:
     list_type: simple
     depends_on:
       - "listing_format_enabled"
+  # Sections that may be left empty. Default: a listing without pictures.
+  listing_format_optional_fields:
+    default: "IMAGES"
+    client: false
+    type: list
+    list_type: simple
+    depends_on:
+      - "listing_format_enabled"
   # "SECTION: option, option". Pick one / tick any, in the reply form.
   listing_format_single_choice:
     default: "CONDITION: New, Like new, Used, For parts"
@@ -1355,7 +1363,7 @@ jtech_listing_format:
     depends_on:
       - "listing_format_enabled"
   listing_format_multiple_choice:
-    default: "PICKUP LOCATION OR SHIPPING AVAILABLE: Pickup, Shipping available"
+    default: "PICKUP LOCATION OR SHIPPING AVAILABLE: Pickup*, Shipping available"
     client: false
     type: list
     list_type: simple

@@ -1,3 +1,4 @@
+import { next } from "@ember/runloop";
 import type DialogService from "discourse/dialog-holder/services/dialog";
 import { withPluginApi } from "discourse/lib/plugin-api";
 import type Post from "discourse/models/post";
@@ -9,6 +10,7 @@ import {
   type ListingComposer,
   listingSetup,
   type ListingTopicFields,
+  missingDetails,
   missingValues,
 } from "../lib/listing-format";
 import type ReqpmService from "../services/reqpm";
@@ -118,6 +120,7 @@ export default {
           fields,
           choices: topic?.listing_format_choices ?? {},
           editorField: topic?.listing_format_editor_field ?? null,
+          optional: topic?.listing_format_optional_fields ?? [],
         });
       });
 
@@ -137,11 +140,35 @@ export default {
             return value;
           }
           const missing = missingValues(model);
-          if (missing.length) {
-            (api.container.lookup("service:dialog") as DialogService).alert(
-              i18n("listing_format.composer.missing", {
-                fields: missing.join(", "),
+          const details = (listingSetup(model)?.fields ?? []).flatMap((field) =>
+            missingDetails(model, field).map((option) =>
+              i18n("listing_format.composer.missing_details", {
+                option,
+                field,
               })
+            )
+          );
+          if (missing.length || details.length) {
+            const messages = missing.length
+              ? [
+                  i18n("listing_format.composer.missing", {
+                    fields: missing.join(", "),
+                  }),
+                  ...details,
+                ]
+              : details;
+            (api.container.lookup("service:dialog") as DialogService).alert(
+              messages.join(" ")
+            );
+            // Returning true also makes core check the editor and, when
+            // it's empty (no pictures), say the post can't be empty. The
+            // form is what's missing, so take that back.
+            next(() =>
+              (
+                api.container.lookup("service:composer") as {
+                  set: (key: string, value: unknown) => void;
+                }
+              ).set("lastValidatedAt", null)
             );
             return true;
           }

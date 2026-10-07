@@ -40,8 +40,16 @@ module ::DiscourseListingFormat
       SiteSetting.listing_format_fields.to_s.split("|").map(&:strip).reject(&:empty?).uniq
     end
 
-    # { "CONDITION" => { multiple: false, options: ["New", …] } }, for the
-    # reply form. Entries naming a section that isn't a field are dropped.
+    # Sections that may be left empty, such as the pictures.
+    def self.optional_fields
+      optional = SiteSetting.listing_format_optional_fields.to_s.split("|").map(&:strip)
+      fields.select { |field| optional.any? { |name| name.casecmp?(field) } }
+    end
+
+    # { "CONDITION" => { multiple: false, options: ["New", …], details: [] } }.
+    # An option written with a trailing * ("Pickup*") needs details with it
+    # (where to pick up). Entries naming a section that isn't a field are
+    # dropped.
     def self.choices
       names = fields
       result = {}
@@ -56,7 +64,11 @@ module ::DiscourseListingFormat
             name, options = entry.split(":", 2)
             field = names.find { |f| f.casecmp?(name.to_s.strip) }
             options = options.to_s.split(",").map(&:strip).reject(&:empty?).uniq
-            result[field] = { multiple: multiple, options: options } if field && options.any?
+            details = options.select { |o| o.end_with?("*") }.map { |o| o.delete_suffix("*").strip }
+            options = options.map { |o| o.delete_suffix("*").strip }.uniq
+            if field && options.any?
+              result[field] = { multiple: multiple, options: options, details: details }
+            end
           end
       end
       result
@@ -75,7 +87,29 @@ module ::DiscourseListingFormat
     end
 
     def problems
-      [missing_fields_problem, links_problem].compact
+      [missing_fields_problem, *missing_details_problems, links_problem].compact
+    end
+
+    # [field, option] pairs where a section names an option that needs
+    # details ("Pickup") and says nothing else. An older post that already
+    # lacked them can still be edited.
+    def missing_details
+      now = self.class.missing_details_in(@raw)
+      return now if @previous.nil? || now.empty?
+      self.class.missing_details_in(@previous).empty? ? now : []
+    end
+
+    def self.missing_details_in(raw)
+      texts = section_texts(raw)
+      choices.flat_map do |field, choice|
+        next [] if choice[:details].blank? || !texts.key?(field)
+        tokens = texts[field].join("\n").split(/[,\n]/).map(&:strip).reject(&:empty?)
+        known = choice[:options].map(&:downcase)
+        next [] if tokens.any? { |token| !known.include?(token.downcase) }
+        choice[:details]
+          .select { |option| tokens.any? { |token| token.casecmp?(option) } }
+          .map { |option| [field, option] }
+      end
     end
 
     def missing_fields
@@ -95,20 +129,30 @@ module ::DiscourseListingFormat
     # in bold or before a colon ("Item: …"), and something is written after
     # it: on the same line, or under it before the next field.
     def self.missing_fields_in(raw)
+      texts = section_texts(raw)
+      # Every section is still read, so an empty optional one doesn't swallow
+      # the lines after it; only the required ones can be missing.
+      optional = optional_fields
+      fields.reject { |field| texts[field].present? || optional.include?(field) }
+    end
+
+    # { field => [lines written for it] }, the same-line text included.
+    def self.section_texts(raw)
       names = fields
-      filled = {}
+      texts = {}
       current = nil
       strip_quotes(raw.to_s).each_line do |line|
         text = line.sub(LEADING_MARKUP, "").gsub(EMPHASIS, "").strip
         field, rest = field_line(text, names)
         if field
           current = field
-          filled[current] ||= rest.present?
+          texts[current] ||= []
+          texts[current] << rest if rest.present?
         elsif current && text.present?
-          filled[current] = true
+          texts[current] << text
         end
       end
-      names.reject { |field| filled[field] }
+      texts
     end
 
     # Longest first, so a field whose name starts with another's is found.
@@ -132,6 +176,12 @@ module ::DiscourseListingFormat
     end
 
     private
+
+    def missing_details_problems
+      missing_details.map do |field, option|
+        I18n.t("listing_format.errors.missing_details", field: field, option: option)
+      end
+    end
 
     def missing_fields_problem
       missing = missing_fields

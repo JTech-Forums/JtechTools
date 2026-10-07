@@ -944,6 +944,10 @@ en:
       ("### ITEM", then the item). Posts written by hand (edits, Dumbcourse)
       may also use a bold name or "ITEM: …" on one line, in any case. A
       section with nothing under it, or inside a quote, doesn''t count.'
+    listing_format_optional_fields: Sections from the list above that may be
+      left empty, such as IMAGES for a listing without pictures. The reply
+      form marks them optional and leaves them out of the post when they're
+      empty. Every other section has to have something in it.
     listing_format_single_choice: 'Sections where the reply form offers
       options to pick one of, written as "CONDITION: New, Like new, Used, For
       parts". The section still has a box for anything else ("small scratch
@@ -951,9 +955,11 @@ en:
       the options.'
     listing_format_multiple_choice: 'Sections where the reply form offers
       options to tick any of, written as "PICKUP LOCATION OR SHIPPING
-      AVAILABLE: Pickup, Shipping available". The section still has a box for
-      anything else (where to pick up). Only the form uses these; posts
-      aren''t checked against the options.'
+      AVAILABLE: Pickup*, Shipping available". The section still has a box for
+      anything else. An option ending in * needs that box filled in when
+      it''s picked: with Pickup*, a listing that ticks Pickup has to say
+      where. That is checked for every post; otherwise posts aren''t checked
+      against the options.'
     listing_format_editor_field: The section filled from the composer's
       editor, where pictures are uploaded; the others get a box each in the
       reply form. Leave blank, or name a section that isn't in the list
@@ -1035,6 +1041,7 @@ en:
   listing_format:
     errors:
       missing_fields: "This topic is for listings, and your post is missing: %{fields}. Add each as a heading with the details under it, like \"%{example}\"."
+      missing_details: "Under %{field}, %{option} needs details too (say where), on the line under it."
       outside_links: "Links to other sites aren't allowed here (%{links}). Remove them and give an email address or phone number instead."
 
   reqpm:

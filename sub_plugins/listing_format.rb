@@ -93,6 +93,13 @@ after_initialize do
     include_condition: -> { DiscourseListingFormat.applies?(object.topic.id, scope.user) },
   ) { DiscourseListingFormat::Checker.choices }
 
+  # Which of those may be left empty.
+  add_to_serializer(
+    :topic_view,
+    :listing_format_optional_fields,
+    include_condition: -> { DiscourseListingFormat.applies?(object.topic.id, scope.user) },
+  ) { DiscourseListingFormat::Checker.optional_fields }
+
   # Which of those the editor fills (pictures), so it gets no box of its
   # own. Left out when it isn't one of the fields.
   add_to_serializer(

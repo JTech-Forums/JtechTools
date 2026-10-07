@@ -1,4 +1,5 @@
 import Component from "@glimmer/component";
+import { tracked } from "@glimmer/tracking";
 import { fn } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
@@ -21,6 +22,7 @@ interface Row {
   id: string;
   choice: ListingChoice | null;
   editor: boolean;
+  optional: boolean;
 }
 
 // Room the editor, its toolbar and the composer's header and footer need
@@ -53,12 +55,66 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
     root.style.setProperty("--composer-height", height);
   });
 
-  // Start in the form rather than the editor. On phones a focused editor
-  // slides up over everything above it, the form included, so focusing it
-  // on open (core's default for replies) hid the form.
-  focusFirst = modifier((element: HTMLElement) => {
-    next(() => element.querySelector<HTMLElement>("textarea, input")?.focus());
+  // Opening the composer mustn't bring up the keyboard: on a phone it covers
+  // the form, and the editor (the pictures section) isn't where a listing
+  // starts. Core focuses the editor as a reply opens, so until the person
+  // taps or types in the composer, focus landing in it is dropped. With a
+  // mouse there's no keyboard to pop up, so the first box takes focus.
+  holdFocus = modifier(() => {
+    const control = document.getElementById("reply-control");
+    if (!control) {
+      return;
+    }
+    const drop = (event: FocusEvent) => {
+      (event.target as HTMLElement | null)?.blur?.();
+    };
+    const release = () => {
+      control.removeEventListener("focusin", drop, true);
+      control.removeEventListener("pointerdown", release, true);
+      control.removeEventListener("keydown", release, true);
+    };
+    control.addEventListener("focusin", drop, true);
+    control.addEventListener("pointerdown", release, true);
+    control.addEventListener("keydown", release, true);
+
+    next(() => {
+      const focused = document.activeElement as HTMLElement | null;
+      if (focused && control.contains(focused)) {
+        focused.blur();
+      }
+      if (window.matchMedia("(pointer: fine)").matches) {
+        release();
+        control
+          .querySelector<HTMLElement>(".listing-format-form__input")
+          ?.focus();
+      }
+    });
+    // Core's focus comes as the composer opens; after that, leave it be.
+    const timer = setTimeout(release, 1500);
+    return () => {
+      clearTimeout(timer);
+      release();
+    };
   });
+
+  // Ticks aren't tracked (they live on the composer), so a pick bumps this
+  // to update the box's hint.
+  @tracked picks = 0;
+
+  placeholder = (row: Row): string => {
+    void this.picks;
+    const needs = this.composer
+      ? (row.choice?.details ?? []).filter((option) =>
+          this.composer?.listingPicked?.[row.field]?.includes(option)
+        )
+      : [];
+    if (needs.length) {
+      return i18n("listing_format.composer.details_needed", {
+        options: needs.join(", "),
+      });
+    }
+    return row.choice ? i18n("listing_format.composer.other_details") : "";
+  };
 
   get composer(): ListingComposer | null | undefined {
     return this.args.outletArgs?.model;
@@ -78,6 +134,7 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
       id: `listing-format-${field.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       choice: setup.choices[field] ?? null,
       editor: field === setup.editorField,
+      optional: setup.optional.includes(field),
     }));
   }
 
@@ -106,6 +163,7 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
     }
     const on = (event.target as HTMLInputElement).checked;
     const current = picked[row.field] ?? [];
+    this.picks++;
     if (!row.choice?.multiple) {
       picked[row.field] = on ? [option] : [];
     } else if (on) {
@@ -117,11 +175,16 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
 
   <template>
     {{#if this.rows.length}}
-      <div class="listing-format-form" {{this.fitComposer}} {{this.focusFirst}}>
+      <div class="listing-format-form" {{this.fitComposer}} {{this.holdFocus}}>
         {{#each this.rows as |row|}}
           {{#if row.editor}}
             <p class="listing-format-form__editor-note">
               <span class="listing-format-form__label">{{row.field}}</span>
+              {{#if row.optional}}
+                <span class="listing-format-form__optional">{{i18n
+                    "listing_format.composer.optional"
+                  }}</span>
+              {{/if}}
               {{i18n "listing_format.composer.in_editor"}}
             </p>
           {{else}}
@@ -129,7 +192,13 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
               <label
                 class="listing-format-form__label"
                 for={{row.id}}
-              >{{row.field}}</label>
+              >{{row.field}}
+                {{#if row.optional}}
+                  <span class="listing-format-form__optional">{{i18n
+                      "listing_format.composer.optional"
+                    }}</span>
+                {{/if}}
+              </label>
               {{#if row.choice}}
                 <div
                   class="listing-format-form__options"
@@ -157,10 +226,7 @@ export default class ListingFormatForm extends Component<ListingFormatFormSignat
                 id={{row.id}}
                 class="listing-format-form__input"
                 rows="1"
-                placeholder={{if
-                  row.choice
-                  (i18n "listing_format.composer.other_details")
-                }}
+                placeholder={{this.placeholder row}}
                 value={{this.value row.field}}
                 {{on "input" (fn this.update row.field)}}
               ></textarea>

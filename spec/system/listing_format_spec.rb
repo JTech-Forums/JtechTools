@@ -96,6 +96,17 @@ RSpec.describe "Listing topics" do
     expect(page).to have_no_css(".listing-format-create")
   end
 
+  it "opens Create listing on a phone without focusing anything", mobile: true do
+    sign_in(buyer)
+    open_reply
+    sleep 0.5
+    focused =
+      page.evaluate_script(
+        "document.getElementById('reply-control').contains(document.activeElement)",
+      )
+    expect(focused).to eq(false)
+  end
+
   it "keeps the form in view on a phone while the editor has focus", mobile: true do
     sign_in(buyer)
     open_reply
@@ -175,6 +186,30 @@ RSpec.describe "Listing topics" do
         Pickup, Shipping available
         Brooklyn
       MD
+    end
+
+    it "posts a listing without pictures, leaving the section out" do
+      open_reply
+      expect(page).to have_css(".listing-format-form__optional", text: "optional")
+      fill_listing
+      find(".save-or-cancel .create").click
+      expect(page).to have_css("#post_3 .listing-card__title", text: "Galaxy S10")
+      expect(Post.last.raw).not_to include("IMAGES")
+    end
+
+    it "asks where when Pickup is ticked without a location" do
+      open_reply
+      fill_listing
+      find("#listing-format-pickup-location-or-shipping-available").fill_in(with: "")
+      expect(find("#listing-format-pickup-location-or-shipping-available")["placeholder"]).to eq(
+        "Required for Pickup",
+      )
+      find(".save-or-cancel .create").click
+      expect(page).to have_css(
+        ".dialog-body",
+        text: "Pickup under PICKUP LOCATION OR SHIPPING AVAILABLE needs details",
+      )
+      expect(page).to have_no_css(".popup-tip.bad, .composer-popup-tip")
     end
 
     it "keeps the editor's text as written when the server turns the post away" do
