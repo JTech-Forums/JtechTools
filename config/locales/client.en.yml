@@ -135,7 +135,7 @@ en:
       create:
         label: Create listing
       composer:
-        in_editor: Add them in the editor below.
+        in_editor: Add pictures in the editor below, and anything else buyers should know.
         optional: optional
         details_needed: "Required for %{options}"
         missing_details: "%{option} under %{field} needs details: write them in the box under the options."

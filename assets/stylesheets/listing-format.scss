@@ -196,6 +196,21 @@ body:has(.listing-format-create) {
   }
 }
 
+// Notes written in the editor, the listing's own words under its facts.
+.listing-card__notes {
+  padding: 0.6em 1em;
+  border-bottom: 1px solid var(--primary-low);
+  overflow-wrap: anywhere;
+
+  > :first-child {
+    margin-top: 0;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+}
+
 .listing-card__status {
   border-top: 1px solid var(--primary-low);
 }
@@ -235,6 +250,7 @@ body:has(.listing-format-create) {
 .listing-card:has(.listing-status--sold) {
   .listing-card__title,
   .listing-card__facts,
+  .listing-card__notes,
   .listing-card__fact--pictures {
     opacity: 0.6;
   }

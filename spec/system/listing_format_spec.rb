@@ -81,6 +81,29 @@ RSpec.describe "Listing topics" do
     expect(page).to have_no_css("#post_3 .listing-card")
   end
 
+  it "shows notes written with the pictures under the facts, not as pictures" do
+    Fabricate(
+      :post,
+      topic: topic,
+      user: buyer,
+      raw:
+        "### ITEM\nUnihertz Titan\n\n### QUANTITY\n1\n\n### CONDITION\nNew\n\n" \
+          "### SPECS\n6/128\n\n### IMAGES\nFor best offer.\n\n![titan](/images/avatar.png)\n\n" \
+          "### PICKUP LOCATION OR SHIPPING AVAILABLE\nShipping available",
+    )
+    sign_in(seller)
+    visit_topic
+    within("#post_3 .listing-card") do
+      expect(page).to have_css(".listing-card__notes", text: "For best offer.")
+      expect(page).to have_css(".listing-card__fact--pictures img")
+      expect(page).to have_no_css(".listing-card__fact--pictures", text: "For best offer.")
+    end
+    within("#post_2 .listing-card") do
+      expect(page).to have_css(".listing-card__notes", text: "none")
+      expect(page).to have_no_css(".listing-card__fact--pictures")
+    end
+  end
+
   it "has Create listing in place of Reply for members" do
     sign_in(buyer)
     visit_topic
