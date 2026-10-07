@@ -4,7 +4,7 @@
 # about: Jtech Tools — the JTech Forums all-in-one plugin: moderator tools, Mini-mod, Dislike, the Disteleplus Telegram bridge, REQ-PM, listing format for sale threads, Dumbcourse, smart search, desktop pop-ups, Another SMTP, translator tweaks and the JTech theme.
 # version: 0.5.0
 # authors: TripleU, Shalom_Karr, Ars18
-# url: https://github.com/JTech-Forums/JtechTools
+# url: https://github.com/TripleU613/JtechTools
 # required_version: 3.0.0
 
 # Smart-search synonym backend — rwordnet ships the WordNet lexical DB

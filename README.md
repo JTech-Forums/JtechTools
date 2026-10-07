@@ -48,7 +48,7 @@ hooks:
     - exec:
         cd: $home/plugins
         cmd:
-          - git clone https://github.com/JTech-Forums/JtechTools.git jtech-tools
+          - git clone https://github.com/TripleU613/JtechTools.git jtech-tools
 ```
 
 ```bash
