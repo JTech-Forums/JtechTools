@@ -123,14 +123,13 @@ body:has(.listing-format-create) {
       min-height: 0;
     }
 
+    // Core's grid gives the editor's row what's left after the form ("1fr"),
+    // which with the keyboard up is nothing; the row itself keeps room.
     .d-editor-container {
+      grid-template-rows: min-content minmax(8em, 1fr);
       min-height: 0;
       overflow-y: auto;
       overscroll-behavior: contain;
-    }
-
-    .d-editor-textarea-wrapper {
-      min-height: 8em;
     }
   }
 }

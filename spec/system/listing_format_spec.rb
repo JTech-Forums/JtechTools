@@ -115,6 +115,7 @@ RSpec.describe "Listing topics" do
     find(".d-editor-input").click
     page.driver.with_playwright_page { |pw| pw.keyboard.type("Best offer takes it") }
     expect(find(".d-editor-input").value).to eq("Best offer takes it")
+    sleep 0.3 # the editor is scrolled up a frame after it takes focus
     # The box starts on screen with room to see a few lines above the
     # editor's toolbar.
     top, toolbar_top =
