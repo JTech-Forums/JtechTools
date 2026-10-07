@@ -6,6 +6,7 @@
 | --- | --- |
 | [Moderator tools](features/moderator-tools.md) | Whispers, private notes, staff alerts, checklists, topic tools |
 | [Mini-mod](features/mini-mod.md) | Extra rights, or fewer, for category moderators |
+| [Listing format](features/listing-format.md) | Sale threads: a set format, no outside links, REQ-PM instead of replies |
 | [Dislike](features/dislike.md) | Likes that don't count in chosen categories |
 | [Disteleplus](features/disteleplus.md) | A staff chat room mirrored with Telegram |
 | [REQ-PM](features/reqpm.md) | Exchange contact details instead of private messages |

@@ -1321,3 +1321,70 @@ jtech_reqpm:
     max: 365
     depends_on:
       - "reqpm_enabled"
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Listing format (sale threads where every reply is a listing)
+# ───────────────────────────────────────────────────────────────────────────
+jtech_listing_format:
+  listing_format_enabled:
+    default: true
+    client: false
+  # Topic numbers or addresses. Empty = the module does nothing.
+  listing_format_topics:
+    default: ""
+    client: false
+    type: list
+    list_type: compact
+    depends_on:
+      - "listing_format_enabled"
+  # The sale thread's own headings. No contact section: buyers use the
+  # REQ-PM button on the listing.
+  listing_format_fields:
+    default: "ITEM|QUANTITY|CONDITION|SPECS|IMAGES|PICKUP LOCATION OR SHIPPING AVAILABLE"
+    client: false
+    type: list
+    list_type: simple
+    depends_on:
+      - "listing_format_enabled"
+  # Sections that may be left empty. Default: a listing without pictures.
+  listing_format_optional_fields:
+    default: "IMAGES"
+    client: false
+    type: list
+    list_type: simple
+    depends_on:
+      - "listing_format_enabled"
+  # "SECTION: option, option". Pick one / tick any, in the reply form.
+  listing_format_single_choice:
+    default: "CONDITION: New, Like new, Used, For parts"
+    client: false
+    type: list
+    list_type: simple
+    depends_on:
+      - "listing_format_enabled"
+  listing_format_multiple_choice:
+    default: "PICKUP LOCATION OR SHIPPING AVAILABLE: Pickup*, Shipping available"
+    client: false
+    type: list
+    list_type: simple
+    depends_on:
+      - "listing_format_enabled"
+  # Sent to the composer through the topic, not as a client setting.
+  listing_format_editor_field:
+    default: "IMAGES"
+    client: false
+    depends_on:
+      - "listing_format_enabled"
+  listing_format_block_links:
+    default: true
+    client: false
+    depends_on:
+      - "listing_format_enabled"
+  # 3 = staff, so moderators can post reminders and fix listings.
+  listing_format_exempt_groups:
+    default: "3"
+    client: false
+    type: group_list
+    allow_any: false
+    depends_on:
+      - "listing_format_enabled"
