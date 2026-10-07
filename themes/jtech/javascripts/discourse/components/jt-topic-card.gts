@@ -14,6 +14,7 @@ import untypedLazyHash from "discourse/helpers/lazy-hash";
 import type Topic from "discourse/models/topic";
 import type User from "discourse/models/user";
 import type ModalService from "discourse/services/modal";
+import DUserLink from "discourse/ui-kit/d-user-link";
 import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dDiscourseTags from "discourse/ui-kit/helpers/d-discourse-tags";
 import dFormatDate from "discourse/ui-kit/helpers/d-format-date";
@@ -47,7 +48,7 @@ interface CardThumbnail {
 
 // One entry of topic.featuredUsers; the "+N" entry carries moreCount.
 interface CardPoster {
-  user?: User;
+  user?: User & { username: string };
   moreCount?: string;
 }
 
@@ -246,15 +247,21 @@ export default class JtTopicCard extends Component<JtTopicCardSignature> {
       </div>
 
       <div class="jt-card__foot">
+        {{! as core's posters column: each face opens that person's card }}
         <span class="jt-card__people">
           {{#each this.posters as |poster|}}
-            {{dAvatar
-              poster
-              avatarTemplatePath="user.avatar_template"
-              usernamePath="user.username"
-              namePath="user.name"
-              imageSize="small"
-            }}
+            <DUserLink
+              @href={{poster.user.path}}
+              @username={{poster.user.username}}
+            >
+              {{dAvatar
+                poster
+                avatarTemplatePath="user.avatar_template"
+                usernamePath="user.username"
+                namePath="user.name"
+                imageSize="small"
+              }}
+            </DUserLink>
           {{/each}}
         </span>
 

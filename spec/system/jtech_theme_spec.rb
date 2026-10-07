@@ -1467,6 +1467,17 @@ RSpec.describe "JTech theme" do
     expect_no_theme_errors
   end
 
+  # A face on a card opens that person's card, as in core's posters column,
+  # rather than the topic under it
+  it "opens a poster's user card from a topic card" do
+    visit("/latest")
+    card_css = ".topic-list.jt-cards .topic-list-item[data-topic-id='#{topic.id}']"
+    find("#{card_css} .jt-card__people a[data-user-card]", match: :first).click
+    expect(page).to have_css(".user-card.show")
+    expect(page).to have_current_path("/latest")
+    expect_no_theme_errors
+  end
+
   # The forum's Topic List Item Click Animation component made a pressed topic
   # bounce; the cards' 1px nudge went unnoticed. Pressed, a card sinks to 97%;
   # let go, it springs back a little past full size. A press on a tag inside

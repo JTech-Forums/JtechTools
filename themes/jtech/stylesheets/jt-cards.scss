@@ -308,6 +308,10 @@
     display: inline-flex;
     padding-left: 6px;
 
+    > a {
+      display: flex;
+    }
+
     .avatar {
       width: 22px;
       height: 22px;
@@ -337,7 +341,7 @@
       gap: var(--space-3);
     }
 
-    &__people .avatar:nth-child(n + 4) {
+    &__people > :nth-child(n + 4) {
       display: none;
     }
   }
