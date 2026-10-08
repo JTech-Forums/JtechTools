@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/collage.png" alt="Dumbcourse on a keypad phone, a whisper, a moderator note, REQ-PM and a desktop pop-up">
+  <img src="docs/images/hero.jpg" alt="JTech Tools: the forum on a desktop and a phone, a sale listing card, and Dumbcourse on a keypad phone">
 </p>
 
 ---
