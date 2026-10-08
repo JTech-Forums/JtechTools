@@ -38,6 +38,40 @@ We built these tools for our own forum as the need came up. Some help moderators
 - **[Another SMTP](docs/features/another-smtp.md).** Send forum email through a different mail server.
 - **[Translator tweaks](docs/features/translator-tweaks.md).** A proxy for the Translator plugin's Google requests.
 
+## Screenshots
+
+Real screens from JTech Forums (the whisper and note in the moderator board are from our docs, with made-up users). Private things (staff chat, contact details, mod notes) are blurred.
+
+<details>
+<summary><b>Dumbcourse</b>: the whole forum on a flip phone</summary>
+<img src="docs/images/board-dumbcourse.jpg" alt="Dumbcourse on a keypad phone: topic list, post menu, composer and notifications">
+</details>
+
+<details>
+<summary><b>Moderator tools</b>: whispers, private notes, staff alerts and checklists</summary>
+<img src="docs/images/board-modtools.jpg" alt="Moderator tools: topic wrench menu, whispers, private notes and the first-post checklist">
+</details>
+
+<details>
+<summary><b>REQ-PM</b>: contact details instead of private messages</summary>
+<img src="docs/images/board-reqpm.jpg" alt="REQ-PM: the request dialog, your card, contacts you've been sent and the kinds of contact you can add">
+</details>
+
+<details>
+<summary><b>Disteleplus</b>: one staff room, in the forum and in Telegram</summary>
+<img src="docs/images/board-disteleplus.jpg" alt="Disteleplus: the chat drawer, the full page with voice notes, a poll and the review queue in Telegram">
+</details>
+
+<details>
+<summary><b>JTech theme</b>: light, dark and dim</summary>
+<img src="docs/images/board-theme.jpg" alt="JTech theme: front page light and dark, categories, a topic, search, a profile, the about page and a user card">
+</details>
+
+<details>
+<summary><b>On a phone</b>: topic cards, Quick look and a listing card</summary>
+<img src="docs/images/board-phones.jpg" alt="The JTech theme on a phone: topic cards light and dark, Quick look and a sale listing card">
+</details>
+
 ## Installing
 
 Add the plugin to your `app.yml` and rebuild:
