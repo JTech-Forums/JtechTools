@@ -156,12 +156,25 @@
     padding-inline: 0.85em 0.6em;
     font-family: var(--jt-font-mono);
     font-size: var(--font-down-1);
-    line-height: inherit;
+
+    // the code's line box (jt-type): inheriting the post's 1.7 would multiply
+    // the gutter's smaller font and drift off the lines as the code scrolls
+    line-height: calc(var(--jt-text-sm) * 1.6);
     color: var(--jt-text-subtle);
     text-align: end;
     white-space: pre;
     user-select: none;
     border-inline-end: 1px solid var(--jt-border);
+
+    // Core caps <code> at 500px and scrolls it: the gutter takes the code's
+    // height instead of setting the row's, less the code's horizontal scrollbar
+    // (--jt-hbar, set by jt-code-blocks), and is scrolled along with it. The
+    // padding gives it room to reach the last line.
+    box-sizing: border-box; // else its padding comes on top of the code's height
+    block-size: 0;
+    min-block-size: calc(100% - var(--jt-hbar, 0px));
+    overflow: hidden;
+    padding-block-end: 2rem;
   }
 
   > code {

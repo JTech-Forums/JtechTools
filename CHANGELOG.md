@@ -138,6 +138,7 @@ What changed for forums running Jtech Tools. Newest first.
 
 **Fixed**
 
+- JTech theme: a code block taller than about 20 lines no longer shows empty line numbers under its code, and numbers no longer spill out of its box over the text after it. The numbers scroll with the code.
 - JTech theme: on a topic card, the faces of the people in the topic open their user card again, as they did on the topic list before, instead of opening the topic.
 - JTech theme: the front page uses less battery and is ready sooner. The welcome banner's twinkling stars, meteor and passing lights pause while it's scrolled out of sight (the planet already did), the planet does no work between its frames, and coming back to the topic list or the categories no longer sets the planet up from scratch or holds the page up for the back-to-top button. The banner looks exactly as before.
 - JTech theme: lighter pages. A topic card for a tall picture loads the small copy made for cards instead of the full image (one card went from 59 KB to 23 KB), and on desktop the "#" before the sidebar's tags is in the forum's usual font, so pages no longer download the code font (70 KB) just for it.
