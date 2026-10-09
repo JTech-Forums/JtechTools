@@ -41,6 +41,7 @@ enabled_site_setting :jtech_enabled
   reqpm
   listing_format
   jtech_theme
+  mod_elections
 ].each do |sub|
   path = File.expand_path("sub_plugins/#{sub}.rb", __dir__)
   instance_eval(File.read(path), path, 1)

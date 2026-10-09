@@ -1,0 +1,231 @@
+# frozen_string_literal: true
+
+module DiscourseModElections
+  # Counts a multi-seat election by single transferable vote, the way
+  # Scottish council elections do (Droop quota, weighted inclusive Gregory
+  # surplus transfers), except that a ballot starts at its voter's weight
+  # instead of 1.
+  #
+  # Pure Ruby: candidate ids, ballots and a seed in, every stage out. Values
+  # are Rationals, so a transfer never rounds and a tie is an exact tie.
+  class Stv
+    Ballot = Struct.new(:weight, :ranking)
+
+    Stage =
+      Struct.new(
+        :number,
+        :action,
+        :candidate,
+        :tallies,
+        :exhausted,
+        :elected,
+        :tie,
+        keyword_init: true,
+      )
+
+    Result =
+      Struct.new(
+        :seats,
+        :quota,
+        :total,
+        :ballots,
+        :elected,
+        :stages,
+        :exhausted,
+        :seed,
+        :outcome,
+        keyword_init: true,
+      )
+
+    Paper = Struct.new(:ranking, :value)
+
+    def self.count(**kwargs)
+      new(**kwargs).count
+    end
+
+    # candidates: ids still in the race. ballots: Ballot-likes (weight,
+    # ranking of candidate ids, best first). excluded: ids to count as if they
+    # never ran (a countback after someone leaves their seat).
+    def initialize(candidates:, ballots:, seats:, seed:, excluded: [])
+      @candidates = candidates.uniq - excluded
+      @seats = seats
+      @seed = seed
+      @rng = Random.new(seed)
+      @papers =
+        ballots.filter_map do |ballot|
+          ranking = ballot.ranking.uniq & @candidates
+          next if ranking.empty? || ballot.weight.to_i <= 0
+          Paper.new(ranking, Rational(ballot.weight.to_i))
+        end
+      @state = @candidates.to_h { |id| [id, :continuing] }
+      @piles = @candidates.to_h { |id| [id, []] }
+      @settled = {}
+      @elected = []
+      @stages = []
+      @exhausted = Rational(0)
+    end
+
+    def count
+      @total = @papers.sum(Rational(0), &:value)
+      @quota = (@total / (@seats + 1)).floor + 1
+      @papers.each { |paper| place(paper) }
+
+      if @candidates.size <= @seats
+        record(:unopposed)
+        elect(*by_votes(continuing))
+        return result(:unopposed)
+      end
+
+      record(:first)
+      return result(:no_votes) if @total.zero?
+
+      pending = []
+      loop do
+        pending.concat(elect_reaching_quota)
+        break if @elected.size == @seats
+
+        if @elected.size + continuing.size <= @seats
+          elect(*by_votes(continuing))
+          break
+        end
+
+        pending.reject! { |id| surplus(id).zero? }
+        if pending.any?
+          id = pick(pending, highest: true) { |c| surplus(c) }
+          pending.delete(id)
+          transfer_surplus(id)
+          record(:surplus, id)
+        else
+          id = pick(continuing, highest: false) { |c| votes(c) }
+          exclude(id)
+          record(:exclusion, id)
+        end
+      end
+
+      result(:counted)
+    end
+
+    private
+
+    def continuing
+      @candidates.select { |id| @state[id] == :continuing }
+    end
+
+    def votes(id)
+      @settled[id] || @piles[id].sum(Rational(0), &:value)
+    end
+
+    def surplus(id)
+      [votes(id) - @quota, 0].max
+    end
+
+    # The paper goes to its highest-ranked candidate still in the race, or is
+    # exhausted when it names none.
+    def place(paper)
+      holder = paper.ranking.find { |id| @state[id] == :continuing }
+      if holder
+        @piles[holder] << paper
+      else
+        @exhausted += paper.value
+      end
+    end
+
+    def elect_reaching_quota
+      reached = continuing.select { |id| votes(id) >= @quota }
+      ordered = by_votes(reached)
+      elect(*ordered)
+      ordered
+    end
+
+    def elect(*ids)
+      ids.each do |id|
+        @state[id] = :elected
+        @elected << id
+        @stages.last.elected << id
+      end
+    end
+
+    # Every paper the elected candidate holds moves on at a reduced value,
+    # so that together they carry exactly the surplus.
+    def transfer_surplus(id)
+      held = votes(id)
+      factor = surplus(id) / held
+      papers = @piles[id]
+      @piles[id] = []
+      @settled[id] = @quota
+      papers.each do |paper|
+        paper.value *= factor
+        place(paper)
+      end
+    end
+
+    def exclude(id)
+      @state[id] = :excluded
+      papers = @piles[id]
+      @piles[id] = []
+      @settled[id] = Rational(0)
+      papers.each { |paper| place(paper) }
+    end
+
+    # Highest first, for the order winners are listed in. Equal votes keep
+    # whoever did better earlier ahead, without drawing lots: the order of
+    # people elected together changes nothing.
+    def by_votes(ids)
+      ids.sort_by { |id| [-votes(id), @stages.map { |s| -s.tallies[id] }, id] }
+    end
+
+    # The candidate with the highest (or lowest) value. A tie goes to the
+    # earliest stage where the tied candidates had different votes, then to
+    # lot.
+    def pick(ids, highest:, &value)
+      best = highest ? ids.map(&value).max : ids.map(&value).min
+      tied = ids.select { |id| value.call(id) == best }
+      return tied.first if tied.size == 1
+
+      remaining = tied
+      @stages.each do |stage|
+        values = remaining.map { |id| stage.tallies[id] }
+        next if values.uniq.size == 1
+        target = highest ? values.max : values.min
+        remaining = remaining.select { |id| stage.tallies[id] == target }
+        break if remaining.size == 1
+      end
+
+      if remaining.size == 1
+        @pending_tie = { method: :earlier_stage, among: tied, chosen: remaining.first }
+        return remaining.first
+      end
+
+      chosen = remaining.sort[@rng.rand(remaining.size)]
+      @pending_tie = { method: :lot, among: tied, chosen: chosen }
+      chosen
+    end
+
+    def record(action, candidate = nil)
+      @stages << Stage.new(
+        number: @stages.size + 1,
+        action: action,
+        candidate: candidate,
+        tallies: @candidates.to_h { |id| [id, votes(id)] },
+        exhausted: @exhausted,
+        elected: [],
+        tie: @pending_tie,
+      )
+      @pending_tie = nil
+    end
+
+    def result(outcome)
+      Result.new(
+        seats: @seats,
+        quota: @quota,
+        total: @total,
+        ballots: @papers.size,
+        elected: @elected,
+        stages: @stages,
+        exhausted: @exhausted,
+        seed: @seed,
+        outcome: outcome,
+      )
+    end
+  end
+end

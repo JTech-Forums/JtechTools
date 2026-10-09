@@ -218,3 +218,44 @@ Discourse::Application.routes.append do
     end
   end
 end
+
+# ── Mod elections ───────────────────────────────────────────────────────────
+Discourse::Application.routes.append do
+  scope "/jtech-elections",
+        module: "discourse_mod_elections",
+        as: :mod_elections,
+        defaults: {
+          format: :json,
+        } do
+    get "/current" => "elections#show"
+    post "/:id/candidacy" => "elections#run"
+    put "/:id/candidacy" => "elections#update_candidacy"
+    delete "/:id/candidacy" => "elections#withdraw"
+    put "/:id/ballot" => "elections#vote"
+    delete "/:id/ballot" => "elections#clear_ballot"
+
+    # Admin tab. Not under /admin/plugins/jtech-tools/, whose GETs are the
+    # Ember tab catch-all above.
+    scope "/admin", constraints: AdminConstraint.new do
+      get "/" => "admin#index"
+      post "/elections" => "admin#create"
+      get "/seats" => "admin#seats"
+      post "/seats/:candidate_id/vacate" => "admin#vacate"
+      get "/seats/countback" => "admin#countback"
+      post "/seats/fill" => "admin#fill"
+      get "/elections/:id" => "admin#show"
+      post "/elections/:id/end-phase" => "admin#end_phase"
+      post "/elections/:id/cancel" => "admin#cancel"
+      post "/elections/:id/candidates/:candidate_id/disqualify" => "admin#disqualify"
+      post "/elections/:id/candidates/:candidate_id/reinstate" => "admin#reinstate"
+      get "/elections/:id/ip-report" => "admin#ip_report"
+      post "/elections/:id/ballots/:ballot_id/void" => "admin#void_ballot"
+      post "/elections/:id/ballots/:ballot_id/restore" => "admin#restore_ballot"
+      get "/elections/:id/preview" => "admin#preview"
+      post "/elections/:id/publish" => "admin#publish"
+    end
+  end
+
+  # Ember entry point (hard loads and links from notifications).
+  get "/elections" => "discourse_mod_elections/elections#page"
+end

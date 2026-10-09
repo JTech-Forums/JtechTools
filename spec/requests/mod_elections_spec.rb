@@ -1,0 +1,307 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+RSpec.describe "Mod elections endpoints" do
+  fab!(:admin)
+  fab!(:moderator) { Fabricate(:moderator, trust_level: TrustLevel[3], created_at: 1.year.ago) }
+  fab!(:member) { Fabricate(:user, trust_level: TrustLevel[2], created_at: 1.year.ago) }
+  fab!(:newbie) { Fabricate(:user, trust_level: TrustLevel[1], created_at: 1.year.ago) }
+  fab!(:other) { Fabricate(:user, trust_level: TrustLevel[3], created_at: 1.year.ago) }
+
+  before do
+    SiteSetting.jtech_enabled = true
+    SiteSetting.mod_elections_enabled = true
+  end
+
+  def start_election(seats: 2)
+    DiscourseModElections::Lifecycle.create!(
+      admin,
+      seats: seats,
+      nominations_open_at: 1.minute.ago,
+      voting_open_at: 3.days.from_now,
+      voting_close_at: 6.days.from_now,
+    )
+  end
+
+  def open_voting(election)
+    DiscourseModElections::Lifecycle.end_phase!(election, admin)
+    election.reload
+  end
+
+  it "is not there while switched off" do
+    SiteSetting.mod_elections_enabled = false
+    get "/jtech-elections/current.json"
+    expect(response.status).to eq(404)
+  end
+
+  describe "the page" do
+    it "shows the election and its candidates to anyone, and nobody's ballot" do
+      election = start_election
+      DiscourseModElections::Nominations.run!(member, election, "Fair and fast.")
+      open_voting(election)
+      DiscourseModElections::Voting.cast!(
+        other,
+        election,
+        election.candidates.where.not(user: other).order(:id).pluck(:id),
+      )
+
+      get "/jtech-elections/current.json"
+      body = response.parsed_body
+      expect(body.dig("election", "status")).to eq("voting")
+      expect(
+        body.dig("election", "candidates").map { |c| c.dig("user", "username") },
+      ).to contain_exactly(moderator.username, member.username)
+      expect(
+        body
+          .dig("election", "candidates")
+          .find { |c| c.dig("user", "username") == member.username }[
+          "statement"
+        ],
+      ).to eq("Fair and fast.")
+      expect(body["me"]).to be_nil
+      expect(response.body).not_to include("ranking")
+
+      sign_in(member)
+      get "/jtech-elections/current.json"
+      expect(response.parsed_body.dig("me", "ballot")).to be_nil
+      expect(response.body).not_to include("ranking")
+    end
+  end
+
+  describe "running" do
+    let!(:election) { start_election }
+
+    it "lets a member in good standing run, edit their statement and drop out" do
+      sign_in(member)
+      post "/jtech-elections/#{election.id}/candidacy.json",
+           params: {
+             statement: "Hi\r\n\r\n\r\n\r\nthere",
+           }
+      expect(response.status).to eq(200)
+      expect(response.parsed_body.dig("me", "candidate", "statement")).to eq("Hi\n\nthere")
+
+      put "/jtech-elections/#{election.id}/candidacy.json", params: { statement: "Updated" }
+      expect(election.candidates.find_by(user: member).statement).to eq("Updated")
+
+      delete "/jtech-elections/#{election.id}/candidacy.json"
+      expect(election.candidates.find_by(user: member)).to be_withdrawn
+    end
+
+    it "turns away trust level 1, new accounts, recent suspensions and admins" do
+      sign_in(newbie)
+      post "/jtech-elections/#{election.id}/candidacy.json"
+      expect(response.status).to eq(422)
+      expect(response.parsed_body.dig("extras", "reason")).to eq("trust_level")
+
+      member.update!(created_at: 10.days.ago)
+      sign_in(member)
+      post "/jtech-elections/#{election.id}/candidacy.json"
+      expect(response.parsed_body.dig("extras", "reason")).to eq("account_age")
+
+      member.update!(created_at: 1.year.ago)
+      UserHistory.create!(
+        action: UserHistory.actions[:suspend_user],
+        target_user_id: member.id,
+        acting_user_id: admin.id,
+      )
+      post "/jtech-elections/#{election.id}/candidacy.json"
+      expect(response.parsed_body.dig("extras", "reason")).to eq("record")
+
+      sign_in(admin)
+      post "/jtech-elections/#{election.id}/candidacy.json"
+      expect(response.parsed_body.dig("extras", "reason")).to eq("admin")
+    end
+
+    it "keeps statements to the configured length" do
+      SiteSetting.mod_elections_statement_max_length = 10
+      sign_in(member)
+      post "/jtech-elections/#{election.id}/candidacy.json", params: { statement: "x" * 11 }
+      expect(response.parsed_body.dig("extras", "reason")).to eq("statement_too_long")
+    end
+
+    it "refuses API keys" do
+      api_key = Fabricate(:api_key, user: member)
+      post "/jtech-elections/#{election.id}/candidacy.json",
+           headers: {
+             "Api-Key" => api_key.key,
+             "Api-Username" => member.username,
+           }
+      expect(response.status).to eq(403)
+      expect(election.candidates.find_by(user: member)).to be_nil
+    end
+  end
+
+  describe "voting" do
+    let!(:election) { start_election }
+    let(:mod_candidate) { election.candidates.find_by(user: moderator) }
+    let!(:member_candidate) { DiscourseModElections::Nominations.run!(member, election, "") }
+
+    before { open_voting(election) }
+
+    it "saves a ranking at the voter's weight, and lets them change and take it back" do
+      sign_in(other)
+      put "/jtech-elections/#{election.id}/ballot.json",
+          params: {
+            ranking: [member_candidate.id, mod_candidate.id],
+          }
+      expect(response.status).to eq(200)
+      ballot = DiscourseModElections::Ballot.find_by(election: election, user: other)
+      expect(ballot.ranking).to eq([member_candidate.id, mod_candidate.id])
+      expect(ballot.weight).to eq(3)
+      expect(response.parsed_body.dig("me", "ballot", "ranking")).to eq(ballot.ranking)
+
+      put "/jtech-elections/#{election.id}/ballot.json", params: { ranking: [mod_candidate.id] }
+      expect(ballot.reload.ranking).to eq([mod_candidate.id])
+
+      delete "/jtech-elections/#{election.id}/ballot.json"
+      expect(DiscourseModElections::Ballot.exists?(ballot.id)).to eq(false)
+    end
+
+    it "doesn't let candidates vote for themselves" do
+      sign_in(member)
+      put "/jtech-elections/#{election.id}/ballot.json", params: { ranking: [member_candidate.id] }
+      expect(response.parsed_body.dig("extras", "reason")).to eq("self_vote")
+
+      put "/jtech-elections/#{election.id}/ballot.json", params: { ranking: [mod_candidate.id] }
+      expect(response.status).to eq(200)
+    end
+
+    it "turns away people who weren't on the voter list, admins, and junk ballots" do
+      late = Fabricate(:user, trust_level: TrustLevel[2])
+      sign_in(late)
+      put "/jtech-elections/#{election.id}/ballot.json", params: { ranking: [mod_candidate.id] }
+      expect(response.parsed_body.dig("extras", "reason")).to eq("not_on_roll")
+
+      sign_in(admin)
+      put "/jtech-elections/#{election.id}/ballot.json", params: { ranking: [mod_candidate.id] }
+      expect(response.parsed_body.dig("extras", "reason")).to eq("admin")
+
+      sign_in(other)
+      put "/jtech-elections/#{election.id}/ballot.json",
+          params: {
+            ranking: [mod_candidate.id, mod_candidate.id],
+          }
+      expect(response.parsed_body.dig("extras", "reason")).to eq("invalid_ballot")
+
+      put "/jtech-elections/#{election.id}/ballot.json", params: { ranking: [-5] }
+      expect(response.parsed_body.dig("extras", "reason")).to eq("invalid_ballot")
+    end
+
+    it "turns away voters suspended since the list was made" do
+      other.update!(suspended_till: 1.week.from_now, suspended_at: Time.zone.now)
+      sign_in(other)
+      put "/jtech-elections/#{election.id}/ballot.json", params: { ranking: [mod_candidate.id] }
+      expect(response.status).to eq(403).or eq(422)
+      expect(DiscourseModElections::Ballot.where(user: other)).to be_empty
+    end
+  end
+
+  describe "the admin tab" do
+    let!(:election) { start_election(seats: 1) }
+
+    it "is for admins only: moderators are candidates" do
+      sign_in(moderator)
+      get "/jtech-elections/admin.json"
+      expect(response.status).to eq(404)
+      get "/jtech-elections/admin/elections/#{election.id}.json"
+      expect(response.status).to eq(404)
+      get "/jtech-elections/admin/elections/#{election.id}/ip-report.json"
+      expect(response.status).to eq(404)
+
+      sign_in(admin)
+      get "/jtech-elections/admin.json"
+      expect(response.status).to eq(200)
+      expect(response.parsed_body["elections"].map { |e| e["id"] }).to eq([election.id])
+    end
+
+    it "finds ballots cast from one address, lets the admin set them aside, and publishes" do
+      member_candidate = DiscourseModElections::Nominations.run!(member, election, "")
+      mod_candidate = election.candidates.find_by(user: moderator)
+      open_voting(election)
+
+      alt = Fabricate(:user, trust_level: TrustLevel[2], created_at: 1.year.ago)
+      DiscourseModElections::Voter.create!(election: election, user: alt, weight: 2)
+      sign_in(other)
+      put "/jtech-elections/#{election.id}/ballot.json",
+          params: {
+            ranking: [mod_candidate.id],
+          },
+          env: {
+            "REMOTE_ADDR" => "203.0.113.9",
+          }
+      sign_in(alt)
+      put "/jtech-elections/#{election.id}/ballot.json",
+          params: {
+            ranking: [member_candidate.id],
+          },
+          env: {
+            "REMOTE_ADDR" => "198.51.100.7",
+          }
+      sign_in(newbie)
+      put "/jtech-elections/#{election.id}/ballot.json",
+          params: {
+            ranking: [member_candidate.id],
+          },
+          env: {
+            "REMOTE_ADDR" => "198.51.100.7",
+          }
+
+      sign_in(admin)
+      post "/jtech-elections/admin/elections/#{election.id}/end-phase.json"
+      expect(response.parsed_body["status"]).to eq("closed")
+
+      get "/jtech-elections/admin/elections/#{election.id}/ip-report.json"
+      group = response.parsed_body["ip_report"].sole
+      expect(group["ip"]).to eq("198.51.100.7")
+      expect(group["ballots"].map { |b| b.dig("user", "username") }).to contain_exactly(
+        alt.username,
+        newbie.username,
+      )
+      expect(response.body).not_to include("ranking")
+
+      group["ballots"].each do |b|
+        post "/jtech-elections/admin/elections/#{election.id}/ballots/#{b["id"]}/void.json",
+             params: {
+               reason: "Same household, alt accounts",
+             }
+        expect(response.status).to eq(200)
+      end
+
+      get "/jtech-elections/admin/elections/#{election.id}/preview.json"
+      expect(response.parsed_body.dig("result", "elected")).to eq([mod_candidate.id])
+      expect(response.parsed_body.dig("plan", "stay").map { |u| u["id"] }).to eq([moderator.id])
+
+      post "/jtech-elections/admin/elections/#{election.id}/publish.json"
+      expect(response.status).to eq(200)
+      expect(moderator.reload).to be_moderator
+      expect(member.reload).not_to be_moderator
+
+      get "/jtech-elections/current.json", params: { id: election.id }
+      expect(response.parsed_body.dig("election", "result", "elected")).to eq([mod_candidate.id])
+      expect(response.parsed_body.dig("election", "turnout", "ballots")).to eq(1)
+    end
+
+    it "lets an admin take a candidate off the ballot with a public reason" do
+      member_candidate = DiscourseModElections::Nominations.run!(member, election, "")
+      sign_in(admin)
+
+      post "/jtech-elections/admin/elections/#{election.id}/candidates/#{member_candidate.id}/disqualify.json"
+      expect(response.parsed_body.dig("extras", "reason")).to eq("reason_required")
+
+      post "/jtech-elections/admin/elections/#{election.id}/candidates/#{member_candidate.id}/disqualify.json",
+           params: {
+             reason: "Vote buying",
+           }
+      expect(member_candidate.reload).to be_disqualified
+
+      get "/jtech-elections/current.json"
+      shown =
+        response
+          .parsed_body
+          .dig("election", "candidates")
+          .find { |c| c["id"] == member_candidate.id }
+      expect(shown).to include("status" => "disqualified", "disqualified_reason" => "Vote buying")
+    end
+  end
+end

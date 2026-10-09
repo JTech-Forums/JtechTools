@@ -974,6 +974,54 @@ en:
       without following the format, for reminders and staff notes. They also
       keep the Reply button on listings and use the plain composer.
 
+    # ── Jtech — Mod elections ──────────────────────────────────────────────
+    mod_elections_enabled: Lets the forum elect its moderators. Every few
+      months (see the months below) nominations open, then Vote Week runs,
+      and members rank the candidates. An admin checks the ballots and
+      publishes the results from the Mod elections tab, which makes the
+      winners moderators and removes the moderators who weren't elected.
+      Admins are never on the ballot and never vote. Turning this off stops
+      the schedule and hides the page; nothing already published changes.
+    mod_elections_seats: How many moderators each election picks. Every seat
+      is up in every election.
+    mod_elections_schedule_months: Months an election starts in. Nominations
+      open at midnight on the 1st, in the time zone below.
+    mod_elections_timezone: Time zone the calendar runs in, as a name like
+      America/New_York or Asia/Jerusalem.
+    mod_elections_nomination_days: How long nominations stay open. Sitting
+      moderators are on the ballot automatically and can drop out until
+      nominations close.
+    mod_elections_voting_days: How long Vote Week lasts, starting when
+      nominations close. Voters can change their ballot until it ends.
+    mod_elections_candidate_min_trust_level: Lowest trust level that can
+      run. Sitting moderators can always run.
+    mod_elections_candidate_min_account_age_days: How old an account has to
+      be to run.
+    mod_elections_candidate_clean_record_days: Accounts suspended or
+      silenced within this many days can't run. 0 only checks whether they
+      are suspended or silenced right now.
+    mod_elections_statement_max_length: Longest statement a candidate can
+      write about themselves. 0 turns statements off.
+    mod_elections_voter_min_account_age_days: How old an account has to be,
+      when nominations open, to vote. The voter list is fixed at that moment,
+      and a vote counts as much as the voter's trust level then (trust level
+      0 doesn't vote). Suspended and silenced accounts can't vote.
+    mod_elections_former_mods_keep_tl4: Moderators who leave their seat
+      (lose, step down or don't run) keep trust level 4, locked, so it marks
+      people who were moderators. Trust level 4 can still edit posts and
+      close, move and rename topics, so former moderators keep those powers.
+      Winners are locked at trust level 4 when they take their seat. A
+      moderator removed for abuse goes back to trust level 3 either way.
+    mod_elections_strikes_before_tl3: A sitting moderator who runs again and
+      loses gets a strike. At this many strikes they go back to trust level
+      3, unlocked, and the usual trust level 3 rules apply again. Stepping
+      down, not running, and losing while not in a seat give no strike.
+    mod_elections_category: Category for each election's topic, where the
+      forum is told when nominations open, who is running and who won. Leave
+      blank for no topic.
+    mod_elections_notify_voters: Sends voters a notification when Vote Week
+      opens, and again a day before it ends to those who haven't voted.
+
     placeholder:
       discourse_another_email_smtp_address: smtp.example.com
       discourse_another_email_smtp_username: username@example.com
@@ -1010,6 +1058,7 @@ en:
       disteleplus_auto_match_usernames: identity|impersonate|spoof|security
       reqpm_enabled: reqpm|req-pm|contact|phone|whatsapp|private message|pm|dm
       reqpm_setup_prompt: reqpm|onboarding|required field|contact card
+      mod_elections_enabled: election|vote|voting|moderator|stv|ballot
 
     errors:
       translator_tweaks_invalid_worker_url: must be a full https:// URL with
@@ -1017,6 +1066,8 @@ en:
         or blank to call Google directly
       reqpm_default_country_code_invalid: must be a calling code of up to 4
         digits, like 1 or 972 — or blank
+      mod_elections_timezone_invalid: must be a time zone name like
+        America/New_York or Asia/Jerusalem
       dumbcourse_base_path_invalid: must be a single URL segment made of
         lowercase letters, digits, hyphens and underscores, and must not be a
         reserved Discourse path
@@ -1076,3 +1127,67 @@ en:
         email: "That doesn't look like an email address."
         url: "That doesn't look like a web address (http or https)."
         handle: "That doesn't look like a username (letters, numbers, . _ -)."
+
+  mod_elections:
+    title: "Mod elections"
+    notifications:
+      on_ballot: "You're on the ballot. You can drop out until nominations close."
+      voting_open: "Vote Week is open. Rank the candidates."
+      reminder: "Vote Week ends tomorrow, and you haven't voted."
+      closed: "Voting has closed. Check the ballots and publish the results."
+      results: "The results are in."
+      disqualified: "An admin took you off the ballot. The reason is on the elections page."
+      seat_filled: "A seat opened up and the count gave it to you. You're a moderator."
+    topic:
+      title: "Mod elections: %{month}"
+      nominations_open: |
+        Nominations for moderator are open. Sitting moderators are on the ballot already; anyone else who can run signs up on the elections page.
+
+        Vote Week runs from %{voting_open} to %{voting_close}.
+
+        [Run, or see who's running](%{url})
+      voting_open: |
+        Vote Week is open until %{voting_close}. Rank the candidates on the elections page: your vote counts as much as your trust level.
+
+        On the ballot:
+        %{candidates}
+
+        [Vote](%{url})
+      results: |
+        The results are in. Elected:
+        %{winners}
+
+        %{ballots} ballots were counted. [Every stage of the count](%{url})
+      cancelled: "This election was cancelled. The moderators stay as they are."
+      countback: "A moderator left their seat mid-term. Counting the same ballots again without them gives the seat to %{user}."
+      nobody: "Nobody"
+      deleted_user: "(deleted account)"
+    errors:
+      not_found: "That election isn't there any more."
+      own_session_only: "Elections only work from your own signed-in session."
+      not_nominating: "Nominations aren't open."
+      not_voting: "Vote Week isn't open."
+      not_allowed: "Your account can't take part right now."
+      admin: "Admins don't run or vote."
+      disqualified: "You were taken off the ballot for this election."
+      already_running: "You're already running."
+      not_running: "You're not running in this election."
+      trust_level: "You need a higher trust level to run."
+      account_age: "Your account is too new to run."
+      record: "Accounts suspended or silenced recently can't run."
+      statement_too_long: "Keep your statement to %{max} characters."
+      not_on_roll: "You weren't on the voter list when nominations opened."
+      empty_ballot: "Rank at least one candidate."
+      invalid_ballot: "The ballot has changed. Reload the page and try again."
+      self_vote: "You can't vote for yourself."
+      ballot_voided: "An admin set your ballot aside, so it can't be changed."
+      reason_required: "Give a reason. It's shown to the candidate and on the elections page."
+      finished: "This election is already over."
+      not_closed: "Voting hasn't closed yet."
+      no_votes: "Nobody voted. Cancel the election instead, so the moderators stay as they are."
+      not_seated: "That person isn't in a seat."
+      no_open_seat: "Every seat is taken."
+      no_replacement: "There's nobody left on the ballot to take the seat. Appoint a moderator by hand if you need one."
+      election_in_progress: "Another election is still running. Publish or cancel it first."
+      too_early: "Nominations haven't opened yet."
+      invalid_dates: "Check the dates: nominations, then Vote Week, then the close, in that order."

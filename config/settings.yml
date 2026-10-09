@@ -1388,3 +1388,130 @@ jtech_listing_format:
     allow_any: false
     depends_on:
       - "listing_format_enabled"
+
+# ───────────────────────────────────────────────────────────────────────────
+# Jtech — Mod elections
+# ───────────────────────────────────────────────────────────────────────────
+jtech_mod_elections:
+  # Off by default: switching it on starts the schedule below. Read at page
+  # boot (sidebar link, banner), hence refresh: true.
+  mod_elections_enabled:
+    default: false
+    client: true
+    refresh: true
+  mod_elections_seats:
+    default: 3
+    client: false
+    min: 1
+    max: 20
+    depends_on:
+      - "mod_elections_enabled"
+
+  # Calendar. Nominations open at midnight on the 1st of each listed month,
+  # in the time zone below.
+  mod_elections_schedule_months:
+    default: "1|4|7|10"
+    client: false
+    type: list
+    list_type: compact
+    choices:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+      - "7"
+      - "8"
+      - "9"
+      - "10"
+      - "11"
+      - "12"
+    allow_any: false
+    depends_on:
+      - "mod_elections_enabled"
+  mod_elections_timezone:
+    default: "America/New_York"
+    client: false
+    validator: "ModElectionsTimezoneValidator"
+    depends_on:
+      - "mod_elections_enabled"
+  mod_elections_nomination_days:
+    default: 7
+    client: false
+    min: 1
+    max: 30
+    depends_on:
+      - "mod_elections_enabled"
+  mod_elections_voting_days:
+    default: 7
+    client: false
+    min: 1
+    max: 30
+    depends_on:
+      - "mod_elections_enabled"
+
+  # Who can run.
+  mod_elections_candidate_min_trust_level:
+    default: 2
+    client: false
+    enum: "TrustLevelSetting"
+    depends_on:
+      - "mod_elections_enabled"
+  mod_elections_candidate_min_account_age_days:
+    default: 90
+    client: false
+    min: 0
+    max: 3650
+    depends_on:
+      - "mod_elections_enabled"
+  mod_elections_candidate_clean_record_days:
+    default: 180
+    client: false
+    min: 0
+    max: 3650
+    depends_on:
+      - "mod_elections_enabled"
+  mod_elections_statement_max_length:
+    default: 1000
+    client: true
+    min: 0
+    max: 5000
+    depends_on:
+      - "mod_elections_enabled"
+
+  # Who can vote. A vote counts as much as the voter's trust level.
+  mod_elections_voter_min_account_age_days:
+    default: 30
+    client: false
+    min: 0
+    max: 3650
+    depends_on:
+      - "mod_elections_enabled"
+
+  # Former moderators.
+  mod_elections_former_mods_keep_tl4:
+    default: true
+    client: false
+    depends_on:
+      - "mod_elections_enabled"
+  mod_elections_strikes_before_tl3:
+    default: 2
+    client: false
+    min: 1
+    max: 10
+    depends_on:
+      - "mod_elections_former_mods_keep_tl4"
+
+  # Announcements.
+  mod_elections_category:
+    default: ""
+    client: false
+    type: category
+    depends_on:
+      - "mod_elections_enabled"
+  mod_elections_notify_voters:
+    default: true
+    client: false
+    depends_on:
+      - "mod_elections_enabled"
