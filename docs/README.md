@@ -10,6 +10,7 @@
 | [Dislike](features/dislike.md) | Likes that don't count in chosen categories |
 | [Disteleplus](features/disteleplus.md) | A staff chat room mirrored with Telegram |
 | [REQ-PM](features/reqpm.md) | Exchange contact details instead of private messages |
+| [Mod elections](features/mod-elections.md) | The forum elects its moderators by ranked vote |
 | [Dumbcourse](features/dumbcourse.md) | The forum for flip phones and old browsers |
 | [Smart search](features/smart-search.md) | Retries thin searches with synonyms |
 | [Desktop pop-ups](features/popups.md) | Notification cards in the corner of the screen |

@@ -44,6 +44,7 @@ import {
   profilePrefsRoute,
 } from "./views/preferences.ts";
 import { profileRoute } from "./views/profile.ts";
+import { electionsRoute } from "./views/elections.ts";
 import { contactsRoute, contactUserRoute } from "./views/reqpm.ts";
 import { reviewRoute } from "./views/review.ts";
 import { searchRoute } from "./views/search.ts";
@@ -77,6 +78,7 @@ route("/review", reviewRoute);
 route("/u/:username", profileRoute);
 route("/contacts", contactsRoute);
 route("/contacts/u/:username", contactUserRoute);
+route("/elections", electionsRoute, { public: true });
 route("/preferences", preferencesRoute, { public: true });
 route("/preferences/profile", profilePrefsRoute);
 route("/preferences/email", emailPrefsRoute);

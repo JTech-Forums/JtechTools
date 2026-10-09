@@ -7,7 +7,7 @@ labels: bug
 
 ## Which module?
 
-<!-- One of: moderator tools, mini-mod, dislike, disteleplus, reqpm, dumbcourse, smart search, pop-ups, another smtp, translator tweaks, or "shared" -->
+<!-- One of: moderator tools, mini-mod, dislike, disteleplus, reqpm, mod elections, dumbcourse, smart search, pop-ups, another smtp, translator tweaks, or "shared" -->
 
 ## What happened
 

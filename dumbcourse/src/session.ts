@@ -59,6 +59,11 @@ export function fromCurrentUser(cu: Record<string, unknown>): BootUser {
     available?: boolean;
     incoming_count?: number;
   };
+  const election = (cu.mod_election || {}) as {
+    status?: string;
+    voter?: boolean;
+    voted?: boolean;
+  };
   return {
     id: cu.id as number,
     username: cu.username as string,
@@ -79,6 +84,8 @@ export function fromCurrentUser(cu: Record<string, unknown>): BootUser {
       (cu.new_personal_messages_notifications_count as number) || 0,
     reqpm_available: !!reqpm.available,
     reqpm_incoming_count: reqpm.incoming_count || 0,
+    mod_election_vote_due:
+      election.status === "voting" && election.voter && !election.voted ? 1 : 0,
     can_pair_devices: user ? user.can_pair_devices : settings.auth.pairing,
     second_factor_enabled: !!cu.second_factor_enabled,
   };

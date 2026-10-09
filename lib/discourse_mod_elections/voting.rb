@@ -8,7 +8,9 @@ module DiscourseModElections
       reason = Eligibility.vote_blocked_reason(user, election, voter)
       raise Error.new(reason) if reason
 
-      ids = Array(ranking).map(&:to_i)
+      raw = Array(ranking)
+      raise Error.new(:invalid_ballot) unless raw.all? { |id| id.to_s.match?(/\A\d+\z/) }
+      ids = raw.map(&:to_i)
       raise Error.new(:empty_ballot) if ids.empty?
       raise Error.new(:invalid_ballot) if ids.uniq.size != ids.size
 

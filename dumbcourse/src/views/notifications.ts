@@ -241,13 +241,14 @@ export function describe(n: Notification): Described {
           : title || "Notification";
       const url = String(d.url || "");
       let path: string | null = null;
-      if (d.reqpm)
+      if (d.mod_election) path = "/elections";
+      else if (d.reqpm)
         path =
           d.reqpm_kind === "shared" ? "/contacts?tab=contacts" : "/contacts";
       else if (url) path = appPathFor(url) || (n.topic_id ? topicLink : null);
       else path = topicLink;
       return {
-        iconName: d.reqpm ? "phone" : "bell",
+        iconName: d.reqpm ? "phone" : d.mod_election ? "check" : "bell",
         text: html`${actor && template && template.indexOf("%{") < 0
           ? html`<b>${actor}</b> `
           : ""}${emojify(text)}${title && text.indexOf(title) < 0 && !d.reqpm

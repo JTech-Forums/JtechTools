@@ -27,6 +27,7 @@ We built these tools for our own forum as the need came up. Some help moderators
 **For members**
 
 - **[REQ-PM](docs/features/reqpm.md).** The forum has no private messages. Members ask each other for contact details, and choose exactly what to share.
+- **[Mod elections](docs/features/mod-elections.md).** Every few months the forum elects its moderators: members run, voters rank the candidates, and the count is published stage by stage.
 - **[Dumbcourse](docs/features/dumbcourse.md).** The whole forum at `/dumb`, built for flip phones and old browsers, driven by the D-pad and keypad.
 - **[Smart search](docs/features/smart-search.md).** When a search finds too little, it tries again with synonyms, so "k8s" finds "kubernetes".
 - **[Desktop pop-ups](docs/features/popups.md).** A small card in the corner when a notification arrives.

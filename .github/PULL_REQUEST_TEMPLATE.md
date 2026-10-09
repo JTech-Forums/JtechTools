@@ -13,6 +13,7 @@
 - [ ] Dislike
 - [ ] Disteleplus
 - [ ] REQ-PM
+- [ ] Mod elections
 - [ ] Dumbcourse
 - [ ] Smart search
 - [ ] Pop-ups

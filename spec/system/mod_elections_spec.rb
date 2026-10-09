@@ -102,6 +102,49 @@ RSpec.describe "Mod elections" do
     shot("04_ballot_saved")
   end
 
+  it "works the same in mobile mode", mobile: true do
+    open_voting
+    sign_in(voter)
+    visit "/elections"
+
+    find(
+      ".mod-elections-ballot__pool [data-candidate-id='#{candidate_for(chaim).id}'] .mod-elections-ballot__add",
+    ).click
+    find(".mod-elections-ballot__save").click
+
+    expect(page).to have_css(".mod-elections-ballot__state", text: "Saved")
+    expect(DiscourseModElections::Ballot.find_by(election: election, user: voter).ranking).to eq(
+      [candidate_for(chaim).id],
+    )
+    shot("08_mobile_ballot")
+  end
+
+  it "ranks on a flip phone: a candidate, then the number of their place" do
+    open_voting
+    SiteSetting.dumbcourse_enabled = true
+    sign_in(voter)
+
+    resize_window(width: 240, height: 320) do
+      visit "/dumb/elections"
+      expect(page).to have_css("button.row[data-act='cand']", count: 3)
+      { dovid => "1", chaim => "2", moderator => "1" }.each do |user, key|
+        page.execute_script(
+          "document.querySelector(\"[data-id='#{candidate_for(user).id}']\").focus()",
+        )
+        page.send_keys(key)
+        sleep 0.1
+      end
+      shot("07_dumbcourse_ranked")
+      find("[data-act='save']").click
+      expect(page).to have_text("Ballot saved.")
+    end
+
+    saved = DiscourseModElections::Ballot.find_by(election: election, user: voter)
+    expect(saved.ranking).to eq(
+      [candidate_for(moderator).id, candidate_for(dovid).id, candidate_for(chaim).id],
+    )
+  end
+
   it "doesn't offer a candidate their own name" do
     open_voting
     sign_in(chaim)

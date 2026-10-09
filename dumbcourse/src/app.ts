@@ -183,6 +183,7 @@ function updateBadges(): void {
   const extra = u
     ? u.reviewable_count +
       u.reqpm_incoming_count +
+      u.mod_election_vote_due +
       u.new_personal_messages_notifications_count
     : 0;
   const dot = byId("tbDot");
@@ -258,6 +259,10 @@ export function openMenu(): void {
           "phone",
           u.reqpm_incoming_count
         )
+      );
+    if (settings.modElectionsEnabled)
+      items.push(
+        menuItem("/elections", "Elections", "check", u.mod_election_vote_due)
       );
     items.push(menuItem("/drafts", "Drafts", "draft"));
     items.push(menuItem("/search", "Search", "search"));

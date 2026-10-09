@@ -186,6 +186,15 @@ RSpec.describe "Mod elections endpoints" do
 
       put "/jtech-elections/#{election.id}/ballot.json", params: { ranking: [-5] }
       expect(response.parsed_body.dig("extras", "reason")).to eq("invalid_ballot")
+
+      put "/jtech-elections/#{election.id}/ballot.json",
+          params: {
+            ranking: {
+              first: mod_candidate.id,
+            },
+          }
+      expect(response.status).to eq(422)
+      expect(response.parsed_body.dig("extras", "reason")).to eq("empty_ballot")
     end
 
     it "turns away voters suspended since the list was made" do

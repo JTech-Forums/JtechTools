@@ -56,7 +56,9 @@ module DiscourseModElections
     end
 
     def vote
-      Voting.cast!(current_user, @election, params.require(:ranking), ip_address: request.remote_ip)
+      # Only a flat list of ids: anything else is treated as an empty ballot.
+      ranking = params.permit(ranking: [])[:ranking]
+      Voting.cast!(current_user, @election, ranking, ip_address: request.remote_ip)
       render_page
     end
 
