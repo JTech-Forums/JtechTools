@@ -45,6 +45,7 @@ export const JT_ICON_MAP: Record<string, string> = {
   "chart-bar": "chart-column",
   "chart-line": "chart-line",
   check: "check",
+  "check-to-slot": "vote",
   "chevron-down": "chevron-down",
   "chevron-left": "chevron-left",
   "chevron-right": "chevron-right",

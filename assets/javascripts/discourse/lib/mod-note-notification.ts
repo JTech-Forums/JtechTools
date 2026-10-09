@@ -5,7 +5,8 @@ import { i18n } from "discourse-i18n";
 // AND the staff-event streams that piggyback on the same `mod_note: true`
 // marker (post actions, user notes, flag/reviewable notes). Core allows one
 // renderer per notification type, so the other features' `custom`
-// notifications (Disteleplus mentions, REQ-PM) are decoded here too.
+// notifications (Disteleplus mentions, REQ-PM, Mod elections) are decoded
+// here too.
 //
 // All plugin notifications share the `custom` notification type, so this
 // renderer keys off the `mod_note` marker the server sets in the
@@ -37,6 +38,8 @@ interface ModNoteNotificationData {
   disteleplus_kind?: string;
   reqpm?: boolean;
   reqpm_kind?: string;
+  mod_election?: boolean;
+  mod_election_kind?: string;
   url?: string;
   title?: string;
   message?: string;
@@ -70,6 +73,12 @@ export default function modNoteNotificationRenderer(
       return !!this.notification.data?.reqpm;
     }
 
+    // Mod elections: a step of the election, from the system rather than a
+    // person.
+    get isModElection(): boolean {
+      return !!this.notification.data?.mod_election;
+    }
+
     get reqpmKind(): "shared" | "request" {
       return this.notification.data?.reqpm_kind === "shared"
         ? "shared"
@@ -97,7 +106,10 @@ export default function modNoteNotificationRenderer(
     // the user notes tab, or the review-queue entry, depending on kind.
     get linkHref(): string {
       if (
-        (this.isModNote || this.isDisteleplus || this.isReqpm) &&
+        (this.isModNote ||
+          this.isDisteleplus ||
+          this.isReqpm ||
+          this.isModElection) &&
         this.notification.data?.url
       ) {
         return this.notification.data.url;
@@ -106,6 +118,9 @@ export default function modNoteNotificationRenderer(
     }
 
     get linkTitle(): string {
+      if (this.isModElection) {
+        return i18n("mod_elections.title");
+      }
       if (this.isReqpm) {
         return i18n("reqpm.title");
       }
@@ -128,6 +143,9 @@ export default function modNoteNotificationRenderer(
     // The plugin's registered shield icon, so the notification reads
     // unambiguously as a moderator/staff item.
     get icon(): string {
+      if (this.isModElection) {
+        return "check-to-slot";
+      }
       if (this.isReqpm) {
         return this.reqpmKind === "shared" ? "id-card" : "address-card";
       }
@@ -146,6 +164,9 @@ export default function modNoteNotificationRenderer(
     // Accurate, self-describing label naming the acting moderator —
     // e.g. "added a moderator note", "deleted a post", "added a note on a user".
     get label(): string {
+      if (this.isModElection) {
+        return i18n("mod_elections.title");
+      }
       if (this.isReqpm) {
         return this.username;
       }
@@ -166,6 +187,11 @@ export default function modNoteNotificationRenderer(
     // Second line: the excerpt (note body / post body / reply body)
     // when available, falling back to the topic title.
     get description(): string {
+      if (this.isModElection) {
+        return i18n(
+          `mod_elections.notifications.${this.notification.data?.mod_election_kind}`
+        );
+      }
       if (this.isReqpm) {
         return i18n(`reqpm.notifications.${this.reqpmKind}`);
       }

@@ -12,9 +12,20 @@
 
 register_asset "stylesheets/mod-elections.scss"
 
-%w[check-to-slot ranking-star arrow-up arrow-down xmark plus trophy user-shield].each do |name|
-  register_svg_icon(name)
-end
+%w[
+  check-to-slot
+  far-comments
+  list-ol
+  arrow-up
+  arrow-down
+  xmark
+  plus
+  check
+  pencil
+  trophy
+  users
+  shield-halved
+].each { |name| register_svg_icon(name) }
 
 module ::DiscourseModElections
   STRIKES_FIELD = "mod_elections_strikes"

@@ -70,6 +70,10 @@ const LINKS: AdminNavLink[] = [
     route: "adminPlugins.show.jtech-tools-listing-format",
   },
   {
+    label: "jtech_tools.admin.tabs.mod_elections",
+    route: "adminPlugins.show.jtech-tools-mod-elections",
+  },
+  {
     label: "jtech_tools.admin.tabs.all_settings",
     route: "adminPlugins.show.settings",
   },

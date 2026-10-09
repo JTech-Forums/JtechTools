@@ -22,5 +22,6 @@ export default {
     this.route("jtech-tools-disteleplus", { path: "disteleplus" });
     this.route("jtech-tools-reqpm", { path: "reqpm" });
     this.route("jtech-tools-listing-format", { path: "listing-format" });
+    this.route("jtech-tools-mod-elections", { path: "mod-elections" });
   },
 };

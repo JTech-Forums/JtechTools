@@ -1,0 +1,689 @@
+// Mod elections — the /elections page: steps, candidates, the ballot and the
+// count. Core colour variables only, so it sits quietly in any theme; the
+// JTech theme adds its own edges in jt-elections.
+@use "lib/viewport";
+
+.mod-elections {
+  max-width: 52em;
+  margin: 0 auto;
+  padding-bottom: 2em;
+
+  &__header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em 1em;
+    align-items: center;
+    margin: 0.75em 0 1em;
+
+    h1 {
+      margin: 0;
+      font-size: var(--font-up-2);
+    }
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em 1.25em;
+    margin: 0 0 1em;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+
+    a {
+      color: inherit;
+    }
+
+    a:hover {
+      color: var(--primary);
+    }
+  }
+
+  h2 {
+    margin: 0 0 0.75em;
+    font-size: var(--font-up-1);
+  }
+
+  h3 {
+    margin: 0 0 0.5em;
+    font-size: var(--font-0);
+  }
+}
+
+.mod-elections-muted {
+  color: var(--primary-medium);
+  font-size: var(--font-down-1);
+}
+
+.mod-elections-count {
+  margin-left: 0.25em;
+  color: var(--primary-medium);
+  font-weight: normal;
+}
+
+.mod-elections-chip {
+  display: inline-flex;
+  gap: 0.3em;
+  align-items: center;
+  padding: 0.1em 0.5em;
+  border: 1px solid var(--primary-low);
+  border-radius: var(--d-border-radius);
+  color: var(--primary-high);
+  font-size: var(--font-down-2);
+  font-weight: normal;
+  white-space: nowrap;
+
+  .d-icon {
+    width: 0.9em;
+    height: 0.9em;
+  }
+
+  &--strong {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--secondary);
+  }
+}
+
+.mod-elections-status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4em;
+  align-items: baseline;
+  padding: 0.2em 0.65em;
+  border: 1px solid var(--primary-low);
+  border-radius: var(--d-border-radius);
+  font-size: var(--font-down-1);
+  font-weight: 600;
+
+  .mod-elections-muted {
+    font-size: inherit;
+    font-weight: normal;
+  }
+}
+
+.mod-elections-panel {
+  margin: 0 0 1.25em;
+  padding: 1em;
+  border: 1px solid var(--primary-low);
+  border-radius: var(--d-border-radius-large, var(--d-border-radius));
+  background: var(--secondary);
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+.mod-elections-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  align-items: center;
+  margin-top: 0.75em;
+}
+
+// ── Steps ─────────────────────────────────────────────────────────────────
+.mod-elections-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75em;
+  margin: 0 0 1em;
+  padding: 0;
+  list-style: none;
+
+  &__step {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15em;
+    padding-top: 0.5em;
+    border-top: 2px solid var(--primary-low);
+  }
+
+  &__label {
+    font-weight: 600;
+  }
+
+  &__date {
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+
+  &__step--upcoming &__label {
+    color: var(--primary-medium);
+  }
+
+  &__step--done {
+    border-top-color: var(--primary-medium);
+  }
+
+  &__step--current {
+    border-top-color: var(--primary);
+  }
+}
+
+// ── Candidates ────────────────────────────────────────────────────────────
+.mod-elections-candidates {
+  margin-top: 1.5em;
+}
+
+.mod-elections-candidate {
+  display: flex;
+  gap: 0.75em;
+  padding: 0.85em 0;
+  border-bottom: 1px solid var(--primary-low);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  &__avatar {
+    flex: 0 0 auto;
+  }
+
+  &__body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  &__name {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25em 0.5em;
+    align-items: center;
+
+    > a {
+      color: var(--primary);
+      font-weight: 600;
+    }
+  }
+
+  &__statement {
+    margin: 0.35em 0 0;
+    color: var(--primary-high);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+    unicode-bidi: plaintext;
+  }
+
+  &__flag {
+    margin: 0.35em 0 0;
+    color: var(--danger);
+    font-size: var(--font-down-1);
+  }
+
+  &--disqualified &__avatar,
+  &--disqualified &__name {
+    opacity: 0.6;
+  }
+}
+
+// ── Running ───────────────────────────────────────────────────────────────
+.mod-elections-run {
+  &__label {
+    display: block;
+    margin-bottom: 0.35em;
+    font-weight: 600;
+  }
+
+  &__statement {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 7em;
+    margin: 0;
+    resize: vertical;
+  }
+
+  &__counter {
+    color: var(--primary-medium);
+    font-size: var(--font-down-2);
+    text-align: right;
+
+    &--over {
+      color: var(--danger);
+    }
+  }
+
+  &__status p {
+    margin: 0 0 0.35em;
+  }
+}
+
+// ── Ballot ────────────────────────────────────────────────────────────────
+.mod-elections-ballot {
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em 1em;
+    align-items: center;
+    justify-content: space-between;
+
+    h2 {
+      margin: 0;
+    }
+  }
+
+  &__columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25em;
+    margin-top: 1em;
+
+    @include viewport.until(md) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  &__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__row {
+    display: flex;
+    gap: 0.5em;
+    align-items: center;
+    min-height: 2.5em;
+    margin-bottom: 0.4em;
+    padding: 0.35em 0.5em;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius);
+    background: var(--secondary);
+  }
+
+  &__place {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 1.7em;
+    height: 1.7em;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--secondary);
+    font-size: var(--font-down-1);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  &__who {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__mod .d-icon {
+    width: 0.8em;
+    height: 0.8em;
+    margin-left: 0.2em;
+    color: var(--primary-medium);
+  }
+
+  &__statement {
+    summary {
+      color: var(--primary-medium);
+      font-size: var(--font-down-1);
+      cursor: pointer;
+    }
+
+    p {
+      margin: 0.25em 0 0;
+      color: var(--primary-high);
+      font-size: var(--font-down-1);
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+      unicode-bidi: plaintext;
+    }
+  }
+
+  &__controls {
+    display: flex;
+    flex: 0 0 auto;
+
+    .btn {
+      padding: 0.35em 0.5em;
+    }
+  }
+
+  &__empty {
+    padding: 1em;
+    border: 1px dashed var(--primary-low);
+    border-radius: var(--d-border-radius);
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+    text-align: center;
+  }
+
+  &__foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em 0.75em;
+    align-items: center;
+    margin-top: 1em;
+    padding-top: 1em;
+    border-top: 1px solid var(--primary-low);
+  }
+
+  &__state {
+    flex: 1 1 auto;
+  }
+
+  // Bigger targets for fingers.
+  @include viewport.until(sm) {
+    &__controls .btn {
+      min-width: 2.5em;
+      min-height: 2.5em;
+    }
+
+    &__foot .btn-primary {
+      flex: 1 1 100%;
+    }
+  }
+}
+
+// ── Results ───────────────────────────────────────────────────────────────
+.mod-elections-results {
+  &__winners {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75em;
+    margin: 0 0 1em;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__winner {
+    display: flex;
+    flex: 1 1 14em;
+    gap: 0.65em;
+    align-items: center;
+    padding: 0.65em 0.85em;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius);
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.2em;
+      min-width: 0;
+    }
+  }
+
+  &__winner-name {
+    color: var(--primary);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  &__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25em 1.5em;
+    margin: 0 0 1.25em;
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+
+  // The table scrolls inside itself on a phone; the page never does.
+  &__scroll {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+
+    th,
+    td {
+      padding: 0.45em 0.6em;
+      border-bottom: 1px solid var(--primary-low);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    thead th {
+      min-width: 5.5em;
+      max-width: 10em;
+      font-weight: normal;
+      vertical-align: bottom;
+    }
+
+    th[scope="row"],
+    thead th:first-child {
+      position: sticky;
+      left: 0;
+      background: var(--secondary);
+      text-align: left;
+    }
+
+    th[scope="row"] {
+      font-weight: normal;
+
+      img {
+        margin-right: 0.3em;
+        vertical-align: middle;
+      }
+    }
+
+    td.is-elected {
+      font-weight: 700;
+
+      .d-icon {
+        width: 0.8em;
+        height: 0.8em;
+        margin-left: 0.2em;
+      }
+    }
+
+    td.is-out {
+      color: var(--primary-low-mid);
+    }
+  }
+
+  &__stage-number {
+    display: block;
+    font-weight: 700;
+  }
+
+  &__stage-label {
+    display: block;
+    color: var(--primary-medium);
+    font-size: var(--font-down-2);
+    white-space: normal;
+  }
+
+  &__row--elected th[scope="row"] {
+    font-weight: 700;
+  }
+
+  &__exhausted {
+    color: var(--primary-medium);
+    font-size: var(--font-down-1);
+  }
+
+  &__how {
+    margin-top: 1em;
+
+    summary {
+      color: var(--primary-medium);
+      font-size: var(--font-down-1);
+      cursor: pointer;
+    }
+
+    p {
+      margin: 0.5em 0 0;
+      color: var(--primary-high);
+    }
+  }
+}
+
+// ── Past elections, nothing yet, the banner ───────────────────────────────
+.mod-elections-history {
+  margin-top: 2em;
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    gap: 0.5em;
+    align-items: baseline;
+    padding: 0.35em 0;
+    border-bottom: 1px solid var(--primary-low);
+  }
+}
+
+.mod-elections-empty {
+  padding: 3em 1em;
+  color: var(--primary-medium);
+  text-align: center;
+
+  .d-icon {
+    width: 2em;
+    height: 2em;
+  }
+}
+
+.mod-elections-notice__link {
+  margin-left: 0.35em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+// ── Admin tab ─────────────────────────────────────────────────────────────
+.mod-elections-admin {
+  margin-bottom: 1.5em;
+
+  &__off {
+    padding: 0.75em 1em;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius);
+    background: var(--primary-very-low);
+  }
+
+  &__card {
+    margin: 1em 0;
+    padding: 1em 1.25em;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius);
+
+    h3 {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5em;
+      align-items: center;
+      margin: 0 0 0.5em;
+    }
+
+    h4 {
+      margin: 1.25em 0 0.5em;
+    }
+
+    p {
+      margin: 0 0 0.35em;
+    }
+
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+  }
+
+  &__turnout li {
+    padding: 0.15em 0;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+
+    td {
+      padding: 0.4em 0.5em;
+      border-bottom: 1px solid var(--primary-low);
+      vertical-align: middle;
+    }
+
+    img {
+      margin-right: 0.3em;
+      vertical-align: middle;
+    }
+  }
+
+  &__row-actions {
+    text-align: right;
+    white-space: nowrap;
+
+    .btn {
+      margin-left: 0.25em;
+    }
+  }
+
+  &__reason {
+    min-width: 16em;
+    margin: 0;
+  }
+
+  &__ip {
+    margin-bottom: 1em;
+
+    code {
+      margin-right: 0.5em;
+    }
+  }
+
+  &__plan {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 0.35em 1em;
+    margin: 0;
+
+    dt {
+      font-weight: 600;
+    }
+
+    dd {
+      margin: 0;
+    }
+  }
+
+  &__create {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14em, 1fr));
+    gap: 0.75em;
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25em;
+      font-weight: 600;
+    }
+
+    input {
+      margin: 0;
+      font-weight: normal;
+    }
+  }
+
+  &__seats-list li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+    align-items: center;
+    padding: 0.35em 0;
+    border-bottom: 1px solid var(--primary-low);
+  }
+}

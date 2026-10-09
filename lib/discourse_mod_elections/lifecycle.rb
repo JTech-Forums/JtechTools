@@ -64,7 +64,9 @@ module DiscourseModElections
     end
 
     def self.close!(election)
-      election.update!(status: :closed, seed: SecureRandom.random_number(2**62))
+      # Under 2**53 so it survives a round trip through JavaScript exactly:
+      # the seed is published so anyone can check a drawn lot.
+      election.update!(status: :closed, seed: SecureRandom.random_number(2**52))
       Notifier.notify(User.real.where(admin: true).pluck(:id), election, "closed")
     end
 

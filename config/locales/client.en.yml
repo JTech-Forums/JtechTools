@@ -583,6 +583,124 @@ en:
       sidebar_section_title: Dumbcourse
       sidebar_link_text: Dumbcourse
       sidebar_link_title: Open Dumbcourse
+    mod_elections:
+      title: Mod elections
+      sidebar:
+        text: Elections
+        title: Mod elections
+      notice:
+        nominating: "Mod elections: nominations are open until %{date}."
+        nominating_link: See who's running
+        voting: "Vote Week is open until %{date}."
+        voting_link: Vote
+      status:
+        scheduled: Coming up
+        nominating: Nominations open
+        voting: Vote Week
+        closed: Counting
+        published: Results
+        cancelled: Cancelled
+      steps:
+        nominations: Nominations
+        voting: Vote Week
+        results: Results
+      until: "until %{date}"
+      seats:
+        one: "%{count} seat"
+        other: "%{count} seats"
+      discussion: Discussion
+      empty: There hasn't been an election yet.
+      cancelled: This election was cancelled. The moderators stayed as they were.
+      candidates:
+        title: Running
+        none: Nobody is running yet.
+        moderator: Moderator
+        disqualified: "Taken off the ballot: %{reason}"
+        elected: Elected
+      run:
+        button: Run for mod
+        title: Run for mod
+        statement_label: About you
+        statement_placeholder: What would you do as a moderator?
+        submit: Run
+        save: Save
+        cancel: Cancel
+        edit: Edit statement
+        withdraw: Drop out
+        withdraw_confirm: Drop out of this election? You can run again until nominations close.
+        running: You're running.
+        running_incumbent: You're on the ballot as a sitting moderator.
+        counter: "%{count}/%{max}"
+      blocked:
+        trust_level: "Candidates need trust level %{level}."
+        account_age: "Candidates need an account at least %{days} days old."
+        record: "Accounts suspended or silenced in the last %{days} days can't run."
+        admin: Admins don't run or vote.
+        disqualified: You were taken off the ballot for this election.
+        not_allowed: Your account can't take part right now.
+        not_on_roll: "You weren't on the voter list when nominations opened. Voters need trust level 1 and an account at least %{days} days old by then."
+        not_nominating: Nominations aren't open.
+        not_voting: Vote Week isn't open.
+      ballot:
+        title: Your ballot
+        weight:
+          one: "Your vote counts %{count}"
+          other: "Your vote counts %{count}"
+        hint: Rank as many as you like. Ranking someone lower never hurts your higher picks.
+        your_ranking: Your ranking
+        empty_ranking: Pick candidates below, best first.
+        candidates: Candidates
+        all_ranked: Everyone is ranked.
+        add: Rank
+        read_statement: Read statement
+        move_up: Move up
+        move_down: Move down
+        remove: Remove
+        save: Save ballot
+        saved: Saved
+        not_saved: Not saved yet
+        changed: Not saved
+        clear: Take back my ballot
+        clear_confirm: Take back your ballot? You can vote again until Vote Week ends.
+        voided: "An admin set your ballot aside: %{reason}"
+        self: You
+      closed:
+        title: Voting has closed
+        body: The results come out when an admin publishes the count.
+      results:
+        title: Results
+        none: Nobody was elected.
+        ballots:
+          one: "%{count} ballot counted"
+          other: "%{count} ballots counted"
+        of_voters: "%{percent}% of the %{voters} people on the voter list"
+        quota: "%{quota} votes to win a seat"
+        count_title: The count
+        candidate: Candidate
+        stage_first: First choices
+        stage_unopposed: Unopposed
+        stage_surplus: "%{username}'s extra votes move on"
+        stage_exclusion: "%{username} is out"
+        exhausted: No more choices
+        tie_earlier_stage: "%{names} were level; earlier stages of the count decided it."
+        tie_lot: "%{names} were level at every stage, so it was drawn by lot (seed %{seed})."
+        countback: "%{username} took a seat someone left mid-term."
+        left:
+          stepped_down: Stepped down
+          removed: Removed
+        how: How the count works
+        how_body: "Every ballot starts with its voter's weight on their first choice. Anyone who reaches the votes needed is elected, and the votes they didn't need move on to their voters' next choices at a reduced value. When nobody reaches it, whoever has the fewest votes is out and their ballots move to each voter's next choice. This repeats until every seat is filled."
+      history:
+        title: Past elections
+        cancelled: Cancelled
+      notifications:
+        on_ballot: You're on the ballot. You can drop out until nominations close.
+        voting_open: Vote Week is open. Rank the candidates.
+        reminder: Vote Week ends tomorrow, and you haven't voted.
+        closed: Voting has closed. Check the ballots and publish the results.
+        results: The results are in.
+        disqualified: An admin took you off the ballot.
+        seat_filled: A seat opened up and the count gave it to you.
     jtech_tools:
       admin:
         # Tab labels on the /admin/plugins/jtech-tools config page.
@@ -598,6 +716,7 @@ en:
           disteleplus: Disteleplus
           reqpm: REQ-PM
           listing_format: Listing format
+          mod_elections: Mod elections
           all_settings: All settings
   admin_js:
     admin:
@@ -605,8 +724,104 @@ en:
         staff_actions:
           actions:
             jtech_admin_action: "run Jtech Tools action"
+            mod_election_create: "start mod election"
+            mod_election_cancel: "cancel mod election"
+            mod_election_end_phase: "end mod election phase"
+            mod_election_disqualify: "take candidate off ballot"
+            mod_election_reinstate: "put candidate back on ballot"
+            mod_election_void_ballot: "set ballot aside"
+            mod_election_restore_ballot: "count ballot again"
             mod_post_made_whisper: "turn post into whisper"
             mod_whisper_made_public: "make whisper public"
+      mod_elections:
+        "off": Mod elections are off. Turn them on in the settings below.
+        schedule:
+          title: Schedule
+          next: "Nominations next open %{date}."
+          none: No months are picked, so nothing is scheduled.
+          detail: "%{seats} seats, %{nomination_days} days of nominations, %{voting_days} days of Vote Week. The calendar runs in %{zone}."
+        current:
+          title: Current election
+          none: No election is running.
+          phase:
+            scheduled: "Nominations open %{date}."
+            nominating: "Nominations close %{date}."
+            voting: "Vote Week ends %{date}."
+            closed: Voting has closed. Check the ballots, then publish.
+          end_phase:
+            scheduled: Open nominations now
+            nominating: Close nominations now
+            voting: Close voting now
+          end_phase_confirm: End this phase now instead of when it's scheduled to?
+          cancel: Cancel election
+          cancel_confirm: Cancel this election? The moderators stay as they are, and the schedule won't start it again.
+          open_page: Open the elections page
+        candidates:
+          title: Candidates
+          none: Nobody is running.
+          trust_level: "TL%{level}"
+          statuses:
+            running: Running
+            withdrawn: Dropped out
+            disqualified: Taken off
+          moderator: Moderator
+          disqualify: Take off ballot
+          disqualify_prompt: Why? The candidate and everyone on the elections page see this reason.
+          reinstate: Put back
+        turnout:
+          title: Turnout
+          voters: "On the voter list: %{count} (weight %{weight})"
+          ballots: "Ballots: %{count} (weight %{weight})"
+          voided: "Set aside: %{count}"
+        ip:
+          title: Ballots from one address
+          check: Check
+          none: No two ballots came from one address, and none from a candidate's address.
+          candidates: "Candidate at this address: %{names}"
+          void: Set aside
+          void_prompt: Why is this ballot set aside? The voter sees this reason.
+          restore: Count it
+          voided: "Set aside: %{reason}"
+          joined: "joined %{date}"
+        preview:
+          button: Preview the count
+          title: What publishing changes
+          join: Become moderators
+          stay: Stay moderators
+          leave: Lose moderator rights
+          strike: "strike %{count}"
+          trust_level: "trust level %{level}"
+          nobody: Nobody
+          publish: Publish results
+          publish_confirm: Publish the results? Moderator rights change straight away, and the results go on the elections page.
+        seats:
+          title: Seats
+          none: No published election yet.
+          open:
+            one: "%{count} seat is empty."
+            other: "%{count} seats are empty."
+          left:
+            stepped_down: Stepped down
+            removed: Removed
+          step_down: Stepped down
+          step_down_confirm: "%{username} steps down: they lose moderator rights and keep trust level 4 if the settings say so."
+          remove: Remove for abuse
+          remove_confirm: "Remove %{username}? They lose moderator rights and go back to trust level 3."
+          countback: Fill by countback
+          countback_confirm: "Counting the same ballots again gives the seat to %{username}. Make them a moderator?"
+          no_replacement: There's nobody left on the ballot to take the seat.
+        sitting:
+          title: Moderators now
+          none: None.
+        create:
+          title: Start an election now
+          seats: Seats
+          nominations_open_at: Nominations open
+          voting_open_at: Vote Week opens
+          voting_close_at: Vote Week ends
+          submit: Start election
+        history:
+          title: Elections
       jtech_tools:
         actions:
           title: Maintenance actions
@@ -661,6 +876,7 @@ en:
           jtech_mod_checklists: "Jtech — Mod: Checklists"
           jtech_reqpm: Jtech — REQ-PM
           jtech_listing_format: Jtech — Listing format
+          jtech_mod_elections: Jtech — Mod elections
         # Dropdown labels for the plugin's translatable enum settings.
         reqpm:
           setup_prompt:
