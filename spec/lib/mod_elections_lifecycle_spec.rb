@@ -53,6 +53,14 @@ RSpec.describe DiscourseModElections::Lifecycle do
     expect(election.voting_close_at).to eq_time(zone.local(2027, 3, 15))
   end
 
+  it "still opens late in the nomination week, but never skips straight to Vote Week" do
+    tick_at(2027, 1, 9, 12)
+    expect(DiscourseModElections::Election.count).to eq(0)
+
+    tick_at(2027, 1, 5, 12)
+    expect(election).to be_nominating
+  end
+
   it "leaves other months alone" do
     tick_at(2027, 2, 1, 12)
     expect(DiscourseModElections::Election.count).to eq(0)

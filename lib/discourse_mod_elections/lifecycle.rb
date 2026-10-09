@@ -16,6 +16,9 @@ module DiscourseModElections
     def self.schedule!(now)
       dates = Schedule.slot_at(now)
       return if dates.nil?
+      # Too late for nominations (say the module was switched on mid-month):
+      # starting now would skip straight to Vote Week. Wait for the next one.
+      return if now >= dates[:voting_open_at]
       return if Election.exists?(nominations_open_at: dates[:nominations_open_at])
       return if Election.unfinished.exists?
       Election.create!(dates.merge(seats: SiteSetting.mod_elections_seats))
